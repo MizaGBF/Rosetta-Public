@@ -171,7 +171,8 @@ The bot requires three text channels to be created:
 - One to output debug infos.  
 - One to upload images.  
 - One to post updates.  
-Create them.
+  
+Create them.  
 If you haven't yet, go to your Discord account settings, *Advanced* and turn on *Developer Mode*. Now you can right click on anything to copy their IDs.  
   
 Right click on the debug channel, copy the ID and replace BOT_DEBUG_CHANNEL_ID in `config.json`.  
