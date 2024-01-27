@@ -126,7 +126,7 @@ class General(commands.Cog):
     async def github(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the bot public github"""
         await inter.response.defer(ephemeral=True)
-        await inter.edit_original_message(embed=self.bot.embed(title="Rosetta", description="The bot is currently closed source but you can find a public repository for tracking issues [here](https://github.com/MizaGBF/Rosetta-Public).", color=self.COLOR), ephemeral=True)
+        await inter.edit_original_message(embed=self.bot.embed(title="Rosetta", description="Source code and issue tracker can be found [here](https://github.com/MizaGBF/Rosetta-Public).", color=self.COLOR))
 
     """poll_callback()
     CustomModal callback
