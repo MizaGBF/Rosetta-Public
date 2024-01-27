@@ -86,7 +86,7 @@ class GranblueFantasy(commands.Cog):
                 elif maint_check == 1 and (self.bot.util.UTC().minute % 20) < 5: # every 20 min
                     run_check = True
                 if run_check:
-                    try: await (self.bot.get_cog('Private').analysis(v, maint_check))
+                    try: maint_check = await (self.bot.get_cog('Private').analysis(v, maint_check))
                     except: pass
 
             except asyncio.CancelledError:
