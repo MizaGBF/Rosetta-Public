@@ -1,0 +1,11 @@
+﻿__pycache__/
+test.py
+config.json
+config_test.json
+save.json
+service-secrets.json
+rosetta.log
+disnake.log
+GW.sql
+GW_old.sql
+temp.sql
