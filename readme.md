@@ -148,7 +148,7 @@ Go to *Bot* on the left and click **Reset Token**. Your Bot Token will appear, c
 Next, turn on the **Message Content Intent**, below.  
   
 Now to configure your Google account.  
-**The Google API website is a pain in the butt to use, so I'll only give general steps.**  
+**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to use, so I'll only give general steps.**  
 - Find a way to create an application.  
 - Go to *Credentials* on the left, create a new **Service account**.  
 - Copy the email associated with this service account (it should be something like `XXX@YYYY.iam.gserviceaccount.com` ).  
