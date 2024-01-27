@@ -192,9 +192,9 @@ A way is to add a slash before the emote. Example, type `\:whatever_your_emote_i
 If you did everything properly, you're set. See below for additional informations.  
   
 ### Other config.json keys
-`games`: The list of game which will appear in the bot status. Feel free to modify it. At least one game is required.
+`games`: The list of game which will appear in the bot status. Feel free to modify it. At least one game is required.  
   
-`granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here as shortcut for certain commands.
+`granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here as shortcut for certain commands.  
 You are free to remove it if you want but don't leave it empty.  
   
 `nitter`: After the Twitter debacle, accessing it the normal way isn't really possible anymore. Rosetta requires a [Nitter](https://github.com/zedeus/nitter) instance to get tweet data. Put the url in the list and you're set. I recommend setting up your own instance. Scrapping public instances is frowned upon and your IP will likely end up banned from them.  
@@ -204,7 +204,7 @@ All the remaining setup is done via the `/owner` commands.
 Additional tools can be found in the `tools` folder.  
   
 ### Debug Mode  
-**(Skip this if you don't plan to use it)**
+**(Skip this if you don't plan to use it)**  
 Using the `-debug` argument requires to set up `config-test.json`.  
 Same principle:  
 ```json
