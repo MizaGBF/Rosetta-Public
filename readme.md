@@ -200,6 +200,8 @@ You are free to remove it if you want but don't leave it empty.
   
 All the remaining setup is done via the `/owner` commands.  
   
+Additional tools can be found in the `tools` folder.  
+  
 ### Debug Mode  
 **(Skip this if you don't plan to use it)**
 Using the `-debug` argument requires to set up `config-test.json`.  

@@ -180,7 +180,8 @@ def generate_html(command_list): # main function to generate the html
 		<h1>Frequently Asked Questions / Troubleshooting</h1>
 		<h2>What is Rosetta?</h2>
 		<p>Rosetta is a <a href="https://game.granbluefantasy.jp">Granblue Fantasty</a> themed <a href="https://discord.com/">Discord</a> Bot.<br>
-		It's a closed source fork of MizaBOT (which was available on <a href="https://github.com/MizaGBF/MizaBOT">GitHub</a>).<br>
+		It's a fork of MizaBOT (which was available on <a href="https://github.com/MizaGBF/MizaBOT">GitHub</a>).<br>
+		Code source is available <a href="https://github.com/MizaGBF/Rosetta-Public">here</a>.<br>
 		It provides various commands, ranging from utilty to recreative ones, related (or not) to the game.<br>
 		<b>This page is meant to be a private help page for people with access to this Discord Bot.<br>
 		The bot itself isn't open to invitations.</b><br></p>
