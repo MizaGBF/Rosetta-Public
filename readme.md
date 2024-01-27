@@ -156,9 +156,9 @@ Now to configure your Google account.
 - Add a new key (*Key* tab), pick the *JSON* format and accept. Rename this file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
   
 Go to your Google Drive and create two folders, one for the bot save data and one for GW related files.  
-Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace SAVE_FOLDER_ID in `config.json` (don't forget to put it between quotes **"**, it's a string).
-Do the same thing for the other folder and FILE_FOLDER_ID.
-The third folder ID is unused but you are free to create one and set the key in `config.json` too.
+Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace SAVE_FOLDER_ID in `config.json` (don't forget to put it between quotes **"**, it's a string).  
+Do the same thing for the other folder and FILE_FOLDER_ID.  
+The third folder ID is unused but you are free to create one and set the key in `config.json` too.  
   
 Then, **for each of those folders**, right click on them and select *Share*. Add your service account (again, using the email you copied) to each of them.  
 
