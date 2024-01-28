@@ -9,7 +9,11 @@
 ### General Informations  
 * Rosetta is a Discord Bot themed around the game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
 * This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bugfixes and so on.  
-* Like MizaBOT, saving is still done on Google Drive.  
+* Like MizaBOT, saving is still done on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component.  
+* System requirements are pretty low. The bot only uses around a hundred megabytes of memory (it will obviously increases with more servers). The single threaded performance of your CPU is what matters most.  
+* Additional tools can be found in the `tools` folder:  
+* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html. **IT DOESN'T WRITE IN THE CURRENT DIRECTORY**, you might want to change where it writes before using it.  
+* `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
   
 ### Usage  
 - **Method 1 (for Linux systems):**  
@@ -207,8 +211,6 @@ If you did everything properly, you're set. See below for additional information
 You are free to remove it if you want but don't leave it empty.  
   
 All the remaining setup is done via the `/owner` commands.  
-  
-Additional tools can be found in the `tools` folder.  
   
 ### Debug Mode  
 **(Skip this if you don't plan to use it)**  

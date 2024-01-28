@@ -3,14 +3,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import json
 from io import BytesIO
-from datetime import timedelta
+from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
 
 # ----------------------------------------------------------------------------------------------------------------
-# Save Component
+# Data Component
 # ----------------------------------------------------------------------------------------------------------------
-# This component manages the save data file (save.json)
-# It also lets you load config.json (once at startup)
-# Works in tandem with the Drive component
+# This component manages the save data file (save.json) and handle the loading of config.json (once at startup).
+# It also provides functions to maintain and clean up the save data.
+# Works in tandem with the Drive component.
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
@@ -303,12 +304,13 @@ class Data():
                         case 10: await self.bot.changeAvatar('icon_halloween.png')
                         case 11: await self.bot.changeAvatar('icon.png')
                         case 12: await self.bot.changeAvatar('icon_xmas.png')
+                # update schedule
+                await self.update_schedule()
                 # various clean up
                 await self.clean_spark() # clean up spark data
                 if ct.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
-                await self.clean_others() # clean up everything else
-                await self.clean_schedule() # clean schedule
+                await self.clean_general() # clean up everything else
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
                 return
@@ -316,6 +318,99 @@ class Data():
                 self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
             await asyncio.sleep(86399 - (self.bot.util.JST() - ct).total_seconds()) # wait next day
 
+    """update_schedule()
+    Coroutine to request the wiki to update the schedule
+    """
+    async def update_schedule(self) -> None:
+        data = await self.bot.net.request("https://gbf.wiki/Main_Page", no_base_headers=True, follow_redirects=True, timeout=8)
+        try:
+            if data is not None:
+                flag = False
+                soup = BeautifulSoup(data, 'html.parser')
+                new_events = []
+                for tr in soup.find_all("tr"):
+                    if not flag:
+                        for t in ['Current Events', 'Upcoming Events']:
+                            if t in tr.text:
+                                flag = True
+                                break
+                    else:
+                        try: td = tr.find_all("td", recursive=False)[0]
+                        except: continue
+                        event = [None]
+                        for child in td.find_all(recursive=False):
+                            match child.name:
+                                case 'a':
+                                    if child.has_attr('title'):
+                                        event = [None]
+                                        event[0] = child['title']
+                                case 'span'|'div':
+                                    if 'gallery-swap-images' in child.get('class', []):
+                                        try:
+                                            event = [None]
+                                            event[0] = child.find_all(recursive=True)[0]['title']
+                                        except:
+                                            pass
+                                    elif child.has_attr('class'):
+                                        match ' '.join(child['class']):
+                                            case 'tooltip':
+                                                ts = child.find_all("span", class_="localtime", recursive=True)
+                                                match len(ts):
+                                                    case 2:
+                                                        ts = ts[1]['data-time']
+                                                        event.append(ts)
+                                                        if len(event) == 3 and event[0] is not None:
+                                                            new_events.append(event)
+                                                            event = [None]
+                                                    case 1:
+                                                        if ts[0].has_attr('data-start') and ts[0].has_attr('data-end'):
+                                                            event.append(ts[0]['data-start'])
+                                                            event.append(ts[0]['data-end'])
+                                                            if len(event) == 3 and event[0] is not None:
+                                                                new_events.append(event)
+                                                                event = [None]
+                                                    case _:
+                                                        pass
+                                            case _:
+                                                pass
+                c = self.bot.util.JST()
+                if len(new_events) > 0:
+                    schedule_entries = {}
+                    for i in range(0, ((len(self.save['schedule'])//2)*2), 2):
+                        schedule_entries[self.save['schedule'][i]] = [self.save['schedule'][i+1]]
+                    for event in new_events:
+                        start = datetime.fromtimestamp(int(event[1]))
+                        end = datetime.fromtimestamp(int(event[2]))
+                        key = '{}/{} - {}/{}'.format(start.month, start.day, end.month, end.day)
+                        if key not in schedule_entries:
+                            schedule_entries[key] = [event[0]]
+                        elif event[0] not in schedule_entries[key]:
+                            schedule_entries[key].append(event[0])
+                    keys = list(schedule_entries.keys())
+                    keys.sort()
+                    new_schedule = []
+                    for k in keys:
+                        try:
+                            date = k.replace(" ", "").split("-")[-1].split("/")
+                            x = c.replace(month=int(date[0]), day=int(date[1])+1, microsecond=0)
+                            if c - x > timedelta(days=160):
+                                x = x.replace(year=x.year+1)
+                            if c >= x:
+                                continue
+                        except:
+                            pass
+                        for e in schedule_entries[k]:
+                            if len(schedule_entries[k]) > 1 and 'story event' in e.lower():
+                                continue
+                            new_schedule.append(k)
+                            new_schedule.append(e)
+                    if len(new_schedule) > 0 and str(new_schedule) != str(self.save['schedule']):
+                        self.save['schedule'] = new_schedule
+                        self.pending = True
+                        await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="The schedule has been updated", timestamp=self.bot.util.UTC()))
+                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success")
+        except Exception as e:
+            self.bot.logger.pushError("[DATA] update_schedule Error:", e)
 
     """clean_spark()
     Coroutine to clear user spark data from the save data
@@ -332,7 +427,7 @@ class Data():
                 self.pending = True
                 count += 1
         if count > 0:
-            await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="Cleaned {} unused spark saves".format(count), timestamp=self.bot.util.UTC()))
+            self.bot.logger.push("[DATA] clean_spark:\nCleaned {} unused spark saves".format(count))
 
     """clean_profile()
     Coroutine to clean user gbf profiles from the save data
@@ -352,35 +447,12 @@ class Data():
                 self.save['gbfids'].pop(uid)
                 self.pending = True
         if count > 0:
-            await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="Cleaned {} unused profiles".format(count), timestamp=self.bot.util.UTC()))
+            self.bot.logger.push("[DATA] clean_profile:\nCleaned {} unused profiles".format(count))
 
-    """clean_schedule()
-    Coroutine to clean the gbf schedule from the save data
-    """
-    async def clean_schedule(self) -> None:
-        c = self.bot.util.JST()
-        new_schedule = []
-        for i in range(0, ((len(self.save['schedule'])//2)*2), 2):
-            try:
-                date = self.save['schedule'][i].replace(" ", "").split("-")[-1].split("/")
-                x = c.replace(month=int(date[0]), day=int(date[1])+1, microsecond=0)
-                if c - x > timedelta(days=160):
-                    x = x.replace(year=x.year+1)
-                if c >= x:
-                    continue
-            except:
-                pass
-            new_schedule.append(self.save['schedule'][i])
-            new_schedule.append(self.save['schedule'][i+1])
-        if len(new_schedule) != 0 and len(new_schedule) != len(self.save['schedule']):
-            self.save['schedule'] = new_schedule
-            self.pending = True
-            await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="The schedule has been cleaned up", timestamp=self.bot.util.UTC()))
-
-    """clean_others()
+    """clean_general()
     Coroutine to clean the save data
     """
-    async def clean_others(self) -> None:
+    async def clean_general(self) -> None:
         guild_ids = []
         for g in self.bot.guilds:
              guild_ids.append(str(g.id))
@@ -446,4 +518,4 @@ class Data():
                     self.save['extra'].pop(k)
                 self.pending = True
         if count > 0:
-            await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="Cleaned up {} elements".format(count), timestamp=self.bot.util.UTC()))
+            self.bot.logger.push("[DATA] clean_general:\nCleaned up {} elements".format(count))

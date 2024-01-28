@@ -27,14 +27,9 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.1.0" # bot version
+        self.version = "11.1.1" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-            "**v10.38.4** - Removed server wide strike time settings.",
-            "**v10.38.8** - Dread barrage commands are up-to-date with the new format.",
-            "**v10.38.10** - Fixed the pinboard attachments.",
-            "**v10.38.18** - Reworked the UwU Message Command to show it's original message and reduce the text size.",
-            "**v10.38.23** - Added update time to `/gw lead`, `/gbfg players` and `/gbfg ranking`.",
             "**v11.0.0** - Added `/mod server info` as a copy of the Message Command `Server Info`, with additional informations for moderators. Removed raids from `/guide`.",
             "**v11.0.1** - Removed `/gbf crew`. Use `/gw crew` instead.",
             "**v11.0.7** - Twitter feed is now limited to @granblue_en and `/mod announcement` commands have been tweaked to reflect this change. The spam filter has been improved.",
@@ -42,7 +37,8 @@ class DiscordBot(commands.InteractionBot):
             "**v11.0.11** - Bug fixed the gacha simulator and added minor improvements.",
             "**v11.0.12** - Added `/mod server toggle_vxtwitter`.",
             "**v11.0.14** - Rosetta will now update its avatar depending on the time of the year.",
-            "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace."
+            "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace.",
+            "**v11.1.1** - Added a daily automatic update for `/gbf schedule`."
         ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot

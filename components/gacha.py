@@ -30,9 +30,7 @@ class Gacha():
     --------
     list: Containing:
         - timedelta: Remaining time
-        - timedelta: Remaining time (for multi element spark periods)
-        - str: String containing the ssr rate and gacha rate up list
-        - str: Gacha banner image
+        - dict: Gacha data
     """
     async def get(self) -> list:
         c = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=80)

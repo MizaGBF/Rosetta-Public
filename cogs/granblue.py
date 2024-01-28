@@ -35,6 +35,7 @@ class GranblueFantasy(commands.Cog):
     Bot Task checking for new content related to GBF
     """
     async def granblue_watcher(self) -> None:
+        acc_check = False
         maint_check = 0 # 0 = no maintenance on going, 1 = maintenance on going, 2 = maintenance on going & task done
         v = None
         await asyncio.sleep(30)
@@ -88,7 +89,6 @@ class GranblueFantasy(commands.Cog):
                 if run_check:
                     try: maint_check = await (self.bot.get_cog('Private').analysis(v, maint_check))
                     except: pass
-
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
                 return
@@ -97,6 +97,13 @@ class GranblueFantasy(commands.Cog):
 
             if maint_check > 0:
                 continue
+
+            if self.bot.network.get_account(self.bot.data.save['gbfcurrent']) is None:
+                if not acc_check:
+                    acc_check = True
+                    self.bot.logger.push("[TASK] 'granblue_watcher' No account set or the current account is invalid.\nSome tasks will be skipped.", level=self.bot.logger.WARNING)
+                continue
+            acc_check = False
 
             try: # 4koma news
                 await self.check4koma()
