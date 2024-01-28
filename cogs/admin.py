@@ -619,6 +619,21 @@ class Admin(commands.Cog):
         await self.bot.data.update_schedule()
         await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Process finished", color=self.COLOR))
 
+    @schedule.sub_command(name="add")
+    async def scheduleadd(self, inter: disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), end : str = commands.Param(description="End date (DD/MM/YY format)", default="")) -> None:
+        """Add or modify an entry (Owner Only)"""
+        await inter.response.defer(ephemeral=True)
+        try:
+            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=10, minute=0, second=0).timestamp())]
+            if end != "":
+                timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=10, minute=0, second=0).timestamp()))
+                if timestamps[1] <= timestamps[0]: raise Exception("Event Ending timestamp is lesser than the Starting timestamp")
+            self.bot.data.save['schedule'][name] = timestamps
+            await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Entry added", color=self.COLOR))
+        except Exception as e:
+            await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Error, exception:\n`{}`".format(self.bot.pexc(e)), color=self.COLOR))
+            
+
     @_owner.sub_command_group()
     async def account(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
