@@ -405,10 +405,9 @@ class Data():
                             new_schedule.append(k)
                             new_schedule.append(e)
                     if len(new_schedule) > 0 and str(new_schedule) != str(self.save['schedule']):
+                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\nBefore: `{}`\nAfter: `{}`".format(";".join(self.save['schedule']), ";".join(new_schedule)))
                         self.save['schedule'] = new_schedule
                         self.pending = True
-                        await self.bot.send('debug', embed=self.bot.embed(title="clean()", description="The schedule has been updated", timestamp=self.bot.util.UTC()))
-                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success")
         except Exception as e:
             self.bot.logger.pushError("[DATA] update_schedule Error:", e)
 
