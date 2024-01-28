@@ -651,12 +651,6 @@ class DiscordBot(commands.InteractionBot):
         except:
             pass
 
-    async def convert_tweet(self, message : disnake.Message, wait_and_fetch : bool) -> None:
-        try:
-        except:
-            pass
-
-
     """map_unordered() and limit_concurrency()
     Run up to "limit" amount of "func" to process each "iterable"
     
