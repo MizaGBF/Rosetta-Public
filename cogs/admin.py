@@ -7,6 +7,7 @@ from cogs import DEBUG_SERVER_ID
 from datetime import datetime, timedelta
 import random
 import os
+import json
 from io import StringIO
 from contextlib import redirect_stdout
 import time
@@ -580,19 +581,30 @@ class Admin(commands.Cog):
     """
     async def scheduleset_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
-        self.bot.data.save['schedule'] = inter.text_values['schedule'].split(';')
-        self.bot.data.pending = True
-        await inter.edit_original_message(embed=self.bot.embed(title="Schedule set", description="New Schedule:\n`{}`".format(';'.join(self.bot.data.save['schedule'])), color=self.COLOR))
+        try:
+            data = json.loads(inter.text_values['schedule'])
+            if not isinstance(data, dict): raise Exception("Schedule data isn't a dictionnary")
+            for k, v in data.items():
+                if not isinstance(v, list): raise Exception("Value of '{}' isn't a list".format(k))
+                elif len(v) not in [1, 2]: raise Exception("Value of '{}' has an invalid length".format(k))
+                else:
+                    for e in v:
+                        if not isinstance(e, int): raise Exception("One value of '{}' isn't an integer".format(k))
+            self.bot.data.save['schedule'] = data
+            self.bot.data.pending = True
+            await inter.edit_original_message(embed=self.bot.embed(title="Schedule set", description="New Schedule:\n`{}`".format(self.bot.data.save['schedule']), color=self.COLOR))
+        except Exception as e:
+            await inter.edit_original_message(embed=self.bot.embed(title="Schedule error", description="Invalid data\n`{}`\nException: `{}`".format(inter.text_values['schedule'], e), color=self.COLOR))
 
     @schedule.sub_command(name="set")
     async def scheduleset(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Set the GBF schedule for the month (Owner Only)"""
+        """Set the GBF schedule (Owner Only)"""
         await self.bot.util.send_modal(inter, "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set the GBF Schedule", self.scheduleset_callback, [
             disnake.ui.TextInput(
                 label="Schedule String",
-                placeholder="Date 1;Event 1; ... ;Date N;Event N",
+                placeholder="JSON Data",
                 custom_id="schedule",
-                value=";".join(self.bot.data.save['schedule']),
+                value=json.dumps(self.bot.data.save['schedule']),
                 style=disnake.TextInputStyle.paragraph,
                 min_length=1,
                 max_length=1024,
@@ -600,28 +612,12 @@ class Admin(commands.Cog):
             )
         ])
 
-    @schedule.sub_command(name="clean")
-    async def _clean(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Remove expired entries from the schedule (Owner Only)"""
+    @schedule.sub_command(name="update")
+    async def scheduleupdate(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Force an automatic GBF schedule update (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        c = self.bot.util.JST()
-        new_schedule = []
-        for i in range(0, len(self.bot.data.save['schedule']), 2):
-            try:
-                date = self.bot.data.save['schedule'][i].replace(" ", "").split("-")[-1].split("/")
-                x = c.replace(month=int(date[0]), day=int(date[1])+1, microsecond=0)
-                if c - x > timedelta(days=160):
-                    x = x.replace(year=x.year+1)
-                if c >= x:
-                    continue
-            except:
-                pass
-            new_schedule.append(self.bot.data.save['schedule'][i])
-            new_schedule.append(self.bot.data.save['schedule'][i+1])
-
-        self.bot.data.save['schedule'] = new_schedule
-        self.bot.data.pending = True
-        await inter.edit_original_message(embed=self.bot.embed(title="Schedule cleaned", color=self.COLOR))
+        await self.bot.data.update_schedule()
+        await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Process finished", color=self.COLOR))
 
     @_owner.sub_command_group()
     async def account(self, inter: disnake.GuildCommandInteraction) -> None:

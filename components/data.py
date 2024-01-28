@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import json
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime
 from bs4 import BeautifulSoup
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 13
+    SAVEVERSION = 14
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -26,7 +26,7 @@ class Data():
         'gbfdata': {},
         'maintenance': {"state" : False, "time" : None, "duration" : 0},
         'stream': {'time':None, 'content':[]},
-        'schedule': [],
+        'schedule': {},
         'spark': {},
         'gw': {'state':False},
         'valiant': {'state':False},
@@ -191,6 +191,8 @@ class Data():
                     if ver <= 12:
                         for gid in data['announcement']:
                             data['announcement'][gid] = [data['announcement'][gid][0], data['announcement'][gid][3]]
+                    if ver <= 13:
+                        data['schedule'] = {}
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
@@ -373,39 +375,24 @@ class Data():
                                                         pass
                                             case _:
                                                 pass
-                c = self.bot.util.JST()
+                # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
-                    schedule_entries = {}
-                    for i in range(0, ((len(self.save['schedule'])//2)*2), 2):
-                        schedule_entries[self.save['schedule'][i]] = [self.save['schedule'][i+1]]
+                    new_schedule = {}
                     for event in new_events:
-                        start = datetime.fromtimestamp(int(event[1]))
-                        end = datetime.fromtimestamp(int(event[2]))
-                        key = '{}/{} - {}/{}'.format(start.month, start.day, end.month, end.day)
-                        if key not in schedule_entries:
-                            schedule_entries[key] = [event[0]]
-                        elif event[0] not in schedule_entries[key]:
-                            schedule_entries[key].append(event[0])
-                    keys = list(schedule_entries.keys())
-                    keys.sort()
-                    new_schedule = []
-                    for k in keys:
                         try:
-                            date = k.replace(" ", "").split("-")[-1].split("/")
-                            x = c.replace(month=int(date[0]), day=int(date[1])+1, microsecond=0)
-                            if c - x > timedelta(days=160):
-                                x = x.replace(year=x.year+1)
-                            if c >= x:
-                                continue
+                            time_range = [int(event[1]), int(event[2])]
+                            if str(time_range) != str(self.save['schedule'].get(event[0], None)):
+                                new_schedule[event[0]] = time_range
                         except:
                             pass
-                        for e in schedule_entries[k]:
-                            if len(schedule_entries[k]) > 1 and 'story event' in e.lower():
-                                continue
-                            new_schedule.append(k)
-                            new_schedule.append(e)
-                    if len(new_schedule) > 0 and str(new_schedule) != str(self.save['schedule']):
-                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\nBefore: `{}`\nAfter: `{}`".format(";".join(self.save['schedule']), ";".join(new_schedule)))
+                    new_schedule = self.save['schedule'] | new_schedule
+                    c = self.bot.util.UTC()
+                    keys = list(new_schedule.keys())
+                    for k in keys:
+                        if c > datetime.utcfromtimestamp(new_schedule[k][-1]):
+                            new_schedule.pop(k, None)
+                    if str(new_schedule) != str(self.save['schedule']):
+                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\nBefore: `{}`\nAfter: `{}`".format(self.save['schedule'], new_schedule))
                         self.save['schedule'] = new_schedule
                         self.pending = True
         except Exception as e:

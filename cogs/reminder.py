@@ -157,7 +157,7 @@ class Reminder(commands.Cog):
             embed = disnake.Embed(title="{}'s Reminder List".format(inter.author.display_name), color=self.COLOR)
             embed.set_thumbnail(url=inter.author.display_avatar)
             for i, v in enumerate(self.bot.data.save['reminders'][aid]):
-                embed.add_field(name="#{} ▫️ {}".format(i, self.bot.util.time(v[0], style='dt', removejst=True)), value=v[1], inline=False)
+                embed.add_field(name="#{} ▫️ {}".format(i, self.bot.util.time(v[0], style=['d','t'], removejst=True)), value=v[1], inline=False)
             await inter.edit_original_message(embed=embed)
 
     @remind.sub_command(name="remove")

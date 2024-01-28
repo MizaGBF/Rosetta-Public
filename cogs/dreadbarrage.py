@@ -71,16 +71,16 @@ class DreadBarrage(commands.Cog):
             try:
                 current_time = self.bot.util.JST()
                 em = self.bot.util.formatElement(self.bot.data.save['valiant']['element'])
-                title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['valiant']['id'], em, self.bot.util.time(current_time, style='f', removejst=True))
+                title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['valiant']['id'], em, self.bot.util.time(current_time, removejst=True))
                 description = ""
                 if current_time < self.bot.data.save['valiant']['dates']["End"]:
                     if current_time < self.bot.data.save['valiant']['dates']["Day 2"]:
-                        description += "▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 1'], style='f', removejst=True))
+                        description += "▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 1'], removejst=True))
                     if current_time < self.bot.data.save['valiant']['dates']["Day 4"]:
-                        description += "▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], style='f', removejst=True))
+                        description += "▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], removejst=True))
                     if current_time < self.bot.data.save['valiant']['dates']["Day 6"]:
-                        description += "▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], style='f', removejst=True))
-                    description += "▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 6'], style='f', removejst=True))
+                        description += "▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], removejst=True))
+                    description += "▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 6'], removejst=True))
                 else:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
                     self.bot.data.save['valiant']['state'] = False

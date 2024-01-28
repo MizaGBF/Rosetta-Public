@@ -22,6 +22,7 @@ class Util():
         re.compile('([12][0-9]{9}_02)\\.'),
         re.compile('([12][0-9]{9})\\.')
     ]
+    JSTDIFF = 32400
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
         self.emote = None
@@ -129,8 +130,8 @@ class Util():
     datetime: Current time
     """
     def JST(self, delay : bool = True) -> datetime:
-        if delay: return self.UTC() + timedelta(seconds=32400) - timedelta(seconds=30)
-        else: return self.UTC() + timedelta(seconds=32400)
+        if delay: return self.UTC() + timedelta(seconds=self.JSTDIFF) - timedelta(seconds=30)
+        else: return self.UTC() + timedelta(seconds=self.JSTDIFF)
 
     """time()
     Format a timestamp or datetime object
@@ -147,11 +148,11 @@ class Util():
     --------
     str: Formatted time
     """
-    def time(self, to_convert : Optional[datetime] = None, style : str = 'f', removejst : bool = False, naivecheck : bool = True) -> str:
+    def time(self, to_convert : Optional[datetime] = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
         if to_convert is None: to_convert = self.UTC()
         msg = ""
         if removejst:
-            to_convert -= timedelta(seconds=32400)
+            to_convert -= timedelta(seconds=self.JSTDIFF)
         if naivecheck and (to_convert.tzinfo is None or to_convert.tzinfo.utcoffset(to_convert)):
             to_convert = to_convert.replace(tzinfo=timezone.utc)
         for c in style:
@@ -653,7 +654,7 @@ class Util():
     str: Timestamp string
     """
     def version2str(self, version_number : Union[str, int]) -> str: # convert gbf version number to its timestamp
-        try: return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=32400)) # JST
+        try: return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # JST
         except: return ""
 
     """send_modal()

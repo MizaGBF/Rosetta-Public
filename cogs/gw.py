@@ -305,7 +305,7 @@ class GuildWar(commands.Cog):
             try:
                 current_time = self.bot.util.JST()
                 em = self.bot.util.formatElement(self.bot.data.save['gw']['element'])
-                title = "{} **Guild War {}** {} **{}**\n".format(self.bot.emote.get('gw'), self.bot.data.save['gw']['id'], em, self.bot.util.time(current_time, style='f', removejst=True))
+                title = "{} **Guild War {}** {} **{}**\n".format(self.bot.emote.get('gw'), self.bot.data.save['gw']['id'], em, self.bot.util.time(current_time, removejst=True))
                 description = ""
                 day_list = self.buildDayList()
                 if current_time < self.bot.data.save['gw']['dates']["End"]:
@@ -313,10 +313,10 @@ class GuildWar(commands.Cog):
                         if it[1] == "BW":
                             d = self.bot.data.save['gw']['dates']["Preliminaries"] - timedelta(days=random.randint(1, 4))
                             if current_time < d and random.randint(1, 8) == 1:
-                                description += it[0] + " **{}**\n".format(self.bot.util.time(d, style='f', removejst=True))
+                                description += it[0] + " **{}**\n".format(self.bot.util.time(d, removejst=True))
                         else:
                             if self.dayCheck(current_time, self.bot.data.save['gw']['dates'][it[2]], it[1]=="Day 5") or (it[1] == "Interlude" and self.dayCheck(current_time, self.bot.data.save['gw']['dates'][it[2]] + timedelta(seconds=25200), False)):
-                                description += it[0] + ": **{}**\n".format(self.bot.util.time(self.bot.data.save['gw']['dates'][it[1]], style='f', removejst=True))
+                                description += it[0] + ": **{}**\n".format(self.bot.util.time(self.bot.data.save['gw']['dates'][it[1]], removejst=True))
                 else:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Not available", color=self.COLOR))
                     self.bot.data.save['gw']['state'] = False

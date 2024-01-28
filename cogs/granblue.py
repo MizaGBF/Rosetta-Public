@@ -724,7 +724,7 @@ class GranblueFantasy(commands.Cog):
         """Post various Granblue Fantasy informations"""
         await inter.response.defer()
         current_time = self.bot.util.JST(delay=False)
-        description = "{} Current Time is **{}**".format(self.bot.emote.get('clock'), self.bot.util.time(style='dT'))
+        description = "{} Current Time is **{}**".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','T']))
         description += "\n{} Japan Time is **{}**".format(self.bot.emote.get('clock'), current_time.strftime("%H:%M"))
 
         if self.bot.data.save['gbfversion'] is not None:
@@ -753,7 +753,7 @@ class GranblueFantasy(commands.Cog):
 
         try:
             if current_time < self.bot.data.save['stream']['time']:
-                description += "\n{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style='dt', removejst=True))
+                description += "\n{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True))
         except:
             pass
 
@@ -802,86 +802,59 @@ class GranblueFantasy(commands.Cog):
             if self.bot.data.save['stream']['time'] is not None:
                 if current_time < self.bot.data.save['stream']['time']:
                     d = self.bot.data.save['stream']['time'] - current_time
-                    msg = "Stream starts in **{} ({})**\n".format(self.bot.util.delta2str(d, 2), self.bot.util.time(self.bot.data.save['stream']['time'], 'd', True))
+                    msg = "Stream starts in **{} ({})**\n".format(self.bot.util.delta2str(d, 2), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d'], removejst=True))
                 else:
-                    msg = "Stream is **On going!! ({})**\n".format(self.bot.util.time(self.bot.data.save['stream']['time'], 'd', True))
+                    msg = "Stream is **On going!! ({})**\n".format(self.bot.util.time(self.bot.data.save['stream']['time'], style=['d'], removejst=True))
 
             await inter.edit_original_message(embed=self.bot.embed(title=self.bot.data.save['stream']['title'], description=msg + self.bot.data.save['stream']['content'], timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @gbf.sub_command()
-    async def schedule(self, inter: disnake.GuildCommandInteraction, raw : int = commands.Param(default=0)) -> None:
+    async def schedule(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the GBF schedule"""
         await inter.response.defer()
-        if len(self.bot.data.save['schedule']) == 0:
-            await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
-        elif raw != 0:
-            await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style='dt')), url="https://twitter.com/granblue_en", color=self.COLOR, description='`{}`'.format(';'.join(self.bot.data.save['schedule']))))
-        else:
-            l = len(self.bot.data.save['schedule'])
-            l = l - (l%2) # need an even amount, skipping the last one if odd
-            i = 0
-            msg = ""
-            c = self.bot.util.JST()
-            nx = None
-            nxn = None
-            md = c.month * 100 + c.day
-            while i < l:
-                try: # checking if the event is on going (to bold it)
-                    dates = self.bot.data.save['schedule'][i].replace(' ', '').split('-')
-                    ev_md = []
-                    for dd in dates:
-                        if "??" in dd: break
-                        ev_md.append(int(dd.split('/')[0]) * 100 + int(dd.split('/')[1]))
-                    if len(ev_md) == 2:
-                        if ev_md[0] - md >= 1000: ev_md[0] -= 1200 # new year fixes
-                        elif md - ev_md[1] >= 1000: ev_md[1] += 1200
-                        on_going = (md >= ev_md[0] and md <= ev_md[1])
+        c = self.bot.util.UTC()
+        # assemble schedule data
+        sorted = {}
+        for event, dates in self.bot.data.save['schedule'].items():
+            if dates[0] not in sorted:
+                sorted[dates[0]] = {}
+            try: end = dates[1]
+            except: end = 0
+            if end not in sorted[dates[0]]:
+                sorted[dates[0]][end] = []
+            sorted[dates[0]][end].append(event)
+        # sort and read schedule data
+        msg = ""
+        starts = list(sorted.keys())
+        starts.sort()
+        next = None
+        for start in starts:
+            await asyncio.sleep(0)
+            dstart = datetime.utcfromtimestamp(start)
+            ends = list(sorted[start].keys())
+            for end in ends:
+                dend = datetime.utcfromtimestamp(end)
+                for event in sorted[start][end]:
+                    if end == 0: # no end date
+                        if c >= dstart: # event started
+                            msg += "- **On going ▫️ {}**\n".format(event)
+                        else:
+                            msg += "- {} ▫️ {}\n".format(self.bot.util.time(dstart, style=['d']), event)
+                            if next is None: next = dstart
+                    elif c >= dend:
+                        msg += "- *Ended ▫️ {}*\n".format(event)
                     else:
-                        on_going = (md == ev_md[0])
-                except:
-                    on_going = False
-                # check if it's the next event in line
-                if not on_going:
-                    try:
-                        dates = self.bot.data.save['schedule'][i].replace(' ', '').split('-')
-                        evd = dates[0].split('/')
-                        evt = c.replace(month=int(evd[0]), day=int(evd[1]), hour=18, minute=0, second=0, microsecond=0)
-                        if evt > c and (nx is None or evt < nx):
-                            nx = evt
-                            nxn = self.bot.data.save['schedule'][i+1] # event name
-                            if nx - c > timedelta(days=300): # new year fix
-                                nx = None
-                                nxn = None
-                    except:
-                        pass
-                msg += "- "
-                if on_going: msg += "**"
-                msg += "{} ▫️ {}".format(self.bot.data.save['schedule'][i], self.bot.data.save['schedule'][i+1])
-                if on_going: msg += "**"
-                msg += "\n"
-                i += 2
+                        if c >= dstart: # event started
+                            msg += "- **Ends in {}, {} ▫️ {}**\n".format(self.bot.util.delta2str(dend - c, 2), self.bot.util.time(dend, style=['d']), event)
+                        else:
+                            msg += "- {} to {} ▫️ {}\n".format(self.bot.util.time(dstart, style=['d']), self.bot.util.time(dend, style=['d']), event)
+                            if next is None: next = dstart
+        if msg == "":
+            await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
+        else:
             current_time = self.bot.util.JST()
             msg += "{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%H:%M"))
-            if nx is not None and c < nx:
-                added = False
-                if 'Unite and Fight' in nxn:
-                    try:
-                        buf = self.bot.get_cog('GuildWar').getGWState()
-                        if len(buf) > 0:
-                            msg += buf + '\n'
-                            added = True
-                    except:
-                        pass
-                elif 'Dread Barrage' in nxn:
-                    try:
-                        buf = self.bot.get_cog('DreadBarrage').getBarrageState()
-                        if len(buf) > 0:
-                            msg += buf + '\n'
-                            added = True
-                    except:
-                        pass
-                if not added:
-                    msg += "{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(nx - c, 2))
+            if next is not None: msg += "{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(next - c, 2))
             try:
                 buf = await self.bot.net.gbf_maintenance_status()
                 if len(buf) > 0: msg += buf + '\n'
@@ -898,10 +871,10 @@ class GranblueFantasy(commands.Cog):
                 pass
             try:
                 if current_time < self.bot.data.save['stream']['time']:
-                    msg += "{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style='dt', removejst=True))
+                    msg += "{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True))
             except:
                 pass
-            await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style='dt')), url="https://twitter.com/granblue_en", color=self.COLOR, description=msg))
+            await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=msg, footer="source: https://gbf.wiki/"))
 
     """getGrandList()
     Request the grand character list from the wiki page and return the list of latest released ones

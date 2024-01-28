@@ -413,7 +413,7 @@ class Network():
         if self.bot.data.save['maintenance']['state'] is True:
             if self.bot.data.save['maintenance']['time'] is not None and current_time < self.bot.data.save['maintenance']['time']:
                 if self.bot.data.save['maintenance']['duration'] == 0:
-                    msg = "{} Maintenance at **{}**".format(self.bot.emote.get('cog'), self.bot.util.time(self.bot.data.save['maintenance']['time'], style='dt', removejst=True))
+                    msg = "{} Maintenance at **{}**".format(self.bot.emote.get('cog'), self.bot.util.time(self.bot.data.save['maintenance']['time'], style=['d','t'], removejst=True))
                 else:
                     d = self.bot.data.save['maintenance']['time'] - current_time
                     msg = "{} Maintenance starts in **{}**, for **{} hour(s)**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2), self.bot.data.save['maintenance']['duration'])
