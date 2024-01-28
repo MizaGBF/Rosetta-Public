@@ -13,8 +13,6 @@ class Channel():
         self.bot = bot
         self.cache = {}
         self.announcements = []
-        self.tweets = []
-        self.tweets_spam = []
         self.auto_publish = []
 
     def init(self) -> None:
@@ -27,13 +25,9 @@ class Channel():
     def update_announcement_channels(self) -> None:
         self.announcements = []
         self.auto_publish = []
-        self.tweets = []
-        self.tweets_spam = []
         for k, v in self.bot.data.save.get('announcement', {}).items():
             self.announcements.append(v[0])
-            if v[1]: self.tweets.append(v[0])
-            if v[2]: self.tweets_spam.append(v[0])
-            if v[3]: self.auto_publish.append(v[0])
+            if v[1]: self.auto_publish.append(v[0])
 
     """can_publish()
     Check if the channel id is in auto_publish

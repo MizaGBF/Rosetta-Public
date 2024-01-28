@@ -2,7 +2,6 @@ from components.data import Data
 from components.drive import Drive
 from components.util import Util
 from components.network import Network
-from components.twitter import Twitter
 from components.pinboard import Pinboard
 from components.emote import Emote
 from components.calc import Calc
@@ -28,11 +27,9 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.0.15" # bot version
+        self.version = "11.1.0" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-            "**v10.37.9** - Reworked `/gbf critical` for Exalto weapons.",
-            "**v10.38.3** - Reworked `/gw lead`has been improved.",
             "**v10.38.4** - Removed server wide strike time settings.",
             "**v10.38.8** - Dread barrage commands are up-to-date with the new format.",
             "**v10.38.10** - Fixed the pinboard attachments.",
@@ -45,6 +42,7 @@ class DiscordBot(commands.InteractionBot):
             "**v11.0.11** - Bug fixed the gacha simulator and added minor improvements.",
             "**v11.0.12** - Added `/mod server toggle_vxtwitter`.",
             "**v11.0.14** - Rosetta will now update its avatar depending on the time of the year.",
+            "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace."
         ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
@@ -65,7 +63,6 @@ class DiscordBot(commands.InteractionBot):
                 time.sleep(500)
                 os._exit(4)
         self.net = Network(self)
-        self.twitter = Twitter(self)
         self.pinboard = Pinboard(self)
         self.emote = Emote(self)
         self.calc = Calc(self)
@@ -111,7 +108,6 @@ class DiscordBot(commands.InteractionBot):
         # initialize remaining components
         self.util.init()
         self.net.init()
-        self.twitter.init()
         self.pinboard.init()
         self.emote.init()
         self.calc.init()
@@ -483,7 +479,6 @@ class DiscordBot(commands.InteractionBot):
     def startTasks(self) -> None:
         if self.debug_mode or self.test_mode:
             self.runTask('log', self.logger.process)
-            if '-twitter' in sys.argv: self.runTask('twitter', self.twitter.tweetfeed)
         else:
             for c in self.cogs:
                 try: self.get_cog(c).startTasks()
@@ -718,4 +713,3 @@ if __name__ == "__main__":
         print("")
         print("# Others Parameters:")
         print("-debug: Put the bot in debug mode (config_test.json will be used, test.py Cog will be loaded, some operations such as saving will be impossible).")
-        print("-twitter: Activate the twitter feed even in debug mode (for testing).")

@@ -168,7 +168,7 @@ class Moderation(commands.Cog):
     """
     async def _announcement_see(self, inter: disnake.GuildCommandInteraction, msg : str, settings : list) -> None:
         c = self.bot.get_channel(settings[0])
-        await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description=msg, fields=[{'name':'Channel', 'value':'[{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id), 'inline':True}, {'name':'@granblue_en Tweets', 'value':("Receive" if settings[1] else "Don't receive"), 'inline':True}, {'name':'Limit Tweet Spam', 'value':("Disabled" if settings[2] else "Enabled"), 'inline':True}, {'name':'Auto Publish', 'value':('Will publish some content' if settings[3] else "Won't publish content"), 'inline':True}], footer=inter.guild.name + " ▫️ " + str(inter.guild.id), inline=True, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description=msg, fields=[{'name':'Channel', 'value':'[{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id), 'inline':True}, {'name':'Auto Publish', 'value':('Will publish some content' if settings[1] else "Won't publish content"), 'inline':True}], footer=inter.guild.name + " ▫️ " + str(inter.guild.id), inline=True, color=self.COLOR))
 
     @announcement.sub_command()
     async def toggle_channel(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -180,7 +180,7 @@ class Moderation(commands.Cog):
         cid = inter.channel.id
         gid = str(inter.guild.id)
         b = True
-        if self.bot.data.save['announcement'].get(gid, [-1, False, False, False])[0] == cid:
+        if self.bot.data.save['announcement'].get(gid, [-1, False])[0] == cid: # channel, auto_publish
             b = False
             self.bot.data.save['announcement'].pop(gid)
         else:
@@ -193,30 +193,6 @@ class Moderation(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description="Announcements have been disabled", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
 
     @announcement.sub_command()
-    async def tweet_setting(self, inter: disnake.GuildCommandInteraction, value : int = commands.Param(description="0 to not receive, 1 to receive but limit spam, 2 to receive everything", ge=-1, le=2, default=-1)) -> None:
-        """Change what tweets the announcement channel will receive (Mod Only)"""
-        await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
-        if gid not in self.bot.data.save['announcement']:
-            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="Announcements aren't enabled on this server.\nCheck out {}".format(self.bot.util.command2mention('mod announcement toggle_channel')), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-        else:
-            match value:
-                case -1:
-                    pass
-                case 0:
-                    self.bot.data.save['announcement'][gid][1] = False
-                    self.bot.data.save['announcement'][gid][2] = False
-                case 1:
-                    self.bot.data.save['announcement'][gid][1] = True
-                    self.bot.data.save['announcement'][gid][2] = False
-                case 2:
-                    self.bot.data.save['announcement'][gid][1] = True
-                    self.bot.data.save['announcement'][gid][2] = True
-            self.bot.data.pending = True
-            self.bot.channel.update_announcement_channels()
-            await self._announcement_see(inter, "Tweet setting updated.", self.bot.data.save['announcement'][gid])
-
-    @announcement.sub_command()
     async def auto_publish(self, inter: disnake.GuildCommandInteraction, value : int = commands.Param(description="0 to disable, 1 to enable", ge=0, le=1)) -> None:
         """Enable/Disable auto publishing for Announcement channels (Mod Only)"""
         await inter.response.defer(ephemeral=True)
@@ -224,7 +200,7 @@ class Moderation(commands.Cog):
         if gid not in self.bot.data.save['announcement']:
             await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="Announcements aren't enabled on this server.\nCheck out {}".format(self.bot.util.command2mention('mod announcement toggle_channel')), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
         else:
-            self.bot.data.save['announcement'][gid][3] = (value != 0)
+            self.bot.data.save['announcement'][gid][1] = (value != 0)
             self.bot.data.pending = True
             self.bot.channel.update_announcement_channels()
             await self._announcement_see(inter, "Auto Publish setting updated", self.bot.data.save['announcement'][gid])

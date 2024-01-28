@@ -14,7 +14,7 @@ from datetime import timedelta
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 12
+    SAVEVERSION = 13
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -39,7 +39,6 @@ class Data():
         'ban': {},
         'announcement': {},
         'log': [],
-        'twitter': {},
         'vxtwitter' : {}
     }
     
@@ -188,6 +187,9 @@ class Data():
                         for gid in data['announcement']:
                             data['announcement'][gid][1] = (data['announcement'][gid][1] % 2 == 1)
                             data['announcement'][gid][2] = (data['announcement'][gid][2] % 2 == 1)
+                    if ver <= 12:
+                        for gid in data['announcement']:
+                            data['announcement'][gid] = [data['announcement'][gid][0], data['announcement'][gid][3]]
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")

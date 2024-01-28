@@ -30,7 +30,6 @@ class Admin(commands.Cog):
         self.bot.runTask('log', self.bot.logger.process)
         self.bot.runTask('status', self.status)
         self.bot.runTask('maintenance', self.bot.data.maintenance)
-        self.bot.runTask('tweetfeed', self.bot.twitter.tweetfeed)
 
     """status()
     Bot Task managing the autosave and update of the bot status
@@ -353,18 +352,8 @@ class Admin(commands.Cog):
         self._shutdown()
 
     @_bot.sub_command()
-    async def twitter(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Check Twitter component stats (Owner Only)"""
-        await inter.response.defer(ephemeral=True)
-        msg = "**Overall**: " + self.bot.twitter.get_stats() + "\n\n"
-        for instance, val in self.bot.twitter.instance_stats.items():
-            percent = 100*val[1]/float(sum(val)) if sum(val) > 0 else 0.0
-            msg += "**{:}**: {:}/{:} ({:.2f}%)\n".format(instance.replace("https://", "").replace("/", ""), val[1], sum(val), percent).replace(".00%", "%")
-        await inter.edit_original_message(embed=self.bot.embed(title="Twitter Stats", description=msg, color=self.COLOR))
-
-    @_bot.sub_command()
     async def avatar(self, inter: disnake.GuildCommandInteraction, filename : str = commands.Param(description="Filename of the asset to use")) -> None:
-        """Check Twitter component stats (Owner Only)"""
+        """Change Rosetta's profile picture (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if await self.bot.changeAvatar(filename):
             await inter.edit_original_message(embed=self.bot.embed(title="Success", color=self.COLOR))

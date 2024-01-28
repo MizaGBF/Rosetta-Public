@@ -29,7 +29,19 @@ There are three ways to start the bot:
   
 You can also add the following to change its behavior:  
 `-debug`: Start the bot in debug mode. `config-test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
-`-twitter`: Start the `tweetfeed` task even if `-debug` is set. Used only for debugging.  
+  
+- **Stop Rosetta**  
+  
+A simple CTRL+C or sending a SIGTERM or SIGINT signal will make the bot saves and exits gracefully.  
+The bot returns the following codes upong exiting:  
+- 0: Exited properly.  
+- 1: Failed to load `config.json` on boot. Check if the file is missing or corrupted.  
+- 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
+- 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
+- 4: Failed to connect to Google Drive with your Service account.  
+  
+As a side note, the `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the code **0**.  
+My instance is setup with Watchtower and automatically reboot once stopped, hence why it's called reboot.  
   
 ### Setup  
   
@@ -137,10 +149,7 @@ The bot is configured with a file called `config.json`. Create one in its folder
     "granblue": {
         "gbfgcrew" : {"aion no me":"645927", "aion":"645927", "bellabarca":"977866", "bullies":"745085", "bullied":"1317803", "chococat":"940560", "chococats":"940560", "cogfriends":"1049216", "cog":"1049216", "cowfag":"841064", "cowfags":"841064", "\u4e2d\u51fa\u3057\u306e\u5e78\u305b":"1036007", "cumshot":"1036007", "cumshot happiness":"1036007", "dem bois":"705648", "ded bois":"705648", "dembois":"705648", "demboi":"705648", "dedbois":"705648", "fleet":"599992", "haruna":"472465", "cug":"1161924", "lilypals":"1161924", "lilypal":"1161924", "\u5c0f\u3055\u306a\u5973\u306e\u5b50":"432330", "little girls":"432330", "lg":"432330", "little girl":"432330", "sixters":"1380234", "sixter":"1380234", "soy":"1601132", "onion":"1601132", "onions":"1601132", "oppaisuki":"678459", "oppai":"678459", "pcs":"632242", "quatrebois":"1141898", "quatreboi":"1141898", "the bathtub":"1580990", "thebathtub":"1580990", "bathtub":"1580990", "(you)":"581111", "you":"581111", "(you) too":"1010961", "(you)too":"1010961", "u2":"1010961", "youtoo":"1010961", "you too":"1010961", "a-team":"1744673", "ateam":"1744673", "a":"1744673", "grape":"1807204", "grapes":"1807204", "toot":"844716", "nier":"1837508", "nier2":"1880420"},
         "othercrew" : {"ssf":"677159", "hsp":"147448", "kingdom":"1377462", "atelier":"418206", "lum1":"388489", "lum2":"401211", "beafriends":"940700", "waifuanon":"588156", "lolibabas":"1593480", "lolibaba":"1593480", "hagchads":"1593480", "hagchad":"1593480", "mesugaki":"1593480", "lazytown":"1586134", "mavericks":"1629318", "maverick":"1629318"}
-    },
-    "nitter": [
-        
-    ]
+    }
 }
 ```  
 Go to the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications) > *Applications* > *New Application* and create your application.  
@@ -196,8 +205,6 @@ If you did everything properly, you're set. See below for additional information
   
 `granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here as shortcut for certain commands.  
 You are free to remove it if you want but don't leave it empty.  
-  
-`nitter`: After the Twitter debacle, accessing it the normal way isn't really possible anymore. Rosetta requires a [Nitter](https://github.com/zedeus/nitter) instance to get tweet data. Put the url in the list and you're set. I recommend setting up your own instance. Scrapping public instances is frowned upon and your IP will likely end up banned from them.  
   
 All the remaining setup is done via the `/owner` commands.  
   
