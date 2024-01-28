@@ -602,7 +602,7 @@ class Admin(commands.Cog):
         await self.bot.util.send_modal(inter, "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set the GBF Schedule", self.scheduleset_callback, [
             disnake.ui.TextInput(
                 label="Schedule String",
-                placeholder="JSON Data",
+                placeholder="{}",
                 custom_id="schedule",
                 value=json.dumps(self.bot.data.save['schedule']),
                 style=disnake.TextInputStyle.paragraph,
