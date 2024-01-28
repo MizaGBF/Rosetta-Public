@@ -168,7 +168,7 @@ class Moderation(commands.Cog):
     """
     async def _announcement_see(self, inter: disnake.GuildCommandInteraction, msg : str, settings : list) -> None:
         c = self.bot.get_channel(settings[0])
-        await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description=msg, fields=[{'name':'Channel', 'value':'[{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id), 'inline':True}, {'name':'Auto Publish', 'value':('Will publish some content' if settings[1] else "Won't publish content"), 'inline':True}], footer=inter.guild.name + " ▫️ " + str(inter.guild.id), inline=True, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description=msg, fields=[{'name':'Channel', 'value':'[{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id), 'inline':True}, {'name':'Auto Publish to followers', 'value':('Enabled' if settings[1] else "Disabled"), 'inline':True}], footer=inter.guild.name + " ▫️ " + str(inter.guild.id), inline=True, color=self.COLOR))
 
     @announcement.sub_command()
     async def toggle_channel(self, inter: disnake.GuildCommandInteraction) -> None:
