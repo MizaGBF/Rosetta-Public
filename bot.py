@@ -623,7 +623,10 @@ class DiscordBot(commands.InteractionBot):
     """
     async def on_message(self, message : disnake.Message) -> None:
         try:
-            if message.guild.me.id != message.author.id and self.data.save['vxtwitter'].get(str(message.guild.id), False): # if not posted by Rosetta and guild setting enabled
+            if message.guild.me.id != message.author.id and self.data.save['vxtwitter'].get(str(message.guild.id), False) and ('https://twitter.com/' in message.content or 'https://x.com/' in message.content): # if not posted by Rosetta and guild setting enabled and got twitter link
+                if len(message.embeds) == 0:
+                    await asyncio.sleep(2) # wait
+                    message = await message.channel.fetch_message(message.id)
                 for embed in message.embeds: # don't do anything if twitter embed exists
                     d = embed.to_dict()
                     if d.get('footer', {}).get('text', '') == 'Twitter' and 'twitter.com' in d.get('url', '') and 'video' not in d.get('image', {}).get('url', ''):
@@ -647,6 +650,12 @@ class DiscordBot(commands.InteractionBot):
                     if b == -1: return
         except:
             pass
+
+    async def convert_tweet(self, message : disnake.Message, wait_and_fetch : bool) -> None:
+        try:
+        except:
+            pass
+
 
     """map_unordered() and limit_concurrency()
     Run up to "limit" amount of "func" to process each "iterable"
