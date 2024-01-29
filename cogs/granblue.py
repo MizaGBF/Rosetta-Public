@@ -837,24 +837,38 @@ class GranblueFantasy(commands.Cog):
                 for event in sorted[start][end]:
                     if end == 0: # no end date
                         if c >= dstart: # event started
-                            msg += "- **On going ▫️ {}**\n".format(event)
+                            msg += "- **{}** ▫️ **On going**\n".format(event)
                         else:
-                            msg += "- {} ▫️ {}\n".format(self.bot.util.time(dstart, style=['d']), event)
+                            msg += "- {} ▫️ {}\n".format(event, self.bot.util.time(dstart, style=['d']))
                             if next is None: next = dstart
                     elif c >= dend:
-                        msg += "- *Ended ▫️ {}*\n".format(event)
+                        msg += "- ~~{}~~ ▫️ *Ended*\n".format(event)
                     else:
                         if c >= dstart: # event started
-                            msg += "- **Ends in {}, {} ▫️ {}**\n".format(self.bot.util.delta2str(dend - c, 2), self.bot.util.time(dend, style=['d']), event)
+                            msg += "- **{}** ▫️ Ends in **{}** {}\n".format(event, self.bot.util.delta2str(dend - c, 2), self.bot.util.time(dend, style=['d']))
                         else:
-                            msg += "- {} to {} ▫️ {}\n".format(self.bot.util.time(dstart, style=['d']), self.bot.util.time(dend, style=['d']), event)
+                            msg += "- {} ▫️ {} - {}\n".format(event, self.bot.util.time(dstart, style=['d']), self.bot.util.time(dend, style=['d']))
                             if next is None: next = dstart
         if msg == "":
             await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
         else:
             current_time = self.bot.util.JST()
-            msg += "{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%H:%M"))
+            msg += "{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%I:%M %p"))
             if next is not None: msg += "{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(next - c, 2))
+            try:
+                buf = self.bot.get_cog('GuildWar').getGWState()
+                if len(buf) > 0:
+                    msg += buf + '\n'
+                    added = True
+            except:
+                pass
+            try:
+                buf = self.bot.get_cog('DreadBarrage').getBarrageState()
+                if len(buf) > 0:
+                    msg += buf + '\n'
+                    added = True
+            except:
+                pass
             try:
                 buf = await self.bot.net.gbf_maintenance_status()
                 if len(buf) > 0: msg += buf + '\n'
