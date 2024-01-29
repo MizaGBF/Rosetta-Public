@@ -859,14 +859,12 @@ class GranblueFantasy(commands.Cog):
                 buf = self.bot.get_cog('GuildWar').getGWState()
                 if len(buf) > 0:
                     msg += buf + '\n'
-                    added = True
             except:
                 pass
             try:
                 buf = self.bot.get_cog('DreadBarrage').getBarrageState()
                 if len(buf) > 0:
                     msg += buf + '\n'
-                    added = True
             except:
                 pass
             try:
