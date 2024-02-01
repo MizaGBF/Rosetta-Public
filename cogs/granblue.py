@@ -98,7 +98,7 @@ class GranblueFantasy(commands.Cog):
             if maint_check > 0:
                 continue
 
-            if self.bot.network.get_account(self.bot.data.save['gbfcurrent']) is None:
+            if self.bot.net.get_account(self.bot.data.save['gbfcurrent']) is None:
                 if not acc_check:
                     acc_check = True
                     self.bot.logger.push("[TASK] 'granblue_watcher' No account set or the current account is invalid.\nSome tasks will be skipped.", level=self.bot.logger.WARNING)
