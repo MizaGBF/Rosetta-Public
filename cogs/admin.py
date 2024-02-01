@@ -624,9 +624,9 @@ class Admin(commands.Cog):
         """Add or modify an entry (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try:
-            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=10, minute=0, second=0).timestamp())]
+            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=9, minute=0, second=0).timestamp())]
             if end != "":
-                timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=10, minute=0, second=0).timestamp()))
+                timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=9, minute=0, second=0).timestamp()))
                 if timestamps[1] <= timestamps[0]: raise Exception("Event Ending timestamp is lesser than the Starting timestamp")
             self.bot.data.save['schedule'][name] = timestamps
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Entry added", color=self.COLOR))

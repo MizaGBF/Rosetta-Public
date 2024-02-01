@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import json
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -389,7 +389,7 @@ class Data():
                     c = self.bot.util.UTC()
                     keys = list(new_schedule.keys())
                     for k in keys:
-                        if c > datetime.utcfromtimestamp(new_schedule[k][-1]):
+                        if (len(new_schedule[k]) == 2 and c > datetime.utcfromtimestamp(new_schedule[k][1])) or (len(new_schedule[k]) == 1 and c > datetime.utcfromtimestamp(new_schedule[k][0]) + timedelta(days=1)):
                             new_schedule.pop(k, None)
                     if str(new_schedule) != str(self.save['schedule']):
                         self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\nBefore: `{}`\nAfter: `{}`".format(self.save['schedule'], new_schedule))
