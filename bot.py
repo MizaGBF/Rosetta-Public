@@ -651,7 +651,7 @@ class DiscordBot(commands.InteractionBot):
         except:
             pass
 
-    """map_unordered() and limit_concurrency()
+    """map_unordered()
     Run up to "limit" amount of "func" to process each "iterable"
     
     Parameters
@@ -660,17 +660,8 @@ class DiscordBot(commands.InteractionBot):
     iterable: An iterable object such as a list, containing all the elements to be processed by func
     limit: The maximum number of func to run
     """
-    def map_unordered(self, func : Callable, iterable : Iterable, limit : int) -> AsyncGenerator[asyncio.Task, None]:
-        aws = map(func, iterable)
-        return self.limit_concurrency(aws, limit)
-
-    async def limit_concurrency(self, aws : map, limit : int) -> AsyncGenerator[asyncio.Task, None]:
-        try:
-            aws = aiter(aws)
-            is_async = True
-        except TypeError:
-            aws = iter(aws)
-            is_async = False
+    async def map_unordered(self, func : Callable, iterable : Iterable, limit : int) -> AsyncGenerator[asyncio.Task, None]:
+        aws = iter(map(func, iterable))
 
         aws_ended = False
         pending = set()
@@ -678,12 +669,11 @@ class DiscordBot(commands.InteractionBot):
         while pending or not aws_ended:
             while len(pending) < limit and not aws_ended:
                 try:
-                    aw = await anext(aws) if is_async else next(aws)
-                except StopAsyncIteration if is_async else StopIteration:
+                    aw = next(aws)
+                except StopIteration:
                     aws_ended = True
                 else:
                     pending.add(asyncio.ensure_future(aw))
-
             if not pending:
                 return
 
