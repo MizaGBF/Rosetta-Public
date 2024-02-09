@@ -16,7 +16,7 @@ import cogs
 
 import disnake
 from disnake.ext import commands
-from typing import Optional, Union, Callable, Iterable, AsyncGenerator
+from typing import Optional, Union, Callable
 import asyncio
 import time
 import signal
