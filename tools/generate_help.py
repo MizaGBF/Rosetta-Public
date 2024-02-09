@@ -140,17 +140,19 @@ def generate_html(command_list): # main function to generate the html
 		<h2>Good practices and recommendations</h2>
 		<p>1) Make a channel dedicated to the bot and use the command <b>/mod cleanup toggle</b>.<br>
 		<br>
-		2) Remove the <b>"view message"</b> permission in the channel where you don't want it to be usable.<br>
+		2) Remove the <b>"send message"</b> permission in the channel where you don't want it to be usable. (<b>Note:</b> Commands will still appear in said channel unless disabled in your Server Integration Permissions.)<br>
 		<br>
-		3) Make sure the bot has the <b>"use external emoji"</b> permission enabled.<br>
+		3) (Optional) In your Server Settings, under "Integration", you can tune which and how a command is usable (See below for more informations).<br>
 		<br>
-		You can use <b>/mod server info</b> and the Message Command <b>Server Info</b> to verify quickly if something is enabled or disabled.<br>
-		Keep in mind anyone with the <b>"manage message"</b> permission is considered a moderator by the bot. You can change it via the server Integration Permissions (See <b>Additional Permissions</b> below)</p>
+		4) Make sure the bot has the <b>"use external emoji"</b> permission enabled.<br>
+		<br>
+		You can use <b>/mod server info</b> or the Message Command <b>Server Info</b> to verify quickly if something is enabled or disabled.<br>
+		Keep in mind <b>anyone with the "manage message" permission is considered a moderator by the bot</b>. You can restrict those commands via the Server Integration Permissions if needed.</p>
 		
 		<h2>Notifications</h2>
 		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement toggle_channel</b>.<br>
-		You can also chose to receive all or some tweets from <a href="https://twitter.com/granblue_en">@granblue_en</a> using <b>/mod announcement tweet_setting</b> and see your settings with <b>/mod announcement see</b>.<br>
-		Do note, if the channel is an Announcement Channel and you enabled the Auto Publish setting, it will auto publish some tweets and in-game news but not the rest. <b>There is a hourly 10 publish limit</b>, so i limited the bot to those as a result.<br>
+		You can see your settings with <b>/mod announcement see</b>.<br>
+		Do note, if the channel is an Announcement Channel and you enabled the Auto Publish setting, it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>,.<br>
 		</p>
 		
 		<h2>Pinboard</h2>
@@ -163,10 +165,9 @@ def generate_html(command_list): # main function to generate the html
 		Do <b>/help search:pinboard</b> to see all the related commands if you need more help.<br>
 		</p>
 		
-		<h2>Additional Permissions</h2>
-		<p>If you want to disable or restrict certain command groups to specific channels or roles, you can do so in your server settings, under "Integration".<br>
-		Scroll down, select Rosetta and play with the settings.<br>
-		Do note, if you are a server administrator, all commands will keep working for you regardless of the settings.<br>
+		<h2>Server Integration Permissions</h2>
+		<p>Like mentionned at the start, you can disable or restrict certain command groups to specific channels or roles, in your Server Settings, under "Integration".<br>
+		If you are a server administrator, all commands will keep working for you regardless of the settings.<br>
 		If you want to test your settings, go under "Roles", pick a suitable one and use the "View Server as Role" feature.<br>
 		</p>
 		
