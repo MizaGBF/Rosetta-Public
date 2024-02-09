@@ -501,54 +501,6 @@ class Util():
         if len(s) > 0: s = s[:-1]
         return s
 
-    """wiki_fixCase()
-    Fix the case of individual element for gbf.wiki search terms
-    
-    Parameters
-    ----------
-    term: Word or String to fix
-    
-    Returns
-    --------
-    str: Fixed word
-    """
-    def wiki_fixCase(self, term : str) -> str:
-        if ' ' in term: # in case we sent a whole string (this function only process word by word, originally)
-            result = []
-            for t in term.split(' '):
-                result.append(self.wiki_fixCase(t))
-            if len(result) > 0: result[0] = result[0][:1].upper() + result[0][1:]
-            return "_".join(result)
-        else:
-            if term == "AK-4A": return term
-            fixed = ""
-            up = False
-            special = {"and":"and", "of":"of", "on":"on", "de":"de", "for":"for", "the":"the", "(sr)":"(SR)", "(ssr)":"(SSR)", "(r)":"(R)"} # case where we don't don't fix anything and return it
-            if term.lower() in special:
-                return special[term.lower()]
-            for c in term: # for each character
-                if c.isalpha(): # if letter
-                    if c.isupper(): # is uppercase
-                        if not up: # we haven't encountered an uppercase letter
-                            up = True
-                            fixed += c # save
-                        else: # we have
-                            fixed += c.lower() # make it lowercase and save
-                    elif c.islower(): # is lowercase
-                        if not up: # we haven't encountered an uppercase letter
-                            fixed += c.upper() # make it uppercase and save
-                            up = True
-                        else: # we have
-                            fixed += c # save
-                    else: # other characters
-                        fixed += c # we just save
-                elif c == "/" or c == ":" or c == "#" or c == "-": # we reset the uppercase detection if we encounter those
-                    up = False
-                    fixed += c
-                else: # everything else,
-                    fixed += c # we save
-            return fixed # return the result
-
     """search_wiki_for_id()
     Search the wiki for a weapon/summon id
     
@@ -567,7 +519,7 @@ class Util():
             if summon_check and "(summon)" not in sps.lower(): # search summon names first
                 data = await self.search_wiki_for_id(sps + ' (Summon)', search_character=search_character)
                 if data is not None: return data
-            f = self.wiki_fixCase(sps)
+            f = sps.replace(' ', '_')
             match f:
                 case "Tiamat_(Summon)": f = "Tiamat_(Summer)"
                 case _: pass

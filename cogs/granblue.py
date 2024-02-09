@@ -696,14 +696,8 @@ class GranblueFantasy(commands.Cog):
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
-        # build the url (the wiki is case sensitive)
-        arr = []
-        for s in terms.split(" "):
-            arr.append(self.bot.util.wiki_fixCase(s))
-        sch = "_".join(arr)
-        url = "https://gbf.wiki/{}".format(sch)
         try:
-            await self.requestWiki(inter, url) # try to request
+            await self.requestWiki(inter, "https://gbf.wiki/{}".format(terms.replace(' ', '_'))) # try to request
         except Exception as e:
             url = "https://gbf.wiki/index.php?title=Special:Search&search={}".format(parse.quote_plus(terms))
             if str(e) != "HTTP Error 404: Not Found": # unknown error, we stop here
