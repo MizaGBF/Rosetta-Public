@@ -120,13 +120,15 @@ class Ranking():
     
     Parameters
     ----------
-    infos: Tuple, what rank to update for
+    diff: Integer, difference in minute from the last update (0 if undefined)
+    iscrew: Boolean, True if it's for crew, False for players
+    mode: Integer, requestRanking() mode value
+    rank: Integer, ranking value to check
     """
-    async def updateRankingTask(self, infos : tuple) -> None:
+    async def updateRankingTask(self, diff : int, iscrew : bool, mode : int, rank : int) -> None:
         r = None
         errc = 0
         try:
-            (diff, iscrew, mode, rank) = infos
             while errc < 5 and (r is None or 'list' not in r):
                 if iscrew:
                     r = await self.requestRanking(rank // 10, mode)
@@ -332,11 +334,10 @@ class Ranking():
             
             tasks = []
             for c in crews:
-                tasks.append((diff, True, mode, c))
+                tasks.append(self.updateRankingTask(diff, True, mode, c))
             for p in players:
-                tasks.append((diff, False, 2, p))
-            async for result in self.bot.map_unordered(self.updateRankingTask, tasks, len(tasks)):
-                pass
+                tasks.append(self.updateRankingTask(diff, False, 2, p))
+            await asyncio.gather(*tasks)
 
             for i in range(0, 4):
                 self.rankingtempdata[i] = dict(sorted(self.rankingtempdata[i].items(), reverse=True, key=lambda item: int(item[1])))

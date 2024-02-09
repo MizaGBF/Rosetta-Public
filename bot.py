@@ -651,38 +651,6 @@ class DiscordBot(commands.InteractionBot):
         except:
             pass
 
-    """map_unordered()
-    Run up to "limit" amount of "func" to process each "iterable"
-    
-    Parameters
-    ----------
-    func: The awaitable function to run
-    iterable: An iterable object such as a list, containing all the elements to be processed by func
-    limit: The maximum number of func to run
-    """
-    async def map_unordered(self, func : Callable, iterable : Iterable, limit : int) -> AsyncGenerator[asyncio.Task, None]:
-        aws = iter(map(func, iterable))
-
-        aws_ended = False
-        pending = set()
-
-        while pending or not aws_ended:
-            while len(pending) < limit and not aws_ended:
-                try:
-                    aw = next(aws)
-                except StopIteration:
-                    aws_ended = True
-                else:
-                    pending.add(asyncio.ensure_future(aw))
-            if not pending:
-                return
-
-            done, pending = await asyncio.wait(
-                pending, return_when=asyncio.FIRST_COMPLETED
-            )
-            while done:
-                yield done.pop()
-
 if __name__ == "__main__":
     if '-remove' in sys.argv:
         bot = DiscordBot(debug_mode=True)
