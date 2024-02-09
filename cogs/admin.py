@@ -232,7 +232,7 @@ class Admin(commands.Cog):
     
     Parameters
     --------
-    step: Integer, increase to the current ID. Process stops under 50.
+    step: Integer, increase to the current ID. Process stops under 10.
     current: Integer, current ID
     count: Integer, step count, limited to 30
     
@@ -241,7 +241,7 @@ class Admin(commands.Cog):
     integer: Best ID found, or None
     """
     async def approximate_account(self, step : int, current : int, count : int) -> int:
-        if count >= 30 or step <= 50:
+        if count >= 30 or step <= 10:
             return current
         data = await self.bot.net.request("https://game.granbluefantasy.jp/profile/content/index/{}?PARAMS".format(current+step), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         match data:
@@ -267,7 +267,7 @@ class Admin(commands.Cog):
             else:
                 self.bot.data.save['gbfdata']['totalplayer'] = result
                 self.bot.data.pending = True
-                await inter.edit_original_message(embed=self.bot.embed(title="Granblue Fantasy ▫️ Playerbase", description="Total playerbase estimated around **{:,}** accounts *(±1000)*".format((result//1000)*1000), timestamp=self.bot.util.UTC(), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Granblue Fantasy ▫️ Playerbase", description="Total playerbase estimated around **{:,}** accounts *(±10)*".format((result//10)*10), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @_owner.sub_command_group()
     async def ban(self, inter: disnake.GuildCommandInteraction) -> None:
