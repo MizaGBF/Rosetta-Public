@@ -227,6 +227,48 @@ class Admin(commands.Cog):
             self.bot.logger.pushError("[OWNER] In 'owner utility leave' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
+    """approximate_account()
+    Get the current GBF gacha banner data.
+    
+    Parameters
+    --------
+    step: Integer, increase to the current ID. Process stops under 50.
+    current: Integer, current ID
+    count: Integer, step count, limited to 30
+    
+    Returns
+    --------
+    integer: Best ID found, or None
+    """
+    async def approximate_account(self, step : int, current : int, count : int) -> int:
+        if count >= 30 or step <= 50:
+            return current
+        data = await self.bot.net.request("https://game.granbluefantasy.jp/profile/content/index/{}?PARAMS".format(current+step), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        match data:
+            case "Maintenance":
+                return None
+            case None:
+                return await self.approximate_account(step//2, current, count+1)
+            case _:
+                return await self.approximate_account(int(step*1.4), current+step, count+1)
+
+    @utility.sub_command()
+    async def playerbase(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Get an approximation of the number of accounts on Granblue Fantasy (Owner Only)"""
+        await inter.response.defer(ephemeral=True)
+        if not await self.bot.net.gbf_available():
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
+        else:
+            if 'totalplayer' not in self.bot.data.save['gbfdata']:
+                self.bot.data.save['gbfdata'].get('totalplayer', 38300000)
+            result = await self.approximate_account(100000, self.bot.data.save['gbfdata'].get('totalplayer', 38300000), 0)
+            if result is None:
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
+            else:
+                self.bot.data.save['gbfdata']['totalplayer'] = result
+                self.bot.data.pending = True
+                await inter.edit_original_message(embed=self.bot.embed(title="Granblue Fantasy ▫️ Playerbase", description="Total playerbase estimated around **{:,}** accounts *(±1000)*".format((result//1000)*1000), timestamp=self.bot.util.UTC(), color=self.COLOR))
+
     @_owner.sub_command_group()
     async def ban(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
