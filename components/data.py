@@ -272,8 +272,8 @@ class Data():
                 with BytesIO(json.dumps(self.save, separators=(',', ':'), default=self.bot.util.json_serial).encode('utf-8')) as infile:
                     with self.bot.file.discord(infile, filename="save.json") as df:
                         await self.bot.send('debug', file=df)
-            except Exception as se:
-                print(se)
+            except Exception as e:
+                self.bot.logger.pushError("[DATA] 'autosave' Dump Error:", e)
         self.autosaving = False
 
     """maintenance()
@@ -337,6 +337,7 @@ class Data():
                                 flag = True
                                 break
                     else:
+                        flag = False
                         try: td = tr.find_all("td", recursive=False)[0]
                         except: continue
                         event = [None]
@@ -375,14 +376,51 @@ class Data():
                                                         pass
                                             case _:
                                                 pass
+                                case 'p':
+                                    tmp = child.findChildren("img", recursive=True)
+                                    for t in tmp:
+                                        if t.has_attr('title') and t['title'] != "":
+                                            event = [t['title']]
+                                            break
+                                    if event[0] is None:
+                                        tmp = child.findChildren("a", recursive=True)
+                                        for t in tmp:
+                                            if t.has_attr('title') and t['title'] != "":
+                                                event = [t['title']]
+                                                break
+                                            elif t.text != "":
+                                                event = [t.text]
+                                                break
+                                    ts = child.find_all("span", class_="localtime", recursive=True)
+                                    match len(ts):
+                                        case 4:
+                                            try:
+                                                event.append(ts[0]['data-time'])
+                                                event.append(ts[2]['data-time'])
+                                                if len(event) == 3 and event[0] is not None:
+                                                    new_events.append(event)
+                                                    event = [None]
+                                            except:
+                                                pass
+                                        case _:
+                                            pass
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
                     new_schedule = {}
+                    # detect unlabeled story event
+                    stev = None
+                    for k, v in self.save['schedule'].items():
+                        if "story event" in k.lower():
+                            stev = k
+                            break
+                    # add new entries
                     for event in new_events:
                         try:
                             time_range = [int(event[1]), int(event[2])]
                             if str(time_range) != str(self.save['schedule'].get(event[0], None)):
                                 new_schedule[event[0]] = time_range
+                                if stev is not None and event[0] != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
+                                    self.save['schedule'].pop(stev, None)
                         except:
                             pass
                     new_schedule = self.save['schedule'] | new_schedule

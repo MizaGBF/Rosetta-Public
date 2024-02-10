@@ -291,7 +291,7 @@ class DiscordBot(commands.InteractionBot):
     bool: True if it does, False if not
     """
     def isOwner(self, inter : disnake.ApplicationCommandInteraction) -> bool:
-        if inter.author.id == self.owner.id: # must be defined in config.json
+        if inter.author.id == self.owner.id:
             return True
         return False
 
