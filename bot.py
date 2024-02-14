@@ -625,7 +625,7 @@ class DiscordBot(commands.InteractionBot):
         try:
             if message.guild.me.id != message.author.id and self.data.save['vxtwitter'].get(str(message.guild.id), False) and ('https://twitter.com/' in message.content or 'https://x.com/' in message.content): # if not posted by Rosetta and guild setting enabled and got twitter link
                 if len(message.embeds) == 0:
-                    await asyncio.sleep(2) # wait
+                    await asyncio.sleep(3) # wait
                     message = await message.channel.fetch_message(message.id)
                 for embed in message.embeds: # don't do anything if twitter embed exists
                     d = embed.to_dict()
