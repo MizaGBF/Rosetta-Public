@@ -399,7 +399,7 @@ class GranblueFantasy(commands.Cog):
             f = elem.findChildren(target[0], class_=target[1])
             for e in f:
                 txt = txt.replace(e.text, "")
-        return txt.replace('Slight', '_sligHt_').replace('C.A.', 'CA').replace('.', '. ').replace('!', '! ').replace('?', '? ').replace(':', ': ').replace('. )', '.)').replace("Damage cap", "Cap").replace("Damage", "DMG").replace("damage", "DMG").replace(" and ", " and").replace(" and", " and ").replace("  ", " ").replace("fire", str(self.bot.emote.get('fire'))).replace("water", str(self.bot.emote.get('water'))).replace("earth", str(self.bot.emote.get('earth'))).replace("wind", str(self.bot.emote.get('wind'))).replace("dark", str(self.bot.emote.get('dark'))).replace("light", str(self.bot.emote.get('light'))).replace("Fire", str(self.bot.emote.get('fire'))).replace("Water", str(self.bot.emote.get('water'))).replace("Earth", str(self.bot.emote.get('earth'))).replace("Wind", str(self.bot.emote.get('wind'))).replace("Dark", str(self.bot.emote.get('dark'))).replace("Light", str(self.bot.emote.get('light'))).replace('_sligHt_', 'Slight')
+        return txt.replace('Hellfire', 'PSB1').replace('Whirlwind', 'PSB4').replace('Slight', '_sligHt_').replace('C.A.', 'CA').replace('.', '. ').replace('!', '! ').replace('?', '? ').replace(':', ': ').replace('. )', '.)').replace("Damage cap", "Cap").replace("Damage", "DMG").replace("damage", "DMG").replace(" and ", " and").replace(" and", " and ").replace("  ", " ").replace("fire", str(self.bot.emote.get('fire'))).replace("water", str(self.bot.emote.get('water'))).replace("earth", str(self.bot.emote.get('earth'))).replace("wind", str(self.bot.emote.get('wind'))).replace("dark", str(self.bot.emote.get('dark'))).replace("light", str(self.bot.emote.get('light'))).replace("Fire", str(self.bot.emote.get('fire'))).replace("Water", str(self.bot.emote.get('water'))).replace("Earth", str(self.bot.emote.get('earth'))).replace("Wind", str(self.bot.emote.get('wind'))).replace("Dark", str(self.bot.emote.get('dark'))).replace("Light", str(self.bot.emote.get('light'))).replace('_sligHt_', 'Slight').replace('PSB1', 'Hellfire').replace('PSB4', 'Whirlwind')
 
     """processWikiMatch()
     Process a successful wiki search match
@@ -551,7 +551,7 @@ class GranblueFantasy(commands.Cog):
                         d = tr.findChildren("td", recursive=False)[-1]
                         data['ca'] = [n, self.stripWikiStr(d)]
                     except: pass
-                elif content.find('"/Weapon_Skills"') != -1:
+                elif content.find('"/Weapon_Skills"') != -1 and aura == 0:
                     expecting_wpn_skill = True
                 elif content.find('<a href="/Sword_Master" title="Sword Master">Sword Master</a>') != -1 or content.find('Status_Energized') != -1:
                     try:
@@ -563,10 +563,12 @@ class GranblueFantasy(commands.Cog):
                     except: pass
                 elif content.find('"/Summons#Calls"') != -1:
                     try:
+                        if 'call' in data: break # stop on 2nd call for multicall summons
                         data['call'] = [tr.findChildren("th")[0].text[len("Call - "):], '']
                         expecting_sum_call = True
-                    except: pass
-                elif content.find("Main Summon") != -1:
+                    except:
+                        pass
+                elif content.find("Main Summon") != -1 or content.find("/Aura") != -1:
                     aura = 1
                 elif content.find("Sub Summon") != -1:
                     aura = 2
