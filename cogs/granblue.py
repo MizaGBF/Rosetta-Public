@@ -635,7 +635,7 @@ class GranblueFantasy(commands.Cog):
             if data.get('id', None) is not None: 
                 gbfal = "\n[Assets](https://mizagbf.github.io/GBFAL/?id={})".format(data['id'])
                 try:
-                    if str(data['id'])[:3] in ['302', '303', '304', '371', '101', '102', '103', '104']:
+                    if str(data['id'])[:3] in ['302', '303', '304', '371', '101', '102', '103', '104', '201', '202', '203', '204']:
                         gbfal += "▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(data['id'])
                 except:
                     pass
