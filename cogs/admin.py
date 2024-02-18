@@ -403,6 +403,47 @@ class Admin(commands.Cog):
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Failed", color=self.COLOR))
 
+    """notify_callback()
+    CustomModal callback
+    """
+    async def notify_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+        try:
+            await inter.response.defer(ephemeral=True)
+            msg = inter.text_values['message'].split('`')
+            for i in range(1, len(msg), 2):
+                msg[i] = self.bot.util.command2mention(msg[i])
+                if not msg[i].startswith('<'): msg[i] = '`' + msg[i] + '`'
+            msg = ''.join(msg).replace('\\n', '\n')
+            await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Rosetta Notification", description=msg, image=inter.text_values['image'], color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="The message has been sent", color=self.COLOR))
+        except Exception as e:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description='The following error occured:\n{}'.format(e), color=self.COLOR))
+
+    @_bot.sub_command()
+    async def notify(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Send a message to all announcement channels (Owner Only)"""
+        await self.bot.util.send_modal(inter, "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Notify Users", self.notify_callback, [
+                disnake.ui.TextInput(
+                    label="Message",
+                    placeholder="Message",
+                    custom_id="message",
+                    style=disnake.TextInputStyle.paragraph,
+                    min_length=1,
+                    max_length=3500,
+                    required=True
+                ),
+                disnake.ui.TextInput(
+                    label="Image",
+                    placeholder="URL",
+                    custom_id="image",
+                    style=disnake.TextInputStyle.short,
+                    min_length=0,
+                    max_length=300,
+                    required=False
+                )
+            ]
+        )
+
     @_owner.sub_command_group()
     async def data(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
@@ -479,47 +520,6 @@ class Admin(commands.Cog):
         self.bot.data.save['gbfdata'].pop('gacha', None)
         self.bot.data.pending = True
         await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
-
-    """notify_callback()
-    CustomModal callback
-    """
-    async def notify_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
-        try:
-            await inter.response.defer(ephemeral=True)
-            msg = inter.text_values['message'].split('`')
-            for i in range(1, len(msg), 2):
-                msg[i] = self.bot.util.command2mention(msg[i])
-                if not msg[i].startswith('<'): msg[i] = '`' + msg[i] + '`'
-            msg = ''.join(msg).replace('\\n', '\n')
-            await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Rosetta Notification", description=msg, image=inter.text_values['image'], color=self.COLOR))
-            await inter.edit_original_message(embed=self.bot.embed(title="The message has been sent", color=self.COLOR))
-        except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description='The following error occured:\n{}'.format(e), color=self.COLOR))
-
-    @_bot.sub_command()
-    async def notify(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Send a message to all announcement channels (Owner Only)"""
-        await self.bot.util.send_modal(inter, "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Notify Users", self.notify_callback, [
-                disnake.ui.TextInput(
-                    label="Message",
-                    placeholder="Message",
-                    custom_id="message",
-                    style=disnake.TextInputStyle.paragraph,
-                    min_length=1,
-                    max_length=3500,
-                    required=True
-                ),
-                disnake.ui.TextInput(
-                    label="Image",
-                    placeholder="URL",
-                    custom_id="image",
-                    style=disnake.TextInputStyle.short,
-                    min_length=0,
-                    max_length=300,
-                    required=False
-                )
-            ]
-        )
 
     @_owner.sub_command_group()
     async def maintenance(self, inter: disnake.GuildCommandInteraction) -> None:

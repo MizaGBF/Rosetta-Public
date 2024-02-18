@@ -230,3 +230,40 @@ Same principle:
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
 Do note the bot is unable to write to your Google Drive in this mode.  
+  
+### First Boot
+  
+If Rosetta is starting properly, you should get a **Rosetta is Ready** message in the channel that you set as your debug one.  
+The logs should also look similar to this:  
+  
+```
+INFO:Rosetta:2024-02-18 17:43:39 | [BOOT] Loading the config file...
+INFO:Rosetta:2024-02-18 17:43:39 | [BOOT] Downloading the save file...
+INFO:Rosetta:2024-02-18 17:43:40 | [BOOT] Reading the save file...
+WARNING:disnake.client:PyNaCl is not installed, voice will NOT be supported
+INFO:Rosetta:2024-02-18 17:43:40 | [BOOT] Initialization complete
+INFO:Rosetta:2024-02-18 17:43:40 | [MAIN] Loading cogs...
+INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] All cogs loaded
+INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] v11.1.5 starting up...
+INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
+```  
+  
+If it doesn't, be sure to check for error messages, etc...  
+  
+Further setup might be required to use some features.  
+The `/owner` command group from the `admin.py` cog should contain what you need to set/edit some of the bot data.  
+Here's a quick overview of the sub command groups:  
+* `/owner utility`: A bunch of small utility commands to execute code on the fly, answer a bug report, leave the server, etc... You should rarely need those.  
+* `/owner ban`: Commands to ban/unban an user from using certain features from the bot.  
+* `/owner bot`: Commands to stop the bot, get its invite link, list its guilds or change it's avatar with one in the `assets` folder.  
+* `/owner data`: Commands related to the save data. You can trigger a save manually, retrieve a file, clean some data and so on. While you can technically load a save with the `/owner data load` command, a reboot is usually preferred.  
+* `/owner maintenance`: Commands to manually set or clear a GBF maintenance date.  
+* `/owner stream`: Commands to manually set a GBF upcoming stream date and infos.  
+* `/owner schedule`: Commands to manually edit the GBF schedule or to force an update.  
+* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this.  
+* `/owner db`: Commands to manually set a Dread Barrage event.  
+* `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
+* `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
+* `/owner gbfg`: Commands to related to the /gbfg/ server. Mostly empty and unused too.  
+  
+I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
