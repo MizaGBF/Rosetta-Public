@@ -39,7 +39,7 @@ class DreadBarrage(commands.Cog):
                 self.bot.data.pending = True
                 return ""
             elif current_time >= self.bot.data.save['valiant']['dates']["Day 1"]:
-                it = ['End', 'Day 6', 'Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
+                it = ['End', 'Day 8', 'Day 7', 'Day 6', 'Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
                 for i in range(1, len(it)):
                     if it[i] in self.bot.data.save['valiant']['dates'] and current_time > self.bot.data.save['valiant']['dates'][it[i]]:
                         msg = "{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[i-1]] - current_time))
@@ -80,7 +80,9 @@ class DreadBarrage(commands.Cog):
                         description += "▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], removejst=True))
                     if current_time < self.bot.data.save['valiant']['dates']["Day 6"]:
                         description += "▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], removejst=True))
-                    description += "▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 6'], removejst=True))
+                    days = [d for d in list(self.bot.data.save['valiant']['dates'].keys()) if d.startswith('Day')]
+                    days.sort()
+                    description += "▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates'][days[-1]], removejst=True))
                 else:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
                     self.bot.data.save['valiant']['state'] = False

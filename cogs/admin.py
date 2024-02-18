@@ -797,7 +797,7 @@ class Admin(commands.Cog):
         pass
 
     @db.sub_command(name="set")
-    async def dbset(self, inter: disnake.GuildCommandInteraction, db_id : int = commands.Param(description="Dread Barrage ID", ge=0, le=999), element : str = commands.Param(description="Dread Barrage Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Dread Barrage Start Day", ge=1, le=31), month : int = commands.Param(description="Dread Barrage Start Month", ge=1, le=12), year : int = commands.Param(description="Dread Barrage Start Year", ge=2021)) -> None:
+    async def dbset(self, inter: disnake.GuildCommandInteraction, db_id : int = commands.Param(description="Dread Barrage ID", ge=0, le=999), element : str = commands.Param(description="Dread Barrage Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Dread Barrage Start Day", ge=1, le=31), month : int = commands.Param(description="Dread Barrage Start Month", ge=1, le=12), year : int = commands.Param(description="Dread Barrage Start Year", ge=2021), extra_days : int = commands.Param(description="Number of days to increase the event duration (0 - 2)", ge=0, le=2, default=0)) -> None:
         """Set the Valiant date (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -816,7 +816,11 @@ class Admin(commands.Cog):
             self.bot.data.save['valiant']['dates']["Day 5"] = self.bot.data.save['valiant']['dates']["Day 4"] + timedelta(days=1)
             self.bot.data.save['valiant']['dates']["NM175"] = self.bot.data.save['valiant']['dates']["Day 5"]
             self.bot.data.save['valiant']['dates']["Day 6"] = self.bot.data.save['valiant']['dates']["Day 5"] + timedelta(days=1)
-            self.bot.data.save['valiant']['dates']["End"] = self.bot.data.save['valiant']['dates']["Day 6"] + timedelta(days=1)
+            last = 6
+            for i in range(0, extra_days):
+                self.bot.data.save['valiant']['dates']["Day {}".format(7+i)] = self.bot.data.save['valiant']['dates']["Day {}".format(6+i)] + timedelta(days=1)
+                last = 7 + i
+            self.bot.data.save['valiant']['dates']["End"] = self.bot.data.save['valiant']['dates']["Day {}".format(last)] + timedelta(days=1)
             # set the valiant state to true
             self.bot.data.save['valiant']['state'] = True
             self.bot.data.pending = True
