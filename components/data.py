@@ -340,70 +340,30 @@ class Data():
                         flag = False
                         try: td = tr.find_all("td", recursive=False)[0]
                         except: continue
-                        event = [None]
-                        for child in td.find_all(recursive=False):
+                        event = None
+                        for child in td.find_all(recursive=True):
                             match child.name:
-                                case 'a':
+                                case 'a'|'img':
                                     if child.has_attr('title'):
                                         event = [None]
-                                        event[0] = child['title']
-                                case 'span'|'div':
-                                    if 'gallery-swap-images' in child.get('class', []):
-                                        try:
-                                            event = [None]
-                                            event[0] = child.find_all(recursive=True)[0]['title']
-                                        except:
-                                            pass
-                                    elif child.has_attr('class'):
-                                        match ' '.join(child['class']):
-                                            case 'tooltip':
-                                                ts = child.find_all("span", class_="localtime", recursive=True)
-                                                match len(ts):
-                                                    case 2:
-                                                        ts = ts[1]['data-time']
-                                                        event.append(ts)
-                                                        if len(event) == 3 and event[0] is not None:
-                                                            new_events.append(event)
-                                                            event = [None]
-                                                    case 1:
-                                                        if ts[0].has_attr('data-start') and ts[0].has_attr('data-end'):
-                                                            event.append(ts[0]['data-start'])
-                                                            event.append(ts[0]['data-end'])
-                                                            if len(event) == 3 and event[0] is not None:
-                                                                new_events.append(event)
-                                                                event = [None]
-                                                    case _:
-                                                        pass
-                                            case _:
-                                                pass
-                                case 'p':
-                                    tmp = child.findChildren("img", recursive=True)
-                                    for t in tmp:
-                                        if t.has_attr('title') and t['title'] != "":
-                                            event = [t['title']]
-                                            break
-                                    if event[0] is None:
-                                        tmp = child.findChildren("a", recursive=True)
-                                        for t in tmp:
-                                            if t.has_attr('title') and t['title'] != "":
-                                                event = [t['title']]
-                                                break
-                                            elif t.text != "":
-                                                event = [t.text]
-                                                break
-                                    ts = child.find_all("span", class_="localtime", recursive=True)
-                                    match len(ts):
-                                        case 4:
-                                            try:
-                                                event.append(ts[0]['data-time'])
-                                                event.append(ts[2]['data-time'])
-                                                if len(event) == 3 and event[0] is not None:
-                                                    new_events.append(event)
-                                                    event = [None]
-                                            except:
-                                                pass
-                                        case _:
-                                            pass
+                                        event = child['title']
+                                case 'span':
+                                    if event is not None:
+                                        if 'localtime' in child.get('class', []) and child.has_attr('data-start') and child.has_attr('data-end'):
+                                            new_events.append([event, child['data-start'], child['data-end']])
+                                            event = None
+                                        elif 'tooltip' in child.get('class', []):
+                                            ts = child.find_all("span", class_="localtime", recursive=True)
+                                            match len(ts):
+                                                case 2:
+                                                    new_events.append([event, ts[1]['data-time']])
+                                                    event = None
+                                                case 1:
+                                                    if ts[0].has_attr('data-start') and ts[0].has_attr('data-end'):
+                                                        new_events.append([event, ts[0]['data-start'], ts[0]['data-end']])
+                                                        event = None
+                                                case _:
+                                                    pass
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
                     new_schedule = {}
