@@ -145,7 +145,7 @@ class Gacha():
                     for subscam in g['campaign_gacha_ids']:
                         scam_ids.append(subscam['id'])
             
-            gacha_data['time'] = datetime.strptime(data['legend']['lineup'][index]['end'], '%m/%d %H:%M').replace(year=c.year, microsecond=0)
+            gacha_data['time'] = datetime.strptime(str(c.year) + '/' + data['legend']['lineup'][index]['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
             NY = False
             if c > gacha_data['time']:
                 gacha_data['time'] = gacha_data['time'].replace(year=gacha_data['time'].year+1) # new year fix
