@@ -329,7 +329,7 @@ class Data():
             if data is not None:
                 flag = False
                 soup = BeautifulSoup(data, 'html.parser')
-                new_events = []
+                new_events = {}
                 for tr in soup.find_all("tr"):
                     if not flag:
                         for t in ['Current Events', 'Upcoming Events']:
@@ -345,25 +345,21 @@ class Data():
                             match child.name:
                                 case 'a'|'img':
                                     if child.has_attr('title'):
-                                        event = [None]
                                         event = child['title']
+                                        if event not in new_events:
+                                            new_events[event] = [None, None]
                                 case 'span':
                                     if event is not None:
-                                        if 'localtime' in child.get('class', []) and child.has_attr('data-start') and child.has_attr('data-end'):
-                                            new_events.append([event, child['data-start'], child['data-end']])
-                                            event = None
-                                        elif 'tooltip' in child.get('class', []):
-                                            ts = child.find_all("span", class_="localtime", recursive=True)
-                                            match len(ts):
-                                                case 2:
-                                                    new_events.append([event, ts[1]['data-time']])
-                                                    event = None
-                                                case 1:
-                                                    if ts[0].has_attr('data-start') and ts[0].has_attr('data-end'):
-                                                        new_events.append([event, ts[0]['data-start'], ts[0]['data-end']])
-                                                        event = None
-                                                case _:
-                                                    pass
+                                        if 'localtime' in child.get('class', []):
+                                            if child.has_attr('data-start') and child.has_attr('data-end'):
+                                                new_events[event] = [int(child['data-start']), int(child['data-end'])]
+                                            elif child.has_attr('data-time'):
+                                                ts = int(child['data-time'])
+                                                if ts not in new_events[event]:
+                                                    if new_events[event][0] is None:
+                                                        new_events[event][0] = ts
+                                                    elif new_events[event][1] is None:
+                                                        new_events[event][1] = ts
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
                     new_schedule = {}
@@ -374,12 +370,15 @@ class Data():
                             stev = k
                             break
                     # add new entries
-                    for event in new_events:
+                    for event, ts in new_events.items():
                         try:
-                            time_range = [int(event[1]), int(event[2])]
-                            if str(time_range) != str(self.save['schedule'].get(event[0], None)):
-                                new_schedule[event[0]] = time_range
-                                if stev is not None and event[0] != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
+                            if ts[0] is None: continue
+                            elif ts[1] is None: time_range = ts[:1]
+                            else: time_range = ts
+                            ets = self.save['schedule'].get(event, [])
+                            if len(time_range) > len(ets) and str(time_range) != str(ets):
+                                new_schedule[event] = time_range
+                                if stev is not None and event != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
                                     self.save['schedule'].pop(stev, None)
                         except:
                             pass
