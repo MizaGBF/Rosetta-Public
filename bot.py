@@ -27,7 +27,7 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.1.6" # bot version
+        self.version = "11.1.7" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
             "**v11.0.0** - Added `/mod server info` as a copy of the Message Command `Server Info`, with additional informations for moderators. Removed raids from `/guide`.",
@@ -41,6 +41,7 @@ class DiscordBot(commands.InteractionBot):
             "**v11.1.1** - Added a daily automatic update for `/gbf schedule`.",
             "**v11.1.2** - Improved `/gbf schedule`.",
             "**v11.1.5** - Improved Dread Barrage commands to take into account variable schedule lengths.",
+            "**v11.1.7** - Removed `/gbf utility critical`, it's becoming unmaintainable. `/roll roulette` updated with the Birthday Zone.",
         ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
