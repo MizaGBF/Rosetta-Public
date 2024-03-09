@@ -324,42 +324,34 @@ class Data():
     Coroutine to request the wiki to update the schedule
     """
     async def update_schedule(self) -> None:
-        data = await self.bot.net.request("https://gbf.wiki/Main_Page", no_base_headers=True, follow_redirects=True, timeout=8)
+        data = await self.bot.net.request("https://gbf.wiki/Template:MainPage/UpcomingEvents", no_base_headers=True, follow_redirects=True, timeout=8)
         try:
             if data is not None:
+                #with open("test.html", mode="wb") as f: f.write(data) # leaving it here for debug, if needed
                 flag = False
                 soup = BeautifulSoup(data, 'html.parser')
                 new_events = {}
-                for tr in soup.find_all("tr"):
-                    if not flag:
-                        for t in ['Current Events', 'Upcoming Events']:
-                            if t in tr.text:
-                                flag = True
-                                break
-                    else:
-                        flag = False
-                        try: td = tr.find_all("td", recursive=False)[0]
-                        except: continue
-                        event = None
-                        for child in td.find_all(recursive=True):
-                            match child.name:
-                                case 'a'|'img':
-                                    if child.has_attr('title'):
-                                        event = child['title']
-                                        if event not in new_events:
-                                            new_events[event] = [None, None]
-                                case 'span':
-                                    if event is not None:
-                                        if 'localtime' in child.get('class', []):
-                                            if child.has_attr('data-start') and child.has_attr('data-end'):
-                                                new_events[event] = [int(child['data-start']), int(child['data-end'])]
-                                            elif child.has_attr('data-time'):
-                                                ts = int(child['data-time'])
-                                                if ts not in new_events[event]:
-                                                    if new_events[event][0] is None:
-                                                        new_events[event][0] = ts
-                                                    elif new_events[event][1] is None:
-                                                        new_events[event][1] = ts
+                event = None
+                for upcoming in soup.find_all("div", {'class': 'card-upcoming-events'}):
+                    for child in upcoming.find_all(recursive=True):
+                        match child.name:
+                            case 'a'|'img':
+                                if child.has_attr('title'):
+                                    event = child['title']
+                                    if event not in new_events:
+                                        new_events[event] = [None, None]
+                            case 'span':
+                                if event is not None:
+                                    if 'localtime' in child.get('class', []):
+                                        if child.has_attr('data-start') and child.has_attr('data-end'):
+                                            new_events[event] = [int(child['data-start']), int(child['data-end'])]
+                                        elif child.has_attr('data-time'):
+                                            ts = int(child['data-time'])
+                                            if ts not in new_events[event]:
+                                                if new_events[event][0] is None:
+                                                    new_events[event][0] = ts
+                                                elif new_events[event][1] is None:
+                                                    new_events[event][1] = ts
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
                     new_schedule = {}
