@@ -171,11 +171,15 @@ class Gacha():
                     gacha_data['scam'].append({'ratio':gratio, 'list':glist, 'rateup':grateup, 'items': (await self.getScamRate('legend', sid))})
 
             # classic gacha
-            data = await self.bot.net.request("https://game.granbluefantasy.jp/rest/gacha/classic/toppage_data?PARAMS", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-            if data is not None and 'appearance_gacha_id' in data:
-                gratio, glist, grateup = await self.process('classic', data['appearance_gacha_id'], 1)
-                if gratio is not None:
-                    gacha_data['classic'] = {'ratio':gratio, 'list':glist, 'rateup':grateup}
+            gacha_data['classic'] = []
+            """ # disabled until I figure it out
+            for i in range(2):
+                data = await self.bot.net.request("https://game.granbluefantasy.jp/rest/gacha/classic/toppage_data?PARAMS", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                if data is not None and 'appearance_gacha_id' in data:
+                    gratio, glist, grateup = await self.process('classic', data['appearance_gacha_id'], 1)
+                    if gratio is not None:
+                        gacha_data['classic'] = {'ratio':gratio, 'list':glist, 'rateup':grateup}
+            """
 
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
@@ -267,7 +271,7 @@ class Gacha():
     Prameters
     --------
     scam: Integer, to retrieve a scam gacha data (None to ignore)
-    classic: Boolean, to retrieve the classic gacha (None to ignore, scam has priority)
+    classic: Integer, to retrieve the classic gacha (None or 0 to ignore scam has priority)
     
     Returns
     --------
@@ -279,14 +283,14 @@ class Gacha():
         - (OPTIONAL): Dict, item list
         - (OPTIONAL): Integer, star premium gacha index
     """
-    async def retrieve(self, scam : Optional[bool] = None, classic : Optional[bool] = None) -> tuple:
+    async def retrieve(self, scam : Optional[bool] = None, classic : Optional[int] = None) -> tuple:
         try:
             data = (await self.get())[1]
             if scam is None:
-                if classic is not None and classic:
-                    if 'classic' not in data:
+                if classic is not None and classic > 0:
+                    if 'classic' not in data or classic > len(data['classic']):
                         raise Exception()
-                    gacha_data = data['classic']
+                    gacha_data = data['classic'][classic]
                 else:
                     gacha_data = data
             else:
@@ -408,17 +412,17 @@ class Gacha():
     --------
     GachaSimulator
     """
-    async def simulate(self, simtype : str, gachatype : str, color : int, scamindex : int = 1) -> 'GachaSimulator':
+    async def simulate(self, simtype : str, gachatype : Union[int, str], color : int, scamindex : int = 1) -> 'GachaSimulator':
         scamdata = None
-        isclassic = False
+        isclassic = 0
         match gachatype: # retrieve the data (no need to copy)
             case 'scam':
                 gachadata = await self.retrieve()
                 scamdata = await self.retrieve(scam=scamindex-1)
-            case 'classic':
-                gachadata = await self.retrieve(classic=True)
-                isclassic = True
-            case _: gachadata = await self.retrieve()
+            case _:
+                if not isinstance(gachatype, int): gachatype = 0
+                gachadata = await self.retrieve(classic=gachatype)
+                isclassic = gachatype
         gsim = GachaSimulator(self.bot, gachadata, simtype, scamdata, isclassic, color) # create a simulator instance
         return gsim
 
@@ -458,7 +462,7 @@ class GachaSimulator():
     isclassic: Boolean, indicate if classic gacha is used
     color: Embed color
     """
-    def __init__(self, bot : 'DiscordBot', gachadata : tuple, simtype : str, scamdata : Optional[tuple], isclassic : bool, color : int) -> None:
+    def __init__(self, bot : 'DiscordBot', gachadata : tuple, simtype : str, scamdata : Optional[tuple], isclassic : int, color : int) -> None:
         self.bot = bot
         self.data, self.rateups, self.ssrrate, self.complete = gachadata # unpack the data
         self.scamdata = scamdata # no need to unpack the scam gacha one (assume it might be None too)
@@ -700,7 +704,7 @@ class GachaSimulator():
             case _:
                 pass
         if self.isclassic:
-            footer += " ▫️ Classic"
+            footer += " ▫️ Classic {}".format(self.isclassic)
         # get scam roll
         if self.scamdata is not None:
             sroll = self.scamRoll()
@@ -903,7 +907,7 @@ class GachaSimulator():
                         tmp = ""
                     footer = "{}% SSR rate".format(self.result['rate'])
                     if self.isclassic:
-                        footer += " ▫️ Classic"
+                        footer += " ▫️ Classic {}".format(self.isclassic)
                     msg += "{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
                     if superFlag: state = 4
                     else: running = False
@@ -923,7 +927,7 @@ class GachaSimulator():
                         tmp = ""
                     footer = "{}% SSR rate".format(self.result['rate'])
                     if self.isclassic:
-                        footer += " ▫️ Classic"
+                        footer += " ▫️ Classic {}".format(self.isclassic)
                     msg += "Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
                     if count == 10 and random.randint(1, 100) <= 99: state = 3
                     elif count == 20 and random.randint(1, 100) <= 60: state = 3

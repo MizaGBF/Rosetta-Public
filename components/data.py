@@ -4,7 +4,6 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 import json
 from io import BytesIO
 from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
 
 # ----------------------------------------------------------------------------------------------------------------
 # Data Component
@@ -15,7 +14,7 @@ from bs4 import BeautifulSoup
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 14
+    SAVEVERSION = 15
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -193,6 +192,11 @@ class Data():
                             data['announcement'][gid] = [data['announcement'][gid][0], data['announcement'][gid][3]]
                     if ver <= 13:
                         data['schedule'] = {}
+                    if ver <= 14:
+                        try:
+                            data['gbfdata']['gacha']['classic'] = [data['gbfdata']['gacha']['classic']]
+                        except:
+                            pass
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
