@@ -324,34 +324,15 @@ class Data():
     Coroutine to request the wiki to update the schedule
     """
     async def update_schedule(self) -> None:
-        data = await self.bot.net.request("https://gbf.wiki/Template:MainPage/UpcomingEvents", no_base_headers=True, follow_redirects=True, timeout=8)
+        data = await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables=event_history&fields=enname,time_start,time_end,time_known,utc_start,utc_end&where=time_start%20%3E%20CURRENT_TIMESTAMP%20OR%20time_end%20%3E%20CURRENT_TIMESTAMP&format=json&order%20by=time_start", no_base_headers=True, add_user_agent=True, expect_JSON=True, timeout=8)
         try:
             if data is not None:
-                #with open("test.html", mode="wb") as f: f.write(data) # leaving it here for debug, if needed
-                flag = False
-                soup = BeautifulSoup(data, 'html.parser')
                 new_events = {}
-                event = None
-                for upcoming in soup.find_all("div", {'class': 'card-upcoming-events'}):
-                    for child in upcoming.find_all(recursive=True):
-                        match child.name:
-                            case 'a'|'img':
-                                if child.has_attr('title'):
-                                    event = child['title']
-                                    if event not in new_events:
-                                        new_events[event] = [None, None]
-                            case 'span':
-                                if event is not None:
-                                    if 'localtime' in child.get('class', []):
-                                        if child.has_attr('data-start') and child.has_attr('data-end'):
-                                            new_events[event] = [int(child['data-start']), int(child['data-end'])]
-                                        elif child.has_attr('data-time'):
-                                            ts = int(child['data-time'])
-                                            if ts not in new_events[event]:
-                                                if new_events[event][0] is None:
-                                                    new_events[event][0] = ts
-                                                elif new_events[event][1] is None:
-                                                    new_events[event][1] = ts
+                for ev in data:
+                    if 'utc start' in ev and 'enname' in ev:
+                        new_events[ev['enname']] = [ev['utc start']]
+                        if 'utc end' in ev:
+                            new_events[ev['enname']].append(ev['utc end'])
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
                     new_schedule = {}
