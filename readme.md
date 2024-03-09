@@ -264,7 +264,7 @@ Here's a quick overview of the sub command groups:
 * `/owner db`: Commands to manually set a Dread Barrage event.  
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
-* `/owner gbfg`: Commands to related to the /gbfg/ server. Mostly empty and unused too.  
+* `/owner gacha`: Commands to clear the gacha banner and change the `/roll roulette` command settings.  
   
 I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
   

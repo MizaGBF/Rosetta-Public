@@ -432,10 +432,12 @@ class GachaSimulator():
     MODE_MUKKU = 12
     MODE_SUPER = 13
     MODE_SCAM = 14
+    MODE_ALL = 20
     RATE_SUPER = 15
     RATE_MUKKU = 9
     RATE_GALA = 6
     RATE_NORMAL = 3
+    RATE_ALL = 100
     CRYSTALS = [
         "https://mizagbf.github.io/assets/rosetta-remote-resources/0_s.png",
         "https://mizagbf.github.io/assets/rosetta-remote-resources/1_s.png",
@@ -462,7 +464,8 @@ class GachaSimulator():
         self.scamdata = scamdata # no need to unpack the scam gacha one (assume it might be None too)
         self.isclassic = isclassic
         self.color = color
-        self.mode = {'single':self.MODE_SINGLE, 'srssr':self.MODE_SRSSR, 'memerollA':self.MODE_MEMEA, 'memerollB':self.MODE_MEMEB, 'ten':self.MODE_TEN, 'gachapin':self.MODE_GACHAPIN, 'mukku':self.MODE_MUKKU, 'supermukku':self.MODE_SUPER, 'scam':self.MODE_SCAM }[simtype] # kept the old modes, might change it later?
+        self.mode = None
+        self.changeMode(simtype)
         self.result = {} # output of generate()
         self.thumbnail = None # thumbnail of self.best
         self.best = [-1, "", False] # best roll
@@ -476,7 +479,7 @@ class GachaSimulator():
     simtype: value from Gacha.simulate parameter() simtype
     """
     def changeMode(self, simtype : str) -> None:
-        self.mode = {'single':self.MODE_SINGLE, 'srssr':self.MODE_SRSSR, 'memerollA':self.MODE_MEMEA, 'memerollB':self.MODE_MEMEB, 'ten':self.MODE_TEN, 'gachapin':self.MODE_GACHAPIN, 'mukku':self.MODE_MUKKU, 'supermukku':self.MODE_SUPER, 'scam':self.MODE_SCAM }[simtype]
+        self.mode = {'single':self.MODE_SINGLE, 'srssr':self.MODE_SRSSR, 'memerollA':self.MODE_MEMEA, 'memerollB':self.MODE_MEMEB, 'ten':self.MODE_TEN, 'gachapin':self.MODE_GACHAPIN, 'mukku':self.MODE_MUKKU, 'supermukku':self.MODE_SUPER, 'scam':self.MODE_SCAM, 'all':self.MODE_ALL}[simtype]
 
     """check_rate()
     check and calculate modifiers to get the exact rates we want
@@ -503,9 +506,15 @@ class GachaSimulator():
             mods[2] = ssrrate / proba[2] # calculate mod
             tmp = proba[2] * mods[2] # get new proba
             diff = proba[2] - tmp # get diff between old and new
-            try: mods[0] = (proba[0] + diff) / proba[0] # calculate lowered R rate modifer
-            except: mods[0] = 1
-            proba[0] = max(0, proba[0] + diff) # lower R proba
+            if ssrrate == self.RATE_ALL:
+                proba[0] = 0
+                proba[1] = 0
+                mods[0] = 0
+                mods[1] = 0
+            else:
+                proba[0] = max(0, proba[0] + diff) # lower R proba
+                try: mods[0] = (proba[0] + diff) / proba[0] # calculate lowered R rate modifer
+                except: mods[0] = 1
             proba[2] = tmp # store SSR proba
         return mods, proba
 
@@ -521,7 +530,11 @@ class GachaSimulator():
         try:
             # prep work
             legfest = self.bot.gacha.isLegfest(self.ssrrate, legfest)
-            ssrrate = self.RATE_SUPER if self.mode == self.MODE_SUPER else (self.RATE_MUKKU if self.mode == self.MODE_MUKKU else (self.RATE_GALA if legfest else self.RATE_NORMAL))
+            match self.mode:
+                case self.MODE_ALL: ssrrate = self.RATE_ALL
+                case self.MODE_SUPER: ssrrate = self.RATE_SUPER
+                case self.MODE_MUKKU: ssrrate = self.RATE_MUKKU
+                case _: ssrrate = self.RATE_GALA if legfest else self.RATE_NORMAL
             self.result = {} # empty output, used for error check
             result = {'list':[], 'detail':[0, 0, 0], 'rate':ssrrate}
             await asyncio.sleep(0)
@@ -791,16 +804,19 @@ class GachaSimulator():
         roll = 0
         rps = ['rock', 'paper', 'scissor']
         ct = self.bot.util.JST()
-        # customization settings
-        fixedS = ct.replace(year=2024, month=1, day=6, hour=5, minute=0, second=0, microsecond=0) # beginning of fixed rolls
+        # apply settings
+        settings = self.bot.data.save['gbfdata'].get('roulette', {})
+        fixedS = ct.replace(year=2000+settings.get('year', 24), month=settings.get('month', 1), day=settings.get('day', 1), hour=5, minute=0, second=0, microsecond=0) # beginning of fixed rolls
         fixedE = fixedS + timedelta(days=1, seconds=0) # end of fixed rolls
-        forced3pc = True # force 3%
-        forcedRollCount = 200 # number of rolls during fixed rolls
-        forcedSuperMukku = True
-        enable200 = True # add 200 on wheel
-        enableJanken = False
-        maxJanken = 1 # number of RPS
-        doubleMukku = False
+        forced3pc = settings.get('forced3%', True) # force 3%
+        forcedRollCount = settings.get('forcedroll', 100) # number of rolls during fixed rolls
+        forcedSuperMukku = settings.get('forcedsuper', True)
+        enable200 = settings.get('enable200', False) # add 200 on wheel
+        enableJanken = settings.get('enablejanken', False)
+        maxJanken = settings.get('maxjanken', 1)
+        doubleMukku = settings.get('doublemukku', False)
+        realist = realist and settings.get('realist', False)
+        birthdayMode = settings.get('birthday', False) # add birthday on wheel
         # settings end
         self.thumbnail = self.ROULETTE
         prev_best = None
@@ -824,6 +840,9 @@ class GachaSimulator():
                 else:
                     msg = ":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"
                     roll = 100
+            elif d < 1200 and birthdayMode:
+                msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
+                state = 5
             elif d < 3600:
                 msg = "**Gachapin Frenzy** :four_leaf_clover:\n"
                 roll = -1
@@ -948,6 +967,41 @@ class GachaSimulator():
                         tmp = ""
                     msg += ":confetti_ball: **Super Mukku** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
                     running = False
+                case 5: # birthday roulette
+                    d = random.randint(1, 10000)
+                    tmp = ""
+                    running = False
+                    if d <= 2000: roll = 100
+                    elif d <= 3400: roll = 50
+                    elif d <= 4800: roll = 60
+                    elif d <= 6200: roll = 70
+                    elif d <= 7600: roll = 80
+                    elif d <= 9000:
+                        state = 2
+                        msg += ":confetti_ball: You got the **Gachapin**!!\n"
+                        running = True
+                        tmp = "None"
+                    else:
+                        self.changeMode('all')
+                        roll = 10
+                    if tmp == "":
+                        await self.generate(roll, legfest)
+                        count = len(self.result['list'])
+                        rate = (100*self.result['detail'][2]/count)
+                        ssrs = self.getSSRList()
+                        if len(ssrs) > 0: # make the text
+                            tmp = "\n{} ".format(self.bot.emote.get('SSR'))
+                            for item in ssrs:
+                                tmp += item
+                                if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
+                                tmp += " "
+                        else:
+                            tmp = ""
+                        if d > 9000: # guaranted ssr
+                            msg += ":confetti_ball: :confetti_ball: **Guaranted SSR** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp)
+                        else:
+                            msg += ":confetti_ball: **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
+                        footer = "{}% SSR rate".format(self.result['rate'])
             if realist: footer += " ▫️ Realist"
             if prev_best is None or str(self.best) != prev_best:
                 prev_best = str(self.best)

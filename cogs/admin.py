@@ -228,7 +228,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     """approximate_account()
-    Get the current GBF gacha banner data.
+    Approximate the total number of accounts on GBF.
     
     Parameters
     --------
@@ -512,14 +512,6 @@ class Admin(commands.Cog):
             except:
                 pass
             await inter.edit_original_message(embed=self.bot.embed(title="Clear Profile", description='User `{}` has been removed'.format(user_id), color=self.COLOR))
-
-    @data.sub_command()
-    async def resetgacha(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Reset the gacha settings (Owner Only)"""
-        await inter.response.defer(ephemeral=True)
-        self.bot.data.save['gbfdata'].pop('gacha', None)
-        self.bot.data.pending = True
-        await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
 
     @_owner.sub_command_group()
     async def maintenance(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1085,13 +1077,70 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Skip cancelled", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def gbfg(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def gacha(self, inter: disnake.GuildCommandInteraction):
         pass
 
-    @gbfg.sub_command(name="invite")
-    async def gbfginvite(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Generate an invite (Owner Only)"""
+    @gacha.sub_command(name="clear")
+    async def cleargacha(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Clear the current gacha data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        c = self.bot.get_channel(self.bot.data.config['ids']['gbfg_new'])
-        link = await c.create_invite(max_age = 3600)
-        await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ invite", description="`{}`".format(link), color=self.COLOR))
+        self.bot.data.save['gbfdata'].pop('gacha', None)
+        self.bot.data.pending = True
+        await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
+
+    @gacha.sub_command()
+    async def roulette(self, inter: disnake.GuildCommandInteraction, guaranteddate : int = commands.Param(description="Date of the guaranted roll day (YYMMDD format)", ge=240101, le=500101, default=240100), forced3pc : int = commands.Param(description="1 to force real rate during guaranted roll day", ge=-1, le=1, default=-1), forcedroll : int = commands.Param(description="Number of guaranted roll", ge=-1, le=300, default=-1), forcedsuper : int = commands.Param(description="1 to add Super Mukku to guaranted roll day", ge=-1, le=1, default=-1), enable200 : int = commands.Param(description="1 to add 200 rolls on the wheel", ge=-1, le=1, default=-1), janken : int = commands.Param(description="1 to enable Janken mode", ge=-1, le=1, default=-1), maxjanken : int = commands.Param(description="Maximum number of janken", ge=0, le=10, default=0), doublemukku : int = commands.Param(description="1 to enable double Mukku", ge=-1, le=1, default=-1), realist : int = commands.Param(description="1 to allow realist mode", ge=-1, le=1, default=-1), birthday : int = commands.Param(description="1 to add the birthday zone on the wheel", ge=-1, le=1, default=-1)) -> None:
+        """Set the roulette settings. Don't pass parameters to see settings. (Owner Only)"""
+        await inter.response.defer(ephemeral=True)
+        if 'roulette' not in self.bot.data.save['gbfdata']:
+            self.bot.data.save['gbfdata']['roulette'] = {}
+        error = ""
+        settings = ""
+        if guaranteddate > 240100:
+            try:
+                self.bot.util.JST().replace(year=2000+guaranteddate//10000, month=(guaranteddate//100)%100, day=guaranteddate%100, hour=5, minute=0, second=0, microsecond=0)
+                self.bot.data.save['gbfdata']['roulette']['year'] = guaranteddate//10000
+                self.bot.data.save['gbfdata']['roulette']['month'] = (guaranteddate//100)%100
+                self.bot.data.save['gbfdata']['roulette']['day'] = guaranteddate%100
+                self.bot.data.pending = True
+            except:
+                error += "**Error**: Invalid date `{}`\n\n".format(guaranteddate)
+        settings += "- Guaranted roll start date: `{}{}{}`\n".format(str(self.bot.data.save['gbfdata']['roulette'].get('year', 24)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('month', 1)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('day', 1)).zfill(2))
+        if forced3pc != -1:
+            self.bot.data.save['gbfdata']['roulette']['forced3%'] = (forced3pc == 1)
+            self.bot.data.pending = True
+        settings += "- Guaranted roll real rate: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forced3%', True) else "Disabled")
+        if forcedroll != -1:
+            self.bot.data.save['gbfdata']['roulette']['forcedroll'] = forcedroll
+            self.bot.data.pending = True
+        settings += "- Number of Guaranted rolls: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('forcedroll', 100))
+        if forcedsuper != -1:
+            self.bot.data.save['gbfdata']['roulette']['forcedsuper'] = (forcedsuper == 1)
+            self.bot.data.pending = True
+        settings += "- Super Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forcedsuper', True) else "Disabled")
+        if enable200 != -1:
+            self.bot.data.save['gbfdata']['roulette']['enable200'] = (enable200 == 1)
+            self.bot.data.pending = True
+        settings += "- 200 rolls on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enable200', False) else "Disabled")
+        if janken != -1:
+            self.bot.data.save['gbfdata']['roulette']['enablejanken'] = (janken == 1)
+            self.bot.data.pending = True
+        settings += "- Janken mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enablejanken', False) else "Disabled")
+        if maxjanken != 0:
+            self.bot.data.save['gbfdata']['roulette']['maxjanken'] = maxjanken
+            self.bot.data.pending = True
+        settings += "- Max number of Janken: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('maxjanken', 1))
+        if doublemukku != -1:
+            self.bot.data.save['gbfdata']['roulette']['doublemukku'] = (doublemukku == 1)
+            self.bot.data.pending = True
+        settings += "- Double Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('doublemukku', False) else "Disabled")
+        if realist != -1:
+            self.bot.data.save['gbfdata']['roulette']['realist'] = (realist == 1)
+            self.bot.data.pending = True
+        settings += "- Realist mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('realist', False) else "Disabled")
+        if birthday != -1:
+            self.bot.data.save['gbfdata']['roulette']['birthday'] = (birthday == 1)
+            self.bot.data.pending = True
+        settings += "- Birthday Zone on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('birthday', False) else "Disabled")
+            
+        await inter.edit_original_message(embed=self.bot.embed(title="Roulette Simulator settings", description=error+settings, color=self.COLOR))
