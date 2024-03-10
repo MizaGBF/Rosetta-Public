@@ -220,7 +220,7 @@ class Ranking():
     Coroutine to retrieve the previous GW data from the wiki
     """
     async def init_estimation(self) -> None:
-        cnt = await self.bot.net.request("https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data", no_base_headers=True, follow_redirects=True)
+        cnt = await self.bot.net.request("https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data", add_user_agent=True, no_base_headers=True, follow_redirects=True)
         if cnt is not None:
             try: cnt = cnt.decode('utf-8')
             except: cnt = cnt.decode('iso-8859-1')

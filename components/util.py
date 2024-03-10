@@ -523,7 +523,7 @@ class Util():
             match f:
                 case "Tiamat_(Summon)": f = "Tiamat_(Summer)"
                 case _: pass
-            data = (await self.bot.net.request("https://gbf.wiki/" + f, no_base_headers=True, follow_redirects=True, timeout=5)).decode('utf-8')
+            data = (await self.bot.net.request("https://gbf.wiki/" + f, no_base_headers=True, add_user_agent=True, follow_redirects=True, timeout=5)).decode('utf-8')
             for i in range((0 if search_character else 1), len(self.SEARCH_REGEXES)):
                 group = self.SEARCH_REGEXES[i].findall(data)
                 if len(group) > 0: break
