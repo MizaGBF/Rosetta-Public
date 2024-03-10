@@ -327,7 +327,7 @@ class Network():
     unknown: None if GBF is down, "Maintenance" if in maintenance, -1 if version comparison error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
     """
     async def gbf_version(self, skip_check = False) -> Any: # retrieve the game version
-        res = await self.request('https://game.granbluefantasy.jp/', headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36.', 'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, no_base_headers=True, skip_check=skip_check)
+        res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, no_base_headers=True, skip_check=skip_check, follow_redirects=True)
         if res is None: return None
         res = str(res)
         try:
