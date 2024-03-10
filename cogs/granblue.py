@@ -599,7 +599,7 @@ class GranblueFantasy(commands.Cog):
     search_mode: Boolean, if True it expects a search result page
     """
     async def requestWiki(self, inter: disnake.GuildCommandInteraction, url : str, search_mode : bool = False) -> None:
-        cnt = await self.bot.net.request(url, no_base_headers=True, follow_redirects=True)
+        cnt = await self.bot.net.request(url, no_base_headers=True, add_user_agent=True, follow_redirects=True)
         if cnt is None:
             raise Exception("HTTP Error 404: Not Found")
         try: cnt = cnt.decode('utf-8')
@@ -892,7 +892,7 @@ class GranblueFantasy(commands.Cog):
     dict: Grand per element
     """
     async def getGrandList(self) -> dict:
-        cnt = await self.bot.net.request('https://gbf.wiki/SSR_Characters_List#Grand_Series', no_base_headers=True, follow_redirects=True)
+        cnt = await self.bot.net.request('https://gbf.wiki/SSR_Characters_List#Grand_Series', no_base_headers=True, add_user_agent=True, follow_redirects=True)
         if cnt is None:
             raise Exception("HTTP Error 404: Not Found")
         try: cnt = cnt.decode('utf-8')
@@ -1297,7 +1297,7 @@ class GranblueFantasy(commands.Cog):
         wiki_checks = ["Main_Quests", "Category:Campaign", "Surprise_Special_Draw_Set", "Damascus_Ingot", "Gold_Brick", "Sunlight_Stone", "Sephira_Evolite"]
         regexs = ["Time since last release\\s*<\/th><\/tr>\\s*<tr>\\s*<td colspan=\"3\" style=\"text-align: center;\">(\\d+ days)", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(-\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last ", "<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td>(\\d+ days)<\\/td>\\s*"]
         for w in wiki_checks:
-            t = await self.bot.net.request("https://gbf.wiki/{}".format(w), no_base_headers=True, follow_redirects=True, timeout=8)
+            t = await self.bot.net.request("https://gbf.wiki/{}".format(w), no_base_headers=True, add_user_agent=True, follow_redirects=True, timeout=8)
             if t is not None:
                 try: t = t.decode('utf-8')
                 except: t = t.decode('iso-8859-1')
