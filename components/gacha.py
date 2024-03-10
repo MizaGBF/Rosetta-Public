@@ -172,14 +172,12 @@ class Gacha():
 
             # classic gacha
             gacha_data['classic'] = []
-            """ # disabled until I figure it out
-            for i in range(2):
-                data = await self.bot.net.request("https://game.granbluefantasy.jp/rest/gacha/classic/toppage_data?PARAMS", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            for i in [500021, 501021]:
+                data = await self.bot.net.request("https://game.granbluefantasy.jp/rest/gacha/classic/toppage_data_by_classic_series_id/{}?PARAMS".format(i), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
                 if data is not None and 'appearance_gacha_id' in data:
                     gratio, glist, grateup = await self.process('classic', data['appearance_gacha_id'], 1)
                     if gratio is not None:
-                        gacha_data['classic'] = {'ratio':gratio, 'list':glist, 'rateup':grateup}
-            """
+                        gacha_data['classic'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
 
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
@@ -290,7 +288,7 @@ class Gacha():
                 if classic is not None and classic > 0:
                     if 'classic' not in data or classic > len(data['classic']):
                         raise Exception()
-                    gacha_data = data['classic'][classic]
+                    gacha_data = data['classic'][classic-1]
                 else:
                     gacha_data = data
             else:
@@ -404,7 +402,7 @@ class Gacha():
     Parameters
     --------
     simtype: string, case sensitive. possible values: single, srssr, memerollA, memerollB, scam, ten, gachapin, mukku, supermukku
-    gachatype: string, type of gacha to use: classic for classic gacha, scam for premium star, anything else for standard prelium draw
+    gachatype: string for special gacha (scam...) or integer (0 for normal banner, 1~2 for classic)
     color: color to use for the embeds
     scamindex: index of the premium star gacha to use
     
