@@ -833,31 +833,48 @@ class GachaSimulator():
             d = 0
             state = 1
         else:
-            d = random.randint(1, 30000)
-            if realist and d < 600 or d < 14100: d = 14100
-            if d < 600:
-                if enable200:
-                    msg = "{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))
-                    roll = 200
-                else:
-                    msg = ":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"
-                    roll = 100
-            elif d < 3600:
-                msg = "**Gachapin Frenzy** :four_leaf_clover:\n"
-                roll = -1
-                state = 2
-            elif d < 14100:
-                msg = "**10** rolls :pensive:\n"
-                roll = 10
-            elif d < 23100:
-                msg = "**20** rolls :open_mouth:\n"
-                roll = 20
-            elif birthdayMode and d < 24600:
-                msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
-                state = 5
+            d = random.randint(1, 10000)
+            results = []
+            results.append((1, 800)) # gachapin 8%
+            results.append((30, 2000)) # 30 rolls 20%
+            if birthdayMode: results.append((2, 500)) # birthday 5%
+            if realist:
+                results.append((20, None))
             else:
-                msg = "**30** rolls! :clap:\n"
-                roll = 30
+                results.append((0, 200)) # hundred 2%
+                results.append((20, 3500)) # 20 rolls 35%
+                results.append((10, None))
+            threshold = 0
+            for r in results:
+                if r[1] is not None and d > threshold + r[1]:
+                    threshold += r[1]
+                    continue
+                match r[0]:
+                    case 0:
+                        if enable200:
+                            msg = "{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))
+                            roll = 200
+                        else:
+                            msg = ":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"
+                            roll = 100
+                    case 1:
+                        msg = "**Gachapin Frenzy** :four_leaf_clover:\n"
+                        roll = -1
+                        state = 2
+                    case 2:
+                        msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
+                        roll = -1
+                        state = 5
+                    case 30:
+                        msg = "**30** rolls! :clap:\n"
+                        roll = 30
+                    case 20:
+                        msg = "**20** rolls :open_mouth:\n"
+                        roll = 20
+                    case 10:
+                        msg = "**10** rolls :pensive:\n"
+                        roll = 10
+                break
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail))
         if not enableJanken and state < 2: state = 1
         running = True
