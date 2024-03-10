@@ -842,9 +842,6 @@ class GachaSimulator():
                 else:
                     msg = ":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"
                     roll = 100
-            elif d < 1200 and birthdayMode:
-                msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
-                state = 5
             elif d < 3600:
                 msg = "**Gachapin Frenzy** :four_leaf_clover:\n"
                 roll = -1
@@ -855,6 +852,9 @@ class GachaSimulator():
             elif d < 23100:
                 msg = "**20** rolls :open_mouth:\n"
                 roll = 20
+            elif birthdayMode and d < 24600:
+                msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
+                state = 5
             else:
                 msg = "**30** rolls! :clap:\n"
                 roll = 30
