@@ -285,14 +285,23 @@ class Data():
     """
     async def maintenance(self) -> None:
         try:
-            await asyncio.sleep(1000) # after 1000 seconds
-            if not self.bot.running: return
+            # the task will run every day at 2 am, so we calculate the next time it will happen
+            target_time = self.bot.util.JST().replace(hour=2, minute=0, second=0, microsecond=0)
+            ct = self.bot.util.JST()
+            if ct >= target_time: target_time += timedelta(days=1)
+            # used for the gw cog crew cache
+            first_loop = True
         except asyncio.CancelledError:
             return
-        first_loop = True
         while True:
             try:
+                # compare current time to targeted time
                 ct = self.bot.util.JST()
+                if ct < target_time: # lesser, we sleep
+                    await asyncio.sleep((ct - target_time).seconds + 1)
+                    continue
+                target_time += timedelta(days=1) # move target_time to next day
+                
                 # empty crew cache
                 if not first_loop:
                     try:
@@ -300,6 +309,7 @@ class Data():
                     except Exception as xe:
                         self.bot.logger.pushError("[TASK] 'maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
+                
                 # update avatar on first day of some month
                 if ct.day == 1:
                     match ct.month:
@@ -322,7 +332,6 @@ class Data():
                 return
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
-            await asyncio.sleep(86399 - (self.bot.util.JST() - ct).total_seconds()) # wait next day
 
     """update_schedule()
     Coroutine to request the wiki to update the schedule
