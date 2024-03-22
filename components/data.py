@@ -284,7 +284,9 @@ class Data():
     Bot Task managing the autocleanup of the save data and other routines
     """
     async def maintenance(self) -> None:
+        # init
         try:
+            await asyncio.sleep(10) # wait for boot to be over to start
             # the task will run every day at 2 am, so we calculate the next time it will happen
             target_time = self.bot.util.JST().replace(hour=2, minute=0, second=0, microsecond=0)
             ct = self.bot.util.JST()
@@ -292,15 +294,21 @@ class Data():
             # used for the gw cog crew cache
             first_loop = True
         except asyncio.CancelledError:
+            self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
             return
+        except Exception as e:
+            self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
+        
+        # loop
         while True:
             try:
                 # compare current time to targeted time
                 ct = self.bot.util.JST()
                 if ct < target_time: # lesser, we sleep
-                    await asyncio.sleep((ct - target_time).seconds + 1)
+                    await asyncio.sleep((target_time - ct).seconds + 1)
                     continue
                 target_time += timedelta(days=1) # move target_time to next day
+                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup started", send_to_discord=False)
                 
                 # empty crew cache
                 if not first_loop:
@@ -327,6 +335,8 @@ class Data():
                 if ct.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
                 await self.clean_general() # clean up everything else
+                
+                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup ended", send_to_discord=False)
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
                 return
