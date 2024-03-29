@@ -810,6 +810,7 @@ class GachaSimulator():
         settings = self.bot.data.save['gbfdata'].get('roulette', {})
         fixedS = ct.replace(year=2000+settings.get('year', 24), month=settings.get('month', 1), day=settings.get('day', 1), hour=5, minute=0, second=0, microsecond=0) # beginning of fixed rolls
         fixedE = fixedS + timedelta(days=1, seconds=0) # end of fixed rolls
+        fixedS -= timedelta(seconds=36000) # move start 10h early
         forced3pc = settings.get('forced3%', True) # force 3%
         forcedRollCount = settings.get('forcedroll', 100) # number of rolls during fixed rolls
         forcedSuperMukku = settings.get('forcedsuper', True)
