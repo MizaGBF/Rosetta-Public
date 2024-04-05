@@ -13,6 +13,21 @@ import math
 class DreadBarrage(commands.Cog):
     """Dread Barrage commands."""
     COLOR = 0x0062ff
+    FIGHTS = {
+        "1\\⭐": {"token":52.0, "AP":30},
+        "2\\⭐": {"token":70.0, "AP":30},
+        "3\\⭐": {"token":97.0, "AP":40},
+        "4\\⭐": {"token":145.0, "AP":50},
+        "5\\⭐": {"token":243.0, "AP":50}
+    }
+
+    BOX_COST = [
+        (1, 1800),
+        (4, 2400),
+        (20, 2002),
+        (40, 10000),
+        (None, 15000)
+    ]
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -113,27 +128,19 @@ class DreadBarrage(commands.Cog):
             if tok < 1 or tok > 9999999999: raise Exception()
             b = 0
             t = tok
-            if tok >= 1800:
-                tok -= 1800
+            i = 0
+            while True:
+                if tok < self.BOX_COST[i][1]:
+                    break
+                tok -= self.BOX_COST[i][1]
                 b += 1
-            while b < 4 and tok >= 2400:
-                tok -= 2400
-                b += 1
-            while b < 20 and tok >= 2002:
-                tok -= 2002
-                b += 1
-            while b < 40 and tok >= 10000:
-                tok -= 10000
-                b += 1
-            while tok >= 15000:
-                tok -= 15000
-                b += 1
-            s1 = math.ceil(t / 52.0)
-            s2 = math.ceil(t / 70.0)
-            s3 = math.ceil(t / 97.0)
-            s4 = math.ceil(t / 146.0)
-            s5 = math.ceil(t / 243.0)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description="**{:,}** box(s) and **{:,}** leftover tokens\n**{:,}** 1⭐ (**{:,}** pots)\n**{:,}** 2⭐ (**{:,}** pots)\n**{:,}** 3⭐ (**{:,}** pots)\n**{:,}** 4⭐ (**{:,}** pots)\n**{:,}** 5⭐ (**{:,}** pots)".format(b, tok, s1, math.ceil(s1*30/75), s2, math.ceil(s2*30/75), s3, math.ceil(s3*40/75), s4, math.ceil(s4*50/75), s5, math.ceil(s5*50/75)), color=self.COLOR))
+                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
+                    i += 1
+            msg = "**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)
+            for f, d in self.FIGHTS.items():
+                n = math.ceil(t / d["token"])
+                msg += "**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description=msg, color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
@@ -146,18 +153,16 @@ class DreadBarrage(commands.Cog):
             try: with_token = max(0, self.bot.util.strToInt(with_token))
             except: raise Exception("Your current token amount `{}` isn't a valid number".format(with_token))
             if box_done >= box: raise Exception("Your current box count `{}` is higher or equal to your target `{}`".format(box_done, box))
+            i = 0
             for b in range(box_done+1, box+1):
-                if b == 1: t+= 1800
-                elif b <= 4: t+= 2400
-                elif b <= 20: t+= 2002
-                elif b <= 40: t+= 10000
-                else: t+= 15000
+                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
+                    i += 1
+                t += self.BOX_COST[i][1]
             t = max(0, t-with_token)
-            s1 = math.ceil(t / 52.0)
-            s2 = math.ceil(t / 70.0)
-            s3 = math.ceil(t / 97.0)
-            s4 = math.ceil(t / 146.0)
-            s5 = math.ceil(t / 243.0)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description="**{:,}** tokens needed{}{}\n\n**{:,}** 1⭐ (**{:,}** pots)\n**{:,}** 2⭐ (**{:,}** pots)\n**{:,}** 3⭐ (**{:,}** pots)\n**{:,}** 4⭐ (**{:,}** pots)\n**{:,}** 5⭐ (**{:,}** pots)".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)), s1, math.ceil(s1*30/75), s2, math.ceil(s2*30/75), s3, math.ceil(s3*40/75), s4, math.ceil(s4*50/75), s5, math.ceil(s5*50/75)), color=self.COLOR))
+            msg = "**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))
+            for f, d in self.FIGHTS.items():
+                n = math.ceil(t/d["token"])
+                msg += "**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description=msg, color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description=str(e), color=self.COLOR))

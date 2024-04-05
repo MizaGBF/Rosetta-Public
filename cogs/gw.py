@@ -25,6 +25,23 @@ class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
     COLOR = 0xff0000
     YOU_MEAT_REGEX = re.compile('\\b(\\d+(\\.\\d+)?)([kK])?\\b')
+    FIGHTS = {
+        "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000},
+        "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000},
+        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000},
+        "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000},
+        "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000},
+        "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000},
+        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000}
+    }
+
+    BOX_COST = [
+        (1, 1600),
+        (4, 2400),
+        (45, 2000),
+        (80, 10000),
+        (None, 15000)
+    ]
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -1092,22 +1109,19 @@ class GuildWar(commands.Cog):
             try: with_token = max(0, self.bot.util.strToInt(with_token))
             except: raise Exception("Your current token amount `{}` isn't a valid number".format(with_token))
             if box_done >= box: raise Exception("Your current box count `{}` is higher or equal to your target `{}`".format(box_done, box))
+            i = 0
             for b in range(box_done+1, box+1):
-                if b == 1: t+= 1600
-                elif b <= 4: t+= 2400
-                elif b <= 45: t+= 2000
-                elif b <= 80: t+= 10000
-                else: t+= 15000
+                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
+                    i += 1
+                t += self.BOX_COST[i][1]
             t = max(0, t-with_token)
-            ex = math.ceil(t / 56.0)
-            explus = math.ceil(t / 66.0)
-            n90 = math.ceil(t / 83.0)
-            n95 = math.ceil(t / 111.0)
-            n100 = math.ceil(t / 168.0)
-            n150 = math.ceil(t / 257.0)
-            n200 = math.ceil(t / 338.0)
-            wanpan = math.ceil(t / 48.0)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ Box {}".format(self.bot.emote.get('gw'), box), description="**{:,}** tokens needed{:}{:}\n\n**{:,}** EX (**{:,}** pots)\n**{:,}** EX+ (**{:,}** pots)\n**{:,}** NM90 (**{:,}** pots, **{:,}** meats)\n**{:,}** NM95 (**{:,}** pots, **{:,}** meats)\n**{:,}** NM100 (**{:,}** pots, **{:,}** meats)\n**{:,}** NM150 (**{:,}** pots, **{:,}** meats)\n**{:,}** NM200 (**{:,}** pots, **{:,}** meats)\n**{:,}** NM100 join (**{:}** BP)".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)), ex, math.ceil(ex*30/75), explus, math.ceil(explus*30/75), n90, math.ceil(n90*30/75), n90*5, n95, math.ceil(n95*40/75), n95*10, n100, math.ceil(n100*50/75), n100*20, n150, math.ceil(n150*50/75), n150*20, n200, math.ceil(n200*50/75), n200*20, wanpan, wanpan*3), color=self.COLOR))
+            msg = "**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))
+            for f, d in self.FIGHTS.items():
+                n = math.ceil(t/d["token"])
+                msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
+                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n*d["meat_cost"])
+                msg += ")\n"
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ Box {}".format(self.bot.emote.get('gw'), box), description=msg, color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description=str(e), color=self.COLOR))
 
@@ -1121,38 +1135,21 @@ class GuildWar(commands.Cog):
             if tok < 1 or tok > 9999999999: raise Exception()
             b = 0
             t = tok
-            if tok >= 1600:
-                tok -= 1600
+            i = 0
+            while True:
+                if tok < self.BOX_COST[i][1]:
+                    break
+                tok -= self.BOX_COST[i][1]
                 b += 1
-            while b < 4 and tok >= 2400:
-                tok -= 2400
-                b += 1
-            while b < 46 and tok >= 2000:
-                tok -= 2000
-                b += 1
-            while b < 81 and tok >= 10000:
-                tok -= 10000
-                b += 1
-            while tok >= 15000:
-                tok -= 15000
-                b += 1
-            base = [
-                ['EX', 30, 0, 56, 3.06], # name, AP, meat, tokens, FR token
-                ['EX+', 30, 0, 66, 4.85],
-                ['NM90', 30, 5, 83, 15.6],
-                ['NM95', 40, 10, 111, 54.6],
-                ['NM100', 50, 20, 168, 159],
-                ['NM150', 50, 20, 257, 246],
-                ['NM200', 50, 20, 338, 801]
-            ]
+                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
+                    i += 1
             msg = "**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)
-            for bv in base:
-                if final_rally: v = math.ceil(t / (bv[3]+bv[4]))
-                else: v = math.ceil(t / bv[3])
-                if bv[2] == 0: msg += "**{:,}** {:} (**{:,}** AP)\n".format(v, bv[0], v*bv[1])
-                else: msg += "**{:,}** {:} (**{:,}** AP, **{:,}** meats)\n".format(v, bv[0], v*bv[1], v*bv[2])
-            v = math.ceil(t / 48.0)
-            msg += "**{:,}** NM100 leeching (**{:}** BP)".format(v, v*3)
+            for f, d in self.FIGHTS.items():
+                if final_rally: n = math.ceil(t / (d["token"]+d["rally_token"]))
+                else: n = math.ceil(t / d["token"])
+                msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
+                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n*d["meat_cost"])
+                msg += ")\n"
             await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ {} tokens".format(self.bot.emote.get('gw'), t), description=msg, footer=("Imply you solo all your hosts and clear the final rally" if final_rally else ""), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
@@ -1164,12 +1161,12 @@ class GuildWar(commands.Cog):
             await inter.response.defer(ephemeral=True)
             meat = self.bot.util.strToInt(value)
             if meat < 5 or meat > 400000: raise Exception()
-            nm90 = meat // 5
-            nm95 = meat // 10
-            nm100 = meat // 20
-            nm150 = meat // 20
-            nm200 = meat // 20
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Meat Calculator ▫️ {} meats".format(self.bot.emote.get('gw'), meat), description="**{:,}** NM90 or **{:}** honors\n**{:,}** NM95 or **{:}** honors\n**{:}** NM100 or **{:}** honors\n**{:,}** NM150 or **{:}** honors\n**{:,}** NM200 or **{:}** honors\n".format(nm90, self.bot.util.valToStr(nm90*260000, 2), nm95, self.bot.util.valToStr(nm95*910000, 2), nm100, self.bot.util.valToStr(nm100*2650000, 2), nm150, self.bot.util.valToStr(nm150*4100000, 2), nm200, self.bot.util.valToStr(nm200*13350387, 2)), color=self.COLOR))
+            msg = ""
+            for f, d in self.FIGHTS.items():
+                if d["meat_cost"] == 0: continue
+                n = meat // d["meat_cost"]
+                msg += "**{:,}** {:} or **{:}** honors\n".format(n, f, self.bot.util.valToStr(n*d["honor"], 2))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Meat Calculator ▫️ {} meats".format(self.bot.emote.get('gw'), meat), description=msg, color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid meat number", color=self.COLOR))
 
@@ -1180,13 +1177,13 @@ class GuildWar(commands.Cog):
             await inter.response.defer(ephemeral=True)
             target = self.bot.util.strToInt(value)
             if target < 10000: raise Exception()
-            exp = math.ceil(target / 88000)
-            nm90 = math.ceil(target / 260000)
-            nm95 = math.ceil(target / 910000)
-            nm100 = math.ceil(target / 2650000)
-            nm150 = math.ceil(target / 4100000)
-            nm200 = math.ceil(target / 13350387)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Calculator ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="**{:,}** EX+ (**{:,}** AP)\n**{:,}** NM90 (**{:,}** AP, **{:,}** meats)\n**{:,}** NM95 (**{:,}** AP, **{:,}** meats)\n**{:,}** NM100 (**{:,}** AP, **{:,}** meats)\n**{:,}** NM150 (**{:,}** AP, **{:,}** meats)\n**{:,}** NM200 (**{:,}** AP, **{:,}** meats)".format(exp, exp * 30, nm90, nm90 * 30, nm90 * 5, nm95, nm95 * 40, nm95 * 10, nm100, nm100 * 50, nm100 * 20, nm150, nm150 * 50, nm150* 20, nm200, nm200 * 50, nm200* 20), color=self.COLOR))
+            msg = ""
+            for f, d in self.FIGHTS.items():
+                n = math.ceil(target / d["honor"])
+                msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
+                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n * d["meat_cost"])
+                msg += ")\n"
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Calculator ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description=msg, color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid honor number", color=self.COLOR))
 
@@ -1202,8 +1199,7 @@ class GuildWar(commands.Cog):
             ex = 0
             meat_per_ex_average = 10.3
             day_target = [target * 0.15, target * 0.25, target * 0.3, target * 0.3]
-            honor_per_nm = [910000, 4100000, 13350387, 13350387]
-            meat_use = [10, 20, 20, 20]
+            day_nm = ["NM95", "NM150", "NM200", "NM200"]
             nm = [0, 0, 0, 0]
             meat = 0
             total_meat = 0
@@ -1211,17 +1207,17 @@ class GuildWar(commands.Cog):
             for i in [3, 2, 1, 0]:
                 daily = 0
                 while daily < day_target[i]:
-                    if meat < meat_use[i]:
+                    if meat < self.FIGHTS[day_nm[i]]["meat_cost"]:
                         meat += meat_per_ex_average
                         total_meat += meat_per_ex_average
                         ex += 1
-                        daily += 88000
-                        honor[0] += 88000
+                        daily += self.FIGHTS["EX+"]["honor"]
+                        honor[0] += self.FIGHTS["EX+"]["honor"]
                     else:
-                        meat -= meat_use[i]
+                        meat -= self.FIGHTS[day_nm[i]]["meat_cost"]
                         nm[i] += 1
-                        daily += honor_per_nm[i]
-                        honor[i+1] += honor_per_nm[i]
+                        daily += self.FIGHTS[day_nm[i]]["honor"]
+                        honor[i+1] += self.FIGHTS[day_nm[i]]["honor"]
 
             await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="Preliminaries & Interlude ▫️ **{:,}** meats (around **{:,}** EX+ and **{:}** honors)\nDay 1 ▫️ **{:,}** NM95 (**{:}** honors)\nDay 2 ▫️ **{:,}** NM150 (**{:}** honors)\nDay 3 ▫️ **{:,}** NM200 (**{:}** honors)\nDay 4 ▫️ **{:,}** NM200 (**{:}** honors)".format(math.ceil(total_meat), ex, self.bot.util.valToStr(honor[0], 2), nm[0], self.bot.util.valToStr(honor[1], 2), nm[1], self.bot.util.valToStr(honor[2], 2), nm[2], self.bot.util.valToStr(honor[3], 2), nm[3], self.bot.util.valToStr(honor[4], 2)), footer="Assuming {} meats / EX+ on average".format(meat_per_ex_average), color=self.COLOR))
         except:
@@ -1233,7 +1229,6 @@ class GuildWar(commands.Cog):
     async def speed_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
         loading = int(modal.extra)
-        fightdata = {'ex':[30, 3, 51000, 56], 'ex+':[30, 4, 88000, 66], 'nm90':[30, -5, 260000, 83], 'nm95':[40, -10, 910000, 111], 'nm100':[50, -20, 2650000, 168], 'nm150':[50, -20, 4100000, 257], 'nm200':[50, -20, 13350387, 338]}
         error = False
         msg = ""
         for f, v in inter.text_values.items():
@@ -1254,8 +1249,8 @@ class GuildWar(commands.Cog):
                 if time < 0: raise Exception()
                 elif time == 0: continue
                 mod = (3600 / (time+loading))
-                compare = [self.bot.util.valToStr(mod*i, 2) for i in fightdata[f]]
-                msg += "**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** AP ▫️ **{}** Token ▫️ **{}** Meat\n".format(f.upper(), self.bot.emote.get('clock'), v, compare[2], compare[0], compare[3], compare[1])
+                if f not in self.FIGHTS: continue
+                msg += "**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots ▫️ **{}** Meats\n".format(f, self.bot.emote.get('clock'), v, self.bot.util.valToStr(mod*self.FIGHTS[f]["honor"], 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["token"], 2), self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["AP"]/75), 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["meat_cost"], 2))
             except:
                 error = True
         if msg == '':
@@ -1270,7 +1265,7 @@ class GuildWar(commands.Cog):
                 disnake.ui.TextInput(
                     label="NM90",
                     placeholder="NM90 Kill Time (In seconds)",
-                    custom_id="nm90",
+                    custom_id="NM90",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
@@ -1278,7 +1273,7 @@ class GuildWar(commands.Cog):
                 disnake.ui.TextInput(
                     label="NM95",
                     placeholder="NM95 Kill Time (In seconds)",
-                    custom_id="nm95",
+                    custom_id="NM95",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
@@ -1286,7 +1281,7 @@ class GuildWar(commands.Cog):
                 disnake.ui.TextInput(
                     label="NM100",
                     placeholder="NM100 Kill Time (In seconds)",
-                    custom_id="nm100",
+                    custom_id="NM100",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
@@ -1294,7 +1289,7 @@ class GuildWar(commands.Cog):
                 disnake.ui.TextInput(
                     label="NM150",
                     placeholder="NM150 Kill Time (In seconds)",
-                    custom_id="nm150",
+                    custom_id="NM150",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
@@ -1302,7 +1297,7 @@ class GuildWar(commands.Cog):
                 disnake.ui.TextInput(
                     label="NM200",
                     placeholder="NM200 Kill Time (In seconds)",
-                    custom_id="nm200",
+                    custom_id="NM200",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
@@ -1312,10 +1307,9 @@ class GuildWar(commands.Cog):
         )
 
     @utility.sub_command()
-    async def nm95(self, inter: disnake.GuildCommandInteraction, hp_percent : int = commands.Param(description="HP% of NM95 you want to do", default=100, le=100, ge=1)) -> None:
-        """Give the dragon solo equivalent of NM95"""
+    async def nm(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Give a fight equivalent of NM95 and NM90"""
         await inter.response.defer()
-        todo = (131250000 * hp_percent) // 100
         drag = {
             'fire':('Ewiyar (Solo)', 180000000, "103471/3"),
             'water':('Wilnas (Solo)', 165000000, "103441/3"),
@@ -1324,13 +1318,13 @@ class GuildWar(commands.Cog):
             'light':('Gilbert (Proud)', 180000000, "103571/3"),
             'dark':('Lu Woh (Solo)', 192000000, "103481/3")
         }
-        msg = "To do **{}% of NM95**, you must have:\n".format(hp_percent)
+        msg = ""
         for el in drag:
             if drag[el] is None:
-                msg += "{} No equivalent\n".format(self.bot.emote.get(el))
+                msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
             else:
-                msg += "{:} **{:.1f}% HP** remaining on [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:})\n".format(self.bot.emote.get(el), 100 * ((drag[el][1] - todo) / drag[el][1]), drag[el][0], drag[el][2])
-        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
+                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), drag[el][0], drag[el][2], 100 * ((drag[el][1] - 131250000) / drag[el][1]), 100 * ((drag[el][1] - 42000000) / drag[el][1]))
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
         await self.bot.util.clean(inter, 90)
 
     @gw.sub_command_group()
