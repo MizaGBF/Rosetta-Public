@@ -385,7 +385,7 @@ class Data():
                         if (len(new_schedule[k]) == 2 and c > datetime.utcfromtimestamp(new_schedule[k][1])) or (len(new_schedule[k]) == 1 and c > datetime.utcfromtimestamp(new_schedule[k][0]) + timedelta(days=1)):
                             new_schedule.pop(k, None)
                     if str(new_schedule) != str(self.save['schedule']):
-                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\nBefore: `{}`\nAfter: `{}`".format(self.save['schedule'], new_schedule))
+                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success\Previous Schedule: `{}`".format(self.save['schedule']))
                         self.save['schedule'] = new_schedule
                         self.pending = True
         except Exception as e:
