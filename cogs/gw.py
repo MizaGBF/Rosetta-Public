@@ -24,7 +24,7 @@ from views.page import Page, PageRanking
 class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
     COLOR = 0xff0000
-    YOU_MEAT_REGEX = re.compile('\\b(\\d+(\\.\\d+)?)([kK])?\\b')
+    YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
     FIGHTS = {
         "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000},
         "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000},
