@@ -864,9 +864,8 @@ class GuildWar(commands.Cog):
                     if result[0].current_speed is not None and result[0].top_speed is not None:
                         msg += " ▫️ +{}/m. ▫️ Top {}/m.\n".format(self.bot.util.valToStr(result[0].current_speed), self.bot.util.valToStr(result[0].top_speed))
                         if timestamp is not None and day - 1 > 0 and day - 1 < 5:
-                            ct = datetime.utcfromtimestamp(timestamp)
-                            if ct < self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200):
-                                current_time_left = self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200) - ct
+                            if timestamp < self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200):
+                                current_time_left = self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200) - timestamp
                                 current_estimation = result[0].current_day + result[0].current_speed * current_time_left.seconds//60
                                 top_estimation = result[0].current_day + result[0].top_speed * current_time_left.seconds//60
                                 msg += "**Estimation** ▫️ Now {} ▫️ Top {}\n".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3))
