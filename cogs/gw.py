@@ -926,7 +926,10 @@ class GuildWar(commands.Cog):
                         attach[message.author.id] = []
                     for at in message.attachments:
                         attach[message.author.id].append(at.url)
-                    users[message.author.id] = message.author.display_name
+                    try:
+                        users[message.author.id] = (await message.guild.get_or_fetch_member(message.author.id)).display_name
+                    except:
+                        users[message.author.id] = message.author.display_name
             msg = ""
             total = 0
             for uid in users:
