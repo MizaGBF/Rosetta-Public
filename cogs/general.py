@@ -3,7 +3,6 @@ from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import math
-from views.poll import Poll
 
 # ----------------------------------------------------------------------------------------------------------------
 # General Cog
@@ -127,76 +126,6 @@ class General(commands.Cog):
         """Post the bot public github"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="Rosetta", description="Source code and issue tracker can be found [here](https://github.com/MizaGBF/Rosetta-Public).", color=self.COLOR))
-
-    """poll_callback()
-    CustomModal callback
-    """
-    async def poll_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
-        try:
-            await inter.response.defer(ephemeral=True)
-            title = inter.text_values['title']
-            try:
-                duration = int(inter.text_values['duration'])
-                if duration < 60: duration = 60
-                elif duration > 500: duration = 500
-            except:
-                await inter.edit_original_message(embed=self.bot.embed(title="Poll error", description="`{}` isn't a valid duration".format(inter.text_values['duration']), color=self.COLOR))
-                return
-            try:
-                choices = inter.text_values['choices'].replace('\r', '').replace('\n\n', '\n').replace('\n\n', '\n').split('\n')
-                if len(choices) < 2: raise Exception()
-                elif len(choices) > 20: raise Exception()
-            except:
-                await inter.edit_original_message(embed=self.bot.embed(title="Poll error", description="You must have between 2 and 20 choices. You currently have {}.\n{}".format(len(choices), choices), color=self.COLOR))
-                return
-            await inter.edit_original_message(embed=self.bot.embed(title="Information", description="Your poll is starting", color=self.COLOR))
-
-            embed = self.bot.embed(author={'name':'{} started a poll'.format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, title=title, description="{} seconds remaining to vote".format(duration), color=self.COLOR)
-            view = Poll(self.bot, inter.author, embed, title, choices)
-            msg_to_edit = await inter.channel.send(embed=embed)
-            msg_view = await inter.channel.send('\u200b', view=view)
-            await view.run_poll(duration, msg_to_edit, inter.channel)
-            await msg_view.delete()
-        except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Poll error", description="An unexpected error occured, try again.\n{}".format(e), color=self.COLOR))
-
-    @commands.slash_command()
-    @commands.default_member_permissions(send_messages=True, read_messages=True)
-    @commands.cooldown(1, 40, commands.BucketType.guild)
-    @commands.max_concurrency(6, commands.BucketType.default)
-    async def poll(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Make a poll"""
-        if not isinstance(inter.channel, disnake.TextChannel):
-            raise Exception("This channel isn't a text channel")
-        await self.bot.util.send_modal(inter, "create_poll-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Create a Poll", self.poll_callback, [
-            disnake.ui.TextInput(
-                label="Title",
-                placeholder="The title of the poll",
-                custom_id="title",
-                style=disnake.TextInputStyle.short,
-                min_length=1,
-                max_length=140,
-                required=True
-            ),
-            disnake.ui.TextInput(
-                label="Choices",
-                placeholder="One choice per line, minimum 2, maximum 20.",
-                custom_id="choices",
-                style=disnake.TextInputStyle.paragraph,
-                min_length=1,
-                max_length=800,
-                required=True
-            ),
-            disnake.ui.TextInput(
-                label="Duration",
-                placeholder="Between 60 and 500 seconds",
-                custom_id="duration",
-                style=disnake.TextInputStyle.short,
-                min_length=2,
-                max_length=3,
-                required=True
-            ),
-        ])
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
