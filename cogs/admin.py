@@ -1077,7 +1077,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Skip cancelled", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def gacha(self, inter: disnake.GuildCommandInteraction):
+    async def gacha(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
 
     @gacha.sub_command(name="clear")

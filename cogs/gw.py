@@ -476,8 +476,8 @@ class GuildWar(commands.Cog):
                             else: msg = "Next Day: **{}** ▫️ ".format(timestring)
                         msg += "Updated: **{}** ago\n".format(self.bot.util.delta2str(current_time - update_time, 0))
                         if target_index == -1:
-                            msg += "**Final** "
-                            title = "Final Estimation"
+                            msg += "**Ending** "
+                            title = "Ending Estimation"
                         else:
                             msg += "**Today** "
                             title = "Today Estimation"

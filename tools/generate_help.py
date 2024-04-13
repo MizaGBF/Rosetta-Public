@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 
 func_index = {}
 
@@ -594,7 +595,8 @@ def retrieve_command_list(cog, data, pos_list): # use the position list to retri
             else: # if it's a renamed command, store the relation in the index
                 func_index[cog + "_" + tmp] = alias
             # now parse the command parameters
-            args = breakdown_parameters(search_interval(data, fp, max_pos, '(', ') ->'))
+            try: args = breakdown_parameters(search_interval(data, fp, max_pos, '(', ') ->'))
+            except: args = breakdown_parameters(search_interval(data, fp, max_pos, '(', '):'))
             # remove the first two (self, inter)
             args.pop(0)
             args.pop(0)
@@ -668,7 +670,7 @@ def generate_help(): # main function
                                 command_list[class_name] = cl # store it
                         except Exception as e:
                             print("Error in", p)
-                            print(e)
+                            print("".join(traceback.format_exception(type(e), e, e.__traceback__)))
             except:
                 pass
     generate_html(command_list) # generate the html using the stored data on found commands
