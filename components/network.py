@@ -61,8 +61,9 @@ class Network():
             - "IID": The GBF Profile ID, as an integer
         - timeout: Integer, timeout in seconds. Set to None to use the default 20s timeout.
         - follow_redirects: Boolean (Default is False), set to True to follow request redirections if you expect any.
-        - rtype: To do another type of request. Only when payload is None (aka for GET requests). Possible values are "GET" (default), "HEAD", "CONDITIONAL-GET" (will return the response)
+        - rtype: To do another type of request. Only when payload is None (aka for GET requests). Possible values are "GET" (default), "HEAD", "CONDITIONAL-GET" (will return the response), "POST"
         - expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
+        - collect_headers: Default is None. Set it to a list of size one and the request headers will be inserted in the first emplacement.
         - skip_check: Boolean, skip the maintenance check. For internal use only, ignore it.
         - updated: Boolean. For internal use only, ignore it.
     
@@ -134,8 +135,10 @@ class Network():
                         response = await self.client.get(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
                     case 'HEAD':
                         response = await self.client.get(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
+                    case 'POST':
+                        response = await self.client.post(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
             else:
-                rtype = 'GET' # default mode to avoid weird behaviors
+                rtype = 'POST'
                 if not options.get('no_base_headers', False) and 'Content-Type' not in headers: headers['Content-Type'] = 'application/json'
                 if 'user_id' in payload:
                     match payload['user_id']:
@@ -159,7 +162,9 @@ class Network():
                     raise Exception()
                 if aid is not None:
                     self.refresh_account(aid, response.headers['set-cookie'])
-
+                if isinstance(options.get('collect_headers', None), list):
+                    try: options['collect_headers'][0] = response.headers
+                    except: pass
                 is_json = response.headers.get('content-type', '').startswith('application/json')
                 if options.get('expect_JSON', False) and not is_json: raise Exception()
                 if rtype == "HEAD": return True
