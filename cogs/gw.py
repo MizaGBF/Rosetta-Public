@@ -1608,7 +1608,7 @@ class GuildWar(commands.Cog):
             # sort crews
             sortedcrew = []
             for c in crews:
-                data = await self.getCrewData(int(c), 2)
+                data = await self.getCrewData(c, 2)
                 if 'error' not in data and data['count'] != 30:
                     if len(sortedcrew) == 0: sortedcrew.append(data)
                     else:
