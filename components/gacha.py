@@ -614,7 +614,7 @@ class GachaSimulator():
         if self.best[0] != -1 and self.best[1] != "":
             search = self.best[1][2:]
             # summer hotfix
-            match search:
+            """match search:
                 case "Belial":
                     if self.best[1][:2] == "1S": search = "Belial (Summer)"
                 case "Freyr":
@@ -643,8 +643,8 @@ class GachaSimulator():
                 case "Rose Queen":
                     if not self.isclassic: search = "Rose Queen (Summer)" # NOTE: regular version not in the classic gacha yet, so this fix will be a bit hit or miss
                 case _:
-                    pass
-            rid = await self.bot.util.search_wiki_for_id(search) # retrieve the id from the wiki
+                    pass"""
+            rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons") # retrieve the id from the wiki
             if rid is None: self.thumbnail = None # and update self.thumbnail accordingly
             elif rid.startswith('1'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
             elif rid.startswith('2'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)

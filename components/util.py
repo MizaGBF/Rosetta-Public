@@ -3,6 +3,7 @@ import asyncio
 from typing import Optional, Union, Callable, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 import psutil
 import os
 import sys
@@ -16,12 +17,6 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Util():
-    SEARCH_REGEXES = [
-        re.compile('(3[0-9]{9})_01\\.'),
-        re.compile('([12][0-9]{9}_03)\\.'),
-        re.compile('([12][0-9]{9}_02)\\.'),
-        re.compile('([12][0-9]{9})\\.')
-    ]
     JSTDIFF = 32400
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -517,32 +512,21 @@ class Util():
         return s
 
     """search_wiki_for_id()
-    Search the wiki for a weapon/summon id
+    Search the wiki for a weapon/character/summon id
     
     Parameters
     ----------
-    sps: Target search name
-    summon_check: if True, it will check for a (Summon) page first (if not present in the target)
-    search_character: if True, it will check for a character ID (else it only support summon and weapon)
+    name: String, target search name
+    category: String, table to use for the request (either characters, summons or weapons)
     
     Returns
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self, sps: str, *, summon_check : bool = True, search_character : bool = False) -> Optional[str]:
+    async def search_wiki_for_id(self, name : str, category : str) -> Optional[str]:
         try:
-            if summon_check and "(summon)" not in sps.lower(): # search summon names first
-                data = await self.search_wiki_for_id(sps + ' (Summon)', search_character=search_character)
-                if data is not None: return data
-            f = sps.replace(' ', '_')
-            match f:
-                case "Tiamat_(Summon)": f = "Tiamat_(Summer)"
-                case _: pass
-            data = (await self.bot.net.request("https://gbf.wiki/" + f, no_base_headers=True, add_user_agent=True, follow_redirects=True, timeout=5)).decode('utf-8')
-            for i in range((0 if search_character else 1), len(self.SEARCH_REGEXES)):
-                group = self.SEARCH_REGEXES[i].findall(data)
-                if len(group) > 0: break
-            return group[0]
+            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22&fields=name,id&format=json&limit=10".format(category, quote(name)), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
+            return str(data[0]['id'])
         except:
             return None
 
