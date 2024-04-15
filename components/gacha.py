@@ -613,38 +613,9 @@ class GachaSimulator():
     async def updateThumbnail(self) -> None:
         if self.best[0] != -1 and self.best[1] != "":
             search = self.best[1][2:]
-            # summer hotfix
-            """match search:
-                case "Belial":
-                    if self.best[1][:2] == "1S": search = "Belial (Summer)"
-                case "Freyr":
-                    if self.best[1][:2] == "3S": search = "Freyr (Yukata)"
-                case "Kaguya":
-                    if self.best[1][:2] == "5S": search = "Kaguya (Summer)"
-                case "Athena":
-                    if not self.isclassic: search = "Athena (Summer)"
-                    else: pass
-                case "Satyr":
-                    if not self.isclassic: search = "Satyr (Summer)"
-                    else: pass
-                case "Macula":
-                    if not self.isclassic: search = "Macula (Summer)"
-                    else: pass
-                case "Mandrake":
-                    if self.best[0] >= 2: search = "Mandrake (Summer)"
-                case "Yggdrasil":
-                    search = "Yggdrasil (Summer)"
-                case "Tiamat":
-                    search = "Tiamat (Summer)"
-                case "Sleepyhead":
-                    if self.best[0] >= 2: search = "Sleepyhead (Summer)"
-                case "Cerberus":
-                    if self.best[1][:2] == "1S": search = "Cerberus (Summer)"
-                case "Rose Queen":
-                    if not self.isclassic: search = "Rose Queen (Summer)" # NOTE: regular version not in the classic gacha yet, so this fix will be a bit hit or miss
-                case _:
-                    pass"""
-            rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons") # retrieve the id from the wiki
+            element = ['fire', 'water', 'earth', 'wind', 'light', 'dark'][int(self.best[1][0])-1]
+            prof = (['sabre', 'dagger', 'spear', 'axe', 'staff', 'gun', 'melee', 'bow', 'harp', 'katana'][int(self.best[1][1])] if self.best[1][1] != 'S' else None)
+            rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons", element, prof) # retrieve the id from the wiki
             if rid is None: self.thumbnail = None # and update self.thumbnail accordingly
             elif rid.startswith('1'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
             elif rid.startswith('2'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)

@@ -518,16 +518,26 @@ class Util():
     ----------
     name: String, target search name
     category: String, table to use for the request (either characters, summons or weapons)
+    element: String (optional), element of the target
+    proficiency: String (optional), weapon type of the target (weapon only)
     
     Returns
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self, name : str, category : str) -> Optional[str]:
+    async def search_wiki_for_id(self, name : str, category : str, element : Optional[str] = None, proficiency : Optional[str] = None) -> Optional[str]:
         try:
-            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22&fields=name,id&format=json&limit=10".format(category, quote(name)), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
+            addition = ""
+            extra_fields = ""
+            if element is not None:
+                addition += 'AND element = "{}"'.format(element)
+            if proficiency is not None and category == "weapons":
+                addition += 'AND type = "{}"'.format(proficiency)
+                extra_fields = ",type"
+            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,element{}&format=json&limit=10".format(category, quote(name), quote(addition), extra_fields), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
             return str(data[0]['id'])
-        except:
+        except Exception as e:
+            print(e)
             return None
 
     """process_command()
