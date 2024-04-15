@@ -410,6 +410,21 @@ class Util():
             return "Invalid ID range (ID must be between 0 and 100 000 000)."
         return tid
 
+    """gbfgstr2crewid()
+    Take a string as an input and attempt to match it to a crew ID registered in config.json
+    
+    Parameters
+    ----------
+    target: String, can be a crew id or a crew name registered in config.json
+    
+    Returns
+    --------
+    str: The crew ID or the original string if no match is found
+    """
+    def gbfgstr2crewid(self, target : str) -> str:
+        crew_id_list = {**(self.bot.data.config['granblue']['gbfgcrew']), **(self.bot.data.config['granblue'].get('othercrew', {}))}
+        return crew_id_list.get(target.lower(), target)
+
     """formatElement()
     Format the unite&fight/dread barrage element into a string containing the superior and inferior elements
     

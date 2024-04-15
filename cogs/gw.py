@@ -539,12 +539,7 @@ class GuildWar(commands.Cog):
     async def getCrewData(self, target : str, mode : int = 0) -> Optional[dict]:
         if not await self.bot.net.gbf_available(): # check for maintenance
             return {'error':'Game is in maintenance'}
-        match target:
-            case list() | tuple(): tid = " ".join(target)
-            case int(): tid = str(target)
-            case _: tid = target
-        crew_id_list = {**(self.bot.data.config['granblue']['gbfgcrew']), **(self.bot.data.config['granblue'].get('othercrew', {}))}
-        tid = crew_id_list.get(tid.lower(), tid) # check if the id is a gbfgcrew
+        tid = self.bot.util.gbfgstr2crewid(target)
         gwdata = None
         # check id validityy
         try:
@@ -1469,7 +1464,7 @@ class GuildWar(commands.Cog):
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="An error occured", color=self.COLOR))
 
     @gw.sub_command_group()
-    async def player(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def stats(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
 
     """refresh_gbfteamraid()
@@ -1490,28 +1485,39 @@ class GuildWar(commands.Cog):
         except:
             return False
 
-    @player.sub_command()
-    async def stats(self, inter: disnake.GuildCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
-        """Retrieve a GBF profile GW stats from https://info.gbfteamraid.fun/web/about"""
-        try:
-            await inter.response.defer()
-            pid = await self.bot.util.str2gbfid(inter, target)
-            if isinstance(pid, str):
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description=pid, color=self.COLOR))
+    """refresh_gbfteamraid()
+    Core of /gw stats player and /gw stats crew
+    
+    Parameters
+    ----------
+    inter: A Discord Interaction, already deferred
+    id_str: String, ID of the target
+    is_crew: Boolean, True if the ID is for a crew, False otherwise
+    """
+    async def generat_gbfteamraide_stats(self, inter : disnake.Interaction, id_str : str, is_crew : bool) -> None:
+        r = await self.bot.ranking.searchGWDB(id_str, 2 + (10 if is_crew else 0))
+        search_type = ("Crew" if is_crew else "Player")
+        path = ("guildrank" if is_crew else "userrank")
+        method = ("getGuildrankChartById" if is_crew else "getUserrankChartById")
+        param = ("guildid" if is_crew else "userid")
+        complete_count = (5 if is_crew else 6)
+        link = ("https://game.granbluefantasy.jp/#guild/detail/" if is_crew else "https://game.granbluefantasy.jp/#profile/")
+        if r is None or (r[0] is None and r[1] is None) or (len(r[0]) == 0 and len(r[1]) == 0):
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description=search_type + " not found in the latest rankings", color=self.COLOR))
+        else:
+            if self.bot.data.save['gbfdata'].get('teamraid_cookie', None) is None and not await self.refresh_gbfteamraid():
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable, try again later or go to [this website](https://info.gbfteamraid.fun/web/about)", color=self.COLOR))
             else:
-                r = await self.bot.ranking.searchGWDB(str(pid), 2)
-                if r is None or r[1] is None or r[2][1] is None:
-                    await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Player not found in the latest ranking", color=self.COLOR))
-                else:
-                    if self.bot.data.save['gbfdata'].get('teamraid_cookie', None) is None and not await self.refresh_gbfteamraid():
-                        await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable, try again later or go to [this website](https://info.gbfteamraid.fun/web/about)", color=self.COLOR))
-                    else:
-                        gwid = r[2][1].gw
-                        for a in range(2):
-                            try:
-                                table = await self.bot.net.request("https://info.gbfteamraid.fun/web/userrank?method=getUserrankChartById&params=%7B%22teamraidid%22%3A%22teamraid{}%22%2C%22userid%22%3A%22{}%22%7D".format(str(gwid).zfill(3), pid), rtype="POST", add_user_agent=True, no_base_headers=True, follow_redirects=False, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun', 'Referer':'https://info.gbfteamraid.fun/web/userrank?teamraidid=teamraid{}'.format(str(gwid).zfill(3)), 'Cookies':self.bot.data.save['gbfdata']['teamraid_cookie']})
-                                table = json.loads(table.decode('utf-8'))
-                                data = {}
+                msg = ""
+                for gwi in range(2):
+                    if r[gwi] is None or len(r[gwi]) == 0: continue
+                    for err in range(2):
+                        try:
+                            gwid = r[2][gwi].gw
+                            table = await self.bot.net.request("https://info.gbfteamraid.fun/web/{}?method={}&params=%7B%22teamraidid%22%3A%22teamraid{}%22%2C%22{}%22%3A%22{}%22%7D".format(path, method, str(gwid).zfill(3), param, id_str), rtype="POST", add_user_agent=True, no_base_headers=True, follow_redirects=False, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun', 'Referer':'https://info.gbfteamraid.fun/web/userrank?teamraidid=teamraid{}'.format(str(gwid).zfill(3)), 'Cookies':self.bot.data.save['gbfdata']['teamraid_cookie']})
+                            table = json.loads(table.decode('utf-8'))
+                            data = {}
+                            if 'result' in table:
                                 for i in range(len(table['result'])-1, 1, -1):
                                     key = list(table['result'][i].keys())[0]
                                     data[key] = {'points': 0, 'speed':0}
@@ -1525,24 +1531,58 @@ class GuildWar(commands.Cog):
                                         if speed > data[key]['speed']:
                                             data[key]['speed'] = speed
                                         prev = (int(p['point']), int(p['updatetime']))
-                                msg = "**GW{:}** of **[{:}](https://game.granbluefantasy.jp/#profile/{:})**\nTotal **{:,}** honors\n**Breakdown**\n".format(r[1][0].gw, r[1][0].name, r[1][0].id, r[1][0].current)
-                                c = 1
-                                for k, v in data.items():
-                                    if v['points'] > 0:
-                                        msg += "{:} {:} - **{:,}** honors - {:} Best **{:}**/min\n".format(self.bot.emote.get(str(c)), k, v['points'], self.bot.emote.get('clock'), self.bot.util.valToStr(v['speed']*60, 2))
-                                        c += 1
-                                await inter.edit_original_message(embed=self.bot.embed(title="{} Player Stats".format(self.bot.emote.get('gw')), description=msg, footer="source: https://info.gbfteamraid.fun/web/about", url="https://info.gbfteamraid.fun/web/about", color=self.COLOR))
-                                break
-                            except Exception as ex:
-                                if a == 0:
-                                    await self.refresh_gbfteamraid()
-                                else:
-                                    self.bot.logger.pushError("[GW] In 'gw player stat' command:", ex)
-                                    await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
+                            msg += "**GW{:}** of **[{:}]({:}{:})**\nTotal **{:,}** honors\n".format(gwid, r[gwi][0].name, link, r[gwi][0].id, r[gwi][0].current)
+                            c = 1
+                            tmp = ""
+                            for k, v in data.items():
+                                if v['points'] > 0:
+                                    tmp += "{:} {:} - **{:,}** honors - {:} Best **{:}**/min\n".format(self.bot.emote.get(str(c)), k, v['points'], self.bot.emote.get('clock'), self.bot.util.valToStr(v['speed']*60, 2))
+                                    c += 1
+                            if tmp == "":
+                                msg += "*Couldn't fetch detailed data*\n"
+                            else:
+                                if c <= complete_count: tmp += "*Data is uncomplete*\n"
+                                msg += "**Breakdown**\n" + tmp
+                            msg += "\n"
+                            break
+                        except Exception as e:
+                            if err == 0:
+                                await self.refresh_gbfteamraid()
+                            else:
+                                self.bot.logger.pushError("[GW] 'generat_gbfteamraide_stats' Error:", e)
+                                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
+                                await self.bot.util.clean(inter, 90)
+                                return
+                if msg == "":
+                    await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No data for this " + search_type.lower(), color=self.COLOR))
+                else:
+                    await inter.edit_original_message(embed=self.bot.embed(title="{} {} Stats".format(self.bot.emote.get('gw'), search_type), description=msg, footer="source: https://info.gbfteamraid.fun/web/about", url="https://info.gbfteamraid.fun/web/about", color=self.COLOR))
+
+    @stats.sub_command(name="player")
+    async def playerstats(self, inter: disnake.GuildCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
+        """Retrieve a GBF profile GW stats from https://info.gbfteamraid.fun/web/about"""
+        try:
+            await inter.response.defer()
+            pid = await self.bot.util.str2gbfid(inter, target)
+            if isinstance(pid, str):
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description=pid, color=self.COLOR))
+            else:
+                await self.generat_gbfteamraide_stats(inter, str(pid), False)
         except Exception as e:
             self.bot.logger.pushError("[GW] In 'gw player stat' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
-        await self.bot.util.clean(inter, 100)
+        await self.bot.util.clean(inter, 90)
+
+    @stats.sub_command(name="crew")
+    async def crewstats(self, inter: disnake.GuildCommandInteraction, target : str = commands.Param(description="Crew ID")) -> None:
+        """Retrieve a GBF crew GW stats from https://info.gbfteamraid.fun/web/about"""
+        try:
+            await inter.response.defer()
+            await self.generat_gbfteamraide_stats(inter, self.bot.util.gbfgstr2crewid(target), True)
+        except Exception as e:
+            self.bot.logger.pushError("[GW] In 'gw player stat' command:", e)
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
+        await self.bot.util.clean(inter, 90)
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

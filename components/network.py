@@ -471,4 +471,5 @@ class Network():
     exception: If an error occurs
     """
     def translate(self, original_text : str) -> str:
+        if original_text == "": return original_text
         return self.translator.translate(original_text)
