@@ -286,7 +286,7 @@ class Search(commands.Cog):
                     results = []
                     for t in data['sites']:
                         if 'on Twitter:' in t['title']:
-                            t['title'] = t['title'].split('on Twitter:')[0] + 'on Twitter:' # fix for twitter names
+                            t['title'] = t['title'].split('on Twitter:', 1)[0] + 'on Twitter:' # fix for twitter names
                         results.append((t['title'], t['url']))
                         if len(results) == 8: break
                     return results
@@ -326,7 +326,7 @@ class Search(commands.Cog):
             else:
                 description = ""
                 for r in await self.yandex_reverse_image_search(img_url):
-                    description += "- [{}]({}) ({})\n".format(r[0].replace('[', '(').replace(']', ')'), r[1], r[1].replace('http://', '').replace('https://', '').split('/')[0])
+                    description += "- [{}]({}) ({})\n".format(r[0].replace('[', '(').replace(']', ')'), r[1], r[1].replace('http://', '').replace('https://', '').split('/', 1)[0])
                 if description == "":
                     description = "No results"
                 else:

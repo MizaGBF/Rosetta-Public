@@ -27,7 +27,7 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.3.1" # bot version
+        self.version = "11.3.2" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
             "**v11.0.12** - Added `/mod server toggle_vxtwitter`.",
@@ -550,7 +550,7 @@ class DiscordBot(commands.InteractionBot):
             elif msg.find('Member "') == 0 or msg.find('Command "') == 0 or msg.startswith('Command raised an exception: Forbidden: 403'):
                 embed=self.embed(title="Command Permission Error", description="It seems you can't use this command here", timestamp=self.util.UTC())
             else:
-                msg = self.pexc(error).replace('*', '\*').split('The above exception was the direct cause of the following exception')[0]
+                msg = self.pexc(error).replace('*', '\*').split('The above exception was the direct cause of the following exception', 1)[0]
                 if len(msg) > 4000:
                     msg = msg[:4000] + "...\n*Too long, check rosetta.log for details*"
                 await self.send('debug', embed=self.embed(title="⚠ Error caused by {}".format(inter.author), description=msg, thumbnail=inter.author.display_avatar, fields=[{"name":"Options", "value":'`{}`'.format(inter.options)}, {"name":"Server", "value":inter.author.guild.name}], footer='{}'.format(inter.author.id), timestamp=self.util.UTC()))
@@ -645,7 +645,7 @@ class DiscordBot(commands.InteractionBot):
                     if b == -1: link = message.content[a:]
                     else: link = message.content[a:b]
                     # modify link
-                    link = link.split('?')[0].replace('https://twitter.com/', 'https://vxtwitter.com/').replace('https://x.com/', 'https://vxtwitter.com/')
+                    link = link.split('?', 1)[0].replace('https://twitter.com/', 'https://vxtwitter.com/').replace('https://x.com/', 'https://vxtwitter.com/')
                     if '/status/' in link and link not in already_posted: # if not found previously in the same message
                         await message.reply(link) # reply with
                         already_posted.add(link)

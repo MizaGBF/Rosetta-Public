@@ -232,10 +232,10 @@ class General(commands.Cog):
         try:
             data = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", no_base_headers=True)).decode('utf-8').split('<Cube time="')
             rates = ([None, None], [None, None])
-            date = data[1].split('">')[0]
+            date = data[1].split('">', 1)[0]
             for i in range(0, 2):
-                rates[0][i] = float(data[i+1].split('<Cube currency="JPY" rate="')[1].split('"/>')[0])
-                rates[1][i] = rates[0][i] / float(data[i+1].split('<Cube currency="USD" rate="')[1].split('"/>')[0])
+                rates[0][i] = float(data[i+1].split('<Cube currency="JPY" rate="', 1)[1].split('"/>', 1)[0])
+                rates[1][i] = rates[0][i] / float(data[i+1].split('<Cube currency="USD" rate="', 1)[1].split('"/>', 1)[0])
             for i in range(0, 2):
                 rates[i][1] = 100 * rates[i][0] / rates[i][1] - 100
             

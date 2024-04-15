@@ -245,9 +245,9 @@ class GranblueFantasy(commands.Cog):
                         await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'], description=description, url=url, image=thumb, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
                         if data[0]['title'].endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
                             try:
-                                try: description = description.split('. ')[0][len("Server maintenance is scheduled for "):].split(',')
-                                except: description = description.split('. ')[0][len("Server maintenance and game updates are scheduled for "):].split(',')
-                                t = description[0].split(",")[0]
+                                try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
+                                except: description = description.split('. ', 1)[0][len("Server maintenance and game updates are scheduled for "):].split(',')
+                                t = description[0].split(",", 1)[0]
                                 u = t.split('–')
                                 for e in range(len(u)):
                                     if 'noon' in u[e]: u[e] = '12 p.m.'
@@ -575,14 +575,14 @@ class GranblueFantasy(commands.Cog):
                 elif content.find("This is the basic aura") != -1:
                     try:
                         if aura == 0: aura = 1
-                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the basic aura")[0]
+                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the basic aura", 1)[0]
                         d = tr.findChildren("td")[0]
                         if aura == 1: data['aura'] = self.stripWikiStr(d)
                         elif aura == 2: data['subaura'] = self.stripWikiStr(d)
                     except: pass
                 elif content.find("This is the aura") != -1:
                     try:
-                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the aura")[0]
+                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the aura", 1)[0]
                         d = tr.findChildren("td")[0]
                         if aura == 1: data['aura'] = self.stripWikiStr(d)
                         elif aura == 2: data['subaura'] = self.stripWikiStr(d)
@@ -1095,7 +1095,7 @@ class GranblueFantasy(commands.Cog):
                         sname = c[0].get_text()
                         cname = c[1].get('class')[-1]
                         if 'bless-rank' in cname:
-                            squal = "star{}".format(cname.split('bless-rank')[-1].split('-')[0])
+                            squal = "star{}".format(cname.split('bless-rank')[-1].split('-', 1)[0])
                         else:
                             squal = "star0"
                         summon_list[y][(x+6)%7] = (sname, squal)
@@ -1317,14 +1317,14 @@ class GranblueFantasy(commands.Cog):
 
         # summer disaster
         c = self.bot.util.JST()
-        msg += "**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d')[0])
-        msg += "**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d')[0])
+        msg += "**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
+        msg += "**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
         
         # grand
         try:
             grands = await self.getGrandList()
             for e in grands:
-                msg += "**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['date'], 3).split('d')[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_'))
+                msg += "**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_'))
         except:
             pass
 
@@ -1452,8 +1452,9 @@ class GranblueFantasy(commands.Cog):
                 s = data.find('<div class="txt-amount">')
                 if s == -1: raise Exception()
                 s += len('<div class="txt-amount">')
-                crystal = int(data[s:].split('/')[0].replace(',', ''))
-                available_crystal = int(data[s:].split('/')[1].replace(',', '').replace('<', ''))
+                ds = data[s:].split('/')
+                crystal = int(ds[0].replace(',', ''))
+                available_crystal = int(ds[1].replace(',', '').replace('<', ''))
                 if maxwave > 1:
                     if data.find('<div class="prt-wave-{}">'.format(self.bot.data.save['extra']['campaign/dividecrystal']['wave'])) == -1 and data.find('<div class="prt-wave-{}">'.format(self.bot.data.save['extra']['campaign/dividecrystal']['wave'] + 1)) != -1:
                         # additional wave change check

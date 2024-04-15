@@ -73,7 +73,7 @@ class Network():
     """
     async def request(self, base_url : str, **options : dict) -> Any:
         try:
-            host = base_url.replace('http://', '').replace('https://', '').split('/')[0]
+            host = base_url.replace('http://', '').replace('https://', '').split('/', 1)[0]
             if not options.get('skip_check', False) and host == "game.granbluefantasy.jp" and await self.gbf_maintenance(): return None
             params = options.get('params', None)
             headers = {'Connection':'keep-alive'}

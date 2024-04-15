@@ -27,7 +27,7 @@ class Emote():
             data = data.decode('utf-8').split('\n')
             for l in data:
                 if l.startswith('#'): continue
-                dat = l.split(';')[0].strip()
+                dat = l.split(';', 1)[0].strip()
                 if dat == "": continue
                 dat = dat.split(' ')
                 if len(dat) == 2:

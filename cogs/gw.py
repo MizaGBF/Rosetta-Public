@@ -584,7 +584,7 @@ class GuildWar(commands.Cog):
                         crew['name'] = html.unescape(get['guild_name'])
                         crew['rank'] = get['guild_rank']
                         crew['ship'] = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/guild/thumb/top/{}.png".format(get['ship_img'])
-                        crew['ship_element'] = {"10001":"wind", "20001":"fire", "30001":"water", "40001":"earth", "50001":"light", "60001":"dark"}.get(get['ship_img'].split('_')[0], 'gw')
+                        crew['ship_element'] = {"10001":"wind", "20001":"fire", "30001":"water", "40001":"earth", "50001":"light", "60001":"dark"}.get(get['ship_img'].split('_', 1)[0], 'gw')
                         crew['leader'] = html.unescape(get['leader_name'])
                         crew['leader_id'] = get['leader_user_id']
                         crew['donator'] = html.unescape(get['most_donated_name'])
@@ -1479,7 +1479,7 @@ class GuildWar(commands.Cog):
             headers = [None]
             r = await self.bot.net.request("https://info.gbfteamraid.fun/login", rtype="POST", add_user_agent=True, no_base_headers=True, follow_redirects=False, collect_headers=headers, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun'})
             if r is None: return False
-            self.bot.data.save['gbfdata']['teamraid_cookie'] = headers[0]['Set-Cookie'].split(';')[0]
+            self.bot.data.save['gbfdata']['teamraid_cookie'] = headers[0]['Set-Cookie'].split(';', 1)[0]
             self.bot.data.pending = True
             return True
         except:
