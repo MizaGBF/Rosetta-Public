@@ -892,50 +892,21 @@ class GranblueFantasy(commands.Cog):
     dict: Grand per element
     """
     async def getGrandList(self) -> dict:
-        cnt = await self.bot.net.request('https://gbf.wiki/SSR_Characters_List#Grand_Series', no_base_headers=True, add_user_agent=True, follow_redirects=True)
-        if cnt is None:
+        data = await self.bot.net.request('https://gbf.wiki/index.php?title=Special:CargoExport&tables=characters&fields=series,name,element,release_date&where=series%20%3D%20%22grand%22&format=json&limit=200', no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True)
+        if data is None:
             raise Exception("HTTP Error 404: Not Found")
-        try: cnt = cnt.decode('utf-8')
-        except: cnt = cnt.decode('iso-8859-1')
-        soup = BeautifulSoup(cnt, 'html.parser') # parse the html
-        tables = soup.find_all("table", class_="wikitable")
-        for t in tables:
-            if "Gala" in str(t):
-                table = t
-                break
-        children = table.findChildren("tr")
         grand_list = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}
-        for c in children:
-            td = c.findChildren("td")
-            grand = {}
-            for elem in td:
-                # name search
-                if 'name' not in grand and elem.text != "" and "Base uncap" not in elem.text:
-                    try:
-                        int(elem.text)
-                    except:
-                        grand['name'] = elem.text
-                # elem search
-                if 'element' not in grand:
-                    imgs = elem.findChildren("img")
-                    for i in imgs:
-                        try:
-                            label = i['alt']
-                            if label.startswith('Label Element '):
-                                grand['element'] = label[len('Label Element '):-4].lower()
-                                break
-                        except:
-                            pass
-                # date search
-                if 'date' not in grand and elem.text != "":
-                    try:
-                        date_e = elem.text.split('-')
-                        grand['date'] = self.bot.util.UTC().replace(year=int(date_e[0]), month=int(date_e[1]), day=int(date_e[2]), hour=(12 if (int(date_e[2]) > 25) else 19), minute=0, second=0, microsecond=0)
-                    except:
-                        pass
-            if len(grand.keys()) > 2:
-                if grand_list[grand['element']] is None or grand['date'] > grand_list[grand['element']]['date']:
+        for c in data:
+            try:
+                if c['series'] != 'grand': continue
+                grand = c
+                d = grand['release date'].split('-')
+                grand['release date'] = self.bot.util.UTC().replace(year=int(d[0]), month=int(d[1]), day=int(d[2]), hour=(12 if (int(d[2]) > 25) else 19), minute=0, second=0, microsecond=0)
+                grand['element'] = grand['element'].lower()
+                if grand_list[grand['element']] is None or grand['release date'] > grand_list[grand['element']]['release date']:
                     grand_list[grand['element']] = grand
+            except:
+                pass
         return grand_list
 
     @gbf.sub_command()
@@ -1324,7 +1295,7 @@ class GranblueFantasy(commands.Cog):
         try:
             grands = await self.getGrandList()
             for e in grands:
-                msg += "**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_'))
+                msg += "**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['release date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_'))
         except:
             pass
 
