@@ -161,7 +161,7 @@ class DiscordBot(commands.InteractionBot):
             try: # unix
                 self.loop.add_signal_handler(s, graceful_exit.cancel)
             except: # windows
-                signal.signal(s, graceful_exit.cancel)
+                signal.signal(s, self._exit_gracefully_internal)
         self.logger.push("[MAIN] v{} starting up...".format(self.version), send_to_discord=False)
         # main loop
         while self.running:
@@ -196,21 +196,33 @@ class DiscordBot(commands.InteractionBot):
             while self.running: # we wait until we receive the signal
                 await asyncio.sleep(10000)
         except asyncio.CancelledError:
-            self.running = False
-            if self.data.pending:
-                self.data.autosaving = False
-                count = 0
-                while count < 3:
-                    if self.data.saveData():
-                        self.logger.push("[EXIT] Auto-saving successful", send_to_discord=False)
-                        break
-                    else:
-                        self.logger.pushError("[EXIT] Auto-saving failed (try {}/3)".format(count+1), send_to_discord=False)
-                        time.sleep(2)
-                    count += 1
             await self.close()
-            self.logger.push("[EXIT] Exited gracefully", send_to_discord=False)
-            os._exit(0)
+            self._exit_gracefully_internal()
+
+    """_exit_gracefully_internal()
+    Routine to exit gracefully. Called by exit_gracefully() if using loop.add_signal_handler(), else directly by signal.signal().
+    Note: Calling exit_gracefully.cancel() in this function makes Python crash on Windows, hence the roundabout way.
+    
+    Parameters
+    ----------
+    signum: Integer (Optional), the signal number
+    frame: Frame (Optional), the stack
+    """
+    def _exit_gracefully_internal(self, signum = None, frame = None) -> None:
+        self.running = False
+        if self.data.pending:
+            self.data.autosaving = False
+            count = 0
+            while count < 3:
+                if self.data.saveData():
+                    self.logger.push("[EXIT] Auto-saving successful", send_to_discord=False)
+                    break
+                else:
+                    self.logger.pushError("[EXIT] Auto-saving failed (try {}/3)".format(count+1), send_to_discord=False)
+                    time.sleep(2)
+                count += 1
+        self.logger.push("[EXIT] Exited gracefully", send_to_discord=False)
+        os._exit(0)
 
     """isAuthorized()
     Check if the channel is set as Authorized by the auto clean up system.
