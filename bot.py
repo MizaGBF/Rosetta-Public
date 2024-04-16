@@ -157,11 +157,11 @@ class DiscordBot(commands.InteractionBot):
             self.logger.push("[MAIN] All cogs loaded", send_to_discord=False)
         # graceful exit setup
         graceful_exit = self.loop.create_task(self.exit_gracefully())
-        try: # unix
-            for s in [signal.SIGTERM, signal.SIGINT]:
+        for s in [signal.SIGTERM, signal.SIGINT]:
+            try: # unix
                 self.loop.add_signal_handler(s, graceful_exit.cancel)
-        except: # windows
-            signal.signal(s, graceful_exit.cancel)
+            except: # windows
+                signal.signal(s, graceful_exit.cancel)
         self.logger.push("[MAIN] v{} starting up...".format(self.version), send_to_discord=False)
         # main loop
         while self.running:
