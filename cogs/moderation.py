@@ -44,9 +44,13 @@ class Moderation(commands.Cog):
         if len(guild.forum_channels) > 0: msg += ":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels))
         if len(guild.stage_channels) > 0: msg += ":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels))
         if guild.safety_alerts_channel is not None: msg += ":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url)
+        msg += ":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000))
         if len(guild.roles) > 0: msg += ":scroll: **{}** Roles\n".format(len(guild.roles))
-        if len(guild.emojis) > 0: msg += "🙂 **{}** Emojis\n".format(len(guild.emojis))
+        if len(guild.emojis) > 0: msg += "🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit)
+        if len(guild.stickers) > 0: msg += "🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit)
+        if len(guild.scheduled_events) > 0: msg += ":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events))
         if guild.premium_tier > 0: msg += ":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count)
+        if guild.vanity_url_code: msg += ":wave: Has Vanity Invite\n"
         jk = ""
         gid = str(guild.id)
         if is_mod and not inter.me.guild_permissions.external_emojis: jk += ":x: **External Emoji** permission is **Missing**\n"
@@ -60,7 +64,7 @@ class Moderation(commands.Cog):
         elif is_mod: jk += ":warning: **Announcements** disabled\n"
         if gid in self.bot.data.save['assignablerole']: jk += ":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys()))
         if jk != "": msg += "\n**Rosetta Settings**\n" + jk
-        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description=msg, thumbnail=icon, timestamp=guild.created_at, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description=msg, thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
 
 
     @commands.message_command(name="Server Info")
