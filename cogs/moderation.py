@@ -46,7 +46,7 @@ class Moderation(commands.Cog):
         if guild.safety_alerts_channel is not None: msg += ":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url)
         msg += ":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000))
         if len(guild.roles) > 0: msg += ":scroll: **{}** Roles\n".format(len(guild.roles))
-        if len(guild.emojis) > 0: msg += "🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit)
+        if len(guild.emojis) > 0: msg += "🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2)
         if len(guild.stickers) > 0: msg += "🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit)
         if len(guild.scheduled_events) > 0: msg += ":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events))
         if guild.premium_tier > 0: msg += ":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count)
