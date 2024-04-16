@@ -210,7 +210,7 @@ class DiscordBot(commands.InteractionBot):
     """
     def _exit_gracefully_internal(self, signum = None, frame = None) -> None:
         self.running = False
-        if self.data.pending:
+        if self.data.pending and not self.debug_mode:
             self.data.autosaving = False
             count = 0
             while count < 3:
