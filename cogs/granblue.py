@@ -6,9 +6,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
 import re
 from bs4 import BeautifulSoup
-from bs4 import element as bs4element
-from urllib import parse
-from urllib.parse import unquote
+from urllib.parse import quote_plus, unquote
 import html
 import math
 from views.url_button import UrlButton
@@ -381,339 +379,94 @@ class GranblueFantasy(commands.Cog):
         """Command Group"""
         pass
 
-    """stripWikiStr()
-    Formating function for wiki skill descriptions
-    
-    Parameters
-    ----------
-    elem: String, html element
-    
-    Returns
-    --------
-    str: Stripped string
-    """
-    def stripWikiStr(self, elem : bs4element.Tag) -> str:
-        txt = elem.text.replace('foeBoost', 'foe. Boost') # special cases
-        checks = [['span', 'tooltiptext'], ['sup', 'reference'], ['span', 'skill-upgrade-text']]
-        for target in checks:
-            f = elem.findChildren(target[0], class_=target[1])
-            for e in f:
-                txt = txt.replace(e.text, "")
-        return txt.replace('Hellfire', 'PSB1').replace('Whirlwind', 'PSB4').replace('Slight', '_sligHt_').replace('C.A.', 'CA').replace('.', '. ').replace('!', '! ').replace('?', '? ').replace(':', ': ').replace('. )', '.)').replace("Damage cap", "Cap").replace("Damage", "DMG").replace("damage", "DMG").replace(" and ", " and").replace(" and", " and ").replace("  ", " ").replace("fire", str(self.bot.emote.get('fire'))).replace("water", str(self.bot.emote.get('water'))).replace("earth", str(self.bot.emote.get('earth'))).replace("wind", str(self.bot.emote.get('wind'))).replace("dark", str(self.bot.emote.get('dark'))).replace("light", str(self.bot.emote.get('light'))).replace("Fire", str(self.bot.emote.get('fire'))).replace("Water", str(self.bot.emote.get('water'))).replace("Earth", str(self.bot.emote.get('earth'))).replace("Wind", str(self.bot.emote.get('wind'))).replace("Dark", str(self.bot.emote.get('dark'))).replace("Light", str(self.bot.emote.get('light'))).replace('_sligHt_', 'Slight').replace('PSB1', 'Hellfire').replace('PSB4', 'Whirlwind')
-
-    """processWikiMatch()
-    Process a successful wiki search match
-    
-    Parameters
-    ----------
-    soup: beautifulsoup object
-    
-    Returns
-    --------
-    tuple: Containing:
-        - data: Dict containing the match data
-        - tables: List of wikitables on the page
-    """
-    async def processWikiMatch(self, soup : BeautifulSoup) -> tuple:
-        data = {}
-        # what we are interested in
-        type_check = {"/Category:Fire_Characters":0, "/Category:Water_Characters":1, "/Category:Earth_Characters":2, "/Category:Wind_Characters":3, "/Category:Dark_Characters":4, "/Category:Light_Characters":5, "/Category:Special_Characters":6, "/Category:Fire_Summons":10, "/Category:Water_Summons":11, "/Category:Earth_Summons":12, "/Category:Wind_Summons":13, "/Category:Dark_Summons":14, "/Category:Light_Summons":15, "/Category:Special_Summons":16, "/Category:Sabre_Weapons":20, "/Category:Dagger_Weapons":21, "/Category:Spear_Weapons":22, "/Category:Axe_Weapons":23, "/Category:Staff_Weapons":24, "/Category:Gun_Weapons":25, "/Category:Melee_Weapons":26, "/Category:Bow_Weapons":27, "/Category:Harp_Weapons":28, "/Category:Katana_Weapons":29}
-        for k, n in type_check.items(): # check if the page matches
-            r = soup.find_all("a", {'href' : k})
-            if len(r) > 0:
-                data['object'] = n // 10 # 0 = chara, 1 = summon, 2 = weapon
-                if data['object'] < 2: data['element'] = {0:'fire', 1:'water', 2:'earth', 3:'wind', 4:'dark', 5:'light', 6:'misc'}.get(n%10, "") # retrieve the element here for chara and summon
-                else: data['type'] = k[len('/Category:'):k.find('_Weapons')].lower().replace('sabre', 'sword') # retrieve the wpn type here
-                break
-
-        # retrieve ID
-        tables = soup.find_all("table", class_='wikitable') # iterate all wikitable
-        for t in tables:
-            await asyncio.sleep(0)
-            try:
-                body = t.findChildren("tbody" , recursive=False)[0].findChildren("tr" , recursive=False) # check for tr tag
-                for tr in body:
-                    if str(tr).find("ID") != -1:
-                        try:
-                            if tr.findChildren("th")[0].text.strip() == "ID" and 'id' not in data:
-                                data['id'] = tr.findChildren("td")[0].text.replace(' ', '')
-                                if len(data['id']) == 10:
-                                    match data['id'][0]:
-                                        case '1':
-                                            data['image'] = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(data['id'])
-                                        case '2':
-                                            data['image'] = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(data['id'])
-                                        case '3':
-                                            data['image'] = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/npc/m/{}_01.jpg".format(data['id'])
-                                        case _:
-                                            pass
-                        except:
-                            pass
-            except:
-                pass
-
-        # retrieve description
-        try: data['description'] = soup.find_all("meta", {'name' : 'description'})[0].attrs['content']
-        except: pass
-
-        # get rarity, title and name
-        try: 
-            header = soup.find_all("div", class_='char-header')[0] # get it
-            try: # first we get the rarity
-                data['rarity'] = str(header.findChildren("div" , class_='char-rarity', recursive=False)[0])
-                if data['rarity'].find("Rarity SSR") != -1: data['rarity'] = "SSR"
-                elif data['rarity'].find("Rarity SR") != -1: data['rarity'] = "SR"
-                elif data['rarity'].find("Rarity R") != -1: data['rarity'] = "R"
-                else: data['rarity'] = ""
-            except:
-                pass
-            for child in header.findChildren("div" , recursive=False): # then the name and title if any
-                if 'class' not in child.attrs:
-                    for divs in child.findChildren("div" , recursive=False):
-                        if 'class' in divs.attrs:
-                            if 'char-name' in divs.attrs['class']: data['name'] = divs.text
-                            elif 'char-title' in divs.attrs['class']:
-                                try:
-                                    tx = divs.findChildren("span", recursive=False)[0].text
-                                    data['title'] = tx[1:tx.find("]")]
-                                except:
-                                    tx = divs.text
-                                    data['title'] = tx[1:tx.find("]")]
-        except:
-            pass
-        return data, tables
-
-    """processWikiItem()
-    Process the processWikiMatch() wikitables and add the result into data
-    
-    Parameters
-    ----------
-    data: processWikiMatch() data
-    tables: processWikiMatch() tables
-    
-    Returns
-    --------
-    dict: Updated data (not a copy)
-    """
-    async def processWikiItem(self, data : dict, tables : bs4element.ResultSet) -> dict:
-        # iterate all wikitable again
-        for t in tables:
-            await asyncio.sleep(0)
-            body = t.findChildren("tbody" , recursive=False)[0].findChildren("tr" , recursive=False) # check for tr tag
-            if str(body).find("Copyable?") != -1: continue # for chara skills if I add it one day
-            expecting_hp = False
-            expecting_wpn_skill = False
-            expecting_sum_call = False
-            aura = 0
-            for tr in body: # iterate on tags
-                await asyncio.sleep(0)
-                content = str(tr)
-                if expecting_sum_call:
-                    if content.find("This is the call for") != -1 or content.find("This is the basic call for") != -1:
-                        try: data['call'][1] = self.stripWikiStr(tr.findChildren("td")[0])
-                        except: pass
-                    else:
-                        expecting_sum_call = False
-                elif expecting_wpn_skill:
-                    if 'class' in tr.attrs and tr.attrs['class'][0].startswith('skill'):
-                        if tr.attrs['class'][-1] == "post" or (tr.attrs['class'][0] == "skill" and len(tr.attrs['class']) == 1):
-                            try: 
-                                n = tr.findChildren("td", class_="skill-name", recursive=False)[0].text.replace("\n", "")
-                                d = tr.findChildren("td", class_="skill-desc", recursive=False)[0]
-                                if 'skill' not in data: data['skill'] = []
-                                data['skill'].append([n, self.stripWikiStr(d)])
-                            except: pass
-                    else:
-                        expecting_wpn_skill = False
-                elif expecting_hp:
-                    if content.find('Level ') != -1:
-                        childs = tr.findChildren(recursive=False)
-                        try: data['lvl'] = childs[0].text[len('Level '):]
-                        except: pass
-                        try: data['hp'] = childs[1].text
-                        except: pass
-                        try: data['atk'] = childs[2].text
-                        except: pass
-                    else:
-                        expecting_hp = False
-                elif content.find('class="hp-text"') != -1 and content.find('class="atk-text"') != -1:
-                    try:
-                        expecting_hp = True
-                        elem_table = {"/Weapon_Lists/SSR/Fire":"fire", "/Weapon_Lists/SSR/Water":"water", "/Weapon_Lists/SSR/Earth":"earth", "/Weapon_Lists/SSR/Wind":"wind", "/Weapon_Lists/SSR/Dark":"dark", "/Weapon_Lists/SSR/Light":"light"}
-                        for s, e in elem_table.items():
-                            if content.find(s) != -1:
-                                data['element'] = e
-                                break
-                    except: pass
-                elif content.find('"Skill charge attack.png"') != -1:
-                    try:
-                        n = tr.findChildren("td", class_="skill-name", recursive=False)[0].text
-                        d = tr.findChildren("td", recursive=False)[-1]
-                        data['ca'] = [n, self.stripWikiStr(d)]
-                    except: pass
-                elif content.find('"/Weapon_Skills"') != -1 and aura == 0:
-                    expecting_wpn_skill = True
-                elif content.find('<a href="/Sword_Master" title="Sword Master">Sword Master</a>') != -1 or content.find('Status_Energized') != -1:
-                    try:
-                        tds = tr.findChildren("td", recursive=False)
-                        n = tds[0].text
-                        d = tds[1]
-                        if 'sm' not in data: data['sm'] = []
-                        data['sm'].append([n, self.stripWikiStr(d)])
-                    except: pass
-                elif content.find('"/Summons#Calls"') != -1:
-                    try:
-                        if 'call' in data: break # stop on 2nd call for multicall summons
-                        data['call'] = [tr.findChildren("th")[0].text[len("Call - "):], '']
-                        expecting_sum_call = True
-                    except:
-                        pass
-                elif content.find("Main Summon") != -1 or content.find("/Aura") != -1:
-                    aura = 1
-                elif content.find("Sub Summon") != -1:
-                    aura = 2
-                elif content.find("This is the basic aura") != -1:
-                    try:
-                        if aura == 0: aura = 1
-                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the basic aura", 1)[0]
-                        d = tr.findChildren("td")[0]
-                        if aura == 1: data['aura'] = self.stripWikiStr(d)
-                        elif aura == 2: data['subaura'] = self.stripWikiStr(d)
-                    except: pass
-                elif content.find("This is the aura") != -1:
-                    try:
-                        n = tr.findChildren("span", class_="tooltip")[0].text.split("This is the aura", 1)[0]
-                        d = tr.findChildren("td")[0]
-                        if aura == 1: data['aura'] = self.stripWikiStr(d)
-                        elif aura == 2: data['subaura'] = self.stripWikiStr(d)
-                    except: pass
-        return data
-
-    """requestWiki()
-    Request a wiki page and post the result after calling processWikiMatch() and processWikiItem()
-    
-    Parameters
-    ----------
-    inter: Command interaction
-    url: Wiki url to request (url MUST be for gbf.wiki)
-    search_mode: Boolean, if True it expects a search result page
-    """
-    async def requestWiki(self, inter: disnake.GuildCommandInteraction, url : str, search_mode : bool = False) -> None:
-        cnt = await self.bot.net.request(url, no_base_headers=True, add_user_agent=True, follow_redirects=True)
-        if cnt is None:
-            raise Exception("HTTP Error 404: Not Found")
-        try: cnt = cnt.decode('utf-8')
-        except: cnt = cnt.decode('iso-8859-1')
-        soup = BeautifulSoup(cnt, 'html.parser') # parse the html
-        try: title = soup.find_all("h1", id="firstHeading", class_="firstHeading")[0].text # page title
-        except: title = ""
-        if search_mode and not title.startswith('Search results'): # handling rare cases of the search function redirecting the user directly to a page
-            search_mode = False
-            url = "https://gbf.wiki/{}".format(title.replace(' ', '_')) # update the url so it looks pretty (with the proper page name)
-
-        if search_mode: # use the wiki search function
-            try:
-                res = soup.find_all("ul", class_="mw-search-results")[0].findChildren("li", class_="mw-search-result", recursive=False) # recuperate the search results
-            except:
-                raise Exception("HTTP Error 404: Not Found") # no results
-            matches = []
-            for r in res: # for each, get the title
-                matches.append(r.findChildren("div", class_="mw-search-result-heading", recursive=False)[0].findChildren("a", recursive=False)[0].attrs['title'])
-                if len(matches) >= 5: break # max 5
-            if len(matches) == 0: # no results check
-                raise Exception("No results")
-            elif len(matches) == 1: # single result, request it directly
-                await self.requestWiki(inter, "https://gbf.wiki/{}".format(matches[0]))
-                return
-            desc = ""
-            for m in matches: # build the message with the results
-                desc += "[{}](https://gbf.wiki/{})\n".format(m, m.replace(" ", "_"))
-            desc = "First five results\n{}".format(desc)
-            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", description=desc, url=url, color=self.COLOR))
-        else: # direct access to the page (assume a match)
-            data, tables = await self.processWikiMatch(soup)
-
-            x = data.get('object', None)
-            if data.get('id', None) is not None: 
-                gbfal = "\n[Assets](https://mizagbf.github.io/GBFAL/?id={})".format(data['id'])
-                try:
-                    if str(data['id'])[:3] in ['302', '303', '304', '371', '101', '102', '103', '104', '201', '202', '203', '204']:
-                        gbfal += "▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(data['id'])
-                except:
-                    pass
-            else:
-                gbfal = ""
-            match x:
-                case None: # if no match
-                    await inter.edit_original_message(embed=self.bot.embed(title=title, description=data.get('description', '') + '\n' + gbfal, image=data.get('image', ''), url=url, footer=data.get('id', ''), color=self.COLOR))
-                case 0: # character
-                    if 'title' in data: title = title + ", " + data['title']
-                    if 'rarity' in data: title = "{} {}".format(self.bot.emote.get(data['rarity']), title)
-                    try:
-                        # check all character versions
-                        versions = soup.find_all("div", class_="character__versions")[0].findChildren("table", recursive=False)[0].findChildren("tbody", recursive=False)[0].findChildren("tr", recursive=False)[2].findChildren("td", recursive=False)
-                        elems = []
-                        for v in versions:
-                            s = v.findChildren("a", recursive=False)[0].text
-                            if s != title: elems.append(s)
-                        if len(elems) == 0: raise Exception()
-                        desc = "This character has other versions\n"
-                        for e in elems:
-                            desc += "[{}](https://gbf.wiki/{})\n".format(e, e.replace(" ", "_"))
-                        await inter.edit_original_message(embed=self.bot.embed(title=title, description=desc + gbfal, image=data.get('image', ''), url=url, footer=data.get('id', ''), color=self.COLOR))
-                    except: # if none, just send the link
-                        await inter.edit_original_message(embed=self.bot.embed(title=title, description=data.get('description', '') + gbfal, image=data.get('image', ''), url=url, footer=data.get('id', ''), color=self.COLOR))
-                case _: # summon and weapon
-                    data = await self.processWikiItem(data, tables)
-                    # final message
-                    title = ""
-                    title += "{}".format(self.bot.emote.get(data.get('element', '')))
-                    title += "{}".format(self.bot.emote.get(data.get('rarity', '')))
-                    title += "{}".format(self.bot.emote.get(data.get('type', '')))
-                    title += "{}".format(data.get('name', ''))
-                    if 'title' in data: title += ", {}".format(data['title'])
-
-                    desc = ""
-                    if 'lvl' in data: desc += "**Lvl {}** ".format(data['lvl'])
-                    if 'hp' in data: desc += "{} {} ".format(self.bot.emote.get('hp'), data['hp'])
-                    if 'atk' in data: desc += "{} {}".format(self.bot.emote.get('atk'), data['atk'])
-                    if desc != "": desc += "\n"
-                    if 'ca' in data: desc += "{} **{}**▫️{}\n".format(self.bot.emote.get('skill1'), data['ca'][0], data['ca'][1])
-                    if 'skill' in data:
-                        for s in data['skill']:
-                            desc += "{} **{}**▫️{}\n".format(self.bot.emote.get('skill2'), s[0], s[1])
-                    if 'sm' in data:
-                        if desc != "": desc += "\n"
-                        for s in data['sm']:
-                            if s[0] == "Attack" or s[0] == "Defend": continue
-                            desc += "**{}**▫️{}\n".format(s[0], s[1])
-                    if 'call' in data: desc += "{} **{}**▫️{}\n".format(self.bot.emote.get('skill1'), data['call'][0], data['call'][1])
-                    if 'aura' in data: desc += "{} **Aura**▫️{}\n".format(self.bot.emote.get('skill2'), data['aura'])
-                    if 'subaura' in data: desc += "{} **Sub Aura**▫️{}\n".format(self.bot.emote.get('skill2'), data['subaura'])
-
-                    await inter.edit_original_message(embed=self.bot.embed(title=title, description=desc + gbfal, thumbnail=data.get('image', ''), url=url, footer=data.get('id', ''), color=self.COLOR))
-        await self.bot.util.clean(inter, 80)
-
     @gbf.sub_command()
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
-        try:
-            await self.requestWiki(inter, "https://gbf.wiki/{}".format(terms.replace(' ', '_'))) # try to request
-        except Exception as e:
-            url = "https://gbf.wiki/index.php?title=Special:Search&search={}".format(parse.quote_plus(terms))
-            if str(e) != "HTTP Error 404: Not Found": # unknown error, we stop here
-                self.bot.logger.pushError("[GBF] In 'gbf wiki' command:", e)
-                await inter.edit_original_message(embed=self.bot.embed(title="Unexpected error, click here to search", url=url, footer=str(e), color=self.COLOR))
-            else: # failed, we try the search function
-                try:
-                    await self.requestWiki(inter, url, True) # try
-                except Exception as f:
-                    if str(f) == "No results":
-                        await inter.edit_original_message(embed=self.bot.embed(title="No matches found", color=self.COLOR)) # no results
-                    else:
-                        await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url=url, color=self.COLOR)) # no results
-        await self.bot.util.clean(inter, 45)
+        r = await self.bot.net.request("https://gbf.wiki/api.php?action=query&format=json&list=search&srsearch={}&redirects".format(terms), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+        if r is None or len(r['query']['search']) == 0:
+            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote_plus(terms)), color=self.COLOR))
+            await self.bot.util.clean(inter, 40)
+        else:
+            try:
+                page = r['query']['search'][0]
+                title = page['title']
+                tables = {'characters':'id,rarity,name,series,title,element,max_evo,join_weapon,profile,va', 'summons':'id,rarity,name,series,element,evo_max', 'weapons':'id,rarity,name,series,element,obtain,character_unlock,evo_max', 'classes':'id,name', 'npc_characters':'id,name,va,profile'}
+                output = None
+                for t, f in tables.items():
+                    r = await self.bot.net.request('https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&fields=_pageName,{}&format=json&where=_pageName="{}"'.format(t, f, title), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+                    if r is None or len(r) == 0:
+                        await asyncio.sleep(0.1)
+                        continue
+                    elem = r[0]
+                    output = {}
+                    output["url"] = "https://gbf.wiki/" + quote_plus(title)
+                    match t:
+                        case 'characters':
+                            output["desc"] = ""
+                            if elem['profile'] is not None: output["desc"] += "*" + html.unescape(elem['profile']) + "*\n\n"
+                            if elem['join weapon'] is not None:
+                                jwpn = html.unescape(elem['join weapon'])
+                                output["desc"] += "Weapon: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(jwpn, quote_plus(jwpn))
+                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                            max_evo = elem["max evo"]
+                            if max_evo is None or max_evo <= 4: max_evo = 1
+                            else: max_evo -= 2
+                            output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/npc/detail/{}_0{}.png".format(elem["id"], max_evo)
+                            output["title"] = "{}{} {}".format(self.bot.emote.get(elem["rarity"]), self.bot.emote.get(elem["element"].lower()), html.unescape(elem["name"])) + (", {}".format(html.unescape(elem["title"])) if elem["title"] is not None else "") + (" [{}]".format(elem["series"].capitalize().replace(";", ", ")) if elem["series"] is not None else "")
+                            output["footer"] = str(elem["id"])
+                            if elem["va"] is not None: output["footer"] += " - " + elem["va"]
+                        case 'summons':
+                            output["desc"] = ""
+                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                            max_evo = elem["evo max"]
+                            if max_evo is None or max_evo <= 3: max_evo = 1
+                            else: max_evo -= 2
+                            max_evo = "" if max_evo == 1 else "_0" + str(max_evo)
+                            output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/detail/{}{}.png".format(elem["id"], max_evo)
+                            output["title"] = "{}{} {}".format(self.bot.emote.get(elem["rarity"]), self.bot.emote.get(elem["element"].lower()), html.unescape(elem["name"])) + (" [{}]".format(elem["series"].capitalize().replace(";", ", ")) if elem["series"] is not None else "")
+                            output["footer"] = str(elem["id"])
+                        case 'weapons':
+                            output["desc"] = ""
+                            if elem['obtain'] is not None:
+                                if "[[" in elem['obtain']:
+                                    otxt = html.unescape(elem['obtain']).split("[[", 1)[1].split("]]", 1)[0]
+                                    output["desc"] += "Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote_plus(otxt))
+                                else:
+                                    output["desc"] += "Obtain: {}\n".format(elem['obtain'].split(',', 1)[0].capitalize())
+                            if elem['character unlock'] is not None:
+                                chu = html.unescape(elem['character unlock'])
+                                output["desc"] += "Unlock: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(chu, quote_plus(chu))
+                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                            max_evo = elem["evo max"]
+                            max_evo = "" if max_evo != 6 else "_03"
+                            output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}{}.jpg".format(elem["id"], max_evo)
+                            output["title"] = "{}{}{} {}".format(self.bot.emote.get(elem["rarity"]), self.bot.emote.get({'0': 'sword','1': 'dagger','2': 'spear','3': 'axe','4': 'staff','5': 'gun','6': 'melee','7': 'bow','8': 'harp','9': 'katana'}.get(str(elem["id"])[4], '')), self.bot.emote.get(elem["element"].lower()), html.unescape(elem["name"])) + (" [{}]".format(elem["series"].capitalize().replace(";", ", ")) if elem["series"] is not None else "")
+                            output["footer"] = str(elem["id"])
+                        case 'classes':
+                            output["desc"] = ""
+                            output["title"] = "{}".format(html.unescape(elem["name"]))
+                            id = str(elem["id"]).split("_", 1)[0]
+                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(id, id)
+                            output["image"] = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/leader/m/{}_01.jpg".format(id)
+                            output["footer"] = str(id)
+                        case 'npc_characters':
+                            output["desc"] = ""
+                            if elem['profile'] is not None: output["desc"] += "*" + html.unescape(elem['profile']) + "*\n\n"
+                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})".format(elem["id"])
+                            output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/npc/m/{}_01.jpg".format(elem["id"])
+                            output["title"] = "{}".format(html.unescape(elem["name"])) 
+                            output["footer"] = str(elem["id"])
+                            if elem["va"] is not None and len(elem["va"]) > 0: output["footer"] += " - " + ",".join(elem["va"])
+                    break
+                if output is None:
+                    output = {"title":html.unescape(title), "url":"https://gbf.wiki/" + quote_plus(title), "desc":"*Click to refine the search*"}
+                await inter.edit_original_message(embed=self.bot.embed(title=output["title"], description=output.get("desc", None), image=output.get("image", None), url=output.get("url", None), footer=output.get("footer", None), color=self.COLOR))
+                await self.bot.util.clean(inter, 80)
+            except Exception as ex:
+                self.bot.logger.pushError("[GBF] In 'gbf wiki' command:", ex)
+                await inter.edit_original_message(embed=self.bot.embed(title="An error occured, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote_plus(terms)), color=self.COLOR))
+                await self.bot.util.clean(inter, 40)
 
     @gbf.sub_command()
     async def info(self, inter: disnake.GuildCommandInteraction) -> None:

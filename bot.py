@@ -27,7 +27,7 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.3.2" # bot version
+        self.version = "11.3.3" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
             "**v11.0.12** - Added `/mod server toggle_vxtwitter`.",
@@ -42,6 +42,7 @@ class DiscordBot(commands.InteractionBot):
             "**v11.2.1** - Removed `/poll`, now Discord has it built-in.",
             "**v11.3.0** - Added `/gw player stats`",
             "**v11.3.1** - Changed `/gw player stats` to `/gw stats player` and added `/gw stats crew`. Both commands have been improved.",
+            "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
         ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
