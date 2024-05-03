@@ -6,7 +6,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import quote_plus, unquote
+from urllib.parse import quote_plus, quote, unquote
 import html
 import math
 from views.url_button import UrlButton
@@ -383,9 +383,9 @@ class GranblueFantasy(commands.Cog):
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
-        r = await self.bot.net.request("https://gbf.wiki/api.php?action=query&format=json&list=search&srsearch={}&redirects".format(terms), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+        r = await self.bot.net.request("https://gbf.wiki/api.php?action=query&format=json&list=search&srsearch={}&redirects".format(quote(terms)), no_base_headers=True, add_user_agent=True, expect_JSON=True)
         if r is None or len(r['query']['search']) == 0:
-            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote_plus(terms)), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(terms), color=self.COLOR))
             await self.bot.util.clean(inter, 40)
         else:
             try:
@@ -400,14 +400,14 @@ class GranblueFantasy(commands.Cog):
                         continue
                     elem = r[0]
                     output = {}
-                    output["url"] = "https://gbf.wiki/" + quote_plus(title)
+                    output["url"] = "https://gbf.wiki/" + title.replace(" ", "_")
                     match t:
                         case 'characters':
                             output["desc"] = ""
                             if elem['profile'] is not None: output["desc"] += "*" + html.unescape(elem['profile']) + "*\n\n"
                             if elem['join weapon'] is not None:
                                 jwpn = html.unescape(elem['join weapon'])
-                                output["desc"] += "Weapon: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(jwpn, quote_plus(jwpn))
+                                output["desc"] += "Weapon: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(jwpn, quote(jwpn))
                             output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
                             max_evo = elem["max evo"]
                             if max_evo is None or max_evo <= 4: max_evo = 1
@@ -431,12 +431,12 @@ class GranblueFantasy(commands.Cog):
                             if elem['obtain'] is not None:
                                 if "[[" in elem['obtain']:
                                     otxt = html.unescape(elem['obtain']).split("[[", 1)[1].split("]]", 1)[0]
-                                    output["desc"] += "Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote_plus(otxt))
+                                    output["desc"] += "Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote(otxt))
                                 else:
                                     output["desc"] += "Obtain: {}\n".format(elem['obtain'].split(',', 1)[0].capitalize())
                             if elem['character unlock'] is not None:
                                 chu = html.unescape(elem['character unlock'])
-                                output["desc"] += "Unlock: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(chu, quote_plus(chu))
+                                output["desc"] += "Unlock: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(chu, quote(chu))
                             output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
                             max_evo = elem["evo max"]
                             max_evo = "" if max_evo != 6 else "_03"
@@ -460,12 +460,12 @@ class GranblueFantasy(commands.Cog):
                             if elem["va"] is not None and len(elem["va"]) > 0: output["footer"] += " - " + ",".join(elem["va"])
                     break
                 if output is None:
-                    output = {"title":html.unescape(title), "url":"https://gbf.wiki/" + quote_plus(title), "desc":"*Click to refine the search*"}
+                    output = {"title":html.unescape(title), "url":"https://gbf.wiki/" + title.replace(" ", "_"), "desc":"*Click to refine the search*"}
                 await inter.edit_original_message(embed=self.bot.embed(title=output["title"], description=output.get("desc", None), image=output.get("image", None), url=output.get("url", None), footer=output.get("footer", None), color=self.COLOR))
                 await self.bot.util.clean(inter, 80)
             except Exception as ex:
                 self.bot.logger.pushError("[GBF] In 'gbf wiki' command:", ex)
-                await inter.edit_original_message(embed=self.bot.embed(title="An error occured, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote_plus(terms)), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="An error occured, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), color=self.COLOR))
                 await self.bot.util.clean(inter, 40)
 
     @gbf.sub_command()
