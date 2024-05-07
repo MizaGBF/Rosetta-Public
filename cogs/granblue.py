@@ -6,7 +6,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import quote_plus, quote, unquote
+from urllib.parse import quote, unquote
 import html
 import math
 from views.url_button import UrlButton
