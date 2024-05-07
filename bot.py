@@ -52,37 +52,50 @@ class DiscordBot(commands.InteractionBot):
         self.cogn = 0 # number of cog loaded
         
         # components
-        self.util = Util(self)
-        self.logger = Logger(self)
-        self.data = Data(self)
-        try: self.drive = Drive(self)
-        except Exception as e:
-            if "No such file or directory: 'service-secrets.json'" in str(e):
-                self.logger.push("[BOOT] Please setup your Google account 'service-secrets.json' to use the bot.", send_to_discord=False, level=self.logger.CRITICAL)
-                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False, level=self.logger.INFO)
-                time.sleep(500)
-                os._exit(4)
-        self.net = Network(self)
-        self.pinboard = Pinboard(self)
-        self.emote = Emote(self)
-        self.calc = Calc(self)
-        self.channel = Channel(self)
-        self.file = File(self)
-        self.sql = SQL(self)
-        self.ranking = Ranking(self)
-        self.ban = Ban(self)
-        self.gacha = Gacha(self)
+        try:
+            self.util = Util(self)
+            self.logger = Logger(self)
+            self.logger.push("[BOOT] Logger started up. Loading components...", send_to_discord=False)
+            self.data = Data(self)
+            try: self.drive = Drive(self)
+            except Exception as e:
+                if "No such file or directory: 'service-secrets.json'" in str(e):
+                    self.logger.push("[BOOT] Please setup your Google account 'service-secrets.json' to use the bot.", send_to_discord=False, level=self.logger.CRITICAL)
+                    self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                    time.sleep(500)
+                    os._exit(4)
+            self.net = Network(self)
+            self.pinboard = Pinboard(self)
+            self.emote = Emote(self)
+            self.calc = Calc(self)
+            self.channel = Channel(self)
+            self.file = File(self)
+            self.sql = SQL(self)
+            self.ranking = Ranking(self)
+            self.ban = Ban(self)
+            self.gacha = Gacha(self)
+            self.logger.push("[BOOT] Components loaded", send_to_discord=False)
         
-        # initialize important components
-        self.logger.init()
-        self.data.init()
-        self.drive.init()
+            # initialize important components
+            self.logger.push("[BOOT] Initializing important components...", send_to_discord=False)
+            self.logger.init()
+            self.data.init()
+            self.drive.init()
+            self.logger.push("[BOOT] Important components initialized", send_to_discord=False)
+        except Exception as ce:
+            try:
+                self.logger.pushError("[BOOT] A component failed:", ce, send_to_discord=False)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                time.sleep(500)
+                os._exit(5)
+            except:
+                pass
         
         # loading data
         self.logger.push("[BOOT] Loading the config file...", send_to_discord=False)
         if not self.data.loadConfig():
             self.logger.push("[BOOT] Failed to load the config file. Please check if it exists or if its content is correct.", send_to_discord=False, level=self.logger.CRITICAL)
-            self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False, level=self.logger.INFO)
+            self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
             time.sleep(500)
             os._exit(1)
         if not test_mode:
@@ -92,39 +105,63 @@ class DiscordBot(commands.InteractionBot):
                     break # attempt to download the save file
                 elif i == 49:
                     self.logger.push("[BOOT] Couldn't access Google Drive and load the save file", send_to_discord=False, level=self.logger.CRITICAL)
-                    self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False, level=self.logger.INFO)
+                    self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
                     time.sleep(500)
                     os._exit(3)
                 time.sleep(20) # wait 20 sec
             self.logger.push("[BOOT] Reading the save file...", send_to_discord=False)
             if not self.data.loadData():
                 self.logger.push("[BOOT] Couldn't load save.json, it's either invalid or corrupted", send_to_discord=False, level=self.logger.CRITICAL)
-                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False, level=self.logger.INFO)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
                 time.sleep(500)
                 os._exit(2) # load the save file
         else:
             self.data.save = self.data.checkData(self.data.save) # dummy data
         
         # initialize remaining components
-        self.util.init()
-        self.net.init()
-        self.pinboard.init()
-        self.emote.init()
-        self.calc.init()
-        self.channel.init()
-        self.file.init()
-        self.sql.init()
-        self.ranking.init()
-        self.ban.init()
-        self.gacha.init()
+        try:
+            self.logger.push("[BOOT] Initializing remaining components...", send_to_discord=False)
+            self.util.init()
+            self.net.init()
+            self.pinboard.init()
+            self.emote.init()
+            self.calc.init()
+            self.channel.init()
+            self.file.init()
+            self.sql.init()
+            self.ranking.init()
+            self.ban.init()
+            self.gacha.init()
+            self.logger.push("[BOOT] Remaining components initialized", send_to_discord=False)
+        except Exception as ce:
+            try:
+                self.logger.pushError("[BOOT] A component failed:", ce, send_to_discord=False)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                time.sleep(500)
+                os._exit(5)
+            except:
+                pass
 
-        # init base class
-        intents = disnake.Intents.default()
-        #intents.messages = True
-        intents.message_content = True
-        super().__init__(max_messages=None, intents=intents, command_sync_flags=commands.CommandSyncFlags.default())
-        self.add_app_command_check(self.global_check, slash_commands=True, user_commands=True, message_commands=True)
-        self.logger.push("[BOOT] Initialization complete", send_to_discord=False)
+        # init base bot class
+        try:
+            # Intents
+            intents = disnake.Intents.default()
+            intents.message_content = True
+            #intents.messages = True # uncomment this line to enable message intents
+        
+            # constructor
+            self.logger.push("[BOOT] Initializing disnake.InteractionBot with Intent flags: {:b}".format(intents.value), send_to_discord=False)
+            super().__init__(max_messages=None, intents=intents, command_sync_flags=commands.CommandSyncFlags.default())
+            self.add_app_command_check(self.global_check, slash_commands=True, user_commands=True, message_commands=True)
+            self.logger.push("[BOOT] Initialization complete", send_to_discord=False)
+        except Exception as ce:
+            try:
+                self.logger.pushError("[BOOT] Initialization failed:", ce, send_to_discord=False)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                time.sleep(500)
+                os._exit(6)
+            except:
+                pass
 
     """test_bot()
     Test function, to verify the cogs load properly
