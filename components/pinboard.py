@@ -86,15 +86,17 @@ class Pinboard():
                 await message.add_reaction(self.bot.data.save['pinboard'][idx]['emoji'])
 
                 try:
+                    user = await message.guild.get_or_fetch_member(message.author.id) # to get the proper member name
+                    if user is None: message.author
                     embed_dict = {}
                     embed_dict['color'] = 0xf20252
                     embed_dict['footer'] = {'text':"#{}".format(origin_channel_name), 'url':None}
-                    embed_dict['title'] = message.author.display_name + " - @" + str(message.author)
+                    embed_dict['title'] = user.display_name + " - @" + str(message.author)
                     if len(content) > 0: 
                         if len(content) > 1900: embed_dict['description'] = content[:1900] + "...\n\n"
                         else: embed_dict['description'] = content + "\n\n"
                     else: embed_dict['description'] = ""
-                    embed_dict['thumbnail'] = {'url':str(message.author.display_avatar)}
+                    embed_dict['thumbnail'] = {'url':str(user.display_avatar)}
                     embed_dict['fields'] = []
                     # for attachments
                     if message.attachments:
