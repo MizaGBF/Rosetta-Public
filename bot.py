@@ -16,7 +16,7 @@ import cogs
 
 import disnake
 from disnake.ext import commands
-from typing import Optional, Union, Callable
+from typing import Any, Optional, Union, Callable
 import asyncio
 import time
 import signal
@@ -236,7 +236,8 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if authorized, False if not
     """
-    def isAuthorized(self, inter : disnake.ApplicationCommandInteraction) -> bool:
+    def isAuthorized(self, inter : Any) -> bool:
+        if inter is None: return False
         gid = str(inter.guild.id)
         if gid in self.data.save['permitted']: # if id is found, it means the check is enabled
             if inter.channel.id in self.data.save['permitted'][gid]:
