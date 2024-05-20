@@ -372,10 +372,13 @@ class Data():
                             elif ts[1] is None: time_range = ts[:1]
                             else: time_range = ts
                             ets = self.save['schedule'].get(event, [])
+                            print(event, ts, self.save['schedule'].get(event, []))
                             if len(time_range) > len(ets) and str(time_range) != str(ets):
                                 new_schedule[event] = time_range
                                 if stev is not None and event != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
                                     self.save['schedule'].pop(stev, None)
+                            elif event in self.save['schedule']:
+                                new_schedule[event] = time_range
                         except:
                             pass
                     new_schedule = self.save['schedule'] | new_schedule
