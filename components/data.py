@@ -4,6 +4,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 import json
 from io import BytesIO
 from datetime import datetime, timedelta
+import html
 
 # ----------------------------------------------------------------------------------------------------------------
 # Data Component
@@ -368,13 +369,14 @@ class Data():
                     # add new entries
                     for event, ts in new_events.items():
                         try:
+                            uevent = html.unescape(event)
                             if ts[0] is None: continue
                             elif ts[1] is None: time_range = ts[:1]
                             else: time_range = ts
-                            ets = self.save['schedule'].get(event, None)
+                            ets = self.save['schedule'].get(uevent, None)
                             if ets is None or len(time_range) > len(ets) or str(time_range) != str(ets):
-                                new_schedule[event] = time_range
-                                if stev is not None and event != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
+                                new_schedule[uevent] = time_range
+                                if stev is not None and uevent != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
                                     self.save['schedule'].pop(stev, None)
                         except:
                             pass
