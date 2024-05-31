@@ -126,7 +126,7 @@ class GranblueFantasy(commands.Cog):
         # init
         try:
             if 'game_news' not in self.bot.data.save['gbfdata']:
-                self.bot.data.save['gbfdata']['game_news'] = [6329]
+                self.bot.data.save['gbfdata']['game_news'] = [7832]
                 silent = True
                 ncheck = 100
             else:
@@ -134,7 +134,7 @@ class GranblueFantasy(commands.Cog):
                 silent = False
                 ncheck = 10 + max(self.bot.data.save['gbfdata']['game_news']) - min(self.bot.data.save['gbfdata']['game_news'])
         except:
-            ii = 6329
+            ii = 7832
             silent = True
             ncheck = 100
         to_process = []
@@ -1085,23 +1085,15 @@ class GranblueFantasy(commands.Cog):
         """Post the time to the next monthly dev post"""
         await inter.response.defer()
         c = self.bot.util.JST()
+        m = c.replace(day=1, hour=12, minute=0, second=0, microsecond=0)
+        while m < c:
+            m += timedelta(days=1)
         try:
-            if c < self.bot.data.save['stream']['time']:
-                target = self.bot.data.save['stream']['time']
-            else:
-                raise Exception()
+            if c < self.bot.data.save['stream']['time'] and self.bot.data.save['stream']['time'] < (m + timedelta(days=1)):
+                m = (self.bot.data.save['stream']['time'] + timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
         except:
-            if c.day == 1:
-                if c.hour >= 12:
-                    if c.month == 12: target = datetime(year=c.year+1, month=1, day=1, hour=12, minute=0, second=0, microsecond=0)
-                    else: target = datetime(year=c.year, month=c.month+1, day=1, hour=12, minute=0, second=0, microsecond=0)
-                else:
-                    target = datetime(year=c.year, month=c.month, day=1, hour=12, minute=0, second=0, microsecond=0)
-            else:
-                if c.month == 12: target = datetime(year=c.year+1, month=1, day=1, hour=12, minute=0, second=0, microsecond=0)
-                else: target = datetime(year=c.year, month=c.month+1, day=1, hour=12, minute=0, second=0, microsecond=0)
-        delta = target - c
-        await inter.edit_original_message(embed=self.bot.embed(title="{} Kore Kara".format(self.bot.emote.get('clock')), description="Release approximately in **{}**".format(self.bot.util.delta2str(delta, 2)),  url="https://granbluefantasy.jp/news/index.php", thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR))
+            pass
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Kore Kara".format(self.bot.emote.get('clock')), description="Release approximately in **{}**".format(self.bot.util.delta2str(m - c, 2)),  url="https://granbluefantasy.jp/news/index.php", thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR))
 
     @check.sub_command()
     async def news(self, inter: disnake.GuildCommandInteraction) -> None:
