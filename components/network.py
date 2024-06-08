@@ -14,7 +14,7 @@ from deep_translator import GoogleTranslator
 
 class Network():
     VERSION_REGEX = re.compile("Game\.version = \"(\d+)\";")
-    DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
     DEFAULT_CHROME_VER = 120
     DEFAULT_SEC_HEADERS = {"Sec-Ch-Ua": '"Not=A?Brand";v="99", "Chromium";v="{}"'.format(DEFAULT_CHROME_VER), "Sec-Ch-Ua-Mobile": "?0", "Sec-Ch-Ua-Platform": "Windows", "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1"}
     DEFAULT_HEADERS = {'Connection': 'keep-alive', 'Accept': 'application/json, text/javascript, */*; q=0.01', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/'}
