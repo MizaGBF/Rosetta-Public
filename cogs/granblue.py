@@ -34,7 +34,7 @@ class GranblueFantasy(commands.Cog):
     """
     async def granblue_watcher(self) -> None:
         acc_check = False
-        maint_check = 0 # 0 = no maintenance on going, 1 = maintenance on going, 2 = maintenance on going & task done
+        maint_check = False # False = no maintenance on going, True = maintenance on going
         v = None
         await asyncio.sleep(30)
         while True:
@@ -66,34 +66,29 @@ class GranblueFantasy(commands.Cog):
                 self.bot.logger.pushError("[TASK] 'granblue_watcher (News)' Task Error:", e)
 
             try: # update check
-                if maint_check == 2:
+                if maint_check:
                     if not await self.bot.net.gbf_maintenance(check_maintenance_end=True):
-                        maint_check = 0 # maintenance ended
+                        maint_check = False # maintenance ended
                         await self.bot.net.gbf_version() # update version
                         self.bot.data.save['gbfupdate'] = False
                         self.bot.data.pending = True
                     else:
                         continue # maintenance still on going
                 else:
-                    maint_check = int(await self.bot.net.gbf_maintenance(check_maintenance_end=True))
-                run_check = False
-                if maint_check == 0 and (self.bot.data.save['gbfupdate'] is True or (await self.bot.net.gbf_version()) == 3):
+                    maint_check = await self.bot.net.gbf_maintenance(check_maintenance_end=True)
+                if not maint_check and (self.bot.data.save['gbfupdate'] is True or (await self.bot.net.gbf_version()) == 3):
                     v = self.bot.data.save['gbfversion']
+                    self.bot.logger.push("[GBF] The game has been updated to version {}".format(v), send_to_discord=False)
                     self.bot.data.save['gbfupdate'] = False
                     self.bot.data.pending = True
-                    run_check = True
-                elif maint_check == 1 and (self.bot.util.UTC().minute % 20) < 5: # every 20 min
-                    run_check = True
-                if run_check:
-                    try: maint_check = await (self.bot.get_cog('Private').analysis(v, maint_check))
-                    except: pass
+                    await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Game has been updated", color=self.COLOR))
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
                 return
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'granblue_watcher (Update)' Task Error:", e)
 
-            if maint_check > 0:
+            if maint_check:
                 continue
 
             if self.bot.net.get_account(self.bot.data.save['gbfcurrent']) is None:
