@@ -436,7 +436,7 @@ class DiscordBot(commands.InteractionBot):
     async def on_ready(self) -> None: # called when the bot starts
         if not self.booted:
             # set our used channels for the send function
-            self.channel.setMultiple([['debug', 'debug_channel'], ['image', 'image_upload'], ['debug_update', 'debug_update']])
+            self.channel.setMultiple([['debug', 'debug_channel'], ['image', 'image_upload']])
             await self.send('debug', embed=self.embed(title="{} is Ready".format(self.user.display_name), description=self.util.statusString(), thumbnail=self.user.display_avatar, timestamp=self.util.UTC()))
             # check guilds and start the tasks
             self.booted = True
