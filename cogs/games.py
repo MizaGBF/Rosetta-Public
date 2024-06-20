@@ -807,7 +807,7 @@ class Games(commands.Cog):
         if len(msg) == 0 or len(msg) >= 3800:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="This message can't be converted", color=self.COLOR))
         else:
-            await inter.edit_original_message(embed=self.bot.embed(title="UwW", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, msg), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="UwU", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, msg), color=self.COLOR))
 
     @commands.message_command(name="Call Chen the Best")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
