@@ -132,10 +132,7 @@ class GranblueFantasy(commands.Cog):
             ii = 7832
             silent = True
             ncheck = 100
-        to_process = []
-        for i in range(ii, ii + ncheck):
-            if i not in self.bot.data.save['gbfdata']['game_news']:
-                to_process.append(i)
+        to_process = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
         # loop
         news = []
         for ii in to_process:
@@ -1059,19 +1056,19 @@ class GranblueFantasy(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             data = (await self.bot.net.request('https://game.granbluefantasy.jp/coopraid/daily_mission?PARAMS', account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['daily_mission']
-            msg = ""
+            msg = []
             for i in range(len(data)):
                 if data[i]['category'] == '2':
                     items = {20011:'fire', 20012:'fire', 20111:'fire', 20021:'water', 20022:'water', 20121:'water', 20031:'earth', 20032:'earth', 20131:'earth', 20041:'wind', 20042:'wind', 20141:'wind'}
                     cid = int(data[i]['image'].split('/')[-1])
-                    msg += '{} {}\n'.format(self.bot.emote.get(items.get(cid, 'misc')), data[i]['description'])
+                    msg.append('{} {}\n'.format(self.bot.emote.get(items.get(cid, 'misc')), data[i]['description']))
                 elif data[i]['category'] == '1':
                     quests = {'s00101':'wind', 's00104':'wind', 's00204':'wind', 's00206':'wind', 's00301':'fire', 's00303':'fire', 's00405':'fire', 's00406':'fire', 's00601':'water', 's00602':'water', 's00604':'water', 's00606':'water', 's00802':'earth', 's00704':'earth', 's00705':'earth', 's00806':'earth', 's01005':'wind', 's00905':'wind', 's00906':'wind', 's01006':'wind', 's01105':'fire', 's01403':'fire', 's01106':'fire', 's01206':'fire', 's01001':'water', 's01502':'water', 's01306':'water', 's01406':'water', 's01601':'earth', 's01405':'earth', 's01506':'earth', 's01606':'earth'}
                     cid = data[i]['image'].split('/')[-1]
-                    msg += '{} {}\n'.format(self.bot.emote.get(quests.get(cid, 'misc')), data[i]['description'])
+                    msg.append('{} {}\n'.format(self.bot.emote.get(quests.get(cid, 'misc')), data[i]['description']))
                 else:
-                    msg += '{} {}\n'.format(self.bot.emote.get(str(i+1)), data[i]['description'])
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Daily Coop Missions", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=msg, color=self.COLOR))
+                    msg.append('{} {}\n'.format(self.bot.emote.get(str(i+1)), data[i]['description']))
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Daily Coop Missions", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(msg), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
 

@@ -527,16 +527,16 @@ class Util():
     """
     async def search_wiki_for_id(self, name : str, category : str, from_gacha : bool = False, element : Optional[str] = None, proficiency : Optional[str] = None) -> Optional[str]:
         try:
-            addition = ""
+            addition = []
             extra_fields = ""
             if from_gacha:
-                addition += 'AND (obtain LIKE "%normal%" OR obtain LIKE "%premium%" OR obtain LIKE "%gala%")'
+                addition.append('AND (obtain LIKE "%normal%" OR obtain LIKE "%premium%" OR obtain LIKE "%gala%")')
             if element is not None:
-                addition += 'AND element = "{}"'.format(element)
+                addition.append('AND element = "{}"'.format(element))
             if proficiency is not None and category == "weapons":
-                addition += 'AND type = "{}"'.format(proficiency)
+                addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
-            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,obtain,element{}&format=json&limit=10".format(category, quote(name), quote(addition), extra_fields), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
+            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,obtain,element{}&format=json&limit=10".format(category, quote(name), quote(' '.join(addition)), extra_fields), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
             return str(data[0]['id'])
         except Exception as e:
             print(e)

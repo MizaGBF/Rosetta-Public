@@ -80,13 +80,7 @@ class Page(BaseView):
 class RankingDropdown(disnake.ui.StringSelect):
     def __init__(self, placeholder : str, search_results : list) -> None:
         # Define the options that will be presented inside the dropdown
-        options = []
-        for s in search_results:
-            options.append(
-                disnake.SelectOption(
-                    label=s[0], description=str(s[1])
-                )
-            )
+        options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results]
         super().__init__(
             placeholder=placeholder,
             min_values=1,
@@ -95,13 +89,7 @@ class RankingDropdown(disnake.ui.StringSelect):
         )
 
     def update_options(self, search_results : list) -> None:
-        options = []
-        for s in search_results:
-            options.append(
-                disnake.SelectOption(
-                    label=s[0], description=str(s[1])
-                )
-            )
+        options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results]
         self.options=options
 
     async def callback(self, inter: disnake.MessageInteraction) -> None:

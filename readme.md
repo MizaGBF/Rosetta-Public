@@ -43,7 +43,7 @@ The bot returns the following codes upong exiting:
 - 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
 - 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
 - 4: Failed to connect to Google Drive with your Service account.  
-- 5: Failed to initialize the bot components.  
+- 5: Failed to initialize a bot component.  
 - 6: Bot instance initialization failure.  
   
 As a side note, the `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the code **0**.  

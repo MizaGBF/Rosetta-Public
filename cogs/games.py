@@ -334,48 +334,48 @@ class Games(commands.Cog):
         - Thumbnail url
     """
     async def printLoto(self, revealedCards : list, revealedWinning : list, prize : list, total : bool = False) -> tuple:
-        desc = ''
+        desc = []
         thumb = None
         if len(revealedWinning) > 0:
-            desc += "The winning numbers are:\n"
+            desc.append("The winning numbers are:\n")
             for i in range(0, len(revealedWinning)):
-                desc += "**Tier {}**▫️".format(4-i)
+                desc.append("**Tier {}**▫️".format(4-i))
                 match i:
-                    case 0: desc += "Last Digit▫️" # tier 4
-                    case 1: desc += "First Two▫️" # tier 3
-                    case 2: desc += "Last Two▫️" # tier 2
-                desc += "{} ".format(', '.join(revealedWinning[len(revealedWinning)-1-i]))
-                for j in range(0, prize[3-i]): desc += ":confetti_ball:"
-                desc += "\n"
+                    case 0: desc.append("Last Digit▫️") # tier 4
+                    case 1: desc.append("First Two▫️") # tier 3
+                    case 2: desc.append("Last Two▫️") # tier 2
+                desc.append("{} ".format(', '.join(revealedWinning[len(revealedWinning)-1-i])))
+                for j in range(0, prize[3-i]): desc.append(":confetti_ball:")
+                desc.append("\n")
         if len(revealedCards) > 0:
-            desc += "Your cards are: "
+            desc.append("Your cards are: ")
             for c in revealedCards:
-                desc += c
-                if c is not revealedCards[-1]: desc += ", "
+                desc.append(c)
+                if c is not revealedCards[-1]: desc.append(", ")
         await asyncio.sleep(0)
         if total:
-            if sum(prize) == 0: desc += "\n{} You won nothing".format(self.bot.emote.get('kmr'))
+            if sum(prize) == 0: desc.append("\n{} You won nothing".format(self.bot.emote.get('kmr')))
             else:
                 if prize[0] > 0:
-                    desc += '\n:confetti_ball: '
+                    desc.append('\n:confetti_ball: ')
                     thumb = 'https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/item/article/m/30041.jpg'
                 elif prize[1] > 0:
-                    desc += '\n:clap: '
+                    desc.append('\n:clap: ')
                     thumb = 'https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/item/normal/m/gem.jpg'
                 elif prize[2] > 0:
-                    desc += '\n:hushed: '
+                    desc.append('\n:hushed: ')
                     thumb = 'https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/1040004600.jpg'
                 elif prize[3] > 0:
-                    desc += '\n:pensive: '
+                    desc.append('\n:pensive: ')
                     thumb = 'https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/item/article/m/30033.jpg'
                 add_comma = False
                 for i in range(0, 4):
                     if prize[3-i] > 0:
-                        if add_comma: desc += ", "
-                        desc += "**{}** Tier {}".format(prize[3-i], 4-i)
+                        if add_comma: desc.append(", ")
+                        desc.append("**{}** Tier {}".format(prize[3-i], 4-i))
                         add_comma = True
-                desc += " prizes"
-        return desc, thumb
+                desc.append(" prizes")
+        return ''.join(desc), thumb
 
     """checkLotoWin()
     Check which tier the card is elligible for

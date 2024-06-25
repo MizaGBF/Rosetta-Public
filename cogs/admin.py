@@ -855,26 +855,24 @@ class Admin(commands.Cog):
         """Download GW.sql (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         vers = await self.bot.ranking.GWDB(force_download = True)
-        msg = ""
+        msg = []
         for i in [0, 1]:
-            msg += "**{}** ▫️ ".format('GW_old.sql' if (i == 0) else 'GW.sql')
+            msg.append("**{}** ▫️ ".format('GW_old.sql' if (i == 0) else 'GW.sql'))
             if vers[i] is None:
-                msg += "Not loaded"
+                msg.append("Not loaded")
             else:
-                if vers[i].gw is not None: msg += 'GW{}'.format(vers[i].gw)
-                if vers[i].ver is not None: msg += ' (version {}) '.format(vers[i].ver)
-                if vers[i].timestamp is not None: msg += ' (at `{}`) '.format(vers[i].timestamp)
-            msg += "\n"
-        await inter.edit_original_message(embed=self.bot.embed(title="Guild War Databases", description=msg, timestamp=self.bot.util.UTC(), color=self.COLOR))
+                if vers[i].gw is not None: msg.append('GW{}'.format(vers[i].gw))
+                if vers[i].ver is not None: msg.append(' (version {}) '.format(vers[i].ver))
+                if vers[i].timestamp is not None: msg.append(' (at `{}`) '.format(vers[i].timestamp))
+            msg.append("\n")
+        await inter.edit_original_message(embed=self.bot.embed(title="Guild War Databases", description=''.join(msg), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @gw.sub_command()
     async def forceupdategbfg(self, inter: disnake.GuildCommandInteraction) -> None:
         """Force an update of the GW /gbfg/ Data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        crews = []
-        for e in self.bot.data.config['granblue']['gbfgcrew']:
-            if self.bot.data.config['granblue']['gbfgcrew'][e] in crews: continue
-            crews.append(self.bot.data.config['granblue']['gbfgcrew'][e])
+        crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
+        crews.sort()
         await (self.bot.get_cog('GuildWar').updateGBFGData(crews, True))
         await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ update finished", color=self.COLOR))
 
@@ -1036,15 +1034,15 @@ class Admin(commands.Cog):
         """List the GW buff list for (You) (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            msg = ""
+            msg = []
             for b in self.bot.data.save['gw']['buffs']:
-                msg += '{0:%m/%d %H:%M}: '.format(b[0])
-                if b[1]: msg += '[Normal Buffs] '
-                if b[2]: msg += '[FO Buffs] '
-                if b[3]: msg += '[Warning] '
-                if b[4]: msg += '[Double duration] '
-                msg += '\n'
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff debug check".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
+                msg.append('{0:%m/%d %H:%M}: '.format(b[0]))
+                if b[1]: msg.append('[Normal Buffs] ')
+                if b[2]: msg.append('[FO Buffs] ')
+                if b[3]: msg.append('[Warning] ')
+                if b[4]: msg.append('[Double duration] ')
+                msg.append('\n')
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff debug check".format(self.bot.emote.get('gw')), description=''.join(msg), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error, buffs aren't set.", color=self.COLOR))
 

@@ -31,6 +31,11 @@ class Drive():
             # Authenticate
             self.gauth.ServiceAuth()
             self.gdrive = GoogleDrive(self.gauth)
+        except OSError as e:
+            self.gauth = None
+            self.gdrive = None
+            self.bot.logger.pushError("[DRIVE] Failed to initialize Drive component, couldn't open service-secrets.json:", e, send_to_discord=False)
+            raise e
         except Exception as e:
             self.gauth = None
             self.gdrive = None
@@ -162,16 +167,14 @@ class Drive():
     def save(self, data : dict) -> Optional[bool]: # write data as save.json to the folder id in tokens
         if self.debug: return None
         try:
-            prev = []
             # backup
             file_list = self.gdrive.ListFile({'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}).GetList()
             if len(file_list) > 9: # delete if we have too many backups
                 for f in file_list:
                     if f['title'].find('backup') == 0:
                         f.Delete()
-            for f in file_list: # search the previous save(s)
-                if f['title'] == "save.json" or f['title'] == "save.gzip" or f['title'] == "save.lzma":
-                    prev.append(f)
+            # list the previous save(s)
+            prev = [f for f in file_list if f['title'] in ["save.json", "save.gzip", "save.lzma"]]
             # compress
             cdata = self.compressJSON(data)
             # saving

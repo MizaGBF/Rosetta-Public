@@ -332,12 +332,9 @@ class Ranking():
             else:
                 diff = 0
             
-            tasks = []
-            for c in crews:
-                tasks.append(self.updateRankingTask(diff, True, mode, c))
-            for p in players:
-                tasks.append(self.updateRankingTask(diff, False, 2, p))
-            await asyncio.gather(*tasks)
+            tasks_crew = [self.updateRankingTask(diff, True, mode, c) for c in crews]
+            tasks_player = [self.updateRankingTask(diff, False, 2, p) for p in players]
+            await asyncio.gather(*tasks_crew, *tasks_player)
 
             for i in range(0, 4):
                 self.rankingtempdata[i] = dict(sorted(self.rankingtempdata[i].items(), reverse=True, key=lambda item: int(item[1])))
@@ -616,12 +613,14 @@ class Ranking():
                     break
             if force: skip_mode = 0
             if skip_mode == 1: return 'Skipped'
+            await asyncio.sleep(0)
             day = self.getCurrentGWDayID() # check which day it is (0 being prelim, 1 being interlude, 2 = day 1, etc...)
             if day is None or day >= 10:
                 return "Invalid day"
             if day > 0: day -= 1 # interlude is put into prelims
             self.bot.logger.push("[RANKING] Updating Database (mode={}, day={})...".format(skip_mode, day), send_to_discord=False)
             n = await self.GWDB()
+            await asyncio.sleep(0)
             if n[1] is None or n[1].gw != self.bot.data.save['gw']['id'] or n[1].ver != self.DB_VERSION:
                 self.bot.logger.push("[RANKING] Invalid 'GW.sql'. A new 'GW.sql' file will be created", send_to_discord=False)
                 self.bot.file.rm('temp.sql') # delete previous temp file (if any)
@@ -633,6 +632,7 @@ class Ranking():
             for n in [0, 1]: # n == 0 (crews) or 1 (players)
                 if skip_mode == 2 and n == 0: continue
                 elif skip_mode == 3 and n == 1: continue
+                await asyncio.sleep(0)
                 self.bot.logger.push("[RANKING] {} Step...".format('CREW' if n == 0 else 'PLAYER'), send_to_discord=False)
                 self.getrank_mode = (n == 0)
                 data = await self.requestRanking(1, (0 if self.getrank_mode else 2)) # get the first page
@@ -642,14 +642,14 @@ class Ranking():
                 last = data['last'] # number of pages
                 # run in tasks
                 self.stoprankupdate = False # if true, this flag will stop the threads
-                status = [0, [], []] # count thread finished, input queue, output queue
-                for i in range(2, last+1): # queue the pages to retrieve
-                    status[1].append(i)
-                for item in data['list']: # queue what we already retrieved on the first page
-                    status[2].append(item)
-                coroutines = [self.gwdbbuilder(status, day)]
-                for i in range(self.MAX_TASK): coroutines.append(self.getrankProcess(status))
-                results = await asyncio.gather(*coroutines)
+                status = [
+                    0, # count thread finished
+                    [i for i in range(2, last+1)], # input queue, queue the pages to retrieve
+                    [item for item in data['list']] # output queue, queue what we already retrieved on the first page
+                ]
+                await asyncio.sleep(0)
+                coroutines = [self.getrankProcess(status) for i in range(self.MAX_TASK)]
+                results = await asyncio.gather(self.gwdbbuilder(status, day), *coroutines)
                 self.stoprankupdate = True # to be safe
                 for r in results:
                     if r is not None: state = r

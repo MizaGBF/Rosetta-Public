@@ -188,6 +188,37 @@ class Search(commands.Cog):
         except:
             return []
 
+    """make4chanMessage()
+    Generic function to make the embed description of 4chan commands based on a list of thread to display
+    
+    Parameters
+    ------
+    emoji: string, emoji to display
+    board: string, 4chan board
+    threads: list of threads as returned by get4chan()
+    
+    Returns
+    ----------
+    tuple: containing:
+        str: The text, limited to 1800 characters
+        str: The thumbnail url or None
+    """
+    def make4chanMessage(self, emoji : str, board : str, threads : list) -> str:
+        msg = []
+        l = 0
+        thumbnail = None
+        for t in threads:
+            if len(t[2]) > 34:
+                msg.append('{} [{} replies](https://boards.4channel.org/{}/thread/{}) ▫️ {}...\n'.format(emoji, t[1], board, t[0], t[2][:33]))
+            else:
+                msg.append('{} [{} replies](https://boards.4channel.org/{}/thread/{}) ▫️ {}\n'.format(emoji, t[1], board, t[0], t[2]))
+            l += len(msg[-1])
+            if thumbnail is None and len(t) >= 4: thumbnail = t[3]
+            if l > 1800:
+                msg.append('and more...')
+                break
+        return ''.join(msg), thumbnail
+
     @search.sub_command_group(name="4chan")
     async def fourchan(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
@@ -204,16 +235,7 @@ class Search(commands.Cog):
         threads = await self.get4chan(board, search)
         thumbnail = None
         if len(threads) > 0:
-            msg = ""
-            for t in threads:
-                if len(t[2]) > 34:
-                    msg += ':four_leaf_clover: [{} replies](https://boards.4channel.org/{}/thread/{}) ▫️ {}...\n'.format(t[1], board, t[0], t[2][:33])
-                else:
-                    msg += ':four_leaf_clover: [{} replies](https://boards.4channel.org/{}/thread/{}) ▫️ {}\n'.format(t[1], board, t[0], t[2])
-                if thumbnail is None and len(t) >= 4: thumbnail = t[3]
-                if len(msg) > 1800:
-                    msg += 'and more...'
-                    break
+            msg, thumbnail = self.make4chanMessage(':four_leaf_clover:', board, threads)
             await inter.edit_original_message(embed=self.bot.embed(title="4chan Search result", description=msg, thumbnail=thumbnail, footer="Have fun, fellow 4channeler", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="4chan Search result", description="No matching threads found", color=self.COLOR))
@@ -225,16 +247,7 @@ class Search(commands.Cog):
         threads = await self.get4chan('vg', '/gbfg/')
         thumbnail = None
         if len(threads) > 0:
-            msg = ""
-            for t in threads:
-                if len(t[2]) > 34:
-                    msg += ':poop: [{} replies](https://boards.4channel.org/vg/thread/{}) ▫️ {}...\n'.format(t[1], t[0], t[2][:33])
-                else:
-                    msg += ':poop: [{} replies](https://boards.4channel.org/vg/thread/{}) ▫️ {}\n'.format(t[1], t[0], t[2])
-                if thumbnail is None and len(t) >= 4: thumbnail = t[3]
-                if len(msg) > 1800:
-                    msg += 'and more...'
-                    break
+            msg, thumbnail = self.make4chanMessage(':poop:', 'vg', threads)
             await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ latest thread(s)", description=msg, thumbnail=thumbnail, footer="Have fun, fellow 4channeler", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ Error", description="I couldn't find a single /gbfg/ thread 😔", color=self.COLOR))
@@ -249,16 +262,7 @@ class Search(commands.Cog):
         threads = await self.get4chan('vg', '/hgg2d/')
         thumbnail = None
         if len(threads) > 0:
-            msg = ""
-            for t in threads:
-                if len(t[2]) > 34:
-                    msg += '🔞 [{} replies](https://boards.4channel.org/vg/thread/{}) ▫️ {}...\n'.format(t[1], t[0], t[2][:33])
-                else:
-                    msg += '🔞 [{} replies](https://boards.4channel.org/vg/thread/{}) ▫️ {}\n'.format(t[1], t[0], t[2])
-                if thumbnail is None and len(t) >= 4: thumbnail = t[3]
-                if len(msg) > 1800:
-                    msg += 'and more...'
-                    break
+            msg, thumbnail = self.make4chanMessage('🔞', 'vg', threads)
             await inter.edit_original_message(embed=self.bot.embed(title="/hgg2d/ latest thread(s)", description=msg, thumbnail=thumbnail, footer="Have fun, fellow 4channeler", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="/hgg2d/ Error", description="I couldn't find a single /hgg2d/ thread 😔", color=self.COLOR))

@@ -694,21 +694,20 @@ class GachaSimulator():
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(r[0])), r[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 1: # ten roll display
                 for i in range(0, 11):
-                    msg = ""
+                    msg = []
                     for j in range(0, i):
                         if j >= 10: break
                         # write
-                        msg += "{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1])
-                        if j % 2 == 1: msg += "\n"
+                        msg.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
+                        if j % 2 == 1: msg.append("\n")
                     for j in range(i, 10):
-                        msg += '{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0])))
-                        if j % 2 == 1: msg += "\n"
-                    if self.scamdata is not None: msg += "{}{}\n{}".format(self.bot.emote.get('SSR'), self.bot.emote.get('crystal2'), self.bot.emote.get('red'))
+                        msg.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
+                        if j % 2 == 1: msg.append("\n")
+                    if self.scamdata is not None: msg.append("{}{}\n{}".format(self.bot.emote.get('SSR'), self.bot.emote.get('crystal2'), self.bot.emote.get('red')))
                     await asyncio.sleep(0.7)
-                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
+                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msg), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
                 if self.scamdata is not None:
-                    msg = '\n'.join(msg.split('\n')[:-2])
-                    msg += "\n{}**{}**\n{}**{}**".format(self.bot.emote.get('SSR'), self.bot.gacha.formatGachaItem(sroll[0]), self.bot.emote.get('red'), sroll[1])
+                    msg = '\n'.join(msg.split('\n')[:-2]) + "\n{}**{}**\n{}**{}**".format(self.bot.emote.get('SSR'), self.bot.gacha.formatGachaItem(sroll[0]), self.bot.emote.get('red'), sroll[1])
                     await asyncio.sleep(1)
                     await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 2: # meme roll display
@@ -729,25 +728,25 @@ class GachaSimulator():
             case 3: # spark display
                 count = len(self.result['list'])
                 rate = (100*self.result['detail'][2]/count)
-                msg = ""
+                msg = []
                 best = [-1, ""]
                 rolls = self.getSSRList()
                 for r in rolls: # check for best roll
                     if best[0] < 3 and '**' in r: best = [3, r.replace('**', '')]
                     elif best[0] < 2: best = [2, r]
                 if len(rolls) > 0 and self.complete:
-                    msg = "{} ".format(self.bot.emote.get('SSR'))
+                    msg.append("{} ".format(self.bot.emote.get('SSR')))
                     for item in rolls:
-                        msg += item
-                        if rolls[item] > 1: msg += " x{}".format(rolls[item])
+                        msg.append(item)
+                        if rolls[item] > 1: msg.append(" x{}".format(rolls[item]))
                         await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer), view=None)
                         await asyncio.sleep(0.75)
-                        msg += " "
+                        msg.append(" ")
                 if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_MUKKU: amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_SUPER: amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
                 else: amsg = ""
-                msg = "{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), msg, rate)
+                msg = "{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msg), rate)
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
 
     """getSSRList()

@@ -27,14 +27,10 @@ class Blackjack(BaseView):
         if len(self.players) < 6: self.players.append(self.bot.user)
         random.shuffle(self.players)
         self.embed = embed
-        self.deck = []
         kind = ["D", "S", "H", "C"]
-        for i in range(51):
-            self.deck.append('{}{}'.format((i % 13) + 1, kind[i // 13]))
+        self.deck = ['{}{}'.format((i % 13) + 1, kind[i // 13]) for i in range(51)]
         random.shuffle(self.deck)
-        self.hands = []
-        for i in range(len(self.players)):
-            self.hands.append([0, [self.deck.pop()]]) # playing state, cards
+        self.hands = [[0, [self.deck.pop()]] for i in range(len(self.players))] # playing state, cards
         if self.players[self.state].id == self.bot.user.id:
             self.playai()
         self.notification = "Turn of **{}**".format(self.players[self.state].display_name)

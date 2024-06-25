@@ -345,9 +345,7 @@ class Poker(BaseView):
     str: Highest card
     """
     def highestCard(selection : list) -> str:
-        cards = []
-        for c in selection:
-            cards.append(c.zfill(3))
+        cards = [c.zfill(3) for c in selection]
         last = sorted(cards)[-1]
         if last[0] == '0': last = last[1:]
         return last

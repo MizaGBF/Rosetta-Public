@@ -25,7 +25,7 @@ class Channel():
     def update_announcement_channels(self) -> None:
         self.announcements = []
         self.auto_publish = []
-        for k, v in self.bot.data.save.get('announcement', {}).items():
+        for v in self.bot.data.save.get('announcement', {}).values():
             self.announcements.append(v[0])
             if v[1]: self.auto_publish.append(v[0])
 

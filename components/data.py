@@ -434,9 +434,7 @@ class Data():
     Coroutine to clean the save data
     """
     async def clean_general(self) -> None:
-        guild_ids = []
-        for g in self.bot.guilds:
-             guild_ids.append(str(g.id))
+        guild_ids = [str(g.id) for g in self.bot.guilds]
         count = 0
         for gid in list(self.save['permitted'].keys()):
             if gid not in guild_ids or len(self.save['permitted'][gid]) == 0:
