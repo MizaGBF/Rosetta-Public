@@ -73,10 +73,8 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "deface" : YOUR_CREW_DEF_ACE_ROLE_ID,
         "fo" : YOUR_CREW_FIRST_OFFICER_ROLE_ID,
         "gl" : YOUR_CREW_LEADER_ROLE_ID,
-        "wawi" : 163566477138591744,
         "gbfg" : 339155308767215618,
-        "gbfg_new" : 402973729942142988,
-        "chen" : 271896927463800835
+        "gbfg_new" : 402973729942142988
     },
     "games" : [
         "Granblue Fantasy",
@@ -251,6 +249,8 @@ INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
   
 If it doesn't, be sure to check for error messages, etc...  
   
+### Additional Informations  
+  
 Further setup might be required to use some features.  
 The `/owner` command group from the `admin.py` cog should contain what you need to set/edit some of the bot data.  
 Here's a quick overview of the sub command groups:  
@@ -269,4 +269,7 @@ Here's a quick overview of the sub command groups:
   
 I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
   
-Additionally, if you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
+If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
+  
+The `cogs/youcrew.py` Command Cog contains commands for my own crew. If you don't need them, you can simply delete the file.  
+  

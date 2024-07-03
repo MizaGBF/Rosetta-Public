@@ -27,7 +27,7 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.6.0" # bot version
+        self.version = "11.6.1" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
             "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace.",
