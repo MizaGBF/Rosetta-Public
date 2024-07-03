@@ -27,11 +27,9 @@ import traceback
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.5.0" # bot version
+        self.version = "11.6.0" # bot version
         self.changelog = [ # changelog lines
             "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-            "**v11.0.12** - Added `/mod server toggle_vxtwitter`.",
-            "**v11.0.14** - Rosetta will now update its avatar depending on the time of the year.",
             "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace.",
             "**v11.1.1** - Added a daily automatic update for `/gbf schedule`.",
             "**v11.1.2** - Improved `/gbf schedule`.",
@@ -43,6 +41,7 @@ class DiscordBot(commands.InteractionBot):
             "**v11.3.0** - Added `/gw player stats`",
             "**v11.3.1** - Changed `/gw player stats` to `/gw stats player` and added `/gw stats crew`. Both commands have been improved.",
             "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
+            "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
         ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
@@ -57,13 +56,18 @@ class DiscordBot(commands.InteractionBot):
             self.logger = Logger(self)
             self.logger.push("[BOOT] Logger started up. Loading components...", send_to_discord=False)
             self.data = Data(self)
-            try: self.drive = Drive(self)
-            except Exception as e:
-                if "No such file or directory: 'service-secrets.json'" in str(e):
-                    self.logger.push("[BOOT] Please setup your Google account 'service-secrets.json' to use the bot.", send_to_discord=False, level=self.logger.CRITICAL)
-                    self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
-                    time.sleep(500)
-                    os._exit(4)
+            try:
+                self.drive = Drive(self)
+            except OSError:
+                self.logger.push("[BOOT] Please setup your Google account 'service-secrets.json' to use the bot.", send_to_discord=False, level=self.logger.CRITICAL)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                time.sleep(500)
+                os._exit(4)
+            except Exception:
+                self.logger.push("[BOOT] Failed to initialize the Drive component", send_to_discord=False, level=self.logger.CRITICAL)
+                self.logger.push("[BOOT] Exiting in 500 seconds...", send_to_discord=False)
+                time.sleep(500)
+                os._exit(5)
             self.net = Network(self)
             self.pinboard = Pinboard(self)
             self.emote = Emote(self)

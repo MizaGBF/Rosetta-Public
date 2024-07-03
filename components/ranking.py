@@ -1,12 +1,9 @@
 import asyncio
 from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
-from PIL import Image, ImageFont, ImageDraw
 from datetime import timedelta, datetime
 from bs4 import BeautifulSoup
 import sqlite3
-import math
-from io import BytesIO
 
 # ----------------------------------------------------------------------------------------------------------------
 # Ranking Component
@@ -108,11 +105,11 @@ class Ranking():
             return None
         match mode:
             case 0: # crew
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/totalguild/detail/{}/0?PARAMS".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/totalguild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             case 1: # prelim crew
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/guild/detail/{}/0?PARAMS".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/guild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             case 2: # player
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest_ranking_user/detail/{}/0?PARAMS".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest_ranking_user/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         return res
 
     """updateRankingTask()
@@ -658,9 +655,11 @@ class Ranking():
                     self.bot.logger.pushError("[RANKING] Database update finished with an error", send_to_discord=False)
                     return state
                     
-                if self.getrank_mode and day > 0 and day < 10: # update tracker
+                if self.getrank_mode and day > 0 and day < 10: # update crew tracker
                     try:
-                        await self.updateTracker(update_time, day)
+                        c = self.bot.get_cog("YouCrew")
+                        if c is not None:
+                            await c.updateTracker(update_time, day)
                     except Exception as ue:
                         self.bot.logger.pushError("[RANKING] 'updatetracker' error:", ue)
             self.bot.logger.push("[RANKING] Database update finished", send_to_discord=False)
@@ -669,188 +668,6 @@ class Ranking():
             self.bot.logger.pushError("[RANKING] Database update interrupted", e, send_to_discord=False)
             self.stoprankupdate = True
             return "Exception: " + self.bot.pexc(e)
-
-    """searchScoreForTracker()
-    Search the targeted crews for the YouTracker in the database being built
-    
-    Parameters
-    ----------
-    day: current day ID
-    crews: List of crew IDs
-    
-    Returns
-    --------
-    list: Crew informations
-    """
-    async def searchScoreForTracker(self, day : int, crews : list) -> list:
-        infos = []
-        conn = sqlite3.connect('temp.sql') # open temp.sql
-        c = conn.cursor()
-        c.execute("PRAGMA synchronous = normal")
-        c.execute("PRAGMA locking_mode = exclusive")
-        c.execute("PRAGMA journal_mode = OFF")
-        await asyncio.sleep(0)
-        d = [3, 4, 5, 6, 7] # prelims to day 4 slots
-        for sid in crews:
-            c.execute("SELECT * FROM crews WHERE id = {}".format(sid)) # get the score
-            data = c.fetchall()
-            if data is None or len(data) == 0: raise Exception("Failed to retrieve data")
-            infos.append([data[0][2], data[0][d[day]]-data[0][d[day]-1], data[0][8]]) # name, score of the day, top speed
-            await asyncio.sleep(0)  
-        c.close()
-        conn.close()
-        return infos
-
-    """drawChart()
-    Draw the YouTracker chart (GW Match tracker for my crew)
-    
-    Parameters
-    ----------
-    plot: list of points, format: [datetime, float, float]
-    
-    Raises
-    ------
-    Exception: If an error occurs
-    
-    Returns
-    ----------
-    str: filename of the image, None if error
-    """
-    async def drawChart(self, plot : list) -> Optional[str]:
-        if len(plot) == 0: return None
-        img = Image.new("RGB", (800, 600), (255,255,255))
-        d = ImageDraw.Draw(img)
-        font = ImageFont.truetype("assets/font.ttf", 14)
-        
-        # y grid lines
-        for i in range(0, 4):
-            d.line([(50, 50+125*i), (750, 50+125*i)], fill=(200, 200, 200), width=1)
-        # x grid lines
-        for i in range(0, 10):
-            d.line([(120+70*i, 50), (120+70*i, 550)], fill=(200, 200, 200), width=1)
-        await asyncio.sleep(0)
-        # legend
-        d.text((10, 10),"Speed (M/min)",font=font,fill=(0,0,0))
-        d.line([(150, 15), (170, 15)], fill=(0, 0, 255), width=2)
-        d.text((180, 10),"You",font=font,fill=(0,0,0))
-        d.line([(220, 15), (240, 15)], fill=(255, 0, 0), width=2)
-        d.text((250, 10),"Opponent",font=font,fill=(0,0,0))
-        d.text((720, 580),"Time (JST)",font=font,fill=(0,0,0))
-        await asyncio.sleep(0)
-        
-        # y notes
-        miny = 999
-        maxy = 0
-        for p in plot:
-            miny = math.floor(min(miny, p[1], p[2]))
-            maxy = math.ceil(max(maxy, p[1], p[2]))
-        deltay= maxy - miny
-        if deltay <= 0: return None
-        tvar = maxy
-        for i in range(0, 5):
-            d.text((10, 40+125*i),"{:.2f}".format(float(tvar)).replace('.00', '').replace('.10', '.1').replace('.20', '.2').replace('.30', '.3').replace('.40', '.4').replace('.50', '.5').replace('.60', '.6').replace('.70', '.7').replace('.80', '.8').replace('.90', '.9').replace('.0', '').rjust(6),font=font,fill=(0,0,0))
-            tvar -= deltay / 4
-        await asyncio.sleep(0)
-        # x notes
-        minx = plot[0][0]
-        maxx = plot[-1][0]
-        deltax = maxx - minx
-        deltax = (deltax.seconds + deltax.days * 86400)
-        if deltax <= 0: return None
-        tvar = minx
-        for i in range(0, 11):
-            d.text((35+70*i, 560),"{:02d}:{:02d}".format(tvar.hour, tvar.minute),font=font,fill=(0,0,0))
-            tvar += timedelta(seconds=deltax/10)
-        await asyncio.sleep(0)
-
-        # lines
-        lines = [[], []]
-        for p in plot:
-            x = p[0] - minx
-            x = (x.seconds + x.days * 86400)
-            x = 50 + 700 * (x / deltax)
-            y = maxy - p[1]
-            y = 50 + 500 * (y / deltay)
-            lines[0].append((x, y))
-            y = maxy - p[2]
-            y = 50 + 500 * (y / deltay)
-            lines[1].append((x, y))
-        await asyncio.sleep(0)
-
-        # plot lines
-        d.line([(50, 50), (50, 550), (750, 550)], fill=(0, 0, 0), width=1)
-        d.line(lines[0], fill=(0, 0, 255), width=2, joint="curve")
-        d.line(lines[1], fill=(255, 0, 0), width=2, joint="curve")
-        await asyncio.sleep(0)
-
-        with BytesIO() as output:
-            img.save(output, format="PNG")
-            img.close()
-            return output.getvalue()
-
-    """updateTracker()
-    Update the YouTracker data (GW Match tracker for my crew)
-    
-    Parameters
-    ----------
-    t: time of this ranking interval
-    day: Integer, current day number
-    """
-    async def updateTracker(self, t : datetime, day : int) -> None:
-        you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None) # our id
-        
-        if you_id is None: return
-        if self.bot.data.save['matchtracker'] is None: return # not initialized
-        if self.bot.data.save['matchtracker']['day'] != day: # new day, reset
-            self.bot.data.save['matchtracker'] = {
-                'day':day,
-                'init':False,
-                'id':self.bot.data.save['matchtracker']['id'],
-                'plot':[]
-            }
-            self.bot.data.pending = True
-            
-        infos = await self.searchScoreForTracker(day, [you_id, self.bot.data.save['matchtracker']['id']])
-        newtracker = self.bot.data.save['matchtracker'].copy()
-        if newtracker['init']:
-            d = t - newtracker['last']
-            speed = d.seconds//60
-            # rounding to multiple of 20min
-            if speed % 20 > 15:
-                speed += 20 - (speed % 20)
-            elif speed % 20 < 5:
-                speed -= (speed % 20)
-            # applying
-            if speed != 0:
-                speed = [(infos[0][1] - newtracker['scores'][0]) / speed, (infos[1][1] - newtracker['scores'][1]) / speed]
-                if speed[0] > newtracker['top_speed'][0]: newtracker['top_speed'][0] = speed[0]
-                if speed[1] > newtracker['top_speed'][1]: newtracker['top_speed'][1] = speed[1]
-                newtracker['speed'] = speed
-            else:
-                newtracker['speed'] = None
-        else:
-            newtracker['init'] = True
-            newtracker['speed'] = None
-            newtracker['top_speed'] = [0, 0]
-        newtracker['names'] = [infos[0][0], infos[1][0]]
-        newtracker['scores'] = [infos[0][1], infos[1][1]]
-        newtracker['max_speed'] = [infos[0][2], infos[1][2]]
-        newtracker['last'] = t
-        newtracker['gwid'] = self.bot.data.save['gw']['id']
-        if newtracker['speed'] is not None: # save chart data
-            newtracker['plot'].append([t, newtracker['speed'][0] / 1000000, newtracker['speed'][1] / 1000000])
-        if len(newtracker['plot']) > 1: # generate chart
-            try:
-                imgdata = await self.drawChart(newtracker['plot'])
-                with BytesIO(imgdata) as f:
-                    if f.getbuffer().nbytes > 0:
-                        with self.bot.file.discord(f, filename="chart.png") as df:
-                            message = await self.bot.send('image', file=df)
-                            newtracker['chart'] = message.attachments[0].url
-            except Exception as e:
-                self.bot.logger.pushError("[RANKING] 'updatetracker (Upload)' error:", e)
-        self.bot.data.save['matchtracker'] = newtracker
-        self.bot.data.pending = True
 
     """GWDB()
     Return the Unite & fight ranking database infos, after downloading them from the google drive

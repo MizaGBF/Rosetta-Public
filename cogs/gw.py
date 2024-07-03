@@ -510,7 +510,7 @@ class GuildWar(commands.Cog):
     dict: Crew data, None if error
     """
     async def getCrewSummary(self, cid : int) -> Optional[dict]:
-        res = await self.bot.net.request("https://game.granbluefantasy.jp/guild_main/content/detail/{}?PARAMS".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        res = await self.bot.net.request("https://game.granbluefantasy.jp/guild_main/content/detail/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         if res is None: return None
         else:
             soup = BeautifulSoup(unquote(res['data']), 'html.parser')
@@ -789,8 +789,8 @@ class GuildWar(commands.Cog):
     dict: Resulting data, None if error
     """
     async def requestCrew(self, cid : int, page : int) -> Optional[dict]: # get crew data
-        if page == 0: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/guild_info/{}?PARAMS".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-        else: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/member_list/{}/{}?PARAMS".format(page, cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        if page == 0: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/guild_info/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        else: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/member_list/{}/{}".format(page, cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
 
     """_sortMembers()
     Sort members by GW contributions
@@ -884,175 +884,6 @@ class GuildWar(commands.Cog):
                 msg += "{}/m.\n".format(self.bot.util.valToStr(lead_speed, 3))
         await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), gwnum, day - 1), description=desc+msg, timestamp=self.bot.util.UTC(), color=self.COLOR))
 
-
-    @gw.sub_command_group()
-    async def you(self, inter: disnake.GuildCommandInteraction) -> None:
-        pass
-
-    @you.sub_command(name="meat")
-    async def youmeat(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Collect meat stats of (You) ((You) Server Only) (Mod Only)"""
-        await inter.response.defer(ephemeral=True)
-        if inter.guild.id != self.bot.data.config['ids'].get('you_server', -1):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in this server", color=self.COLOR))
-        elif not self.bot.isMod(inter):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Only a moderator can use this command", color=self.COLOR))
-        elif inter.channel.id != self.bot.data.config['ids'].get('you_meat', -1):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="This command isn't usable in this channel", color=self.COLOR))
-        else:
-            data = {}
-            errors = set()
-            attach ={}
-            users = {}
-            async for message in inter.channel.history(limit=100):
-                if message.author.id == inter.me.id:
-                    break
-                else:
-                    try:
-                        match = self.YOU_MEAT_REGEX.findall(message.content)[0]
-                        number = float(match[0])
-                        if match[2] and match[2].lower() == 'k' or match[1] and not match[2]:
-                            number = number * 1000
-                        if message.author.id not in data:
-                            data[message.author.id] = 0
-                        data[message.author.id] = int(max(number, data[message.author.id]))
-                    except:
-                        errors.add(message.author.id)
-                    if message.author.id not in attach:
-                        attach[message.author.id] = []
-                    for at in message.attachments:
-                        attach[message.author.id].append(at.url)
-                    try:
-                        users[message.author.id] = (await message.guild.get_or_fetch_member(message.author.id)).display_name
-                    except:
-                        users[message.author.id] = message.author.display_name
-            msg = ""
-            total = 0
-            for uid in users:
-                line = []
-                if uid in data:
-                    line.append(str(data[uid]))
-                    total += data[uid]
-                if uid in errors: line.append("**?**")
-                if uid in attach:
-                    for url in attach[uid]:
-                        line.append("[#]({})".format(url))
-                if len(line) > 0:
-                    msg += "{}: {}\n".format(users[uid], " ".join(line))
-                if len(msg) > 3800:
-                    await inter.channel.send(embed=self.bot.embed(title="Meat Collection", description=msg, color=self.COLOR))
-                    msg = ""
-            if total > 0:
-                msg += "\n**Total: {} meats**".format(total)
-            if len(msg) > 0:
-                await inter.channel.send(embed=self.bot.embed(title="Meat Collection", description=msg, color=self.COLOR))
-            await inter.edit_original_message(embed=self.bot.embed(title="Meat Collection", description="Done", color=self.COLOR))
-
-    @you.sub_command(name="lead")
-    async def youlead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
-        """Show the current match of (You) ((You) Server Only)"""
-        await inter.response.defer()
-        if inter.guild.id != self.bot.data.config['ids'].get('you_server', -1):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in this server", color=self.COLOR))
-            return
-        elif opponent != "" and self.bot.isMod(inter):
-            crew_id_list = self.bot.data.config['granblue'].get('gbfgcrew', {}) | self.bot.data.config['granblue'].get('othercrew', {})
-            if opponent.lower() in crew_id_list:
-                oid = crew_id_list[opponent.lower()]
-            else:
-                try: oid = int(opponent)
-                except:
-                    await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Invalid ID `{}`".format(opponent), color=self.COLOR))
-                    return
-            if self.bot.data.save['matchtracker'] is None or self.bot.data.save['matchtracker']['id'] != oid:
-                self.bot.data.save['matchtracker'] = {
-                    'day':None,
-                    'init':False,
-                    'id':oid,
-                    'plot':[]
-                }
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Opponent set to id `{}`, please wait the next ranking update".format(oid), color=self.COLOR))
-            else:
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Opponent already set to id `{}`".format(oid), color=self.COLOR))
-        else:
-            if self.bot.data.save['matchtracker'] is None or not self.bot.data.save['matchtracker']['init']:
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Unavailable, either wait the next ranking update or add the opponent id after the command to initialize it", color=self.COLOR))
-            else:
-                ct = self.bot.util.JST()
-                you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None)
-                d = ct - self.bot.data.save['matchtracker']['last']
-                msg = "Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))
-                if d.seconds >= 1200 and d.seconds <= 1800: msg += " ▫ *updating*"
-                msg += "\n"
-                if self.bot.data.save['matchtracker']['last'].hour < 7:
-                    end_time = self.bot.data.save['matchtracker']['last'].replace(hour=0, minute=0, second=0, microsecond=0)
-                else:
-                    end_time = self.bot.data.save['matchtracker']['last'].replace(day=self.bot.data.save['matchtracker']['last'].day+1, hour=0, minute=0, second=0, microsecond=0)
-                remaining = end_time - self.bot.data.save['matchtracker']['last']
-                lead_speed = None
-                for i in range(2):
-                    msg += "[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i])
-                    
-                    if self.bot.data.save['matchtracker']['speed'] is None:
-                        msg += "\n\n"
-                        continue
-                    if i == 0: lead_speed = self.bot.data.save['matchtracker']['speed'][0]
-                    elif lead_speed is not None: lead_speed -= self.bot.data.save['matchtracker']['speed'][1]
-                    else: lead_speed = None
-                    
-                    msg += "\n**Speed** ▫️ Now {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['speed'][i], 2))
-                    if self.bot.data.save['matchtracker']['speed'][i] >= self.bot.data.save['matchtracker']['top_speed'][i]:
-                        msg += " ▫️ **Top {}/m** {}".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2), ":white_check_mark:" if i == 0 else ":warning:")
-                    else:
-                        msg += " ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2))
-                    max_speed = max(self.bot.data.save['matchtracker']['max_speed'][i], self.bot.data.save['matchtracker']['top_speed'][i])
-                    if self.bot.data.save['matchtracker']['speed'][i] >= max_speed:
-                        msg += " ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:")
-                    else:
-                        msg += " ▫️ Max {}/m".format(self.bot.util.valToStr(max_speed, 2))
-                    if end_time > self.bot.data.save['matchtracker']['last']:
-                        current_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['speed'][i] * remaining.seconds//60
-                        max_estimation = self.bot.data.save['matchtracker']['scores'][i] + max_speed * remaining.seconds//60
-                        top_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['top_speed'][i] * remaining.seconds//60
-                        msg += "\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3))
-                    else:
-                        lead_speed = None # disable lead check if the match ended
-                    msg += "\n\n"
-                lead = self.bot.data.save['matchtracker']['scores'][0] - self.bot.data.save['matchtracker']['scores'][1]
-                if lead != 0:
-                    msg += "**Difference** ▫️ {:,}".format(abs(lead))
-                    if lead_speed is not None and lead_speed != 0:
-                        try:
-                            if lead < 0: lead_speed *= -1
-                            msg += " ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3))
-                            lead_will_switch = False
-                            if lead_speed < 0:
-                                minute = abs(lead) / abs(lead_speed)
-                                d = self.bot.data.save['matchtracker']['last'] + timedelta(seconds=minute*60)
-                                e = ct.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-                                if e > d:
-                                    if lead > 0: msg += "\n:warning: "
-                                    else: msg += "\n:white_check_mark: "
-                                    if d >= ct:
-                                        msg += "The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct))
-                                    else:
-                                        msg += "The Lead might have switched"
-                                    lead_will_switch = True
-                            if not lead_will_switch and lead > 0:
-                                if self.bot.data.save['matchtracker']['scores'][0] > top_estimation:
-                                    if self.bot.data.save['matchtracker']['max_speed'][1] > self.bot.data.save['matchtracker']['top_speed'][1]:
-                                        msg += "\n:confetti_ball: Opponent can't catch up but **can still go faster**, be careful"
-                                    else:
-                                        msg += "\n:confetti_ball: Opponent can't catch up without surpassing their **max speed**"
-                                elif self.bot.data.save['matchtracker']['scores'][0] > current_estimation:
-                                    msg += "\n:white_check_mark: Opponent can't catch up without increasing their **current speed**"
-                                else:
-                                    msg += "\n:ok: Opponent can't catch up at **current speeds**, keep going!"
-                        except:
-                            pass
-
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description=msg, timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
-                await self.bot.util.clean(inter, 90)
 
     """updateGBFGData()
     Store the /gbfg/ crew data for later use by playerranking and danchoranking

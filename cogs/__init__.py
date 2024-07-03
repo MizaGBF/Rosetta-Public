@@ -5,7 +5,8 @@ import os
 import re
 
 # configuration variables
-DEBUG_SERVER_ID = None
+DEBUG_SERVER_ID = None # the bot server
+CREW_SERVER_ID = None # my crew server
 
 def loadCogFile(bot : 'DiscordBot', p : str, f : str, r : re.Pattern, relative : str = "", package = Optional[str], silent : bool = False) -> bool:
     try:
@@ -36,6 +37,8 @@ def load(bot : 'DiscordBot') -> tuple: # load all cogs in the 'cog' folder
     except:
         bot.logger.push("[WARNING] 'debug_server' ID not set in 'config.json'", level=bot.logger.WARNING)
         DEBUG_SERVER_ID = None
+    global CREW_SERVER_ID
+    CREW_SERVER_ID = bot.data.config['ids'].get('you_server', None)
     r = re.compile("^class ([a-zA-Z0-9_]*)\\(commands\\.Cog\\):", re.MULTILINE) # to search the name class
     count = 0 # number of attempt at loading cogs
     failed = 0 # number of loading failed (ignore debug and test cogs)

@@ -43,17 +43,12 @@ class Network():
     
     Parameters
     ----------
-    base_url: Url to request from. Special keywords can be added to the URL to substitute some values automatically:
-        - VER: GBF Version number
-        - TS1: Timestamp
-        - TS2: Timestamp (further than TS1)
-        - ID: GBF Profile ID
-        - PARAMS: GBF request parameters: _=TS1&t=TS2&uid=ID
+    base_url: Url to request from.
     options: Possible options are:
         - no_base_headers: Boolean (Default is False). If False, set the necessary headers to communicate with GBF main server.
         - add_user_agent: Boolean (Default is False). If True and an user agent is not set, set it.
         - headers: Dict, headers set by the user
-        - params: Dict, set to None to ignore
+        - params: Dict, set to None to ignore. Automatically set when requesting GBF with account not None.
         - account: Integer, registered GBF account id to use. Default is None to not use one.
         - payload: Dict (Default is None), POST request payload. Set to None to do a GET request. Additionaly, some the 'user_id' value can be automatically set if it's equal to the following:
             - "ID": The GBF Profile ID
@@ -71,9 +66,9 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for PARTIAL-GET
     """
-    async def request(self, base_url : str, **options : dict) -> Any:
+    async def request(self, url : str, **options : dict) -> Any:
         try:
-            host = base_url.replace('http://', '').replace('https://', '').split('/', 1)[0]
+            host = url.replace('http://', '').replace('https://', '').split('/', 1)[0]
             if not options.get('skip_check', False) and host == "game.granbluefantasy.jp" and await self.gbf_maintenance(): return None
             params = options.get('params', None)
             headers = {'Connection':'keep-alive'}
@@ -83,22 +78,18 @@ class Network():
             aid = options.get('account', None)
             acc = self.get_account(aid) if aid is not None else None
             ver = self.bot.data.save['gbfversion']
-            url = base_url.replace("PARAMS", "_=TS1&t=TS2&uid=ID")
-            if ver == "Maintenance": 
-                url = url.replace("VER/", "")
+            if ver == "Maintenance":
                 ver = None
             elif ver is None:
                 ver = 0
-                url = url.replace("VER/", "{}/".format(ver))
-            else:
-                url = url.replace("VER/", "{}/".format(ver))
-            ts = int(self.bot.util.UTC().timestamp() * 1000)
-            url = url.replace("TS1", "{}".format(ts))
-            url = url.replace("TS2", "{}".format(ts+300))
             cookies = None
             if aid is not None:
                 if acc is None: return None
-                url = url.replace("ID", "{}".format(acc[0]))
+                if params is None: params = {}
+                ts = int(self.bot.util.UTC().timestamp() * 1000)
+                params["_"] = str(ts)
+                params["t"] = str(ts+300)
+                params["uid"] = str(acc[0])
                 if 'Cookie' not in headers:
                     cookies = acc[1]
                 else:
@@ -114,7 +105,7 @@ class Network():
             payload = options.get('payload', None)
             timeout = options.get('timeout', None)
             
-            if base_url.startswith('https://game.granbluefantasy.jp/'):
+            if host == "game.granbluefantasy.jp":
                 self.client.cookie_jar.clear()
             
             if cookies is not None:
@@ -149,7 +140,7 @@ class Network():
             if rtype == "CONDITIONAL-GET":
                 return response
             async with response:
-                if response.status == 503 and base_url == 'https://game.granbluefantasy.jp/': # maintenance
+                if response.status == 503 and url == 'https://game.granbluefantasy.jp/': # maintenance
                     if rtype == "HEAD": return None
                     return await response.read()
                 elif response.status >= 400 or response.status < 200:
@@ -158,7 +149,7 @@ class Network():
                         x = await self.gbf_version() # check if update
                         if x >= 2: # if some sort of update
                             if x == 3: options['updated'] = True # trigger update
-                            return await self.request(base_url, **options)
+                            return await self.request(url, **options)
                     raise Exception()
                 if aid is not None:
                     self.refresh_account(aid, response.headers['set-cookie'])
