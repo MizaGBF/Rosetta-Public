@@ -1,27 +1,70 @@
 # Rosetta  
-* [Granblue Fantasy](https://game.granbluefantasy.jp) Discord Bot.  
-* Command List and Help available [Here](https://mizagbf.github.io/discordbot.html).  
+* **[Granblue Fantasy](https://game.granbluefantasy.jp) Discord Bot**.  
+* **Command List** and **Help** available [Here](https://mizagbf.github.io/discordbot.html).  
+
+> [!CAUTION]
+> If you're looking for an invite for my instance, it's **not open to public**.  
+> Use this repo if you have the how-to to host your own instance.  
+> If you're somehow close to me in some way however, feel free to ask and I'll see if it's possible.  
   
-### Requirements  
-* Python 3.11.
-* See [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt) for a list of third-party modules.  
+## Requirements  
+* **System**: The bot itself requires a few hundred MB of RAM, 100 MB of disk space and a stable and fast internet connection, and a CPU with good single treaded performance. Expect the RAM and CPU usage to ramp up as you invite the bot in more servers.  
+* **Software**: [Python 3.11](https://www.python.org/downloads/). See [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt) for the list of third-party modules used in this project.
+
+> [!IMPORTANT]
+> The bot is designed to run on Linux but it has been tested to run on Windows.  
+> It's untested on other systems but it *should* work on anything supported by the required Python version.
   
-### General Informations  
-* Rosetta is a Discord Bot themed around the game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
-* This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bugfixes and so on.  
-* Like MizaBOT, saving is still done on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component.  
-* System requirements are pretty low. The bot only uses around a hundred megabytes of memory (it will obviously increases with more servers). The single threaded performance of your CPU is what matters most.  
-* Additional tools can be found in the `tools` folder:  
-* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html. **IT DOESN'T WRITE IN THE CURRENT DIRECTORY**, you might want to change where it writes before using it.  
-* `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
+> [!TIP]
+> [jemalloc](https://github.com/jemalloc/jemalloc) should be installed if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
+> Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
   
-### Usage  
-- **Method 1 (for Linux systems):**  
+## General Informations  
+* Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
+* This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
+* Saving is done on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component.  
+
+The `assets` folder contains various images and other files used by the bot:  
+* The various **icon.png** files are automatically set at the beginning of the month.
+* The content of the `emojis` folder is used during the setup (see below).
+* The content of the `hosted` folder is merely a backup of some files I host on a github pages. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
+* `font.ttf` is used by one command specific to my crew. You can remove it if you remove the corresponding cog.  
+
+The `cogs` folder contains the bot Cogs, which are pretty much Command groups:  
+* **Never delete this folder or __init__.py inside**.  
+* You can however delete the others or add your own cogs.  
+* In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you want.  
+* Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py`.
   
-The main intended way is to run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile).  
-Note that it will install [jemalloc](https://github.com/jemalloc/jemalloc) to use as Python malloc. This was the solution found to fix MizaBOT increasing Memory Usage due to memory fragmentation over long runs.  
+The `components` folder contains the bot components, which are piece of codes needed for it to work.    
+The `views` folder contains the bot interactions to make interfaces and such for some commands.  
+
+The `tools` folder contains a few standalone pieces of code which might help you:  
+* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html.  
+> [!WARNING]
+> If you wrote your own Cogs, you must follow how I wrote mine or this tool might not be able to detect your commands properly.
   
-- **Method 2:**  
+> [!WARNING]
+> The tool attempts to write the HTML file to my github page [repo](https://github.com/MizaGBF/MizaGBF.github.io) before doing so in the current directory.  
+> If you want to change this behavior, look around line [530](https://github.com/MizaGBF/Rosetta-Public/blob/main/tools/generate_help.py#L529).
+  
+* `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. You can drag and drop a file on them but I suggest using them in a terminal/command prompt. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
+  
+> [!CAUTION]
+> It's a good practice to **always** make a copy of your save data before attempting any manipulation on it.
+  
+## Usage  
+### Method 1:  
+
+> [!IMPORTANT]
+> This is the intended way to use the bot.
+  
+Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile). Refer to Docker Documentation for details.
+  
+### Method 2:   
+  
+> [!IMPORTANT]
+> This method is mostly used for testing, although the end result should be analog to method 1.
   
 Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requirements.txt` in the bot folder, to install the third-party modules. You only need to do it once or if it gets updated.  
 Then, you can run the bot with `python -O bot.py -run` to start the bot (`-O` is optional).  
@@ -34,7 +77,7 @@ There are three ways to start the bot:
 You can also add the following to change its behavior:  
 `-debug`: Start the bot in debug mode. `config-test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
   
-- **Stop Rosetta**  
+### Stop Rosetta   
   
 A simple CTRL+C or sending a SIGTERM or SIGINT signal will make the bot saves and exits gracefully.  
 The bot returns the following codes upong exiting:  
@@ -46,11 +89,12 @@ The bot returns the following codes upong exiting:
 - 5: Failed to initialize a bot component.  
 - 6: Bot instance initialization failure.  
   
-As a side note, the `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the code **0**.  
-My instance is setup with Watchtower and automatically reboot once stopped, hence why it's called reboot.  
+> [!NOTE]
+> The `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the exit code **0**.  
+> My instance is setup with Watchtower and automatically reboot once stopped, hence why it's called reboot.  
   
-### Setup  
-  
+## Setup  
+### Creating config.json and your Discord Application  
 The bot is configured with a file called `config.json`. Create one in its folder and paste the following:  
 ```json
 {
@@ -159,7 +203,10 @@ Go to the [Discord Developer Portal](https://discord.com/developers/docs/game-sd
 Go to *Bot* on the left and click **Reset Token**. Your Bot Token will appear, copy it and replace DISCORD_TOKEN with it in `config.json` (don't forget to put it between quotes **"**, it's a string).  
 Next, turn on the **Message Content Intent**, below.  
   
-Now to configure your Google account.  
+> [!NOTE]
+> If you ever change the Intents used by your bot instance, you'll also need to update them in `bot.py` at the end of the `_init_()` function, or **it won't take effect**. Refer to the [documentation](https://docs.disnake.dev/en/stable/intents.html) for details.  
+  
+### Configuring your Google Service Account  
 **The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to use, so I'll only give general steps.**  
 - Find a way to create an application.  
 - Go to *Credentials* on the left, create a new **Service account**.  
@@ -173,12 +220,9 @@ Do the same thing for the other folder and FILE_FOLDER_ID.
 The third folder ID is unused but you are free to create one and set the key in `config.json` too.  
   
 Then, **for each of those folders**, right click on them and select *Share*. Add your service account (again, using the email you copied) to each of them.  
-
-Next, create a Discord Server for your bot.  
-On the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications), copy the *Application ID* (under *General Information).  
-In the following: `https://discord.com/api/oauth2/authorize?client_id=XXXXXXXXXXXXXXXX&permissions=1644905889015&scope=bot%20applications.commands`, replace `XXXXXXXXXXXXXXXX` by this ID. This will be your bot invite link.  
-Use it now and invite your bot to the server (no need to start the bot). If you did it right, it should show up in the member list.
   
+### Setup a Server for the Bot and invite it
+Create a Discord Server for your bot.  
 The bot requires three text channels to be created:
 - One to output debug infos.  
 - One to upload images.  
@@ -200,38 +244,19 @@ The four last IDs are related to the /gbfg/ server and are already set.
 The final step is to upload the various emotes in `assets/emojis` to your server.  
 Once done, you'll need to retrieve their IDs one by one to set them in `config.json`.  
 A way is to add a slash before the emote. Example, type `\:whatever_your_emote_is:` and it will show `<:whatever_your_emote_is:0000000000000>` where `0000000000000` is the emote ID.  
+
+> [!TIP]
+> An alternative way is to use the dev tools (F12 or CTRL+SHIFT+J) and the network tab then load your Emoji list. The ID of each emoji is used in their URLs.
+> Regardless, both methods are tedious.  
   
-If you did everything properly, you're set. See below for additional informations.  
+If you did everything properly, you're set. 
+On the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications), copy the *Application ID* (under *General Information).  
+In the following: `https://discord.com/api/oauth2/authorize?client_id=XXXXXXXXXXXXXXXX&permissions=1644905889015&scope=bot%20applications.commands`, replace `XXXXXXXXXXXXXXXX` by this ID. This will be your bot invite link.  
+Use it now and invite your bot to the server (no need to start the bot). If you did it right, it should show up in the member list.  
   
-### Other config.json keys
-`games`: The list of game which will appear in the bot status. Feel free to modify it. At least one game is required.  
-  
-`granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here as shortcut for certain commands.  
-You are free to remove it if you want but don't leave it empty.  
-  
-All the remaining setup is done via the `/owner` commands.  
-  
-### Debug Mode  
-**(Skip this if you don't plan to use it)**  
-Using the `-debug` argument requires to set up `config-test.json`.  
-Same principle:  
-```json
-{
-    "tokens" : {
-        "discord" : "DISCORD_TOKEN",
-        "drive" : "SAVE_FOLDER_ID",
-        "upload" : "",
-        "files" : "FILE_FOLDER_ID"
-    },
-    "debug" : null
-}
-```  
-For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
-For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.  
-  
-### First Boot
-  
+## First Boot
+
+Use whatever method you chose at the start to boot the Bot.  
 If Rosetta is starting properly, you should get a **Rosetta is Ready** message in the channel that you set as your debug one.  
 The logs should also look similar to this:  
   
@@ -246,10 +271,43 @@ INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] All cogs loaded
 INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] v11.1.5 starting up...
 INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
 ```  
+
+> [!CAUTION]
+> If it doesn't start, be sure to check for error messages and so on, before reporting to me.   
+
+> [!IMPORTANT]
+> If it starts, congratulations.  
+> All the remaining setup is done via the `/owner` commands.  
+> Refer to *Additional Informations* below if you need more help.  
   
-If it doesn't, be sure to check for error messages, etc...  
+## Other config.json keys
+`games`: The list of game which will appear in the bot status. Feel free to modify it. **At least one game is required** in the list.  
   
-### Additional Informations  
+`granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here for certain commands (notably the `/gbfg` ones).  
+You are free to remove or change the crews if you want, but don't remove it entirely.  
+  
+## Debug Mode  
+> [!TIP]
+> You can skip this section if you don't plan to use it.
+   
+Using the `-debug` argument requires to set up `config-test.json`.  
+Same principle, but shorter:  
+```json
+{
+    "tokens" : {
+        "discord" : "DISCORD_TOKEN",
+        "drive" : "SAVE_FOLDER_ID",
+        "upload" : "",
+        "files" : "FILE_FOLDER_ID"
+    },
+    "debug" : null
+}
+```  
+For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
+For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
+Do note the bot is unable to write to your Google Drive in this mode.   
+  
+## Additional Informations  
   
 Further setup might be required to use some features.  
 The `/owner` command group from the `admin.py` cog should contain what you need to set/edit some of the bot data.  
@@ -266,8 +324,9 @@ Here's a quick overview of the sub command groups:
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
 * `/owner gacha`: Commands to clear the gacha banner and change the `/roll roulette` command settings.  
-  
-I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
+
+> [!WARNING]  
+> I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
   
 If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
   
