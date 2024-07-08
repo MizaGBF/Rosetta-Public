@@ -81,6 +81,7 @@ class GranblueFantasy(commands.Cog):
                     self.bot.logger.push("[GBF] The game has been updated to version {}".format(v), send_to_discord=False)
                     self.bot.data.save['gbfupdate'] = False
                     self.bot.data.pending = True
+                    await self.bot.send("debug", embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Game has been updated to version `{} ({})`".format(v, self.bot.util.version2str(v)), color=self.COLOR))
                     await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Game has been updated", color=self.COLOR))
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
