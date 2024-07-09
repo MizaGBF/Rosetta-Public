@@ -771,7 +771,9 @@ class GranblueFantasy(commands.Cog):
         possible_headers = [("prt-title-bg-gld", "SSR"), ("prt-title-bg-slv", "SR"), ("prt-title-bg-nml", "R"), ("prt-title-bg-cpr", "R")]
         for h in possible_headers:
             try:
-                rarity = h[1]
+                if len(soup.find_all("div", class_=h[0])) > 0:
+                    rarity = h[1]
+                    break
             except:
                 pass
         trophy = soup.find_all("div", class_="prt-title-name")[0].string
