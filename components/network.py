@@ -26,7 +26,7 @@ class Network():
     ACC_TIME = 4
     ACC_STATUS_UNDEF = 0
     ACC_STATUS_OK = 1
-    ACC_STATUS_DOWN = 1
+    ACC_STATUS_DOWN = 2
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -185,14 +185,14 @@ class Network():
                 is_json = 'application/json' in ct
                 if expect_JSON and not is_json:
                     self.bot.logger.pushError("[ACCOUNT] GBF Account #{} might be down".format(account), send_to_discord=(not silent))
-                    self.set_account_state(account, 2)
+                    self.set_account_state(account, self.ACC_STATUS_DOWN)
                     return None
                 self.refresh_account(account, response.headers['set-cookie'])
                 if rtype == "HEAD": return True
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
-            self.set_account_state(account, 2)
+            self.set_account_state(account, self.ACC_STATUS_DOWN)
             if str(e) != "":
                 self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e, send_to_discord=(not silent))
             return None
