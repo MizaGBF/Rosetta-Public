@@ -19,13 +19,20 @@ class Network():
     POST = 1
     HEAD = 2
     CONDITIONAL_GET = 4
+    ACC_UID = 0
+    ACC_CK = 1
+    ACC_UA = 2
+    ACC_STATE = 3
+    ACC_TIME = 4
+    ACC_STATUS_UNDEF = 0
+    ACC_STATUS_OK = 1
+    ACC_STATUS_DOWN = 1
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
         self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
-        self.client_last_gbf_account = None
 
     def init(self) -> None:
         pass
@@ -120,12 +127,14 @@ class Network():
     """
     async def requestGBF(self, path : str, account : int, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
         try:
+            silent = True
             if await self.gbf_maintenance(): return None
             if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
             else: url = "https://game.granbluefantasy.jp" + path
             # retrieve account info
             acc = self.get_account(account)
             if acc is None: raise Exception("Invalid account selection")
+            silent = (acc[self.ACC_STATE] == self.ACC_STATUS_DOWN)
             # retrieve version
             ver = self.bot.data.save['gbfversion']
             if ver == "Maintenance":
@@ -135,9 +144,7 @@ class Network():
             # set headers
             headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc[2], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
             # set cookies
-            if self.client_last_gbf_account != account: # only set cookie jar if previous used account doesn't match
-                self.client.cookie_jar.update_cookies(acc[1], URL('https://game.granbluefantasy.jp'))
-                self.client_last_gbf_account = account # memorize used account
+            self.client.cookie_jar.update_cookies(acc[1], URL('https://game.granbluefantasy.jp'))
             # set params
             ts = int(self.bot.util.UTC().timestamp() * 1000)
             params["_"] = str(ts)
@@ -170,21 +177,24 @@ class Network():
                     # retry if it's a version error
                     if not _updated_:
                         x = await self.gbf_version() # check if update
-                        if x >= 2: # if some sort of update
+                        if x is not None and x >= 2: # if some sort of update
                             if x == 3: _updated_ = True
                             return await self.requestGBF(path, account, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
                     raise Exception()
-                self.refresh_account(account, response.headers['set-cookie'])
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
-                if expect_JSON and not is_json: raise Exception("Expected `application/json`, got `{}`".format(ct))
+                if expect_JSON and not is_json:
+                    self.bot.logger.pushError("[ACCOUNT] GBF Account #{} might be down".format(account), send_to_discord=(not silent))
+                    self.set_account_state(account, 2)
+                    return None
+                self.refresh_account(account, response.headers['set-cookie'])
                 if rtype == "HEAD": return True
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
             self.set_account_state(account, 2)
             if str(e) != "":
-                self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e)
+                self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e, send_to_discord=(not silent))
             return None
 
     """requestWiki()
@@ -261,9 +271,7 @@ class Network():
     def add_account(self, uid : int, ck : str, ua : str):
         if 'gbfaccounts' not in self.bot.data.save:
             self.bot.data.save['gbfaccounts'] = []
-        self.bot.data.save['gbfaccounts'].append([uid, self.str2cookie(ck), ua, 0, 0, None])
-        if len(self.bot.data.save['gbfaccounts']) - 1 == self.client_last_gbf_account:
-            self.client_last_gbf_account = None
+        self.bot.data.save['gbfaccounts'].append([uid, self.str2cookie(ck), ua, self.ACC_STATUS_UNDEF, None])
         self.bot.data.pending = True
 
     """update_account()
@@ -286,14 +294,14 @@ class Network():
             ck = options.pop('ck', None)
             ua = options.pop('ua', None)
             if uid is not None:
-                self.bot.data.save['gbfaccounts'][aid][0] = uid
+                self.bot.data.save['gbfaccounts'][aid][self.ACC_UID] = uid
+                self.bot.data.pending = True
             if ck is not None:
-                if self.client_last_gbf_account == aid:
-                    self.client_last_gbf_account = None
-                self.bot.data.save['gbfaccounts'][aid][1] = self.str2cookie(ck)
+                self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = self.str2cookie(ck)
+                self.bot.data.pending = True
             if ua is not None:
-                self.bot.data.save['gbfaccounts'][aid][2] = ua
-            self.bot.data.pending = True
+                self.bot.data.save['gbfaccounts'][aid][self.ACC_UA] = ua
+                self.bot.data.pending = True
             return True
         except:
             return False
@@ -313,8 +321,6 @@ class Network():
         try:
             if aid < 0 or aid >= len(self.bot.data.save['gbfaccounts']):
                 return False
-            if self.client_last_gbf_account == aid:
-                self.client_last_gbf_account = None
             self.bot.data.save['gbfaccounts'].pop(aid)
             if self.bot.data.save['gbfcurrent'] >= aid and self.bot.data.save['gbfcurrent'] >= 0: self.bot.data.save['gbfcurrent'] -= 1
             self.bot.data.pending = True
@@ -342,9 +348,9 @@ class Network():
             for k, v in B.items():
                 if k in A:
                     A[k] = v
-            self.bot.data.save['gbfaccounts'][aid][1] = A
-            self.bot.data.save['gbfaccounts'][aid][3] = 1
-            self.bot.data.save['gbfaccounts'][aid][5] = self.bot.util.JST()
+            self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = A
+            self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE] = self.ACC_STATUS_OK
+            self.bot.data.save['gbfaccounts'][aid][self.ACC_TIME] = self.bot.util.JST()
             self.bot.data.pending = True
             return True
         except Exception as e:
@@ -361,8 +367,9 @@ class Network():
     """
     def set_account_state(self, aid : int, state : int) -> None:
         try:
-            self.bot.data.save['gbfaccounts'][aid][3] = state
-            self.bot.data.pending = True
+            if state != self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE]:
+                self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE] = state
+                self.bot.data.pending = True
         except:
             pass
 

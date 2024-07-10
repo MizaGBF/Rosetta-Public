@@ -83,7 +83,7 @@ class Admin(commands.Cog):
         current_time = self.bot.util.JST()
         for i in range(0, len(self.bot.data.save['gbfaccounts'])):
             acc = self.bot.data.save['gbfaccounts'][i]
-            if acc[3] == 0 or (acc[3] == 1 and (acc[5] is None or current_time - acc[5] >= timedelta(seconds=1800))):
+            if acc[self.bot.net.ACC_STATE] == self.bot.net.ACC_STATUS_UNDEF or (acc[self.bot.net.ACC_STATE] == self.bot.net.ACC_STATUS_OK and (acc[self.bot.net.ACC_TIME] is None or current_time - acc[self.bot.net.ACC_TIME] >= timedelta(seconds=1800))):
                 await self.bot.net.requestGBF("user/user_id/1", account=i, expect_JSON=True)
 
     """isOwner()
@@ -685,11 +685,11 @@ class Admin(commands.Cog):
             for i, acc in enumerate(self.bot.data.save['gbfaccounts']):
                 if i == self.bot.data.save['gbfcurrent']: msg += "👉 "
                 else: msg += "{} ".format(i)
-                msg += "**{}** ".format(acc[0])
-                match acc[3]:
-                    case 0: msg += ":grey_question:"
-                    case 1: msg += ":white_check_mark:"
-                    case 2: msg += ":negative_squared_cross_mark:"
+                msg += "**{}** ".format(acc[self.bot.net.ACC_UID])
+                match acc[self.bot.net.ACC_STATE]:
+                    case self.bot.net.ACC_STATUS_UNDEF: msg += ":grey_question:"
+                    case self.bot.net.ACC_STATUS_OK: msg += ":white_check_mark:"
+                    case self.bot.net.ACC_STATUS_DOWN: msg += ":negative_squared_cross_mark:"
                 msg += "\n"
             await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description=msg, color=self.COLOR))
         else:
@@ -698,10 +698,10 @@ class Admin(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="No accounts set in slot {}".format(aid), color=self.COLOR))
                 return
             r = await self.bot.net.requestGBF("user/user_id/1", account=aid, expect_JSON=True)
-            if r is None or str(r.get('user_id', None)) != str(acc[0]):
-                await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account #{} is down or GBF is unavailable\nck: `{}`\nuid: `{}`\nua: `{}`\n".format(aid, acc[0], acc[1], acc[2]) , color=self.COLOR))
+            if r is None or str(r.get('user_id', None)) != str(acc[self.bot.net.ACC_UID]):
+                await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account #{} is down or GBF is unavailable\nck: `{}`\nuid: `{}`\nua: `{}`\n".format(aid, acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]) , color=self.COLOR))
             else:
-                await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account #{} is up\nck: `{}`\nuid: `{}`\nua: `{}`\n".format(aid, acc[0], acc[1], acc[2]), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account #{} is up\nck: `{}`\nuid: `{}`\nua: `{}`\n".format(aid, acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
 
     @account.sub_command()
     async def switch(self, inter: disnake.GuildCommandInteraction, aid : int) -> None:
@@ -740,49 +740,22 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid ID", color=self.COLOR))
 
     @account.sub_command()
-    async def uid(self, inter: disnake.GuildCommandInteraction, num : int, uid : int = -1) -> None:
+    async def edit(self, inter: disnake.GuildCommandInteraction, num : int, uid : int = commands.Param(description="UID", default=-1), ck : str = commands.Param(description="CK", default=""), ua : str = commands.Param(description="UA", default="")) -> None:
         """(Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        if uid < 0:
-            acc = self.bot.net.get_account(num)
-            if acc is None:
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No account in slot {}".format(num), color=self.COLOR))
-            else:
-                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{} current UID".format(num), description="`{}`".format(acc[0]), color=self.COLOR))
-        elif not self.bot.net.update_account(num, uid=uid):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid parameter {}".format(uid), color=self.COLOR))
+        acc = self.bot.net.get_account(num)
+        if acc is None:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No account in slot {}".format(num), color=self.COLOR))
         else:
-            await inter.edit_original_message(embed=self.bot.embed(title="UID set", color=self.COLOR))
-
-    @account.sub_command()
-    async def ck(self, inter: disnake.GuildCommandInteraction, num : int, *, ck : str = "") -> None:
-        """(Owner Only)"""
-        await inter.response.defer(ephemeral=True)
-        if ck == "":
-            acc = self.bot.net.get_account(num)
-            if acc is None:
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No account in slot {}".format(num), color=self.COLOR))
+            if uid < 0: uid = None
+            if ck == "": ck = None
+            if ua == "": ua = None
+            if uid is None and ck is None and ua is None:
+                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{}: Current values".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
+            elif not self.bot.net.update_account(num, uid=uid, ck=ck, ua=ua):
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A parameter is invalid", color=self.COLOR))
             else:
-                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{} current CK".format(num), description="`{}`".format(acc[1]), color=self.COLOR))
-        elif not self.bot.net.update_account(num, ck=ck):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid parameter {}".format(ck), color=self.COLOR))
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="CK set", color=self.COLOR))
-
-    @account.sub_command()
-    async def ua(self, inter: disnake.GuildCommandInteraction, num : int, *, ua : str = "") -> None:
-        """(Owner Only)"""
-        await inter.response.defer(ephemeral=True)
-        if ua == "":
-            acc = self.bot.net.get_account(num)
-            if acc is None:
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No account in slot {}".format(num), color=self.COLOR))
-            else:
-                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{} current UA".format(num), description="`{}`".format(acc[2]), color=self.COLOR))
-        elif not self.bot.net.update_account(num, ua=ua):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid parameter {}".format(ua), color=self.COLOR))
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="UA set", color=self.COLOR))
+                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{}: Updated".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
 
     @_owner.sub_command_group()
     async def db(self, inter: disnake.GuildCommandInteraction) -> None:

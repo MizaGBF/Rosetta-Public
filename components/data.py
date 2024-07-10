@@ -15,7 +15,7 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 15
+    SAVEVERSION = 16
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -198,6 +198,9 @@ class Data():
                             data['gbfdata']['gacha']['classic'] = [data['gbfdata']['gacha']['classic']]
                         except:
                             pass
+                    if ver <= 15:
+                        for i in range(len(data['gbfaccounts'])):
+                            data['gbfaccounts'][i].pop(4)
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
