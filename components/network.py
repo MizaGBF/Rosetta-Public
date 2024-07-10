@@ -86,7 +86,7 @@ class Network():
             else:
                 rtype = self.POST
                 response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
-            if rtype == "CONDITIONAL-GET":
+            if rtype == self.CONDITIONAL_GET:
                 return response
             async with response:
                 if response.status >= 400 or response.status < 200:
@@ -97,7 +97,7 @@ class Network():
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
                 if expect_JSON and not is_json: raise Exception("Expected `application/json`, got `{}`".format(ct))
-                if rtype == "HEAD": return True
+                if rtype == self.HEAD: return True
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
@@ -188,7 +188,7 @@ class Network():
                     self.set_account_state(account, self.ACC_STATUS_DOWN)
                     return None
                 self.refresh_account(account, response.headers['set-cookie'])
-                if rtype == "HEAD": return True
+                if rtype == self.HEAD: return True
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
