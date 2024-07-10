@@ -192,7 +192,6 @@ class Network():
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
-            self.set_account_state(account, self.ACC_STATUS_DOWN)
             if str(e) != "":
                 self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e, send_to_discord=(not silent))
             return None
