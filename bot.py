@@ -26,23 +26,23 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
+    VERSION = "11.7.0" # bot version
+    CHANGELOG = [ # changelog lines
+        "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
+        "**v11.1.2** - Improved `/gbf schedule`.",
+        "**v11.1.5** - Improved Dread Barrage commands to take into account variable schedule lengths.",
+        "**v11.1.7** - Removed `/gbf utility critical`, it's becoming unmaintainable. `/roll roulette` updated with the Birthday Zone.",
+        "**v11.1.9** - `/roll` command group updated with the new classic gachas.",
+        "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
+        "**v11.2.1** - Removed `/poll`, now Discord has it built-in.",
+        "**v11.3.0** - Added `/gw player stats`",
+        "**v11.3.1** - Changed `/gw player stats` to `/gw stats player` and added `/gw stats crew`. Both commands have been improved.",
+        "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
+        "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
+        "**v11.7.0** - Removed the Image Search. It was partially broken, inefficient and slightly unmaintainable.",
+    ]
+    
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
-        self.version = "11.6.1" # bot version
-        self.changelog = [ # changelog lines
-            "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-            "**v11.1.0** - Removed the Twitter component and all associated features. Rest in peace.",
-            "**v11.1.1** - Added a daily automatic update for `/gbf schedule`.",
-            "**v11.1.2** - Improved `/gbf schedule`.",
-            "**v11.1.5** - Improved Dread Barrage commands to take into account variable schedule lengths.",
-            "**v11.1.7** - Removed `/gbf utility critical`, it's becoming unmaintainable. `/roll roulette` updated with the Birthday Zone.",
-            "**v11.1.9** - `/roll` command group updated with the new classic gachas.",
-            "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
-            "**v11.2.1** - Removed `/poll`, now Discord has it built-in.",
-            "**v11.3.0** - Added `/gw player stats`",
-            "**v11.3.1** - Changed `/gw player stats` to `/gw stats player` and added `/gw stats crew`. Both commands have been improved.",
-            "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
-            "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
-        ]
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
         self.test_mode = test_mode # indicate if we are running the test version of the bot
@@ -204,7 +204,7 @@ class DiscordBot(commands.InteractionBot):
                 self.loop.add_signal_handler(s, graceful_exit.cancel)
             except: # windows
                 signal.signal(s, self._exit_gracefully_internal)
-        self.logger.push("[MAIN] v{} starting up...".format(self.version), send_to_discord=False)
+        self.logger.push("[MAIN] v{} starting up...".format(self.VERSION), send_to_discord=False)
         # main loop
         while self.running:
             try:

@@ -31,6 +31,7 @@ def loadCogFile(bot : 'DiscordBot', p : str, f : str, r : re.Pattern, relative :
     return False
 
 def load(bot : 'DiscordBot') -> tuple: # load all cogs in the 'cog' folder
+    # set global id
     global DEBUG_SERVER_ID
     try: # try to set debug server id for modules needing it
         DEBUG_SERVER_ID = bot.data.config['ids']['debug_server']
@@ -39,6 +40,7 @@ def load(bot : 'DiscordBot') -> tuple: # load all cogs in the 'cog' folder
         DEBUG_SERVER_ID = None
     global CREW_SERVER_ID
     CREW_SERVER_ID = bot.data.config['ids'].get('you_server', None)
+    # start loading
     r = re.compile("^class ([a-zA-Z0-9_]*)\\(commands\\.Cog\\):", re.MULTILINE) # to search the name class
     count = 0 # number of attempt at loading cogs
     failed = 0 # number of loading failed (ignore debug and test cogs)

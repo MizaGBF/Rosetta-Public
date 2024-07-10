@@ -105,11 +105,11 @@ class Ranking():
             return None
         match mode:
             case 0: # crew
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/totalguild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.requestGBF("teamraid{}/rest/ranking/totalguild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             case 1: # prelim crew
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest/ranking/guild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.requestGBF("teamraid{}/rest/ranking/guild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             case 2: # player
-                res = await self.bot.net.request("https://game.granbluefantasy.jp/teamraid{}/rest_ranking_user/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                res = await self.bot.net.requestGBF("teamraid{}/rest_ranking_user/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         return res
 
     """updateRankingTask()
@@ -217,7 +217,7 @@ class Ranking():
     Coroutine to retrieve the previous GW data from the wiki
     """
     async def init_estimation(self) -> None:
-        cnt = await self.bot.net.request("https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data", add_user_agent=True, no_base_headers=True, follow_redirects=True)
+        cnt = await self.bot.net.requestWiki("User:Neofaucheur/Unite_and_Fight_Data", allow_redirects=True)
         if cnt is not None:
             try: cnt = cnt.decode('utf-8')
             except: cnt = cnt.decode('iso-8859-1')

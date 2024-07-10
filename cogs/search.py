@@ -5,7 +5,6 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 import html
-import json
 import re
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -50,25 +49,19 @@ class Search(commands.Cog):
             "includes[]":["cover_art"]
         }
         if search_query != "": params['title'] = search_query
-        response = await self.bot.net.request("https://api.mangadex.org/manga", params=params, no_base_headers=True, add_user_agent=True, expect_JSON=True)
+        response = await self.bot.net.request("https://api.mangadex.org/manga", params=params, add_user_agent=True, expect_JSON=True)
         if response is None:
             await inter.edit_original_message(embed=self.bot.embed(title="Mangadex", description="An error occured", color=self.COLOR))
         else:
             description = ""
             count = 0
             last = None
-            thumbnail = None
             for m in response['data']:
                 try:
                     try: description += "- [{}](https://mangadex.org/title/{})\n".format(m['attributes']['title']['en'], m['id'])
                     except: description += "- [{}](https://mangadex.org/title/{})\n".format(m['attributes']['title']['ja'], m['id'])
                     count += 1
                     last = m
-                    if thumbnail is None:
-                        for r in m['relationships']:
-                            if r['type'] == 'cover_art':
-                                thumbnail = "https://uploads.mangadex.org/covers/{}/{}".format(m['id'], r['attributes']['fileName'])
-                                break
                 except:
                     pass
         
@@ -80,23 +73,23 @@ class Search(commands.Cog):
                     if len(description) > 1000: description = description[:1000] + "..."
                 except:
                     description += "\n*(No English Description)*"
-                await inter.edit_original_message(embed=self.bot.embed(title="Mangadex - 1 positive search result", description=description, footer="Latest updated mangas", thumbnail=thumbnail, color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Mangadex - 1 positive search result", description=description, footer="Latest updated mangas", color=self.COLOR))
             else:
-                await inter.edit_original_message(embed=self.bot.embed(title="Mangadex - {} positive search results".format(count), description=description, footer="Latest updated mangas", thumbnail=thumbnail, color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Mangadex - {} positive search results".format(count), description=description, footer="Latest updated mangas", color=self.COLOR))
         await self.bot.util.clean(inter, 60)
 
     @search.sub_command()
     async def wikipedia(self, inter: disnake.GuildCommandInteraction, search_query : str = commands.Param(description="Your search query")) -> None:
         """Search Wikipedia"""
         await inter.response.defer()
-        data = await self.bot.net.request("https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch={}".format(quote(search_query)), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+        data = await self.bot.net.request("https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch={}".format(quote(search_query)), add_user_agent=True, expect_JSON=True)
         if data is None or len(data["query"]["search"]) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="Wikipedia", description="Article not found", color=self.COLOR))
         else:
             search_results = data["query"]["search"]
             article_title = search_results[0]["title"]
             
-            data = await self.bot.net.request("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&titles={}&exintro=1&pithumbsize=500".format(article_title), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+            data = await self.bot.net.request("https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|pageimages&titles={}&exintro=1&pithumbsize=500".format(article_title), add_user_agent=True, expect_JSON=True)
             if data is None:
                 await inter.edit_original_message(embed=self.bot.embed(title="Wikipedia", description="An error occured while retrieving the article", color=self.COLOR))
             else:
@@ -117,7 +110,7 @@ class Search(commands.Cog):
     async def google(self, inter: disnake.GuildCommandInteraction, search_query : str = commands.Param(description="Your search query")) -> None:
         """Search Google"""
         await inter.response.defer(ephemeral=True)
-        data = await self.bot.net.request("https://www.google.com/search?q={}".format(quote(search_query)), no_base_headers=True, add_user_agent=True)
+        data = await self.bot.net.request("https://www.google.com/search?q={}".format(quote(search_query)), add_user_agent=True)
         if data is None:
             await inter.edit_original_message(embed=self.bot.embed(title="Google Search", description="An error occured", color=self.COLOR))
         else:
@@ -172,7 +165,7 @@ class Search(commands.Cog):
     async def get4chan(self, board : str, search : str) -> list: # be sure to not abuse it, you are not supposed to call the api more than once per second
         try:
             search = search.lower()
-            data = await self.bot.net.request('http://a.4cdn.org/{}/catalog.json'.format(board), expect_JSON=True, no_base_headers=True, follow_redirects=True)
+            data = await self.bot.net.request('http://a.4cdn.org/{}/catalog.json'.format(board), expect_JSON=True, allow_redirects=True)
             threads = []
             for p in data:
                 for t in p["threads"]:
@@ -266,76 +259,3 @@ class Search(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="/hgg2d/ latest thread(s)", description=msg, thumbnail=thumbnail, footer="Have fun, fellow 4channeler", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="/hgg2d/ Error", description="I couldn't find a single /hgg2d/ thread 😔", color=self.COLOR))
-
-    """yandex_reverse_image_search()
-    Perform a reverse image search on yandex.com
-    
-    Parameters
-    ----------
-    image_url: String, the url of the image to reverse search
-    
-    Returns
-    ----------
-    list: List of tuples (Page Title, Url)
-    """
-    async def yandex_reverse_image_search(self, image_url : str) -> list:
-        try:
-            url = (await self.bot.net.request('https://www.yandex.com/images/search', params={'url': image_url, 'rpt': 'imageview', 'format': 'json','request': '{"blocks":[{"block":"b-page_type_search-by-image__link"}]}'}, no_base_headers=True, expect_JSON=True, add_user_agent=True))['blocks'][0]['params']['url']
-            content = await self.bot.net.request('https://www.yandex.com/images/search' + '?' + url, no_base_headers=True, add_user_agent=True)
-            soup = BeautifulSoup(content, "html.parser")
-            divs = soup.find_all('div', class_='Root') # root divs
-            for div in divs:
-                if 'CbirSites_infinite' in div['id'] and div.has_attr('data-state') and len(div.attrs['data-state']) > 3: # part to parse
-                    data = json.loads(div.attrs['data-state'])
-                    results = []
-                    for t in data['sites']:
-                        if 'on Twitter:' in t['title']:
-                            t['title'] = t['title'].split('on Twitter:', 1)[0] + 'on Twitter:' # fix for twitter names
-                        results.append((t['title'], t['url']))
-                        if len(results) == 8: break
-                    return results
-            return []
-        except:
-            return []
-
-    @commands.message_command(name="Image Search")
-    @commands.default_member_permissions(send_messages=True, read_messages=True)
-    @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def reverse(self, inter: disnake.MessageCommandInteraction, message: disnake.Message) -> None:
-        """Reverse image search an attached image on Yandex"""
-        try:
-            await inter.response.defer(ephemeral=True)
-            try:
-                img_url = message.attachments[0].url
-            except:
-                try:
-                    img_url = message.content
-                    a = img_url.find('http')
-                    if a == -1: raise Exception()
-                    m = 999999999999999
-                    x = None
-                    for ex in ['.png', '.jpeg', '.jpg', '.gif', '.webp', 'jpg:thumb', 'jpg:small', 'jpg:medium', 'jpg:large', 'jpg:orig', 'png:thumb', 'png:small', 'png:medium', 'png:large', 'png:orig']:
-                        b = img_url.find(ex, a)
-                        if b == -1: continue
-                        b += len(ex)
-                        if b < m:
-                            m = b
-                            x = ex
-                    if x is None: raise Exception()
-                    img_url = img_url[a:m]
-                except:
-                    img_url = None
-            if img_url is None:
-                await inter.edit_original_message(embed=self.bot.embed(title="Yandex Reverse Image Search", description="I couldn't find an image in this message", color=self.COLOR))
-            else:
-                description = ""
-                for r in await self.yandex_reverse_image_search(img_url):
-                    description += "- [{}]({}) ({})\n".format(r[0].replace('[', '(').replace(']', ')'), r[1], r[1].replace('http://', '').replace('https://', '').split('/', 1)[0])
-                if description == "":
-                    description = "No results"
-                else:
-                    description = "Possible matches:\n" + description
-                await inter.edit_original_message(embed=self.bot.embed(title="Yandex Reverse Image Search", description=description, thumbnail=img_url, footer="Check where those links go before clicking", color=self.COLOR))
-        except Exception as e:
-            self.bot.logger.pushError("[SEARCH] 'Image Search' Error:", e)
-            await inter.edit_original_message(embed=self.bot.embed(title="Yandex Reverse Image Search", description="An unexpected error occured", color=self.COLOR))

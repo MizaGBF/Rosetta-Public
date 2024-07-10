@@ -510,7 +510,7 @@ class GuildWar(commands.Cog):
     dict: Crew data, None if error
     """
     async def getCrewSummary(self, cid : int) -> Optional[dict]:
-        res = await self.bot.net.request("https://game.granbluefantasy.jp/guild_main/content/detail/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        res = await self.bot.net.requestGBF("guild_main/content/detail/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         if res is None: return None
         else:
             soup = BeautifulSoup(unquote(res['data']), 'html.parser')
@@ -789,8 +789,8 @@ class GuildWar(commands.Cog):
     dict: Resulting data, None if error
     """
     async def requestCrew(self, cid : int, page : int) -> Optional[dict]: # get crew data
-        if page == 0: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/guild_info/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-        else: return await self.bot.net.request("https://game.granbluefantasy.jp/guild_other/member_list/{}/{}".format(page, cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        if page == 0: return await self.bot.net.requestGBF("guild_other/guild_info/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        else: return await self.bot.net.requestGBF("guild_other/member_list/{}/{}".format(page, cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
 
     """_sortMembers()
     Sort members by GW contributions
@@ -1306,10 +1306,10 @@ class GuildWar(commands.Cog):
     """
     async def refresh_gbfteamraid(self) -> bool:
         try:
-            headers = [None]
-            r = await self.bot.net.request("https://info.gbfteamraid.fun/login", rtype="POST", add_user_agent=True, no_base_headers=True, follow_redirects=False, collect_headers=headers, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun'})
+            rheaders = [[None]]
+            r = await self.bot.net.request("https://info.gbfteamraid.fun/login", rtype=self.bot.net.POST, add_user_agent=True, allow_redirects=False, collect_headers=rheaders, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun'}, ssl=False)
             if r is None: return False
-            self.bot.data.save['gbfdata']['teamraid_cookie'] = headers[0]['Set-Cookie'].split(';', 1)[0]
+            self.bot.data.save['gbfdata']['teamraid_cookie'] = rheaders[0]['Set-Cookie'].split(';', 1)[0]
             self.bot.data.pending = True
             return True
         except:
@@ -1344,7 +1344,7 @@ class GuildWar(commands.Cog):
                     for err in range(2):
                         try:
                             gwid = r[2][gwi].gw
-                            table = await self.bot.net.request("https://info.gbfteamraid.fun/web/{}?method={}&params=%7B%22teamraidid%22%3A%22teamraid{}%22%2C%22{}%22%3A%22{}%22%7D".format(path, method, str(gwid).zfill(3), param, id_str), rtype="POST", add_user_agent=True, no_base_headers=True, follow_redirects=False, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun', 'Referer':'https://info.gbfteamraid.fun/web/userrank?teamraidid=teamraid{}'.format(str(gwid).zfill(3)), 'Cookies':self.bot.data.save['gbfdata']['teamraid_cookie']})
+                            table = await self.bot.net.request("https://info.gbfteamraid.fun/web/{}?method={}&params=%7B%22teamraidid%22%3A%22teamraid{}%22%2C%22{}%22%3A%22{}%22%7D".format(path, method, str(gwid).zfill(3), param, id_str), rtype=self.bot.net.POST, add_user_agent=True, allow_redirects=False, headers={'Host':'info.gbfteamraid.fun', 'Origin':'https://info.gbfteamraid.fun', 'Referer':'https://info.gbfteamraid.fun/web/userrank?teamraidid=teamraid{}'.format(str(gwid).zfill(3)), 'Cookies':self.bot.data.save['gbfdata']['teamraid_cookie']}, ssl=False)
                             table = json.loads(table.decode('utf-8'))
                             data = {}
                             if 'result' in table:

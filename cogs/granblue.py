@@ -137,9 +137,9 @@ class GranblueFantasy(commands.Cog):
         # loop
         news = []
         for ii in to_process:
-            data = await self.bot.net.request("https://game.granbluefantasy.jp/news/news_detail/{}".format(ii), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             if data is None:
-                continue # interrupt
+                continue
             elif data[0]['id'] == str(ii):
                 try:
                     news.append(ii)
@@ -298,7 +298,7 @@ class GranblueFantasy(commands.Cog):
     async def checkNews(self) -> list:
         res = []
         ret = []
-        data = await self.bot.net.request("https://granbluefantasy.jp/news/index.php", no_base_headers=True)
+        data = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
         if data is not None:
             soup = BeautifulSoup(data, 'html.parser')
             at = soup.find_all("article", class_="scroll_show_box")
@@ -347,7 +347,7 @@ class GranblueFantasy(commands.Cog):
     Check for new GBF grand blues
     """
     async def check4koma(self) -> None:
-        data = await self.bot.net.request('https://game.granbluefantasy.jp/comic/list/1', account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        data = await self.bot.net.requestGBF('comic/list/1', account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         if data is None: return
         last = data['list'][0]
         if '4koma' in self.bot.data.save['gbfdata']:
@@ -379,7 +379,7 @@ class GranblueFantasy(commands.Cog):
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
-        r = await self.bot.net.request("https://gbf.wiki/api.php?action=query&format=json&list=search&srsearch={}&redirects".format(quote(terms)), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+        r = await self.bot.net.requestWiki("api.php?action=query&format=json&list=search&srsearch={}&redirects".format(quote(terms)))
         if r is None or len(r['query']['search']) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(terms), color=self.COLOR))
             await self.bot.util.clean(inter, 40)
@@ -390,7 +390,7 @@ class GranblueFantasy(commands.Cog):
                 tables = {'characters':'id,rarity,name,series,title,element,max_evo,join_weapon,profile,va', 'summons':'id,rarity,name,series,element,evo_max', 'weapons':'id,rarity,name,series,element,obtain,character_unlock,evo_max', 'classes':'id,name', 'npc_characters':'id,name,va,profile'}
                 output = None
                 for t, f in tables.items():
-                    r = await self.bot.net.request('https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&fields=_pageName,{}&format=json&where=_pageName="{}"'.format(t, f, title), no_base_headers=True, add_user_agent=True, expect_JSON=True)
+                    r = await self.bot.net.requestWiki('index.php?title=Special:CargoExport&tables={}&fields=_pageName,{}&format=json&where=_pageName="{}"'.format(t, f, title))
                     if r is None or len(r) == 0:
                         await asyncio.sleep(0.1)
                         continue
@@ -641,9 +641,9 @@ class GranblueFantasy(commands.Cog):
     dict: Grand per element
     """
     async def getGrandList(self) -> dict:
-        data = await self.bot.net.request('https://gbf.wiki/index.php?title=Special:CargoExport&tables=characters&fields=series,name,element,release_date&where=series%20%3D%20%22grand%22&format=json&limit=200', no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True)
+        data = await self.bot.net.requestWiki('index.php?title=Special:CargoExport&tables=characters&fields=series,name,element,release_date&where=series%20%3D%20%22grand%22&format=json&limit=200')
         if data is None:
-            raise Exception("HTTP Error 404: Not Found")
+            return {}
         grand_list = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}
         for c in data:
             try:
@@ -720,7 +720,7 @@ class GranblueFantasy(commands.Cog):
             if not await self.bot.net.gbf_available():
                 data = "Maintenance"
             else:
-                data = await self.bot.net.request("https://game.granbluefantasy.jp/profile/content/index/{}".format(profile_id), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                data = await self.bot.net.requestGBF("profile/content/index/{}".format(profile_id), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
                 if data is not None: data = unquote(data['data'])
             match data:
                 case "Maintenance":
@@ -874,7 +874,7 @@ class GranblueFantasy(commands.Cog):
         if not await self.bot.net.gbf_available():
             data = "Maintenance"
         else:
-            data = await self.bot.net.request("https://game.granbluefantasy.jp/profile/content/index/{}".format(pid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("profile/content/index/{}".format(pid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             if data is not None: data = unquote(data['data'])
         match data:
             case "Maintenance":
@@ -993,7 +993,7 @@ class GranblueFantasy(commands.Cog):
             if isinstance(id, str):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description=id, color=self.COLOR))
             else:
-                data = await self.bot.net.request("https://game.granbluefantasy.jp/forum/search_users_id", account=self.bot.data.save['gbfcurrent'], expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
+                data = await self.bot.net.requestGBF("forum/search_users_id", account=self.bot.data.save['gbfcurrent'], expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
                 if data is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
                 else:
@@ -1019,23 +1019,25 @@ class GranblueFantasy(commands.Cog):
         wiki_checks = ["Main_Quests", "Category:Campaign", "Surprise_Special_Draw_Set", "Damascus_Ingot", "Gold_Brick", "Sunlight_Stone", "Sephira_Evolite"]
         regexs = ["Time since last release\\s*<\/th><\/tr>\\s*<tr>\\s*<td colspan=\"3\" style=\"text-align: center;\">(\\d+ days)", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(-\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last ", "<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td>(\\d+ days)<\\/td>\\s*"]
         for w in wiki_checks:
-            t = await self.bot.net.request("https://gbf.wiki/{}".format(w), no_base_headers=True, add_user_agent=True, follow_redirects=True, timeout=8)
-            if t is not None:
-                try: t = t.decode('utf-8')
-                except: t = t.decode('iso-8859-1')
-                for r in regexs:
-                    if w == "Sunlight_Stone": # exception
-                        ms = re.findall(r, t)
-                        for i, m in enumerate(ms):
-                            if i == 0: msg += "**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
-                            elif i == 1: msg += "**{}** since the last [Arcarum Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
-                        if len(ms) > 0:
-                            break
-                    else:
-                        m = re.search(r, t)
-                        if m:
-                            msg += "**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w)
-                            break
+            t = await self.bot.net.requestWiki(w, allow_redirects=True)
+            await asyncio.sleep(0.1) # to slow down the request a tiny bit
+            if t is None:
+                break
+            try: t = t.decode('utf-8')
+            except: t = t.decode('iso-8859-1')
+            for r in regexs:
+                if w == "Sunlight_Stone": # exception
+                    ms = re.findall(r, t)
+                    for i, m in enumerate(ms):
+                        if i == 0: msg += "**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
+                        elif i == 1: msg += "**{}** since the last [Arcarum Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
+                    if len(ms) > 0:
+                        break
+                else:
+                    m = re.search(r, t)
+                    if m:
+                        msg += "**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w)
+                        break
 
         # summer disaster
         c = self.bot.util.JST()
@@ -1061,7 +1063,7 @@ class GranblueFantasy(commands.Cog):
         """Retrieve the current coop daily missions"""
         try:
             await inter.response.defer(ephemeral=True)
-            data = (await self.bot.net.request('https://game.granbluefantasy.jp/coopraid/daily_mission', account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['daily_mission']
+            data = (await self.bot.net.requestGBF('coopraid/daily_mission', account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['daily_mission']
             msg = []
             for i in range(len(data)):
                 if data[i]['category'] == '2':
@@ -1119,7 +1121,7 @@ class GranblueFantasy(commands.Cog):
         """Post a Granblues Episode"""
         try:
             await inter.response.defer(ephemeral=True)
-            if (await self.bot.net.request("https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/episode/episode_{}.jpg".format(episode), no_base_headers=True)) is None: raise Exception()
+            if (await self.bot.net.request("https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/episode/episode_{}.jpg".format(episode))) is None: raise Exception()
             await inter.edit_original_message(embed=self.bot.embed(title="Grand Blues! Episode {}".format(episode), url="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/episode/episode_{}.jpg".format(episode), image="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/thumbnail/thum_{}.png".format(str(episode).zfill(5)), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid Grand Blues! number", color=self.COLOR))
@@ -1145,20 +1147,20 @@ class GranblueFantasy(commands.Cog):
                 if 'campaign/dividecrystal' not in self.bot.data.save['extra']:
                     self.bot.data.save['extra']['campaign/dividecrystal'] = {'wave':1, 'expire':end}
                 try:
-                    data = unquote((await self.bot.net.request("https://game.granbluefantasy.jp/campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                    data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
                 except Exception as tmp:
                     if maxwave > 1 and self.bot.data.save['extra']['campaign/dividecrystal']['wave'] < maxwave and (c - start).days > 2:
                         try:
-                            await self.bot.net.request("https://game.granbluefantasy.jp/campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-                            data = unquote((await self.bot.net.request("https://game.granbluefantasy.jp/campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
                             self.bot.data.save['extra']['campaign/dividecrystal']['wave'] += 1
                             self.bot.data.pending = True
                         except:
                             raise tmp
                     elif self.bot.data.save['extra']['campaign/dividecrystal']['wave'] == maxwave: # likely triggered by the end
                         try:
-                            await self.bot.net.request("https://game.granbluefantasy.jp/campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-                            data = unquote((await self.bot.net.request("https://game.granbluefantasy.jp/campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
                         except:
                             raise tmp
                     else:

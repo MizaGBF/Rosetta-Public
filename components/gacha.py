@@ -59,7 +59,7 @@ class Gacha():
     async def process(self, gtype : str, bid : Union[str, int], sub_id : int) -> tuple:
         try:
             # draw rate
-            data = await self.bot.net.request("https://game.granbluefantasy.jp/gacha/provision_ratio/{}/{}/{}".format(gtype, bid, sub_id), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("gacha/provision_ratio/{}/{}/{}".format(gtype, bid, sub_id), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             gratio = data['ratio'][0]['ratio']
             
             glist = [{'rate':0, 'list':{}}, {'rate':0, 'list':{}}, {'rate':0, 'list':{}}]
@@ -109,7 +109,7 @@ class Gacha():
     """
     async def getScamRate(self, gtype : str, bid : Union[str, int]) -> dict:
         try:
-            appear = (await self.bot.net.request("https://game.granbluefantasy.jp/gacha/provision_ratio/{}/{}/4".format(gtype, bid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['appear']
+            appear = (await self.bot.net.requestGBF("gacha/provision_ratio/{}/{}/4".format(gtype, bid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['appear']
             items = {}
             for e in appear:
                 if e['num'] == '1': items[e['name']] = int(float(e['draw_rate']) * 1000)
@@ -133,7 +133,7 @@ class Gacha():
         try:
             c = self.bot.util.JST()
             #gacha page
-            data = await self.bot.net.request("https://game.granbluefantasy.jp/gacha/list", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("gacha/list", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
             if data is None: raise Exception()
             # will contain the data
             gacha_data = {}
@@ -173,7 +173,7 @@ class Gacha():
             # classic gacha
             gacha_data['classic'] = []
             for i in [500021, 501021]:
-                data = await self.bot.net.request("https://game.granbluefantasy.jp/rest/gacha/classic/toppage_data_by_classic_series_id/{}".format(i), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                data = await self.bot.net.requestGBF("rest/gacha/classic/toppage_data_by_classic_series_id/{}".format(i), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
                 if data is not None and 'appearance_gacha_id' in data:
                     gratio, glist, grateup = await self.process('classic', data['appearance_gacha_id'], 1)
                     if gratio is not None:
@@ -182,7 +182,7 @@ class Gacha():
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
             for g in gachas:
-                data = await self.bot.net.request("https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(g), no_base_headers=True)
+                data = await self.bot.net.request("https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(g))
                 if data is not None:
                     gacha_data['image'] = g
                     break

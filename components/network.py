@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import aiohttp
 import re
 from datetime import timedelta
+from yarl import URL # package should come with aiohttp/disnake
 from deep_translator import GoogleTranslator
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -14,15 +15,17 @@ from deep_translator import GoogleTranslator
 
 class Network():
     VERSION_REGEX = re.compile("Game\.version = \"(\d+)\";")
-    DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-    DEFAULT_CHROME_VER = 120
-    DEFAULT_SEC_HEADERS = {"Sec-Ch-Ua": '"Not=A?Brand";v="99", "Chromium";v="{}"'.format(DEFAULT_CHROME_VER), "Sec-Ch-Ua-Mobile": "?0", "Sec-Ch-Ua-Platform": "Windows", "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1"}
-    DEFAULT_HEADERS = {'Connection': 'keep-alive', 'Accept': 'application/json, text/javascript, */*; q=0.01', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/'}
+    GET = 0
+    POST = 1
+    HEAD = 2
+    CONDITIONAL_GET = 4
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
+        self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
+        self.client_last_gbf_account = None
 
     def init(self) -> None:
         pass
@@ -39,132 +42,178 @@ class Network():
             await self.client.close()
 
     """request()
-    Coroutine to request a network resource. This function is tailored to be used with GBF.
+    Coroutine to request a network resource.
+    Use requestGBF to request GBF with an account, or requestWiki to request the Wiki
     
     Parameters
     ----------
-    base_url: Url to request from.
-    options: Possible options are:
-        - no_base_headers: Boolean (Default is False). If False, set the necessary headers to communicate with GBF main server.
-        - add_user_agent: Boolean (Default is False). If True and an user agent is not set, set it.
-        - headers: Dict, headers set by the user
-        - params: Dict, set to None to ignore. Automatically set when requesting GBF with account not None.
-        - account: Integer, registered GBF account id to use. Default is None to not use one.
-        - payload: Dict (Default is None), POST request payload. Set to None to do a GET request. Additionaly, some the 'user_id' value can be automatically set if it's equal to the following:
-            - "ID": The GBF Profile ID
-            - "SID": The GBF Profile ID, as a string
-            - "IID": The GBF Profile ID, as an integer
-        - timeout: Integer, timeout in seconds. Set to None to use the default 20s timeout.
-        - follow_redirects: Boolean (Default is False), set to True to follow request redirections if you expect any.
-        - rtype: To do another type of request. Only when payload is None (aka for GET requests). Possible values are "GET" (default), "HEAD", "CONDITIONAL-GET" (will return the response), "POST"
-        - expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
-        - collect_headers: Default is None. Set it to a list of size one and the request headers will be inserted in the first emplacement.
-        - skip_check: Boolean, skip the maintenance check. For internal use only, ignore it.
-        - updated: Boolean. For internal use only, ignore it.
+    url: Url to request from.
+    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
+    headers: Dict, request headers set by the user. Prefer using add_user_agent instead of setting the user agent yourself.
+    params: Dict, set to None to ignore.
+    payload: Dict (Default is None), POST request payload. Set to None to do another request type.
+    allow_redirects: Boolean (Default is False), set to True to follow request redirections if you expect any.
+    expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
+    ssl: BOolean (Default is True), set to False to disable ssl verifications
+    collect_headers: Default is None. Pass the following '[[None]]' and the request headers will be inserted in place of None.
     
     Returns
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for PARTIAL-GET
     """
-    async def request(self, url : str, **options : dict) -> Any:
+    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True, collect_headers : Optional[dict] = None) -> Any:
         try:
-            host = url.replace('http://', '').replace('https://', '').split('/', 1)[0]
-            if not options.get('skip_check', False) and host == "game.granbluefantasy.jp" and await self.gbf_maintenance(): return None
-            params = options.get('params', None)
-            headers = {'Connection':'keep-alive'}
-            if not options.get('no_base_headers', False): headers = self.DEFAULT_HEADERS.copy()
-            else: headers = {'Connection':'keep-alive'}
-            if "headers" in options: headers = headers | options["headers"]
-            aid = options.get('account', None)
-            acc = self.get_account(aid) if aid is not None else None
+            headers['Connection'] = 'keep-alive'
+            if add_user_agent and 'User-Agent' not in headers:
+                headers['User-Agent'] = self.user_agent
+            if payload is None:
+                match rtype:
+                    case self.GET|self.CONDITIONAL_GET:
+                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
+                    case self.HEAD:
+                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
+                    case self.POST:
+                        response = await self.client.post(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
+                    case _:
+                        raise Exception("Unknown request type")
+            else:
+                rtype = self.POST
+                response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
+            if rtype == "CONDITIONAL-GET":
+                return response
+            async with response:
+                if response.status >= 400 or response.status < 200:
+                    raise Exception("HTTP Error " + str(response.status))
+                if collect_headers is not None and collect_headers == [[None]]:
+                    try: collect_headers[0] = response.headers
+                    except: pass
+                ct = response.headers.get('content-type', '')
+                is_json = 'application/json' in ct
+                if expect_JSON and not is_json: raise Exception("Expected `application/json`, got `{}`".format(ct))
+                if rtype == "HEAD": return True
+                elif is_json: return await response.json()
+                else: return await response.read()
+        except Exception as e:
+            self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e)
+            return None
+
+    """requestGBF()
+    Coroutine to request Granblue Fantasy with a working account.
+    
+    Parameters
+    ----------
+    path: Url path.
+    account: Registered account to use.
+    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
+    params: Dict. Automatically set when requesting GBF.
+    payload: Dict (Default is None), POST request payload. Set to None to do another request type. Additionaly, the 'user_id' value can be automatically set if it's equal to the following:
+        - "ID": The GBF Profile ID
+        - "SID": The GBF Profile ID, as a string
+        - "IID": The GBF Profile ID, as an integer
+    allow_redirects: Bool, set to True to follow redirects.
+    expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
+    _updated_: Boolean, for internal use only.
+    
+    Returns
+    ----------
+    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for CONDITIONAL-GET
+    """
+    async def requestGBF(self, path : str, account : int, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
+        try:
+            if await self.gbf_maintenance(): return None
+            if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
+            else: url = "https://game.granbluefantasy.jp" + path
+            # retrieve account info
+            acc = self.get_account(account)
+            if acc is None: raise Exception("Invalid account selection")
+            # retrieve version
             ver = self.bot.data.save['gbfversion']
             if ver == "Maintenance":
-                ver = None
+                raise Exception("Maintenance on going")
             elif ver is None:
                 ver = 0
-            cookies = None
-            if aid is not None:
-                if acc is None: return None
-                if params is None: params = {}
-                ts = int(self.bot.util.UTC().timestamp() * 1000)
-                params["_"] = str(ts)
-                params["t"] = str(ts+300)
-                params["uid"] = str(acc[0])
-                if 'Cookie' not in headers:
-                    cookies = acc[1]
-                else:
-                    cd = {}
-                    for c in headers['Cookie'].split(";"):
-                        ct = c.strip().split("=")
-                        cd[ct[0]] = ct[1]
-                    cookies = cd
-                    del headers['Cookie']
-                if 'User-Agent' not in headers: headers['User-Agent'] = acc[2]
-                if 'X-Requested-With' not in headers: headers['X-Requested-With'] = 'XMLHttpRequest'
-                if 'X-VERSION' not in headers: headers['X-VERSION'] = str(ver)
-            payload = options.get('payload', None)
-            timeout = options.get('timeout', None)
-            
-            if host == "game.granbluefantasy.jp":
-                self.client.cookie_jar.clear()
-            
-            if cookies is not None:
-                self.client.cookie_jar.update_cookies(cookies)
-            
-            if options.get('add_user_agent', False) and 'User-Agent' not in headers:
-                # try to use existing user agent
-                for au in self.bot.data.save['gbfaccounts']:
-                    if au[2] is not None and au[2] != '':
-                        headers['User-Agent'] = au[2]
-                        break
-                if 'User-Agent' not in headers: # default
-                    headers['User-Agent'] = self.DEFAULT_UA
+            # set headers
+            headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc[2], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
+            # set cookies
+            if self.client_last_gbf_account != account: # only set cookie jar if previous used account doesn't match
+                self.client.cookie_jar.update_cookies(acc[1], URL('https://game.granbluefantasy.jp'))
+                self.client_last_gbf_account = account # memorize used account
+            # set params
+            ts = int(self.bot.util.UTC().timestamp() * 1000)
+            params["_"] = str(ts)
+            params["t"] = str(ts+300)
+            params["uid"] = str(acc[0])
             if payload is None:
-                rtype = options.get('rtype', 'GET')
                 match rtype:
-                    case 'GET'|'CONDITIONAL-GET':
-                        response = await self.client.get(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
-                    case 'HEAD':
-                        response = await self.client.get(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
-                    case 'POST':
-                        response = await self.client.post(url, params=params, headers=headers, timeout=timeout, allow_redirects=options.get('follow_redirects', False))
+                    case self.GET|self.CONDITIONAL_GET:
+                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects)
+                    case self.HEAD:
+                        response = await self.client.head(url, params=params, headers=headers, allow_redirects=allow_redirects)
+                    case self.POST:
+                        response = await self.client.post(url, params=params, headers=headers, allow_redirects=allow_redirects)
+                    case _:
+                        raise Exception("Unknown request type")
             else:
-                rtype = 'POST'
-                if not options.get('no_base_headers', False) and 'Content-Type' not in headers: headers['Content-Type'] = 'application/json'
+                rtype = self.POST
+                # auto set ID
                 if 'user_id' in payload:
                     match payload['user_id']:
                         case "ID": payload['user_id'] = acc[0]
                         case "SID": payload['user_id'] = str(acc[0])
                         case "IID": payload['user_id'] = int(acc[0])
-                response = await self.client.post(url, params=params, headers=headers, timeout=timeout, json=payload)
-            if rtype == "CONDITIONAL-GET":
-                return response
+                response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
+            # response handling
             async with response:
-                if response.status == 503 and url == 'https://game.granbluefantasy.jp/': # maintenance
-                    if rtype == "HEAD": return None
-                    return await response.read()
-                elif response.status >= 400 or response.status < 200:
+                if rtype == self.CONDITIONAL_GET:
+                    return response
+                if response.status >= 400 or response.status < 200:
                     # retry if it's a version error
-                    if options.get('updated', False) is False and aid is not None and acc is not None and host == "game.granbluefantasy.jp":
+                    if not _updated_:
                         x = await self.gbf_version() # check if update
                         if x >= 2: # if some sort of update
-                            if x == 3: options['updated'] = True # trigger update
-                            return await self.request(url, **options)
+                            if x == 3: _updated_ = True
+                            return await self.requestGBF(path, account, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
                     raise Exception()
-                if aid is not None:
-                    self.refresh_account(aid, response.headers['set-cookie'])
-                if isinstance(options.get('collect_headers', None), list):
-                    try: options['collect_headers'][0] = response.headers
-                    except: pass
-                is_json = response.headers.get('content-type', '').startswith('application/json')
-                if options.get('expect_JSON', False) and not is_json: raise Exception()
+                self.refresh_account(account, response.headers['set-cookie'])
+                ct = response.headers.get('content-type', '')
+                is_json = 'application/json' in ct
+                if expect_JSON and not is_json: raise Exception("Expected `application/json`, got `{}`".format(ct))
                 if rtype == "HEAD": return True
                 elif is_json: return await response.json()
                 else: return await response.read()
-        except:
-            try:
-                if aid is not None: self.set_account_state(aid, 2)
-            except: pass
+        except Exception as e:
+            self.set_account_state(account, 2)
+            if str(e) != "":
+                self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e)
+            return None
+
+    """requestWiki()
+    Coroutine to request the gbf.wiki.
+    Only support GET requests.
+    
+    Parameters
+    ----------
+    path: Url path.
+    allow_redirects: Bool, set to True to follow redirects.
+    
+    Returns
+    ----------
+    unknown: None if error, else Bytes or JSON object
+    """
+    async def requestWiki(self, path : str, allow_redirects : bool = False) -> Any:
+        try:
+            if path[:1] != "/": url = "https://gbf.wiki/" + path
+            else: url = "https://gbf.wiki" + path
+            response = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, timeout=8, allow_redirects=allow_redirects)
+            async with response:
+                if response.status == 403:
+                    raise Exception("HTTP Error 403 - Possibly Cloudflare related")
+                elif response.status >= 400 or response.status < 200:
+                    raise Exception("HTTP Error " + str(response.status))
+                if response.headers.get('content-type', '').startswith('application/json'): return await response.json()
+                else: return await response.read()
+        except Exception as e:
+            self.bot.logger.pushError("[NET] requestWiki `{}` Error:".format(path), e)
             return None
 
     """str2cookie()
@@ -213,6 +262,8 @@ class Network():
         if 'gbfaccounts' not in self.bot.data.save:
             self.bot.data.save['gbfaccounts'] = []
         self.bot.data.save['gbfaccounts'].append([uid, self.str2cookie(ck), ua, 0, 0, None])
+        if len(self.bot.data.save['gbfaccounts']) - 1 == self.client_last_gbf_account:
+            self.client_last_gbf_account = None
         self.bot.data.pending = True
 
     """update_account()
@@ -237,6 +288,8 @@ class Network():
             if uid is not None:
                 self.bot.data.save['gbfaccounts'][aid][0] = uid
             if ck is not None:
+                if self.client_last_gbf_account == aid:
+                    self.client_last_gbf_account = None
                 self.bot.data.save['gbfaccounts'][aid][1] = self.str2cookie(ck)
             if ua is not None:
                 self.bot.data.save['gbfaccounts'][aid][2] = ua
@@ -260,6 +313,8 @@ class Network():
         try:
             if aid < 0 or aid >= len(self.bot.data.save['gbfaccounts']):
                 return False
+            if self.client_last_gbf_account == aid:
+                self.client_last_gbf_account = None
             self.bot.data.save['gbfaccounts'].pop(aid)
             if self.bot.data.save['gbfcurrent'] >= aid and self.bot.data.save['gbfcurrent'] >= 0: self.bot.data.save['gbfcurrent'] -= 1
             self.bot.data.pending = True
@@ -314,16 +369,12 @@ class Network():
     """gbf_version()
     Coroutine to retrieve the GBF version number. If success, call gbf_update() and return its result
     
-    Parameters
-    ----------
-    skip_check: Boolean, skip the maintenance check (for internal use only)
-    
     Returns
     ----------
     unknown: None if GBF is down, "Maintenance" if in maintenance, -1 if version comparison error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
     """
-    async def gbf_version(self, skip_check = False) -> Any: # retrieve the game version
-        res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, no_base_headers=True, skip_check=skip_check, follow_redirects=True)
+    async def gbf_version(self) -> Any: # retrieve the game version
+        res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
         if res is None: return None
         res = str(res)
         try:
@@ -377,8 +428,8 @@ class Network():
     """
     async def gbf_available(self, skip_check = False) -> bool: # use the above to check if the game is up
         if skip_check is False and await self.gbf_maintenance(): return False
-        v = await self.gbf_version(skip_check)
-        if v is None: v = await self.gbf_version(skip_check) # try again in case their shitty server is lagging
+        v = await self.gbf_version()
+        if v is None: v = await self.gbf_version() # try again in case their shitty server is lagging
         match v:
             case None:
                 return False

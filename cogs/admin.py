@@ -84,7 +84,7 @@ class Admin(commands.Cog):
         for i in range(0, len(self.bot.data.save['gbfaccounts'])):
             acc = self.bot.data.save['gbfaccounts'][i]
             if acc[3] == 0 or (acc[3] == 1 and (acc[5] is None or current_time - acc[5] >= timedelta(seconds=1800))):
-                await self.bot.net.request("https://game.granbluefantasy.jp/user/user_id/1", account=i, expect_JSON=True)
+                await self.bot.net.requestGBF("user/user_id/1", account=i, expect_JSON=True)
 
     """isOwner()
     Command decorator, to check if the command is used by the bot owner
@@ -243,7 +243,7 @@ class Admin(commands.Cog):
     async def approximate_account(self, step : int, current : int, count : int) -> int:
         if count >= 30 or step <= 10:
             return current
-        data = await self.bot.net.request("https://game.granbluefantasy.jp/profile/content/index/{}".format(current+step), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        data = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
         match data:
             case "Maintenance":
                 return None
@@ -697,7 +697,7 @@ class Admin(commands.Cog):
             if acc is None:
                 await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="No accounts set in slot {}".format(aid), color=self.COLOR))
                 return
-            r = await self.bot.net.request("https://game.granbluefantasy.jp/user/user_id/1", account=aid, expect_JSON=True)
+            r = await self.bot.net.requestGBF("user/user_id/1", account=aid, expect_JSON=True)
             if r is None or str(r.get('user_id', None)) != str(acc[0]):
                 await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account #{} is down or GBF is unavailable\nck: `{}`\nuid: `{}`\nua: `{}`\n".format(aid, acc[0], acc[1], acc[2]) , color=self.COLOR))
             else:

@@ -20,20 +20,23 @@ class Emote():
 
     async def init_request(self) -> None:
         # get list of valid unicode emojis
-        data = await self.bot.net.request('http://www.unicode.org/Public/emoji/1.0//emoji-data.txt', no_base_headers=True)
+        data = await self.bot.net.request('http://www.unicode.org/Public/emoji/1.0//emoji-data.txt')
         if data is None:
             self.bot.logger.pushError("[Emoji] Couldn't retrieve the list of unicode Emojis")
         else:
-            data = data.decode('utf-8').split('\n')
-            for l in data:
-                if l.startswith('#'): continue
-                dat = l.split(';', 1)[0].strip()
-                if dat == "": continue
-                dat = dat.split(' ')
-                if len(dat) == 2:
-                    self.unicode_emoji[int(dat[0], 16)] = int(dat[1], 16)
-                elif len(dat) == 1:
-                    self.unicode_emoji[int(dat[0], 16)] = None
+            try:
+                data = data.decode('utf-8').split('\n')
+                for l in data:
+                    if l.startswith('#'): continue
+                    dat = l.split(';', 1)[0].strip()
+                    if dat == "": continue
+                    dat = dat.split(' ')
+                    if len(dat) == 2:
+                        self.unicode_emoji[int(dat[0], 16)] = int(dat[1], 16)
+                    elif len(dat) == 1:
+                        self.unicode_emoji[int(dat[0], 16)] = None
+            except Exception as e:
+                self.bot.logger.pushError("[Emoji] init error:", e)
 
     """get()
     Retrieve an Emojii using its id set in config.json

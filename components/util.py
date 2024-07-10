@@ -236,7 +236,7 @@ class Util():
     """
     def status(self) -> dict:
         return {
-            "Version": self.bot.version,
+            "Version": self.bot.VERSION,
             "Python": "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
             "Uptime": self.uptime(),
             "CPU": "{:.2f}%".format(self.process.cpu_percent()),
@@ -536,10 +536,9 @@ class Util():
             if proficiency is not None and category == "weapons":
                 addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
-            data = (await self.bot.net.request("https://gbf.wiki/index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,obtain,element{}&format=json&limit=10".format(category, quote(name), quote(' '.join(addition)), extra_fields), no_base_headers=True, add_user_agent=True, follow_redirects=True, expect_JSON=True, timeout=5))
+            data = (await self.bot.net.requestWiki("index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,obtain,element{}&format=json&limit=10".format(category, quote(name), quote(' '.join(addition)), extra_fields), allow_redirects=True))
             return str(data[0]['id'])
-        except Exception as e:
-            print(e)
+        except:
             return None
 
     """process_command()

@@ -104,14 +104,14 @@ class General(commands.Cog):
         """Post the bot changelog"""
         await inter.response.defer(ephemeral=True)
         msg = ""
-        for c in self.bot.changelog:
+        for c in self.bot.CHANGELOG:
             e = c.split('`')
             for i in range(1, len(e), 2):
                 e[i] = self.bot.util.command2mention(e[i])
                 if not e[i].startswith('<'): e[i] = '`' + e[i] + '`'
             msg += "- {}\n".format(''.join(e))
         if msg != "":
-            await inter.edit_original_message(embed=self.bot.embed(title="{} ▫️ v{}".format(inter.me.display_name, self.bot.version), description="### Changelog\n" + msg, thumbnail=inter.me.display_avatar, color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} ▫️ v{}".format(inter.me.display_name, self.bot.VERSION), description="### Changelog\n" + msg, thumbnail=inter.me.display_avatar, color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Changelog available", color=self.COLOR))
 
@@ -230,7 +230,7 @@ class General(commands.Cog):
         """Retrieve the current yen conversion rate"""
         await inter.response.defer(ephemeral=True)
         try:
-            data = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", no_base_headers=True)).decode('utf-8').split('<Cube time="')
+            data = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml")).decode('utf-8').split('<Cube time="')
             rates = ([None, None], [None, None])
             date = data[1].split('">', 1)[0]
             for i in range(0, 2):
