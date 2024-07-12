@@ -707,7 +707,7 @@ class GachaSimulator():
                     await asyncio.sleep(0.7)
                     await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msg), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
                 if self.scamdata is not None:
-                    msg = '\n'.join(msg.split('\n')[:-2]) + "\n{}**{}**\n{}**{}**".format(self.bot.emote.get('SSR'), self.bot.gacha.formatGachaItem(sroll[0]), self.bot.emote.get('red'), sroll[1])
+                    msg = '\n'.join(''.join(msg).split('\n')[:-2]) + "\n{}**{}**\n{}**{}**".format(self.bot.emote.get('SSR'), self.bot.gacha.formatGachaItem(sroll[0]), self.bot.emote.get('red'), sroll[1])
                     await asyncio.sleep(1)
                     await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 2: # meme roll display
