@@ -120,7 +120,7 @@ def generate_html(command_list): # main function to generate the html
                 if out != '':
                     containers += '</div>\n\t\t\t\t<div class="command-use"><b>Parameters :</b><br>{}'.format(out)
             containers += '\n\t\t\t\t</div>\n\t\t\t</li>\n'
-        print(slash_count - prev_count, "slash commands in:", cog, "(", slash_count, "commands)")
+        print(slash_count - prev_count, "global slash commands in:", cog, "(", slash_count, "commands)")
         prev_count = slash_count
     print("Total:")
     print(slash_count, "/ 50 slash commands (for", total_count, "commands)")
