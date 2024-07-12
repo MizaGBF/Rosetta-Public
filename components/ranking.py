@@ -691,6 +691,7 @@ class Ranking():
                     db = await self.bot.sql.get(fs[i])
                 if force_download or db is None:
                     if not self.dbstate[i]: continue
+                    await asyncio.sleep(0)
                     # download
                     try:
                         self.dbstate[i] = False
