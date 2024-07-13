@@ -536,7 +536,7 @@ class Util():
             if proficiency is not None and category == "weapons":
                 addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
-            data = (await self.bot.net.requestWiki("index.php?title=Special:CargoExport&tables={}&where=name%20%3D%20%22{}%22{}&fields=name,id,obtain,element{}&format=json&limit=10".format(category, quote(name), quote(' '.join(addition)), extra_fields), allow_redirects=True))
+            data = (await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True))
             return str(data[0]['id'])
         except:
             return None

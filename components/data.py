@@ -352,7 +352,7 @@ class Data():
     """
     async def update_schedule(self) -> None:
         try:
-            data = await self.bot.net.requestWiki("index.php?title=Special:CargoExport&tables=event_history&fields=enname,time_start,time_end,time_known,utc_start,utc_end&where=time_start%20%3E%20CURRENT_TIMESTAMP%20OR%20time_end%20%3E%20CURRENT_TIMESTAMP&format=json&order%20by=time_start")
+            data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
             if data is not None:
                 new_events = {}
                 for ev in data:

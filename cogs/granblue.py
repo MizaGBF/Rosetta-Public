@@ -380,9 +380,9 @@ class GranblueFantasy(commands.Cog):
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
-        r = await self.bot.net.requestWiki("api.php?action=query&format=json&list=search&srsearch={}&redirects".format(quote(terms)))
+        r = await self.bot.net.requestWiki("api.php", params={"action":"query", "format":"json", "list":"search", "srsearch":terms, "redirects":"return"})
         if r is None or len(r['query']['search']) == 0:
-            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(terms), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), color=self.COLOR))
             await self.bot.util.clean(inter, 40)
         else:
             try:
@@ -391,7 +391,7 @@ class GranblueFantasy(commands.Cog):
                 tables = {'characters':'id,rarity,name,series,title,element,max_evo,join_weapon,profile,va', 'summons':'id,rarity,name,series,element,evo_max', 'weapons':'id,rarity,name,series,element,obtain,character_unlock,evo_max', 'classes':'id,name', 'npc_characters':'id,name,va,profile'}
                 output = None
                 for t, f in tables.items():
-                    r = await self.bot.net.requestWiki('index.php?title=Special:CargoExport&tables={}&fields=_pageName,{}&format=json&where=_pageName="{}"'.format(t, f, title))
+                    r = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":t, "fields":"_pageName,{}".format(f), "format":"json", "where":'_pageName="{}"'.format(title)})
                     if r is None or len(r) == 0:
                         await asyncio.sleep(0.1)
                         continue
@@ -642,7 +642,7 @@ class GranblueFantasy(commands.Cog):
     dict: Grand per element
     """
     async def getGrandList(self) -> dict:
-        data = await self.bot.net.requestWiki('index.php?title=Special:CargoExport&tables=characters&fields=series,name,element,release_date&where=series%20%3D%20%22grand%22&format=json&limit=200')
+        data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"characters", "fields":"series,name,element,release_date", "where":'series = "grand"', "format":"json", "limit":"200"})
         if data is None:
             return {}
         grand_list = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}

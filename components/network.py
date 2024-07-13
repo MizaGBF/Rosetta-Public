@@ -203,17 +203,18 @@ class Network():
     Parameters
     ----------
     path: Url path.
+    params: Dict. Request parameters.
     allow_redirects: Bool, set to True to follow redirects.
     
     Returns
     ----------
     unknown: None if error, else Bytes or JSON object
     """
-    async def requestWiki(self, path : str, allow_redirects : bool = False) -> Any:
+    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> Any:
         try:
             if path[:1] != "/": url = "https://gbf.wiki/" + path
             else: url = "https://gbf.wiki" + path
-            response = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, timeout=8, allow_redirects=allow_redirects)
+            response = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, params=params, timeout=8, allow_redirects=allow_redirects)
             async with response:
                 if response.status == 403:
                     raise Exception("HTTP Error 403 - Possibly Cloudflare related")
