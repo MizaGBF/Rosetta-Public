@@ -3,7 +3,6 @@ import asyncio
 from typing import Optional, Union, Callable, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote
 import psutil
 import os
 import sys
