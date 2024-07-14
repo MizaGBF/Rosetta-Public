@@ -389,7 +389,8 @@ So here's my recommendations:
 3. If the save file format is updated, your save file will automatically be converted to the new one. However, it won't be usable on old versions if, for some reason, you plan to downgrade. So, while it shouldn't be necessary, feel free to make a backup beforehand.  
 4. If `config.json` is updated, so should be the example at the beginning of this readme. Make a backup, compare the differences, add what got added and remove what's not needed anymore.  
 5. Check changes to `cogs/admin.py` for new Owner commands you might need ro run, to setup new features.  
-6. Finally, if `requirements.txt` got updated and you aren't running the bot via a Dockerfile, you should run `pip install -r requirements.txt` again.  
+6. If `requirements.txt` got updated and you aren't running the bot via a Dockerfile, you should run `pip install -r requirements.txt` again.  
+7. If you developped your own Custom Cogs, you'll have to read the code and make sure no breaking changes got introduced. Major enough changes are usually when the first or second version number is increased (for example, `1.0.0` to `2.0.0` or `1.0.0` to `1.1.0`).  
   
 > [!TIP]  
 > If you're new to Github, you can see, on the page, when each files got modified for the last time on the right.  
