@@ -64,16 +64,16 @@ class Data():
     """
     def loadConfig(self) -> bool:
         try:
-            with open('config.json') as f:
-                data = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # deserializer here
+            with open('config.json', mode="r", encoding="utf-8") as f:
+                data = json.load(f) # deserializer here
                 self.config = data
                 # basic validity check
                 for check in ['tokens', 'ids', 'emotes', 'games']:
                     if check not in self.config:
                         raise Exception("'{}' section not found in 'config.json'".format(check))
             if self.debug:
-                with open('config_test.json') as f:
-                    data = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # deserializer here
+                with open('config_test.json', mode="r", encoding="utf-8") as f:
+                    data = json.load(f) # deserializer here
                     self.config = self.config | data
                     # basic validity check
                     for check in ['tokens', 'ids', 'emotes', 'games']:
@@ -94,7 +94,7 @@ class Data():
     """
     def loadData(self) -> bool:
         try:
-            with open('save.json') as f:
+            with open('save.json', mode="r", encoding="utf-8") as f:
                 data = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # deserializer here
                 if any(data):
                     ver = data.get('version', None)
@@ -221,7 +221,7 @@ class Data():
         if self.debug:
             return True
         try:
-            with open('save.json', 'w') as outfile:
+            with open('save.json', mode='w', encoding="utf-8") as outfile:
                 json.dump(self.save, outfile, separators=(',', ':'), default=self.bot.util.json_serial) # locally first
         except Exception as e:
             self.bot.logger.pushError("[DATA] An error occured with the local save data:", e)

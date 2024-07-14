@@ -74,6 +74,7 @@ There are three ways to start the bot:
 `-run`: Start the bot.  
 `-test`: Start the bot but stop before connecting to Discord. Used to test if bot can start properly.  
 `-remove`: Start the bot without loading any commands. Mainly used to desync and remove a test bot commands from a server.  
+`-emoji`: To initialize the emojis. See in the guide below.  
   
 You can also add the following to change its behavior:  
 `-debug`: Start the bot in debug mode. `config_test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
@@ -245,14 +246,6 @@ Next, post a message, right click on your avatar and copy your own ID to replace
 Do the same thing to fill the remaining IDs.  
 The four last IDs are related to the /gbfg/ server and are already set.  
   
-The final step is to upload the various emotes in `assets/emojis` to your server.  
-Once done, you'll need to retrieve their IDs one by one to set them in `config.json`.  
-A way is to add a slash before the emote. Example, type `\:whatever_your_emote_is:` and it will show `<:whatever_your_emote_is:0000000000000>` where `0000000000000` is the emote ID.  
-
-> [!TIP]  
-> An alternative way is to use the dev tools (F12 or CTRL+SHIFT+J) and the network tab then load your Emoji list. The ID of each emoji is used in their URLs.
-> Regardless, both methods are tedious.  
-  
 If you did everything properly, you're set. 
 On the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications), copy the *Application ID* (under *General Information).  
 In the following: `https://discord.com/api/oauth2/authorize?client_id=XXXXXXXXXXXXXXXX&permissions=1644905889015&scope=bot%20applications.commands`, replace `XXXXXXXXXXXXXXXX` by this ID. This will be your bot invite link.  
@@ -275,14 +268,24 @@ INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] All cogs loaded
 INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] v11.1.5 starting up...
 INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
 ```  
-
+  
 > [!CAUTION]  
 > If it doesn't start, be sure to check for error messages and so on, before reporting to me.   
-
+  
 > [!IMPORTANT]  
 > If it starts, congratulations.  
 > All the remaining setup is done via the `/owner` commands.  
 > Refer to *Additional Informations* below if you need more help.  
+  
+> [!IMPORTANT]  
+> The emotes used by the bot will likely not be working.  
+> See one of the section below for moe informations.  
+  
+You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.  
+  
+> [!TIP]  
+> On Windows, the Task Manager sends a SIGKILL, so CTRL+C is preferred.  
+> On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
   
 ## Other config.json keys
 `games`: The list of game which will appear in the bot status. Feel free to modify it. **At least one game is required** in the list.  
@@ -310,6 +313,71 @@ Same principle, but shorter:
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
 Do note the bot is unable to write to your Google Drive in this mode.   
+  
+## Set the Emojis  
+  
+The bot uses various emojis to pretty up its messages.  
+Discord Bots have **innate** Nitro, kind of. We use this fact by uploading the emojis to a server which the bot has a permanent access to (such as Server you made during setup).  
+  
+There are two ways to do it:  
+### Method 1:  
+  
+On your local machine, in a command prompt or terminal, run `python bot.py -emoji` in the bot folder.  
+The bot will boot, do various checks and, if your Server (the one set in `config.json`, under `debug_server`) has enough emoji spaces, it will upload all emojis.  
+Once done, it will ask you to confirm and then save the changes to `config.json`.  
+You can then use this new `config.json` to run your bot as normal.  
+  
+> [!WARNING]  
+> It can take time if you're hit by a Discord Rate Limit. Simply wait if it happens, the log will tell you how much time.  
+  
+> [!IMPORTANT]  
+> If you're hit by an error, read the logs carefully.  
+> If the errors is not of your fault, please report it to me (ideally with the complete log).  
+> In the meantime, use Method 2 below.  
+  
+Here's what the log of a successful run should look like (on version 11.8.0):  
+```
+2024-07-14 15:02:41 | [INIT EMOJI] 66 file(s) in the 'assets/emojis' folder
+2024-07-14 15:02:41 | [INIT EMOJI] 66 emoji(s) expected in 'config.json'
+2024-07-14 15:02:41 | [INIT EMOJI] Checking correspondances...
+2024-07-14 15:02:41 | [INIT EMOJI] Check finished
+2024-07-14 15:02:41 | [INIT EMOJI] 50 normal emoji(s) and 16 animated emoji(s)
+2024-07-14 15:02:41 | [INIT EMOJI] Connecting to Discord...
+2024-07-14 15:02:44 | [INIT_EMOJI] Checking for free emoji slots...
+2024-07-14 15:02:44 | [INIT_EMOJI] 50 free normal emoji slots for 50 required
+2024-07-14 15:02:44 | [INIT_EMOJI] 50 free animated emoji slots for 16 required
+2024-07-14 15:02:44 | [INIT_EMOJI] Not enough emoji slots, please make space and try again
+2024-07-14 15:02:44 | [INIT_EMOJI] Uploading Emojis...
+2024-07-14 15:17:44 | [INIT_EMOJI] Uploading Complete...
+2024-07-14 15:17:44 | [INIT EMOJI] Disconnected from Discord
+2024-07-14 15:17:44 | [INIT EMOJI] Initialization is over
+2024-07-14 15:17:44 | [INIT EMOJI] Type 'confirm' to confirm the changes to config.json
+2024-07-14 15:17:44 | [INIT EMOJI] Type 'cancel' to cancel
+2024-07-14 15:17:44 | [INIT EMOJI] Loading config.json...
+2024-07-14 15:17:45 | [INIT EMOJI] Creating backup...
+2024-07-14 15:17:45 | [INIT EMOJI] Loading JSON...
+2024-07-14 15:17:45 | [INIT EMOJI] Applying changes...
+2024-07-14 15:17:45 | [INIT EMOJI] Saving config.json...
+2024-07-14 15:17:45 | [INIT EMOJI] Emoji Initialization complete
+```  
+  
+> [!WARNING]  
+> A backup of config.json called config.bak.json is created upon confirmation.  
+> If, for some reason, an error happens after its creation, I recommend **making a manual copy of this backup if you plan to rerun the command**, so it doesn't get overwritten  
+  
+> [!IMPORTANT]  
+> If new emojis are added in future updates, don't rerun the command.  
+> Use the Method 2 below instead..  
+> `python bot.py -emoji` is intended to be used only **once**, on the first install.  
+  
+### Method 2:  
+  
+The original and more tedious way.  
+Simply upload upload the various emotes in `assets/emojis` to your server.  
+Once done, retrieve their IDs one by one to set them in `config.json`.  
+A way is to add a slash before the emote in chat. Example, type `\:whatever_your_emote_is:` and it will show `<:whatever_your_emote_is:0000000000000>` where `0000000000000` is the emote ID.  
+  
+An alternative way is to use the Chrome dev tools (F12 or CTRL+SHIFT+J) and the network tab then load your Emoji list. The ID of each emoji can be retrieved from their URLs.  
   
 ## Additional Informations  
   
