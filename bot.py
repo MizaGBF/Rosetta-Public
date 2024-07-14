@@ -26,7 +26,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.7.1" # bot version
+    VERSION = "11.7.2" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.1.2** - Improved `/gbf schedule`.",
@@ -40,6 +40,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
         "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
         "**v11.7.0** - Removed the Image Search. It was partially broken, inefficient and slightly unmaintainable.",
+        "**v11.7.2** - Extra Drops timer added to `/gbf info` and `/gbf schedule`.",
     ]
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
