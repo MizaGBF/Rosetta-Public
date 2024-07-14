@@ -7,7 +7,7 @@ func_index = {}
 def get_version(): # retrieve the bot version from bot.py
     with open("../bot.py", "r", encoding="utf-8") as f:
         data = f.read()
-    return search_interval(data, 0, len(data)-1, 'self.version = "', '"')
+    return search_interval(data, 0, len(data)-1, 'VERSION = "', '"')
 
 def make_parameters(params): # parse the raw parameter list (the list of string) and convert into html
     msg = ""
