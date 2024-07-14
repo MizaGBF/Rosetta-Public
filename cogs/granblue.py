@@ -405,6 +405,77 @@ class GranblueFantasy(commands.Cog):
             self.bot.logger.pushError("[GBF] checkExtraDrops Error", e)
         return None
 
+    """getGBFInfoTimers()
+    Generate a string containing various timers (to maintenance, next gacha, etc...).
+    Used by /gbf info and /gbf schedule.
+    
+    Parameters
+    --------
+    inter: Valid Disnake interaction. Required for getNextBuff().
+    current_time: Current time datetime in JST. Required for extra drop and stream timers.
+    
+    Returns
+    --------
+    str: Resulting string. Intended to be appended to an embed description.
+    """
+    async def getGBFInfoTimers(self, inter: disnake.GuildCommandInteraction, current_time : datetime) -> str:
+        output = []
+        try:
+            buf = await self.bot.net.gbf_maintenance_status()
+            if len(buf) > 0:
+                output.append(buf)
+                output.append('\n')
+        except:
+            pass
+
+        try:
+            buf = await self.bot.gacha.get()
+            if len(buf) > 0:
+                output.append("{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
+                if buf[1]['time'] != buf[1]['timesub']:
+                    output.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
+                output.append('\n')
+        except:
+            pass
+
+        try:
+            buf = self.bot.get_cog('GuildWar').getGWState()
+            if len(buf) > 0:
+                output.append(buf)
+                output.append("\n")
+        except:
+            pass
+
+        try:
+            buf = self.bot.get_cog('DreadBarrage').getBarrageState()
+            if len(buf) > 0:
+                output.append(buf)
+                output.append("\n")
+        except:
+            pass
+
+        try:
+            buf = self.bot.get_cog('GuildWar').getNextBuff(inter)
+            if len(buf) > 0:
+                output.append(buf)
+                output.append("\n")
+        except:
+            pass
+
+        try:
+            buf = await self.checkExtraDrops()
+            if buf[1] is not None:
+                output.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+        except:
+            pass
+
+        try:
+            if current_time < self.bot.data.save['stream']['time']:
+                output.append("{} Stream at **{}**\n".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
+        except:
+            pass
+        return ''.join(output)
+
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(2, 10, commands.BucketType.user)
@@ -517,61 +588,8 @@ class GranblueFantasy(commands.Cog):
         if current_time.hour >= reset.hour:
             reset += timedelta(days=1)
         d = reset - current_time
-        description.append("\n{} Reset in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(d)))
-
-        try:
-            buf = await self.bot.net.gbf_maintenance_status()
-            if len(buf) > 0:
-                description.append("\n")
-                description.append(buf)
-        except:
-            pass
-
-        try:
-            buf = await self.bot.gacha.get()
-            if len(buf) > 0:
-                description.append("\n{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
-                if buf[1]['time'] != buf[1]['timesub']:
-                    description.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
-        except:
-            pass
-
-        try:
-            buf = self.bot.get_cog('GuildWar').getGWState()
-            if len(buf) > 0:
-                description.append("\n")
-                description.append(buf)
-        except:
-            pass
-
-        try:
-            buf = self.bot.get_cog('DreadBarrage').getBarrageState()
-            if len(buf) > 0:
-                description.append("\n")
-                description.append(buf)
-        except:
-            pass
-
-        try:
-            buf = self.bot.get_cog('GuildWar').getNextBuff(inter)
-            if len(buf) > 0:
-                description.append("\n")
-                description.append(buf)
-        except:
-            pass
-
-        try:
-            buf = await self.checkExtraDrops()
-            if buf[1] is not None:
-                description.append("\n{} Extra Drops end in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
-        except:
-            pass
-
-        try:
-            if current_time < self.bot.data.save['stream']['time']:
-                description.append("\n{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
-        except:
-            pass
+        description.append("\n{} Reset in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(d)))
+        description.append(await self.getGBFInfoTimers(inter, current_time))
 
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(description), color=self.COLOR))
 
@@ -653,55 +671,7 @@ class GranblueFantasy(commands.Cog):
             current_time = self.bot.util.JST()
             msg.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%I:%M %p")))
             if next is not None: msg.append("{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(next - c, 2)))
-
-            try:
-                buf = await self.bot.net.gbf_maintenance_status()
-                if len(buf) > 0:
-                    msg.append(buf)
-                    msg.append('\n')
-            except:
-                pass
-            try:
-                buf = await self.bot.gacha.get()
-                if len(buf) > 0:
-                    msg.append("{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
-                    if buf[1]['time'] != buf[1]['timesub']:
-                        msg.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
-                    msg.append("\n")
-            except:
-                pass
-            try:
-                buf = self.bot.get_cog('GuildWar').getGWState()
-                if len(buf) > 0:
-                    msg.append(buf)
-                    msg.append('\n')
-            except:
-                pass
-            try:
-                buf = self.bot.get_cog('DreadBarrage').getBarrageState()
-                if len(buf) > 0:
-                    msg.append(buf)
-                    msg.append('\n')
-            except:
-                pass
-            try:
-                buf = self.bot.get_cog('GuildWar').getNextBuff(inter)
-                if len(buf) > 0:
-                    msg.append(buf)
-                    msg.append("\n")
-            except:
-                pass
-            try:
-                buf = await self.checkExtraDrops()
-                if buf[1] is not None:
-                    msg.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
-            except:
-                pass
-            try:
-                if current_time < self.bot.data.save['stream']['time']:
-                    msg.append("{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
-            except:
-                pass
+            msg.append(await self.getGBFInfoTimers(inter, current_time))
             await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=''.join(msg), footer="source: https://gbf.wiki/"))
 
     """getGrandList()
