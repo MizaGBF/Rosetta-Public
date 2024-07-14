@@ -537,19 +537,6 @@ class GranblueFantasy(commands.Cog):
             pass
 
         try:
-            buf = await self.checkExtraDrops()
-            if buf[1] is not None:
-                description.append("\n{} Extra Drops end in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
-        except:
-            pass
-
-        try:
-            if current_time < self.bot.data.save['stream']['time']:
-                description.append("\n{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
-        except:
-            pass
-
-        try:
             buf = self.bot.get_cog('GuildWar').getGWState()
             if len(buf) > 0:
                 description.append("\n")
@@ -570,6 +557,19 @@ class GranblueFantasy(commands.Cog):
             if len(buf) > 0:
                 description.append("\n")
                 description.append(buf)
+        except:
+            pass
+
+        try:
+            buf = await self.checkExtraDrops()
+            if buf[1] is not None:
+                description.append("\n{} Extra Drops end in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+        except:
+            pass
+
+        try:
+            if current_time < self.bot.data.save['stream']['time']:
+                description.append("\n{} Stream at **{}**".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
         except:
             pass
 
@@ -655,9 +655,19 @@ class GranblueFantasy(commands.Cog):
             if next is not None: msg.append("{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(next - c, 2)))
 
             try:
-                buf = await self.checkExtraDrops()
-                if buf[1] is not None:
-                    msg.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+                buf = await self.bot.net.gbf_maintenance_status()
+                if len(buf) > 0:
+                    msg.append(buf)
+                    msg.append('\n')
+            except:
+                pass
+            try:
+                buf = await self.bot.gacha.get()
+                if len(buf) > 0:
+                    msg.append("{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
+                    if buf[1]['time'] != buf[1]['timesub']:
+                        msg.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
+                    msg.append("\n")
             except:
                 pass
             try:
@@ -675,19 +685,16 @@ class GranblueFantasy(commands.Cog):
             except:
                 pass
             try:
-                buf = await self.bot.net.gbf_maintenance_status()
+                buf = self.bot.get_cog('GuildWar').getNextBuff(inter)
                 if len(buf) > 0:
                     msg.append(buf)
-                    msg.append('\n')
+                    msg.append("\n")
             except:
                 pass
             try:
-                buf = await self.bot.gacha.get()
-                if len(buf) > 0:
-                    msg.append("{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
-                    if buf[1]['time'] != buf[1]['timesub']:
-                        msg.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
-                    msg.append("\n")
+                buf = await self.checkExtraDrops()
+                if buf[1] is not None:
+                    msg.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
             except:
                 pass
             try:
