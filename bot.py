@@ -233,6 +233,15 @@ class DiscordBot(commands.InteractionBot):
     Init the emojis ID in config.json. See the README for more infos.
     """
     def init_emoji(self) -> None:
+        # laod cogs to not delete integrations
+        self.logger.push("[MAIN] Loading cogs...", send_to_discord=False)
+        self.cogn, failed = cogs.load(self) # load cogs
+        if failed > 0:
+            self.logger.push("[MAIN] {} cog(s) / {} failed to load".format(failed, self.cogn), send_to_discord=False, level=self.logger.CRITICAL)
+            return
+        else:
+            self.logger.push("[MAIN] All cogs loaded", send_to_discord=False)
+        # emoji initialization
         try:
             self.emoji_initialization = self.EMOJI_INIT_RUNNING
             filenames = next(os.walk("assets/emojis"), (None, None, []))[2]
