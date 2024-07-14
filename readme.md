@@ -362,7 +362,7 @@ Here's what the log of a successful run should look like (on version 11.8.0):
 ```  
   
 > [!WARNING]  
-> A backup of config.json called config.bak.json is created upon confirmation.  
+> A backup of `config.json` called `config.bak.json` is created upon confirmation.  
 > If, for some reason, an error happens after its creation, I recommend **making a manual copy of this backup if you plan to rerun the command**, so it doesn't get overwritten  
   
 > [!IMPORTANT]  
@@ -373,11 +373,26 @@ Here's what the log of a successful run should look like (on version 11.8.0):
 ### Method 2:  
   
 The original and more tedious way.  
-Simply upload upload the various emotes in `assets/emojis` to your server.  
+Simply add the various emotes in `assets/emojis` to your Server.  
 Once done, retrieve their IDs one by one to set them in `config.json`.  
 A way is to add a slash before the emote in chat. Example, type `\:whatever_your_emote_is:` and it will show `<:whatever_your_emote_is:0000000000000>` where `0000000000000` is the emote ID.  
   
 An alternative way is to use the Chrome dev tools (F12 or CTRL+SHIFT+J) and the network tab then load your Emoji list. The ID of each emoji can be retrieved from their URLs.  
+  
+## Updating  
+  
+First and foremost, if you want to run some sort of automation on this repo to always have the latest version, **DON'T**.  
+While I test the bot before pushing changes to this repository, I'm alone on this project and can't guarantee some mistakes haven't slipped in.  
+So here's my recommendations:  
+1. Run and update your own copy. It can be a fork, a manual download, etc... Whatever you prefer.  
+2. Read the [commit list](https://github.com/MizaGBF/Rosetta-Public/commits/main/). If I just pushed a new version a few hours ago, maybe wait tomorrow. If it's a bugfix, it might be fine. The project is fairly mature, there shouldn't be a need to hurry to a new version.  
+3. If the save file format is updated, your save file will automatically be converted to the new one. However, it won't be usable on old versions if, for some reason, you plan to downgrade. So, while it shouldn't be necessary, feel free to make a backup beforehand.  
+4. If `config.json` is updated, so should be the example at the beginning of this readme. Make a backup, compare the differences, add what got added and remove what's not needed anymore.  
+5. Check changes to `cogs/admin.py` for new Owner commands you might need ro run, to setup new features.  
+6. Finally, if `requirements.txt` got updated and you aren't running the bot via a Dockerfile, you should run `pip install -r requirements.txt` again.  
+  
+> [!TIP]  
+> If you're new to Github, you can see, on the page, when each files got modified for the last time on the right.  
   
 ## Additional Informations  
   
