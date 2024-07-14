@@ -539,7 +539,7 @@ class GranblueFantasy(commands.Cog):
         try:
             buf = await self.checkExtraDrops()
             if buf[1] is not None:
-                description.append("\n{} Extra Drops ends in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+                description.append("\n{} Extra Drops end in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
         except:
             pass
 
@@ -657,7 +657,7 @@ class GranblueFantasy(commands.Cog):
             try:
                 buf = await self.checkExtraDrops()
                 if buf[1] is not None:
-                    msg.append("{} Extra Drops ends in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+                    msg.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
             except:
                 pass
             try:
