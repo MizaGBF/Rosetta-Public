@@ -374,35 +374,36 @@ class GranblueFantasy(commands.Cog):
     
     Returns
     --------
-    list: List of ending time and element
+    list: List of ending time and element. Element is None if no extra drops is on going
     """
     async def checkExtraDrops(self) -> Optional[list]:
         try:
             c = self.bot.util.JST()
             extra = self.bot.data.save['gbfdata'].get('extradrop', None)
-            if extra is None or c > extra[0]:
+            if extra is None or c > extra[0]: # outdated/not valid
                 r = await self.bot.net.requestGBF("rest/quest/adddrop_info", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-                if r is None:
+                if r is None: # no extra
+                    self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to unvalid
+                    self.bot.data.pending = True
                     return None
                 else:
-                    elem_table = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'}
+                    elem_table = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'} # quest = element table
                     data = [None, None]
-                    data[0] =  datetime.strptime(r['message_info']['ended_at'].replace(' (JST)', '').replace('a.m.', 'AM').replace('p.m.', 'PM'), '%I:%M %p, %b %d, %Y')
-                    for e in r['quest_list']:
+                    data[0] =  datetime.strptime(r['message_info']['ended_at'].replace(' (JST)', '').replace('a.m.', 'AM').replace('p.m.', 'PM'), '%I:%M %p, %b %d, %Y') # store end time
+                    for e in r['quest_list']: # check quest name for element match
                         cs = e['quest_name'].split(' ')
                         for s in cs:
                             data[1] = elem_table.get(s, None)
                             if data[1] is not None: break
                         if data[1] is not None: break
-                    if data[1] is None: data[1] = 'misc'
                     self.bot.data.save['gbfdata']['extradrop'] = data
                     self.bot.data.pending = True
                     return data
-            else:
+            elif extra[1] is not None: # if valid
                 return extra
         except Exception as e:
             self.bot.logger.pushError("[GBF] checkExtraDrops Error", e)
-            return None
+        return None
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -537,7 +538,7 @@ class GranblueFantasy(commands.Cog):
 
         try:
             buf = await self.checkExtraDrops()
-            if buf is not None:
+            if buf[1] is not None:
                 description.append("\n{} Extra Drops ends in **{}**".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
         except:
             pass
@@ -655,7 +656,7 @@ class GranblueFantasy(commands.Cog):
 
             try:
                 buf = await self.checkExtraDrops()
-                if buf is not None:
+                if buf[1] is not None:
                     msg.append("{} Extra Drops ends in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
             except:
                 pass
