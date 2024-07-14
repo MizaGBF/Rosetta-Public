@@ -507,7 +507,7 @@ class GranblueFantasy(commands.Cog):
         """Post various Granblue Fantasy informations"""
         await inter.response.defer()
         current_time = self.bot.util.JST(delay=False)
-        description = ["{} Current Time is **{}**".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','T'])),
+        description = ["{} Current Time is **{}**".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])),
                        "\n{} Japan Time is **{}**".format(self.bot.emote.get('clock'), current_time.strftime("%H:%M"))]
 
         if self.bot.data.save['gbfversion'] is not None:
