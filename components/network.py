@@ -111,7 +111,7 @@ class Network():
     Parameters
     ----------
     path: Url path.
-    account: Registered account to use.
+    account: Integer. Registered account to use. If set to None, it will use the value stored in self.bot.data.save['gbfcurrent']
     rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
     params: Dict. Automatically set when requesting GBF.
     payload: Dict (Default is None), POST request payload. Set to None to do another request type. Additionaly, the 'user_id' value can be automatically set if it's equal to the following:
@@ -126,15 +126,16 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for CONDITIONAL-GET
     """
-    async def requestGBF(self, path : str, account : int, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
+    async def requestGBF(self, path : str, *, account : Optional[int] = None, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
         try:
             silent = True
             if await self.gbf_maintenance(): return None
             if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
             else: url = "https://game.granbluefantasy.jp" + path
             # retrieve account info
+            if account is None: account = self.bot.data.save['gbfcurrent']
             acc = self.get_account(account)
-            if acc is None: raise Exception("Invalid account selection")
+            if acc is None: raise Exception("Invalid account #" + str(account))
             silent = (acc[self.ACC_STATE] == self.ACC_STATUS_DOWN)
             # retrieve version
             ver = self.bot.data.save['gbfversion']

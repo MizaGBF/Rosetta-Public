@@ -138,7 +138,7 @@ class GranblueFantasy(commands.Cog):
         # loop
         news = []
         for ii in to_process:
-            data = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), expect_JSON=True)
             if data is None:
                 continue
             elif data[0]['id'] == str(ii):
@@ -349,7 +349,7 @@ class GranblueFantasy(commands.Cog):
     Check for new GBF grand blues
     """
     async def check4koma(self) -> None:
-        data = await self.bot.net.requestGBF('comic/list/1', account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        data = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
         if data is None: return
         last = data['list'][0]
         if '4koma' in self.bot.data.save['gbfdata']:
@@ -381,7 +381,7 @@ class GranblueFantasy(commands.Cog):
             c = self.bot.util.JST()
             extra = self.bot.data.save['gbfdata'].get('extradrop', None)
             if extra is None or c > extra[0]: # outdated/not valid
-                r = await self.bot.net.requestGBF("rest/quest/adddrop_info", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                r = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
                 if r is None: # no extra
                     self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to unvalid
                     self.bot.data.pending = True
@@ -761,7 +761,7 @@ class GranblueFantasy(commands.Cog):
             if not await self.bot.net.gbf_available():
                 data = "Maintenance"
             else:
-                data = await self.bot.net.requestGBF("profile/content/index/{}".format(profile_id), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+                data = await self.bot.net.requestGBF("profile/content/index/{}".format(profile_id), expect_JSON=True)
                 if data is not None: data = unquote(data['data'])
             match data:
                 case "Maintenance":
@@ -915,7 +915,7 @@ class GranblueFantasy(commands.Cog):
         if not await self.bot.net.gbf_available():
             data = "Maintenance"
         else:
-            data = await self.bot.net.requestGBF("profile/content/index/{}".format(pid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+            data = await self.bot.net.requestGBF("profile/content/index/{}".format(pid), expect_JSON=True)
             if data is not None: data = unquote(data['data'])
         match data:
             case "Maintenance":
@@ -1034,7 +1034,7 @@ class GranblueFantasy(commands.Cog):
             if isinstance(id, str):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description=id, color=self.COLOR))
             else:
-                data = await self.bot.net.requestGBF("forum/search_users_id", account=self.bot.data.save['gbfcurrent'], expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
+                data = await self.bot.net.requestGBF("forum/search_users_id", expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
                 if data is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
                 else:
@@ -1104,7 +1104,7 @@ class GranblueFantasy(commands.Cog):
         """Retrieve the current coop daily missions"""
         try:
             await inter.response.defer(ephemeral=True)
-            data = (await self.bot.net.requestGBF('coopraid/daily_mission', account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['daily_mission']
+            data = (await self.bot.net.requestGBF('coopraid/daily_mission', expect_JSON=True))['daily_mission']
             msg = []
             for i in range(len(data)):
                 if data[i]['category'] == '2':
@@ -1188,20 +1188,20 @@ class GranblueFantasy(commands.Cog):
                 if 'campaign/dividecrystal' not in self.bot.data.save['extra']:
                     self.bot.data.save['extra']['campaign/dividecrystal'] = {'wave':1, 'expire':end}
                 try:
-                    data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                    data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", expect_JSON=True))['data'])
                 except Exception as tmp:
                     if maxwave > 1 and self.bot.data.save['extra']['campaign/dividecrystal']['wave'] < maxwave and (c - start).days > 2:
                         try:
-                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", expect_JSON=True)
+                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", expect_JSON=True))['data'])
                             self.bot.data.save['extra']['campaign/dividecrystal']['wave'] += 1
                             self.bot.data.pending = True
                         except:
                             raise tmp
                     elif self.bot.data.save['extra']['campaign/dividecrystal']['wave'] == maxwave: # likely triggered by the end
                         try:
-                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", account=self.bot.data.save['gbfcurrent'], expect_JSON=True))['data'])
+                            await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", expect_JSON=True)
+                            data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", expect_JSON=True))['data'])
                         except:
                             raise tmp
                     else:

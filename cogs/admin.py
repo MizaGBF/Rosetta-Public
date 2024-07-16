@@ -243,7 +243,7 @@ class Admin(commands.Cog):
     async def approximate_account(self, step : int, current : int, count : int) -> int:
         if count >= 30 or step <= 10:
             return current
-        data = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        data = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
         match data:
             case "Maintenance":
                 return None

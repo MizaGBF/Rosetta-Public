@@ -510,7 +510,7 @@ class GuildWar(commands.Cog):
     dict: Crew data, None if error
     """
     async def getCrewSummary(self, cid : int) -> Optional[dict]:
-        res = await self.bot.net.requestGBF("guild_main/content/detail/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        res = await self.bot.net.requestGBF("guild_main/content/detail/{}".format(cid), expect_JSON=True)
         if res is None: return None
         else:
             soup = BeautifulSoup(unquote(res['data']), 'html.parser')
@@ -789,8 +789,8 @@ class GuildWar(commands.Cog):
     dict: Resulting data, None if error
     """
     async def requestCrew(self, cid : int, page : int) -> Optional[dict]: # get crew data
-        if page == 0: return await self.bot.net.requestGBF("guild_other/guild_info/{}".format(cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
-        else: return await self.bot.net.requestGBF("guild_other/member_list/{}/{}".format(page, cid), account=self.bot.data.save['gbfcurrent'], expect_JSON=True)
+        if page == 0: return await self.bot.net.requestGBF("guild_other/guild_info/{}".format(cid), expect_JSON=True)
+        else: return await self.bot.net.requestGBF("guild_other/member_list/{}/{}".format(page, cid), expect_JSON=True)
 
     """_sortMembers()
     Sort members by GW contributions
