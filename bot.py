@@ -728,9 +728,9 @@ class DiscordBot(commands.InteractionBot):
                 try: await inter.response.defer(ephemeral=True)
                 except: pass
             if msg.startswith('You are on cooldown.'):
-                embed = self.embed(title="Command Cooldown Error", description=msg.replace('You are on cooldown.', 'This command is on cooldown.'), timestamp=self.util.UTC())
+                embed = self.embed(title="Command Cooldown Error", description="{} ".format(self.emote.get('time')) + msg.replace('You are on cooldown.', 'This command is on cooldown.'), timestamp=self.util.UTC())
             elif msg.startswith('Too many people are using this command.'):
-                embed=self.embed(title="Command Concurrency Error", description='Too many people are using this command, try again later', timestamp=self.util.UTC())
+                embed=self.embed(title="Command Concurrency Error", description='{} Too many people are using this command, try again later'.format(self.emote.get('time')), timestamp=self.util.UTC())
             elif msg.find('check functions for command') != -1 or msg.find('NotFound: 404 Not Found (error code: 10062): Unknown interaction') != -1 or msg.find('NotFound: 404 Not Found (error code: 10008): Unknown Message') != -1:
                 return
             elif msg.find('required argument that is missing') != -1 or msg.startswith('Converting to "int" failed for parameter'):
