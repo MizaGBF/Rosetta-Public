@@ -90,7 +90,7 @@ class Network():
                 return response
             async with response:
                 if response.status >= 400 or response.status < 200:
-                    raise Exception("HTTP Error " + str(response.status))
+                    raise Exception()
                 if collect_headers is not None and collect_headers == [[None]]:
                     try: collect_headers[0] = response.headers
                     except: pass
@@ -101,7 +101,8 @@ class Network():
                 elif is_json: return await response.json()
                 else: return await response.read()
         except Exception as e:
-            self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e)
+            if str(e) != "":
+                self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e)
             return None
 
     """requestGBF()
