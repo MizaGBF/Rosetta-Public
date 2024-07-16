@@ -712,19 +712,19 @@ class GachaSimulator():
                     await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 2: # meme roll display
                 counter = [0, 0, 0]
-                text = ""
+                msg = []
                 best = [-1, ""]
                 if self.mode == self.MODE_MEMEB: item_count = 5
                 else: item_count = 3
                 for i, v in enumerate(self.result['list']):
                     if i > 0 and i % item_count == 0:
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), text), color=self.color, footer=footer), view=None)
+                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), ''.join(msg)), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(1)
-                        text = ""
-                    text += "{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1])
+                        msg = []
+                    msg.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
                     counter[v[0]] += 1
                 title = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), text), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), ''.join(msg)), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 3: # spark display
                 count = len(self.result['list'])
                 rate = (100*self.result['detail'][2]/count)
@@ -739,7 +739,7 @@ class GachaSimulator():
                     for item in rolls:
                         msg.append(item)
                         if rolls[item] > 1: msg.append(" x{}".format(rolls[item]))
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer), view=None)
+                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msg), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(0.75)
                         msg.append(" ")
                 if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
