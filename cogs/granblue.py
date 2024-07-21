@@ -401,8 +401,8 @@ class GranblueFantasy(commands.Cog):
                     return data
             elif extra[1] is not None: # if valid
                 return extra
-        except Exception as e:
-            self.bot.logger.pushError("[GBF] checkExtraDrops Error", e)
+        except:
+            pass
         return None
 
     """getGBFInfoTimers()
