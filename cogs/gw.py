@@ -34,7 +34,7 @@ class GuildWar(commands.Cog):
         "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000},
         "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000},
         "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000},
-        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":30000000} # PLACEHOLDER
+        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":0, "honor":30000000} # PLACEHOLDER
     }
     MEAT_PER_BATTLE_AVG = 10.3 # EX+ value for now (PLACEHOLDER)
 
