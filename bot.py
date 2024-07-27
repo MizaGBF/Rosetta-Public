@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.8.1" # bot version
+    VERSION = "11.8.2" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.1.2** - Improved `/gbf schedule`.",
@@ -42,6 +42,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
         "**v11.7.0** - Removed the Image Search. It was partially broken, inefficient and slightly unmaintainable.",
         "**v11.7.2** - Extra Drops timer added to `/gbf info` and `/gbf schedule`.",
+        "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1

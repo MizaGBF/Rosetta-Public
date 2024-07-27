@@ -29,12 +29,14 @@ class GuildWar(commands.Cog):
     FIGHTS = {
         "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000},
         "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000},
-        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000},
+        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":0, "honor":260000}, # Removed NM90 meat cost (PLACEHOLDER)
         "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000},
         "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000},
         "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000},
-        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000}
+        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000},
+        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":30000000} # PLACEHOLDER
     }
+    MEAT_PER_BATTLE_AVG = 10.3 # EX+ value for now (PLACEHOLDER)
 
     BOX_COST = [
         (1, 1600),
@@ -1025,9 +1027,8 @@ class GuildWar(commands.Cog):
             
             honor = [0, 0, 0, 0, 0]
             ex = 0
-            meat_per_ex_average = 10.3
-            day_target = [target * 0.15, target * 0.25, target * 0.3, target * 0.3]
-            day_nm = ["NM95", "NM150", "NM200", "NM200"]
+            day_target = [target * 0.2, target * 0.35, target * 0.25, target * 0.2]
+            day_nm = ["NM100", "NM150", "NM200", "NM250"]
             nm = [0, 0, 0, 0]
             meat = 0
             total_meat = 0
@@ -1036,8 +1037,8 @@ class GuildWar(commands.Cog):
                 daily = 0
                 while daily < day_target[i]:
                     if meat < self.FIGHTS[day_nm[i]]["meat_cost"]:
-                        meat += meat_per_ex_average
-                        total_meat += meat_per_ex_average
+                        meat += self.MEAT_PER_BATTLE_AVG
+                        total_meat += self.MEAT_PER_BATTLE_AVG
                         ex += 1
                         daily += self.FIGHTS["EX+"]["honor"]
                         honor[0] += self.FIGHTS["EX+"]["honor"]
@@ -1047,7 +1048,10 @@ class GuildWar(commands.Cog):
                         daily += self.FIGHTS[day_nm[i]]["honor"]
                         honor[i+1] += self.FIGHTS[day_nm[i]]["honor"]
 
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="Preliminaries & Interlude ▫️ **{:,}** meats (around **{:,}** EX+ and **{:}** honors)\nDay 1 ▫️ **{:,}** NM95 (**{:}** honors)\nDay 2 ▫️ **{:,}** NM150 (**{:}** honors)\nDay 3 ▫️ **{:,}** NM200 (**{:}** honors)\nDay 4 ▫️ **{:,}** NM200 (**{:}** honors)".format(math.ceil(total_meat), ex, self.bot.util.valToStr(honor[0], 2), nm[0], self.bot.util.valToStr(honor[1], 2), nm[1], self.bot.util.valToStr(honor[2], 2), nm[2], self.bot.util.valToStr(honor[3], 2), nm[3], self.bot.util.valToStr(honor[4], 2)), footer="Assuming {} meats / EX+ on average".format(meat_per_ex_average), color=self.COLOR))
+            msg = ["Preliminaries & Interlude ▫️ **{:,}** meats (around **{:,}** EX+ and **{:}** honors)".format(math.ceil(total_meat), ex, self.bot.util.valToStr(honor[0], 2))]
+            for i in range(0, len(nm)):
+                msg.append("Day {:} ▫️ **{:,}** {} (**{:}** honors)".format(i+1, nm[i], day_nm[i], self.bot.util.valToStr(honor[i+1], 2)))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="\n".join(msg), footer="Assuming {} meats / EX+ on average".format(self.MEAT_PER_BATTLE_AVG), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid honor number", color=self.COLOR))
 
@@ -1099,14 +1103,6 @@ class GuildWar(commands.Cog):
                     required=False
                 ),
                 disnake.ui.TextInput(
-                    label="NM95",
-                    placeholder="NM95 Kill Time (In seconds)",
-                    custom_id="NM95",
-                    style=disnake.TextInputStyle.short,
-                    max_length=5,
-                    required=False
-                ),
-                disnake.ui.TextInput(
                     label="NM100",
                     placeholder="NM100 Kill Time (In seconds)",
                     custom_id="NM100",
@@ -1130,6 +1126,14 @@ class GuildWar(commands.Cog):
                     max_length=5,
                     required=False
                 ),
+                disnake.ui.TextInput(
+                    label="NM250",
+                    placeholder="NM250 Kill Time (In seconds)",
+                    custom_id="NM250",
+                    style=disnake.TextInputStyle.short,
+                    max_length=5,
+                    required=False
+                )
             ],
             str(loading)
         )
