@@ -1155,7 +1155,7 @@ class GuildWar(commands.Cog):
             if drag[el] is None:
                 msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
             else:
-                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), drag[el][0], drag[el][2], 100 * ((drag[el][1] - 131250000) / drag[el][1]), 100 * ((drag[el][1] - 42000000) / drag[el][1]))
+                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), drag[el][0], drag[el][2], 100 * ((drag[el][1] - 131250000) / drag[el][1]), 100 * ((drag[el][1] - 50000000) / drag[el][1]))
         await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
         await self.bot.util.clean(inter, 90)
 
