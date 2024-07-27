@@ -29,7 +29,7 @@ class GuildWar(commands.Cog):
     FIGHTS = {
         "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000},
         "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000},
-        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":0, "honor":260000}, # Removed NM90 meat cost (PLACEHOLDER)
+        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000},
         "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000},
         "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000},
         "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000},
