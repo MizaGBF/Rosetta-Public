@@ -611,15 +611,18 @@ class GachaSimulator():
     To use after generate()
     """
     async def updateThumbnail(self) -> None:
-        if self.best[0] != -1 and self.best[1] != "":
-            search = self.best[1][2:]
-            element = ['fire', 'water', 'earth', 'wind', 'light', 'dark'][int(self.best[1][0])-1]
-            prof = (['sabre', 'dagger', 'spear', 'axe', 'staff', 'gun', 'melee', 'bow', 'harp', 'katana'][int(self.best[1][1])] if self.best[1][1] != 'S' else None)
-            rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons", from_gacha=True, element=element, proficiency=prof) # retrieve the id from the wiki
-            if rid is None: self.thumbnail = None # and update self.thumbnail accordingly
-            elif rid.startswith('1'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
-            elif rid.startswith('2'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)
-            else: self.thumbnail = None
+        try:
+            if self.best[0] != -1 and self.best[1] != "":
+                search = self.best[1][2:]
+                element = ['fire', 'water', 'earth', 'wind', 'light', 'dark'][int(self.best[1][0])-1]
+                prof = (['sabre', 'dagger', 'spear', 'axe', 'staff', 'gun', 'melee', 'bow', 'harp', 'katana'][int(self.best[1][1])] if self.best[1][1] != 'S' else None)
+                rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons", from_gacha=True, element=element, proficiency=prof) # retrieve the id from the wiki
+                if rid is None: self.thumbnail = None # and update self.thumbnail accordingly
+                elif rid.startswith('1'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
+                elif rid.startswith('2'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)
+                else: self.thumbnail = None
+        except:
+            pass
 
     """scamRoll()
     Roll the Star Premium SSR and item
