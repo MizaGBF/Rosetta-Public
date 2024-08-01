@@ -36,7 +36,7 @@ class GuildWar(commands.Cog):
         "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000},
         "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":0, "honor":30000000} # PLACEHOLDER
     }
-    MEAT_PER_BATTLE_AVG = 10.3 # EX+ value for now (PLACEHOLDER)
+    MEAT_PER_BATTLE_AVG = 20 # EX+ meat drop
 
     BOX_COST = [
         (1, 1600),
