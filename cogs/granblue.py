@@ -1167,9 +1167,13 @@ class GranblueFantasy(commands.Cog):
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid Grand Blues! number", color=self.COLOR))
 
-    @gbf.sub_command()
+    @gbf.sub_command_group()
+    async def campaign(self, inter: disnake.GuildCommandInteraction) -> None:
+        pass
+
+    @campaign.sub_command()
     async def crystal(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Granblue Summer Festival - Crystal Countdown"""
+        """Granblue Summer Festival - Crystal Countdown 2023"""
         await inter.response.defer()
         try:
             c = self.bot.util.JST()
@@ -1248,6 +1252,37 @@ class GranblueFantasy(commands.Cog):
             msg = "An error occured, try again later."
             self.bot.logger.pushError("[GBF] 'crystal' error:", e)
         await inter.edit_original_message(embed=self.bot.embed(title="Granblue Summer Festival", description=msg, url="https://game.granbluefantasy.jp/#campaign/division", footer=footer, color=self.COLOR))
+
+    @campaign.sub_command()
+    async def element(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Granblue Summer Festival - Skyfarer Assemble 2024"""
+        await inter.response.defer()
+        try:
+            c = self.bot.util.JST()
+            # settings
+            start = c.replace(year=2024, month=8, day=1, hour=5, minute=0, second=0, microsecond=0)
+            end = c.replace(year=2024, month=8, day=13, hour=4, minute=59, second=59, microsecond=0)
+            # end settings
+            footer = ""
+            if c > end:
+                msg = "The event has ended for this year."
+            elif c < start:
+                msg = "The event hasn't started."
+            else:
+                data = await self.bot.net.requestGBF("rest/campaign/accumulatebattle/point_list", expect_JSON=True)
+                msg = ["Goal ▫️ **{:,}**".format(data["goal"])]
+                elems = {"1":"fire", "2":"water", "3":"earth", "4":"wind", "5":"light", "6":"dark"}
+                for k, v in data["total"].items():
+                    if v >= data['goal']:
+                        msg.append("{:} ▫️ **{:,}** {:}".format(self.bot.emote.get(elems.get(k, k)), v, self.bot.emote.get('crown')))
+                    else:
+                        msg.append("{:} ▫️ **{:,}** ({:.2f}%)".format(self.bot.emote.get(elems.get(k, k)), v, 100*v/data['goal']))
+                msg.append("{} Event is ending in **{}**.".format(self.bot.emote.get('clock'), self.bot.util.delta2str(end - c, 2)))
+                msg = '\n'.join(msg)
+        except Exception as e:
+            msg = "An error occured, try again later."
+            self.bot.logger.pushError("[GBF] 'element' error:", e)
+        await inter.edit_original_message(embed=self.bot.embed(title="Granblue Summer Festival", description=msg, url="https://game.granbluefantasy.jp/#campaign/accumulatebattle", footer=footer, color=self.COLOR))
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
