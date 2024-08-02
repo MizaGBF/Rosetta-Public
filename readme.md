@@ -33,7 +33,7 @@ The `assets` folder contains various images and other files used by the bot:
 
 The `cogs` folder contains the bot Cogs, which are pretty much Command groups:  
 * **Never delete this folder or __init__.py inside**.  
-* You can however delete the others or add your own cogs.  
+* You can however delete the the cogs you want (be careful they don't run some critical task) or add your own cogs.  
 * In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you want.  
 * Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py`.
   
