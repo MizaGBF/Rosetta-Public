@@ -17,7 +17,7 @@
 > It's untested on other systems but it *should* work on anything supported by the required Python version.
   
 > [!TIP]  
-> [jemalloc](https://github.com/jemalloc/jemalloc) should be installed if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
+> I recommend to install [jemalloc](https://github.com/jemalloc/jemalloc) if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
 > Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
   
 ## General Informations  
@@ -26,9 +26,9 @@
 * Saving is done on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component.  
 
 The `assets` folder contains various images and other files used by the bot:  
-* The various **icon.png** files are automatically set at the beginning of the month.
+* The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.
 * The content of the `emojis` folder is used during the setup (see below).
-* The content of the `hosted` folder is merely a backup of some files I host on a github pages. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
+* The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
 * `font.ttf` is used by one command specific to my crew. You can remove it if you remove the corresponding cog.  
 
 The `cogs` folder contains the bot Cogs, which are pretty much Command groups:  
