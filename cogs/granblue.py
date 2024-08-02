@@ -1084,6 +1084,7 @@ class GranblueFantasy(commands.Cog):
         c = self.bot.util.JST()
         msg += "**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
         msg += "**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
+        msg += "**{} days** since {} KMR's retirement\n".format(self.bot.util.delta2str(c - c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), 3).split('d', 1)[0], self.bot.emote.get('kmr'))
         
         # grand
         try:
