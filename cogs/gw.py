@@ -27,14 +27,14 @@ class GuildWar(commands.Cog):
     COLOR = 0xff0000
     YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
     FIGHTS = {
-        "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000},
-        "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000},
-        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000},
-        "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000},
-        "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000},
-        "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000},
-        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000},
-        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":0, "honor":30000000} # PLACEHOLDER
+        "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000, "hp":20000000},
+        "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000, "hp":35000000},
+        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000, "hp":50000000},
+        "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000, "hp":131250000},
+        "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000, "hp":288750000},
+        "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000, "hp":288750000},
+        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000, "hp":577500000},
+        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":0, "honor":30000000, "hp":1000000000} # PLACEHOLDER
     }
     MEAT_PER_BATTLE_AVG = 20 # EX+ meat drop
 
@@ -1019,7 +1019,7 @@ class GuildWar(commands.Cog):
 
     @utility.sub_command()
     async def honorplanning(self, inter: disnake.GuildCommandInteraction, target : str = commands.Param(description="Number of honors (support T, B, M and K)")) -> None:
-        """Calculate how many NM95 and 150 you need for your targeted honor"""
+        """Calculate how many NM100 to 250 you need for your targeted honor"""
         try:
             await inter.response.defer(ephemeral=True)
             target = self.bot.util.strToInt(target)
@@ -1138,11 +1138,15 @@ class GuildWar(commands.Cog):
             str(loading)
         )
 
-    @utility.sub_command()
+    @gw.sub_command_group()
     async def nm(self, inter: disnake.GuildCommandInteraction) -> None:
+        pass
+
+    @nm.sub_command()
+    async def hp90_95(self, inter: disnake.GuildCommandInteraction) -> None:
         """Give a fight equivalent of NM95 and NM90"""
         await inter.response.defer()
-        drag = {
+        boss = {
             'fire':('Ewiyar (Solo)', 180000000, "103471/3"),
             'water':('Wilnas (Solo)', 165000000, "103441/3"),
             'earth':('Wamdus (Solo)', 182000000, "103451/3"),
@@ -1151,12 +1155,33 @@ class GuildWar(commands.Cog):
             'dark':('Lu Woh (Solo)', 192000000, "103481/3")
         }
         msg = ""
-        for el in drag:
-            if drag[el] is None:
+        for el in boss:
+            if boss[el] is None:
                 msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
             else:
-                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), drag[el][0], drag[el][2], 100 * ((drag[el][1] - 131250000) / drag[el][1]), 100 * ((drag[el][1] - 50000000) / drag[el][1]))
+                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM95']['hp']) / boss[el][1]), 100 * ((boss[el][1] - self.FIGHTS['NM90']['hp']) / boss[el][1]))
         await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
+        await self.bot.util.clean(inter, 90)
+
+    @nm.sub_command()
+    async def hp100(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Give a fight equivalent of NM100"""
+        await inter.response.defer()
+        boss = {
+            'fire':('Ra', 565000000, "305351/1/0/44"),
+            'water':('Atum', 570000000, "305321/1/0/41"),
+            'earth':('Tefnut', 620000000, "305331/1/0/42"),
+            'wind':('Bennu', 550000000, "305341/1/0/43"),
+            'light':('Osiris', 600000000, "305371/1/0/46"),
+            'dark':('Horus', 600000000, "305361/1/0/46")
+        }
+        msg = ""
+        for el in boss:
+            if boss[el] is None:
+                msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
+            else:
+                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM100: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM100']['hp']) / boss[el][1]))
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM100 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
         await self.bot.util.clean(inter, 90)
 
     @gw.sub_command_group()
