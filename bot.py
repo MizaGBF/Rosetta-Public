@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.8.5" # bot version
+    VERSION = "11.8.6" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
@@ -524,7 +524,7 @@ class DiscordBot(commands.InteractionBot):
     """
     async def changeAvatar(self, filename : str) -> bool:
         try:
-            with open("assets/" + filename, mode="rb") as f:
+            with open("assets/avatars/" + filename, mode="rb") as f:
                 await self.user.edit(avatar=f.read())
             return True
         except Exception as e:

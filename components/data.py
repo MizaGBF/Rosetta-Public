@@ -325,13 +325,13 @@ class Data():
                 # update avatar on first day of some month
                 if ct.day == 1:
                     match ct.month:
-                        case 2: await self.bot.changeAvatar('icon_flb.png')
-                        case 4: await self.bot.changeAvatar('icon_bunny.png')
-                        case 6: await self.bot.changeAvatar('icon_summer.png')
+                        case 2: await self.bot.changeAvatar('flb.png')
+                        case 4: await self.bot.changeAvatar('bunny.png')
+                        case 6: await self.bot.changeAvatar('summer.png')
                         case 9: await self.bot.changeAvatar('icon.png')
-                        case 10: await self.bot.changeAvatar('icon_halloween.png')
-                        case 11: await self.bot.changeAvatar('icon.png')
-                        case 12: await self.bot.changeAvatar('icon_xmas.png')
+                        case 10: await self.bot.changeAvatar('halloween.png')
+                        case 11: await self.bot.changeAvatar('school.png')
+                        case 12: await self.bot.changeAvatar('xmas.png')
                 # update schedule
                 await self.update_schedule()
                 # various clean up
