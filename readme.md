@@ -54,6 +54,8 @@ The `tools` folder contains a few standalone pieces of code which might help you
 > [!CAUTION]  
 > It's a good practice to **always** make a copy of your save data before attempting any manipulation on it.
   
+* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish.  
+  
 ## Usage  
 ### Method 1:  
 
