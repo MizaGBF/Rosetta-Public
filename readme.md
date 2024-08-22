@@ -2,7 +2,7 @@
 * **[Granblue Fantasy](https://game.granbluefantasy.jp) Discord Bot**.  
 * **Command List** and **Help** available [Here](https://mizagbf.github.io/discordbot.html).  
   
-![image](https://raw.githubusercontent.com/MizaGBF/Rosetta-Public/main/assets/banner.png)
+![image](https://raw.githubusercontent.com/MizaGBF/Rosetta-Public/main/assets/banners/standard.png)
 > [!CAUTION]  
 > If you're looking for an invite for my instance, it's **not open to public**.  
 > Use this repo if you have the how-to to host your own instance.  
