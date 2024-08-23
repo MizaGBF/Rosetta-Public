@@ -53,8 +53,13 @@ def run():
                             if j == 0: offset -= step
                             else: offset +=step
                         if j == 0:
-                            for i in range(PAUSE_FRAMES):
-                                frames.append(frames[-1])
+                            angle_step = PLACEMENT_DEGREE * 2 / PAUSE_FRAMES
+                            for k in range(PAUSE_FRAMES):
+                                frames.append(base.copy())
+                                for i in range(CIRCLE_PLACEMENTS):
+                                    x = - half_icon_size + half_size[0] + (half_size[0] + offset) * math.cos(math.radians(i * PLACEMENT_DEGREE + angle_step * (k+1)))
+                                    y = - half_icon_size + half_size[1] + (half_size[1] + offset) * math.sin(math.radians(i * PLACEMENT_DEGREE + angle_step * (k+1)))
+                                    frames[-1] = paste(frames[-1], resized, (int(x), int(y)))
                 frames[0].save('output.gif', save_all=True, append_images=frames[1:], optimize=True, duration=30, loop=0)
                 print("output.gif created")
                 for f in frames:
