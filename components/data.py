@@ -328,7 +328,7 @@ class Data():
                         case 2: await self.bot.changeAvatar('flb.gif')
                         case 4: await self.bot.changeAvatar('bunny.gif')
                         case 6: await self.bot.changeAvatar('summer.gif')
-                        case 9: await self.bot.changeAvatar('icon.gif')
+                        case 9: await self.bot.changeAvatar('school.gif')
                         case 10: await self.bot.changeAvatar('halloween.gif')
                         case 11: await self.bot.changeAvatar('school.gif')
                         case 12: await self.bot.changeAvatar('xmas.gif')
