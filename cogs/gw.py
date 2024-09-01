@@ -1027,8 +1027,8 @@ class GuildWar(commands.Cog):
             
             honor = [0, 0, 0, 0, 0]
             ex = 0
-            day_target = [target * 0.2, target * 0.35, target * 0.25, target * 0.2]
-            day_nm = ["NM100", "NM150", "NM200", "NM250"]
+            day_target = [target * 0.3, target * 0.4, target * 0.15, target * 0.15]
+            day_nm = ["NM100", "NM150", "NM250", "NM250"]
             nm = [0, 0, 0, 0]
             meat = 0
             total_meat = 0
