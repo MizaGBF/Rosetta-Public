@@ -27,9 +27,9 @@ class GuildWar(commands.Cog):
     COLOR = 0xff0000
     YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
     FIGHTS = {
-        "EX": {"token":56.0, "rally_token":3.06, "AP":30, "meat_cost":0, "honor":51000, "hp":20000000},
-        "EX+": {"token":66.0, "rally_token":4.85, "AP":30, "meat_cost":0, "honor":88000, "hp":35000000},
-        "NM90": {"token":83.0, "rally_token":15.6, "AP":30, "meat_cost":5, "honor":260000, "hp":50000000},
+        "EX": {"token":56.0, "rally_token":3.84, "AP":30, "meat_cost":0, "honor":64000, "hp":20000000},
+        "EX+": {"token":66.0, "rally_token":7.56, "AP":30, "meat_cost":0, "honor":126000, "hp":35000000},
+        "NM90": {"token":83.0, "rally_token":18.3, "AP":30, "meat_cost":5, "honor":305000, "hp":50000000},
         "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000, "hp":131250000},
         "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000, "hp":288750000},
         "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000, "hp":288750000},
