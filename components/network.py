@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 import aiohttp
 import re
 from datetime import timedelta
-from yarl import URL # package should come with aiohttp/disnake
 from deep_translator import GoogleTranslator
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -33,20 +32,46 @@ class Network():
         self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
+        self.client_req = {}
+        self.gbf_client = None
+        self.gbf_client_req = {}
 
     def init(self) -> None:
         pass
 
-    """init_client()
-    Context manager for the aiohttp client, to ensure it will be closed upon exit. Used in bot.py
+    """init_clients()
+    Context manager for the aiohttp clients, to ensure it will be closed upon exit. Used in bot.py
     """
     @asynccontextmanager
-    async def init_client(self) -> Generator[aiohttp.ClientSession, None, None]:
+    async def init_clients(self) -> Generator[tuple, None, None]:
         try:
+            # set generic client
             self.client = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
-            yield self.client
+            self.client_req[self.GET] = self.client.get
+            self.client_req[self.POST] = self.client.post
+            self.client_req[self.HEAD] = self.client.head
+            self.client_req[self.CONDITIONAL_GET] = self.client.get
+            # set gbf client
+            self.gbf_client = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+            self.gbf_client_req[self.GET] = self.gbf_client.get
+            self.gbf_client_req[self.POST] = self.gbf_client.post
+            self.gbf_client_req[self.HEAD] = self.gbf_client.head
+            self.gbf_client_req[self.CONDITIONAL_GET] = self.gbf_client.get
+            yield (self.client, self.gbf_client)
         finally:
             await self.client.close()
+            await self.gbf_client.close()
+
+
+    """unknown_req
+    Do nothing. Used for error handling
+    
+    Raises
+    ----------
+    Exception
+    """
+    async def unknown_req(*args, **kwargs) -> None:
+        raise Exception("Unknown request type")
 
     """request()
     Coroutine to request a network resource.
@@ -74,15 +99,7 @@ class Network():
             if add_user_agent and 'User-Agent' not in headers:
                 headers['User-Agent'] = self.user_agent
             if payload is None:
-                match rtype:
-                    case self.GET|self.CONDITIONAL_GET:
-                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
-                    case self.HEAD:
-                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
-                    case self.POST:
-                        response = await self.client.post(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
-                    case _:
-                        raise Exception("Unknown request type")
+                response = await (self.client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
             else:
                 rtype = self.POST
                 response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
@@ -146,22 +163,15 @@ class Network():
             # set headers
             headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc[2], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
             # set cookies
-            self.client.cookie_jar.update_cookies(acc[1], URL('https://game.granbluefantasy.jp'))
+            self.gbf_client.cookie_jar.clear()
+            self.gbf_client.cookie_jar.update_cookies(acc[1])
             # set params
             ts = int(self.bot.util.UTC().timestamp() * 1000)
             params["_"] = str(ts)
             params["t"] = str(ts+300)
             params["uid"] = str(acc[0])
             if payload is None:
-                match rtype:
-                    case self.GET|self.CONDITIONAL_GET:
-                        response = await self.client.get(url, params=params, headers=headers, allow_redirects=allow_redirects)
-                    case self.HEAD:
-                        response = await self.client.head(url, params=params, headers=headers, allow_redirects=allow_redirects)
-                    case self.POST:
-                        response = await self.client.post(url, params=params, headers=headers, allow_redirects=allow_redirects)
-                    case _:
-                        raise Exception("Unknown request type")
+                response = await (self.gbf_client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
             else:
                 rtype = self.POST
                 # auto set ID
@@ -170,7 +180,7 @@ class Network():
                         case "ID": payload['user_id'] = acc[0]
                         case "SID": payload['user_id'] = str(acc[0])
                         case "IID": payload['user_id'] = int(acc[0])
-                response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
+                response = await self.gbf_client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
             # response handling
             async with response:
                 if rtype == self.CONDITIONAL_GET:
@@ -186,10 +196,10 @@ class Network():
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
                 if expect_JSON and not is_json:
-                    self.bot.logger.pushError("[ACCOUNT] GBF Account #{} might be down".format(account), send_to_discord=(not silent))
                     self.set_account_state(account, self.ACC_STATUS_DOWN)
                     return None
-                self.refresh_account(account, response.headers['set-cookie'])
+                if 'set-cookie' in response.headers:
+                    self.refresh_account(account, response.headers['set-cookie'])
                 if rtype == self.HEAD: return True
                 elif is_json: return await response.json()
                 else: return await response.read()
@@ -242,7 +252,7 @@ class Network():
     def str2cookie(self, header : str) -> dict:
         cd = {}
         for c in header.split(";"):
-            ct = c.split("=")
+            ct = c.split("=", 1)
             cd[ct[0].strip()] = ct[1].strip()
         return cd
 
@@ -345,12 +355,9 @@ class Network():
     def refresh_account(self, aid : int, ck : str) -> bool:
         try:
             if ck is None: return False
-            A = self.bot.data.save['gbfaccounts'][aid][1]
+            A = self.bot.data.save['gbfaccounts'][aid][self.ACC_CK]
             B = self.str2cookie(ck)
-            for k, v in B.items():
-                if k in A:
-                    A[k] = v
-            self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = A
+            self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = A | {k:v for k, v in B.items() if k in A}
             self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE] = self.ACC_STATUS_OK
             self.bot.data.save['gbfaccounts'][aid][self.ACC_TIME] = self.bot.util.JST()
             self.bot.data.pending = True

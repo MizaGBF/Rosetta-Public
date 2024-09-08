@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import timedelta, datetime
+from collections import deque
 from bs4 import BeautifulSoup
 import sqlite3
 
@@ -401,9 +402,13 @@ class Ranking():
     async def getrankProcess(self, status : list) -> None: # thread for ranking
         while True:
             if len(status[1]) == 0 or not self.bot.running or self.stoprankupdate:
+                if status[0] == 0: self.bot.logger.push("REQUEST ENDED")
                 status[0] += 1
                 return
-            page = status[1].pop()
+            try:
+                page = status[1].popleft()
+            except:
+                continue
             data = None
             while data is None:
                 data = await self.requestRanking(page, (0 if self.getrank_mode else 2)) # request the page
@@ -461,13 +466,12 @@ class Ranking():
     async def gwdbbuilder(self, status : list, day : int):
         try:
             conn = sqlite3.connect('temp.sql', isolation_level=None) # open temp.sql
-            await asyncio.sleep(0)
             c = conn.cursor()
             c.execute("PRAGMA synchronous = normal")
             c.execute("PRAGMA locking_mode = exclusive")
             c.execute("PRAGMA journal_mode = OFF")
             c.execute("BEGIN") # no autocommit
-            await asyncio.sleep(0)
+            await asyncio.sleep(30)
             diff = None
             timestamp = None
             new_timestamp = int(self.getrank_update_time.timestamp())
@@ -513,6 +517,7 @@ class Ranking():
             c.execute("COMMIT")
             c.execute("BEGIN")
             await asyncio.sleep(0)
+            inserts = []
             while i < self.getrank_count: # count is the number of entries to process
                 if not self.bot.running or (self.bot.data.save['maintenance']['state'] and self.bot.data.save['maintenance']['duration'] == 0) or self.stoprankupdate or (self.bot.util.JST() - self.getrank_update_time > timedelta(seconds=1100)): # stop if the bot is stopping
                     self.stoprankupdate = True # send the stop signal
@@ -524,11 +529,11 @@ class Ranking():
                     except:
                         pass
                     status[0] += 1
-                    return "Forced stop\nMode: {}\nCount: {}/{}".format(self.getrank_mode, i, self.getrank_count)
-                try: 
-                    item = status[2].pop() # retrieve an item
+                    return "Forced stop\nCrew Mode: {}\nCount: {}/{}\nQueue: {}".format(self.getrank_mode, i, self.getrank_count, len(status[2]))
+                try:
+                    item = status[2].popleft() # retrieve an item
                 except:
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(2)
                     continue # skip if error or no item in the queue
 
                 if self.getrank_mode: # if crew, update the existing crew (if it exists) or create a new entry
@@ -545,18 +550,21 @@ class Ranking():
                     x[3+day] = item['point']
                     for j in range(len(x)):
                         if x[j] is None: x[j] = 'NULL'
-                    c.execute("INSERT INTO crews VALUES ({},{},'{}',{},{},{},{},{},{},{})".format(*x))
-                    await asyncio.sleep(0)
+                    inserts.append("({},{},'{}',{},{},{},{},{},{},{})".format(*x))
                 else: # if player, just add to the table
-                    c.execute("INSERT INTO players VALUES ({},{},'{}',{})".format(int(item['rank']), int(item['user_id']), item['name'].replace("'", "''"), int(item['point'])))
-                    await asyncio.sleep(0)
+                    inserts.append("({},{},'{}',{})".format(int(item['rank']), int(item['user_id']), item['name'].replace("'", "''"), int(item['point'])))
+                await asyncio.sleep(0)
                 i += 1
-                if i == self.getrank_count: # if we reached the end, commit
+                if len(inserts) == 1000 or i == self.getrank_count:
+                    c.execute("INSERT INTO {} VALUES {}".format("crews" if self.getrank_mode else "players", ",".join(inserts)))
                     c.execute("COMMIT")
-                    c.close()
-                    conn.close()
-                    await asyncio.sleep(0)
-            
+                    if i == self.getrank_count:
+                        c.close()
+                        conn.close()
+                    else:
+                        c.execute("BEGIN")
+                    inserts = []
+                    await asyncio.sleep(0.001)
             status[0] += 1
             return ""
         except Exception as err:
@@ -641,8 +649,8 @@ class Ranking():
                 self.stoprankupdate = False # if true, this flag will stop the threads
                 status = [
                     0, # count thread finished
-                    [i for i in range(2, last+1)], # input queue, queue the pages to retrieve
-                    [item for item in data['list']] # output queue, queue what we already retrieved on the first page
+                    deque([i for i in range(2, last+1)], last-1), # input queue, queue the pages to retrieve
+                    deque(data['list'], self.getrank_count) # output queue, queue what we already retrieved on the first page
                 ]
                 await asyncio.sleep(0)
                 coroutines = [self.getrankProcess(status) for i in range(self.MAX_TASK)]
@@ -710,6 +718,7 @@ class Ranking():
                             if j == 4:
                                 self.bot.logger.pushError("[RANKING] Failed to load database ", fs[i])
                         await asyncio.sleep(1)
+                    if not self.dbstate[i]: continue
                     # check
                     db = await self.bot.sql.get(fs[i])
                     if db is None:

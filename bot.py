@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.8.6" # bot version
+    VERSION = "11.9.0" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
@@ -323,7 +323,7 @@ class DiscordBot(commands.InteractionBot):
     Followup from start_bot(). Switch to asyncio and initialize the aiohttp client
     """
     async def run_bot(self) -> None:
-        async with self.net.init_client():
+        async with self.net.init_clients():
             await self.emote.init_request()
             await self.start(self.data.config['tokens']['discord'])
 
