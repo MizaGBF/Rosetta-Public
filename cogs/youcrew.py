@@ -7,6 +7,7 @@ from cogs import CREW_SERVER_ID
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
 import sqlite3
+import re
 import math
 from io import BytesIO
 
@@ -22,6 +23,7 @@ class YouCrew(commands.Cog):
     if CREW_SERVER_ID is None: guild_ids = []
     else: guild_ids = [CREW_SERVER_ID]
     COLOR = 0xffce47
+    YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot

@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 from datetime import datetime, timedelta
 import random
 import math
-import re
 import json
 from bs4 import BeautifulSoup
 import html
@@ -25,7 +24,6 @@ from views.page import Page, PageRanking
 class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
     COLOR = 0xff0000
-    YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
     FIGHTS = {
         "EX": {"token":56.0, "rally_token":3.84, "AP":30, "meat_cost":0, "honor":64000, "hp":20000000},
         "EX+": {"token":66.0, "rally_token":7.56, "AP":30, "meat_cost":0, "honor":126000, "hp":35000000},
