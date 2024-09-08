@@ -45,14 +45,15 @@ class Network():
     @asynccontextmanager
     async def init_clients(self) -> Generator[tuple, None, None]:
         try:
+            conn = aiohttp.TCPConnector(keepalive_timeout=60, ttl_dns_cache=600)
             # set generic client
-            self.client = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+            self.client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.client_req[self.GET] = self.client.get
             self.client_req[self.POST] = self.client.post
             self.client_req[self.HEAD] = self.client.head
             self.client_req[self.CONDITIONAL_GET] = self.client.get
             # set gbf client
-            self.gbf_client = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+            self.gbf_client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.gbf_client_req[self.GET] = self.gbf_client.get
             self.gbf_client_req[self.POST] = self.gbf_client.post
             self.gbf_client_req[self.HEAD] = self.gbf_client.head
