@@ -402,7 +402,6 @@ class Ranking():
     async def getrankProcess(self, status : list) -> None: # thread for ranking
         while True:
             if len(status[1]) == 0 or not self.bot.running or self.stoprankupdate:
-                if status[0] == 0: self.bot.logger.push("REQUEST ENDED")
                 status[0] += 1
                 return
             try:
