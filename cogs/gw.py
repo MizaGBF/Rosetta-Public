@@ -25,14 +25,14 @@ class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
     COLOR = 0xff0000
     FIGHTS = {
-        "EX": {"token":56.0, "rally_token":3.84, "AP":30, "meat_cost":0, "honor":64000, "hp":20000000},
-        "EX+": {"token":66.0, "rally_token":7.56, "AP":30, "meat_cost":0, "honor":126000, "hp":35000000},
-        "NM90": {"token":83.0, "rally_token":18.3, "AP":30, "meat_cost":5, "honor":305000, "hp":50000000},
-        "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "honor":910000, "hp":131250000},
-        "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "honor":2650000, "hp":288750000},
-        "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "honor":4100000, "hp":288750000},
-        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "honor":13350000, "hp":577500000},
-        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":0, "honor":30000000, "hp":1000000000} # PLACEHOLDER
+        "EX": {"token":56.0, "rally_token":3.84, "AP":30, "meat_cost":0, "clump":False, "honor":64000, "hp":20000000},
+        "EX+": {"token":66.0, "rally_token":7.56, "AP":30, "meat_cost":0, "clump":False, "honor":126000, "hp":35000000},
+        "NM90": {"token":83.0, "rally_token":18.3, "AP":30, "meat_cost":5, "clump":False, "honor":305000, "hp":50000000},
+        "NM95": {"token":111.0, "rally_token":54.6, "AP":40, "meat_cost":10, "clump":False, "honor":910000, "hp":131250000},
+        "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "clump":False, "honor":2650000, "hp":288750000},
+        "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "clump":False, "honor":4100000, "hp":288750000},
+        "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "clump":False, "honor":13350000, "hp":577500000},
+        "NM250": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "clump":True, "honor":30000000, "hp":1000000000} # PLACEHOLDER
     }
     MEAT_PER_BATTLE_AVG = 18 # EX+ meat drop
 
@@ -947,7 +947,7 @@ class GuildWar(commands.Cog):
             for f, d in self.FIGHTS.items():
                 n = math.ceil(t/d["token"])
                 msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
-                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n*d["meat_cost"])
+                if d["meat_cost"] > 0: msg += ", **{:,}** {}".format(n*d["meat_cost"], "clumps" if d["clump"] else "meats")
                 msg += ")\n"
             await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ Box {}".format(self.bot.emote.get('gw'), box), description=msg, color=self.COLOR))
         except Exception as e:
@@ -976,7 +976,7 @@ class GuildWar(commands.Cog):
                 if final_rally: n = math.ceil(t / (d["token"]+d["rally_token"]))
                 else: n = math.ceil(t / d["token"])
                 msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
-                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n*d["meat_cost"])
+                if d["meat_cost"] > 0: msg += ", **{:,}** {}".format(n*d["meat_cost"], "clumps" if d["clump"] else "meats")
                 msg += ")\n"
             await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ {} tokens".format(self.bot.emote.get('gw'), t), description=msg, footer=("Imply you solo all your hosts and clear the final rally" if final_rally else ""), color=self.COLOR))
         except:
@@ -991,12 +991,28 @@ class GuildWar(commands.Cog):
             if meat < 5 or meat > 400000: raise Exception()
             msg = ""
             for f, d in self.FIGHTS.items():
-                if d["meat_cost"] == 0: continue
+                if d["meat_cost"] == 0 or d["clump"]: continue
                 n = meat // d["meat_cost"]
                 msg += "**{:,}** {:} or **{:}** honors\n".format(n, f, self.bot.util.valToStr(n*d["honor"], 2))
             await inter.edit_original_message(embed=self.bot.embed(title="{} Meat Calculator ▫️ {} meats".format(self.bot.emote.get('gw'), meat), description=msg, color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid meat number", color=self.COLOR))
+
+    @utility.sub_command()
+    async def clump(self, inter: disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
+        """Convert Guild War clump values"""
+        try:
+            await inter.response.defer(ephemeral=True)
+            clump = self.bot.util.strToInt(value)
+            if clump < 5 or clump > 400000: raise Exception()
+            msg = ""
+            for f, d in self.FIGHTS.items():
+                if d["meat_cost"] == 0 or not d["clump"]: continue
+                n = clump // d["meat_cost"]
+                msg += "**{:,}** {:} or **{:}** honors\n".format(n, f, self.bot.util.valToStr(n*d["honor"], 2))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Clump Calculator ▫️ {} clumps".format(self.bot.emote.get('gw'), clump), description=msg, color=self.COLOR))
+        except:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid clump number", color=self.COLOR))
 
     @utility.sub_command()
     async def honor(self, inter: disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
@@ -1009,7 +1025,7 @@ class GuildWar(commands.Cog):
             for f, d in self.FIGHTS.items():
                 n = math.ceil(target / d["honor"])
                 msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
-                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n * d["meat_cost"])
+                if d["meat_cost"] > 0: msg += ", **{:,}** {}".format(n * d["meat_cost"], "clumps" if d["clump"] else "meats")
                 msg += ")\n"
             await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Calculator ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description=msg, color=self.COLOR))
         except:
@@ -1080,7 +1096,7 @@ class GuildWar(commands.Cog):
                 elif time == 0: continue
                 mod = (3600 / (time+loading))
                 if f not in self.FIGHTS: continue
-                msg += "**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots ▫️ **{}** Meats\n".format(f, self.bot.emote.get('clock'), v, self.bot.util.valToStr(mod*self.FIGHTS[f]["honor"], 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["token"], 2), self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["AP"]/75), 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["meat_cost"], 2))
+                msg += "**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots ▫️ **{}** {}\n".format(f, self.bot.emote.get('clock'), v, self.bot.util.valToStr(mod*self.FIGHTS[f]["honor"], 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["token"], 2), self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["AP"]/75), 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["meat_cost"], 2), "Clumps" if self.FIGHTS[f]["clumps"] else "Meats")
             except:
                 error = True
         if msg == '':

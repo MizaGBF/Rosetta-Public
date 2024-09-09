@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.9.0" # bot version
+    VERSION = "11.9.1" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
@@ -42,6 +42,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.8.3** - Moved `/gbf check crystal` to `/gbf campaign crystal`. Added `/gbf campaign element`.",
         "**v11.8.4** - Moved `/gw utility nm` to `/gw nm hp90_95`. Added `/gw nm hp100`.",
         "**v11.8.5** - Updated `/guide defense`.",
+        "**v11.9.1** - Updated some `/gw` commands. Added `/gw utility clump`.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1
