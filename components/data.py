@@ -202,14 +202,16 @@ class Data():
                         for i in range(len(data['gbfaccounts'])):
                             data['gbfaccounts'][i].pop(4)
                     if ver <= 16:
-                        self.bot.data.save['gbfdata'].pop('teamraid_cookie')
+                        if 'teamraid_cookie' in data['gbfdata']:
+                            data['gbfdata'].pop('teamraid_cookie')
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
                 self.save = self.checkData(data)
                 self.pending = False
                 return True
-        except:
+        except Exception as e:
+            self.bot.logger.pushError("[DATA] In `loadData`:", e)
             return False
 
     """saveData()
