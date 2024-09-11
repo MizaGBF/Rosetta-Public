@@ -163,7 +163,7 @@ class DiscordBot(commands.InteractionBot):
             #intents.messages = True # uncomment this line to enable message intents
         
             # constructor
-            self.logger.push("[BOOT] Initializing disnake.InteractionBot with Intent flags: {:b}".format(intents.value), send_to_discord=False)
+            self.logger.push("[BOOT] Initializing disnake.InteractionBot with Intent flags: 0b{:b}".format(intents.value), send_to_discord=False)
             super().__init__(max_messages=None, intents=intents, command_sync_flags=commands.CommandSyncFlags.default())
             self.add_app_command_check(self.global_check, slash_commands=True, user_commands=True, message_commands=True)
             self.logger.push("[BOOT] Initialization complete", send_to_discord=False)
