@@ -402,6 +402,7 @@ class Ranking():
     async def getrankProcess(self, status : list) -> None: # thread for ranking
         while True:
             if len(status[1]) == 0 or not self.bot.running or self.stoprankupdate:
+                if status[0] == 0: self.bot.logger.push("[RANKING] Ranking download ended", send_to_discord=False)
                 status[0] += 1
                 return
             try:
@@ -471,6 +472,7 @@ class Ranking():
             c.execute("PRAGMA journal_mode = OFF")
             c.execute("BEGIN") # no autocommit
             await asyncio.sleep(30)
+            self.bot.logger.push("[RANKING] Starting to fill temp.sql...", send_to_discord=False)
             diff = None
             timestamp = None
             new_timestamp = int(self.getrank_update_time.timestamp())
@@ -644,6 +646,7 @@ class Ranking():
                     return "gwgetrank() can't access the ranking"
                 self.getrank_count = int(data['count']) # number of crews/players
                 last = data['last'] # number of pages
+                self.bot.logger.push("[RANKING] {} pages to download for {} {}...".format(last, self.getrank_count, 'crews' if n == 0 else 'players'), send_to_discord=False)
                 # run in tasks
                 self.stoprankupdate = False # if true, this flag will stop the threads
                 status = [
@@ -653,6 +656,7 @@ class Ranking():
                 ]
                 await asyncio.sleep(0)
                 coroutines = [self.getrankProcess(status) for i in range(self.MAX_TASK)]
+                self.bot.logger.push("[RANKING] Download started...", send_to_discord=False)
                 results = await asyncio.gather(self.gwdbbuilder(status, day), *coroutines)
                 self.stoprankupdate = True # to be safe
                 for r in results:
