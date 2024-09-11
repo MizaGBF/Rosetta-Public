@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 from datetime import datetime, timedelta
 import random
 import math
-import json
 from bs4 import BeautifulSoup
 import html
 from urllib.parse import unquote
@@ -32,7 +31,7 @@ class GuildWar(commands.Cog):
         "NM100": {"token":168.0, "rally_token":159.0, "AP":50, "meat_cost":20, "clump":False, "honor":2650000, "hp":288750000},
         "NM150": {"token":257.0, "rally_token":246.0, "AP":50, "meat_cost":20, "clump":False, "honor":4100000, "hp":288750000},
         "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "meat_cost":20, "clump":False, "honor":13350000, "hp":577500000},
-        "NM250": {"token":433.0, "rally_token":2122,6, "AP":50, "meat_cost":20, "clump":True, "honor":49500000, "hp":1530375000}
+        "NM250": {"token":433.0, "rally_token":2122.6, "AP":50, "meat_cost":20, "clump":True, "honor":49500000, "hp":1530375000}
     }
     MEAT_PER_BATTLE_AVG = 18 # EX+ meat drop
 
