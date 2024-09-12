@@ -27,13 +27,9 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.9.2" # bot version
+    VERSION = "11.9.3" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-        "**v11.2.0** - `/gw utility` commands have been reworked. Same thing for `/db token` and `/db box`.",
-        "**v11.2.1** - Removed `/poll`, now Discord has it built-in.",
-        "**v11.3.0** - Added `/gw player stats`",
-        "**v11.3.1** - Changed `/gw player stats` to `/gw stats player` and added `/gw stats crew`. Both commands have been improved.",
         "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
         "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
         "**v11.7.0** - Removed the Image Search. It was partially broken, inefficient and slightly unmaintainable.",
@@ -44,6 +40,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.8.5** - Updated `/guide defense`.",
         "**v11.9.1** - Updated some `/gw` commands. Added `/gw utility clump`.",
         "**v11.9.2** - Removed `/gw stats` commands. The website gbfteamraid.fun seems to be dead.",
+        "**v11.9.3** - Revamped `/gw utility` commands. `/gw utility clump` has been merged into `/gw utility meat`.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1
