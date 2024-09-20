@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.9.3" # bot version
+    VERSION = "11.9.4" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
@@ -726,16 +726,20 @@ class DiscordBot(commands.InteractionBot):
             if not inter.response.is_done():
                 try: await inter.response.defer(ephemeral=True)
                 except: pass
-            if msg.startswith('You are on cooldown.'):
+            if msg[:20] == 'You are on cooldown.':
                 embed = self.embed(title="Command Cooldown Error", description="{} ".format(self.emote.get('time')) + msg.replace('You are on cooldown.', 'This command is on cooldown.'), timestamp=self.util.UTC())
-            elif msg.startswith('Too many people are using this command.'):
+            elif msg[:39] == 'Too many people are using this command.':
                 embed=self.embed(title="Command Concurrency Error", description='{} Too many people are using this command, try again later'.format(self.emote.get('time')), timestamp=self.util.UTC())
-            elif msg.find('check functions for command') != -1 or msg.find('NotFound: 404 Not Found (error code: 10062): Unknown interaction') != -1 or msg.find('NotFound: 404 Not Found (error code: 10008): Unknown Message') != -1:
+            elif 'check functions for command' in msg or 'NotFound: 404 Not Found (error code: 10062): Unknown interaction' in msg or 'NotFound: 404 Not Found' in msg:
                 return
-            elif msg.find('required argument that is missing') != -1 or msg.startswith('Converting to "int" failed for parameter'):
+            elif 'required argument that is missing' in msg or 'Converting to "int" failed for parameter' in msg:
                 embed=self.embed(title="Command Argument Error", description="A required parameter is missing.", timestamp=self.util.UTC())
-            elif msg.find('Member "') == 0 or msg.find('Command "') == 0 or msg.startswith('Command raised an exception: Forbidden: 403'):
+            elif msg[:8] == 'Member "' or msg[:9] == 'Command "' or 'Command raised an exception: Forbidden: 403' in msg:
                 embed=self.embed(title="Command Permission Error", description="It seems you can't use this command here", timestamp=self.util.UTC())
+            elif '503 Service Unavailable' in msg:
+                embed=self.embed(title="HTTP Discord Error", description="Discord might be having troubles.\nIf the issue persists, wait patiently.", timestamp=self.util.UTC())
+            elif '401 Unauthorized' in msg:
+                embed=self.embed(title="HTTP Discord Error", description="The Bot might be unresponsive or laggy.\nWait a bit and try again.", timestamp=self.util.UTC())
             else:
                 msg = self.pexc(error).replace('*', '\*').split('The above exception was the direct cause of the following exception', 1)[0]
                 if len(msg) > 4000:
