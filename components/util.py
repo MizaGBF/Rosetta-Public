@@ -204,7 +204,7 @@ class Util():
     timedelta: Resulting timedelta object
     """
     def str2delta(self, d : str) -> Optional[timedelta]: # return None if error
-        flags = {'d':False,'h':False,'m':False}
+        flags = {'d':False,'h':False,'m':False,'s':False}
         tmp = 0 # buffer
         sum = 0 # delta in seconds
         for c in d:
@@ -220,6 +220,7 @@ class Util():
                     case 'd': sum += tmp * 86400
                     case 'h': sum += tmp * 3600
                     case 'm': sum += tmp * 60
+                    case 's': sum += tmp
                 tmp = 0
             else:
                 return None

@@ -70,6 +70,29 @@ class DreadBarrage(commands.Cog):
         else:
             return ""
 
+    """isDBRunning()
+    Check the DB state and returns if the DB is on going.
+    Clear the data if it ended.
+    
+    Returns
+    --------
+    bool: True if it's running, False if it's not
+    """
+    def isDBRunning(self) -> bool:
+        if self.bot.data.save['valiant']['state'] is True:
+            current_time = self.bot.util.JST()
+            if current_time < self.bot.data.save['valiant']['dates']["Day 1"]:
+                return False
+            elif current_time >= self.bot.data.save['valiant']['dates']["End"]:
+                self.bot.data.save['valiant']['state'] = False
+                self.bot.data.save['valiant']['dates'] = {}
+                self.bot.data.pending = True
+                return False
+            else:
+                return True
+        else:
+            return False
+
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)

@@ -3,7 +3,7 @@ from disnake.ext import commands
 import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 # ----------------------------------------------------------------------------------------------------------------
 # Reminder Cog
@@ -58,13 +58,17 @@ class Reminder(commands.Cog):
             try:
                 messages = await self.checkReminders()
                 for mid in messages:
-                    u = await self.bot.get_or_fetch_user(int(mid))
-                    for m in messages[mid]:
-                        try:
-                            await u.send(embed=self.bot.embed(title="Reminder", description=m))
-                        except Exception as e:
-                            self.bot.logger.pushError("[TASK] 'remindertask' Task Error:\nUser: {}\nReminder: {}".format(u.name, m), e)
-                            break
+                    if int(mid) == self.bot.user.id: # bot reminders
+                        for m in messages[mid]:
+                            await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Reminder", description=m, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
+                    else:
+                        u = await self.bot.get_or_fetch_user(int(mid))
+                        for m in messages[mid]:
+                            try:
+                                await u.send(embed=self.bot.embed(title="Reminder", description=m))
+                            except Exception as e:
+                                self.bot.logger.pushError("[TASK] 'remindertask' Task Error:\nUser: {}\nReminder: {}".format(u.name, m), e)
+                                break
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'remindertask' Task Cancelled")
                 return
@@ -72,6 +76,41 @@ class Reminder(commands.Cog):
                 self.bot.logger.pushError("[TASK] 'remindertask' Task Error:", e)
                 await asyncio.sleep(200)
             await asyncio.sleep(50)
+
+    """addBotReminder()
+    Internal use only, add server wide reminders
+    
+    Parameters
+    --------
+    date: Date at which the reminder is fired
+    msg: String, reminder content
+    """
+    def addBotReminder(self, date : datetime, msg : str):
+        if self.bot.user.id not in self.bot.data.save['reminders']:
+            self.bot.data.save['reminders'][self.bot.user.id] = []
+        self.bot.data.save['reminders'][self.bot.user.id].append([date, msg])
+        self.bot.data.pending = True
+
+
+    """checkBotReminderExist()
+    Internal use only, add server wide reminders
+    
+    Parameters
+    --------
+    date: Date to check if the reminder exists
+    
+    Return
+    --------
+    bool: True if exists
+    """
+    def checkBotReminderExist(self, date : datetime) -> bool:
+        if self.bot.user.id not in self.bot.data.save['reminders']:
+            return False
+        else:
+            for m in self.bot.data.save['reminders'][self.bot.user.id]:
+                if m[0] == date:
+                    return True
+            return False
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

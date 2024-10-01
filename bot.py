@@ -27,12 +27,9 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.9.4" # bot version
+    VERSION = "11.10.0" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-        "**v11.3.3** - Revamped `/gbf wiki`. It might be a bit less detailed but it will be easier to maintain.",
-        "**v11.6.0** - Some commands exclusive to (You) have been moved to a new Cog for that server.",
-        "**v11.7.0** - Removed the Image Search. It was partially broken, inefficient and slightly unmaintainable.",
         "**v11.7.2** - Extra Drops timer added to `/gbf info` and `/gbf schedule`.",
         "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
         "**v11.8.3** - Moved `/gbf check crystal` to `/gbf campaign crystal`. Added `/gbf campaign element`.",
@@ -41,6 +38,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.9.1** - Updated some `/gw` commands. Added `/gw utility clump`.",
         "**v11.9.2** - Removed `/gw stats` commands. The website gbfteamraid.fun seems to be dead.",
         "**v11.9.3** - Revamped `/gw utility` commands. `/gw utility clump` has been merged into `/gw utility meat`.",
+        "**v11.10.0** - Fixed a bug in `/reminder` commands and added automatic reminders. Make sure your server receives Bot Announcements.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1

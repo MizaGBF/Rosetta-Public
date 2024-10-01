@@ -134,7 +134,7 @@ class GuildWar(commands.Cog):
     --------
     bool: True if it's running, False if it's not
     """
-    def isGWRunning(self) -> bool: # return True if a guild war is on going
+    def isGWRunning(self) -> bool:
         if self.bot.data.save['gw']['state'] is True:
             current_time = self.bot.util.JST()
             if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]:
