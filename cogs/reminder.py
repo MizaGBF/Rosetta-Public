@@ -88,29 +88,11 @@ class Reminder(commands.Cog):
     def addBotReminder(self, date : datetime, msg : str):
         if self.bot.user.id not in self.bot.data.save['reminders']:
             self.bot.data.save['reminders'][self.bot.user.id] = []
+        for m in self.bot.data.save['reminders'][self.bot.user.id]:
+            if m[0] == date and m[1] == msg:
+                return
         self.bot.data.save['reminders'][self.bot.user.id].append([date, msg])
         self.bot.data.pending = True
-
-
-    """checkBotReminderExist()
-    Internal use only, add server wide reminders
-    
-    Parameters
-    --------
-    date: Date to check if the reminder exists
-    
-    Return
-    --------
-    bool: True if exists
-    """
-    def checkBotReminderExist(self, date : datetime) -> bool:
-        if self.bot.user.id not in self.bot.data.save['reminders']:
-            return False
-        else:
-            for m in self.bot.data.save['reminders'][self.bot.user.id]:
-                if m[0] == date:
-                    return True
-            return False
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

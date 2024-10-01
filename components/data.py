@@ -351,21 +351,17 @@ class Data():
                 try: # GW
                     if self.bot.get_cog('GuildWar').isGWRunning():
                         target = self.bot.data.save['gw']['dates']["End"] - timedelta(seconds=25200)
-                        if not remindcog.checkBotReminderExist(target):
-                            remindcog.addBotReminder(target, "The Final Rally is ending soon!\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(target, "The Final Rally is ending soon!\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
-                        if not remindcog.checkBotReminderExist(target):
-                            remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
+                        remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
                 except Exception as se:
                      self.bot.logger.pushError("[TASK] 'maintenance' Task Error (GW reminders):", se)
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
                         target = self.bot.data.save['valiant']['dates']["End"] - timedelta(seconds=25200)
-                        if not remindcog.checkBotReminderExist(target):
-                            remindcog.addBotReminder(target, "Dread Barrage is ending soon!\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(target, "Dread Barrage is ending soon!\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
-                        if not remindcog.checkBotReminderExist(target):
-                            remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
+                        remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
                      self.bot.logger.pushError("[TASK] 'maintenance' Task Error (DB reminders):", se)
                 # update schedule
