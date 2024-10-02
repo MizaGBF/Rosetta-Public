@@ -398,12 +398,14 @@ class Network():
         try:
             return self.gbf_update(int(self.VERSION_REGEX.findall(res)[0]))
         except:
-            try:
-                return self.gbf_update(int(self.VERSION_REGEX_FALLBACK.findall(res)[0]))
-            except:
-                if 'maintenance' in res.lower():
-                    return "Maintenance"
-                else:
+            if 'maintenance' in res.lower():
+                return "Maintenance"
+            else:
+                try:
+                    v = self.gbf_update(int(self.VERSION_REGEX_FALLBACK.findall(res)[0]))
+                    self.bot.logger.push("[GBF] In 'gbf_version':\nThe version check fallback has been used.\nConsider checking if the regular version check needs to be updated.", self.bot.logger.WARNING)
+                    return v
+                except:
                     return None
 
     """gbf_update()

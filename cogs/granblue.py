@@ -96,7 +96,7 @@ class GranblueFantasy(commands.Cog):
             if acc is None or acc[self.bot.net.ACC_STATE] == self.bot.net.ACC_STATUS_DOWN:
                 if not acc_check:
                     acc_check = True
-                    self.bot.logger.push("[TASK] 'granblue_watcher' No account set or the current account might be down.\nSome tasks will be skipped.", level=self.bot.logger.WARNING)
+                    self.bot.logger.push("[TASK] 'granblue_watcher' checks will be skipped.\nPossible cause:\n- Game server is down (Check if it works)\n- Account is down (Try to set the cookie anew).\n- GBF Version check failed (See if other logs reported this issue).\n- Other undetermined causes.", level=self.bot.logger.WARNING)
                 continue
             acc_check = False
 
