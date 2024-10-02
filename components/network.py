@@ -13,8 +13,11 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 
 class Network():
-    VERSION_REGEX = re.compile("\"version\": \"(\d+)\"")
-    VERSION_REGEX_FALLBACK = re.compile("\\/assets_en\\/(\d+)\\/")
+    VERSION_REGEX = [ # possible regex to detect the game version
+        re.compile("Game\.version = \"(\d+)\";"), # old one
+        re.compile("\"version\": \"(\d+)\""), # new one
+        re.compile("\\/assets_en\\/(\d+)\\/"), # alternative/fallback
+    ]
     GET = 0
     POST = 1
     HEAD = 2
@@ -395,18 +398,19 @@ class Network():
         res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
         if res is None: return None
         res = str(res)
-        try:
-            return self.gbf_update(int(self.VERSION_REGEX.findall(res)[0]))
-        except:
-            if 'maintenance' in res.lower():
-                return "Maintenance"
-            else:
-                try:
-                    v = self.gbf_update(int(self.VERSION_REGEX_FALLBACK.findall(res)[0]))
+        i = 0
+        while i < len(self.VERSION_REGEX):
+            try:
+                v = self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0]))
+                if i > 0:
                     self.bot.logger.push("[GBF] In 'gbf_version':\nThe version check fallback has been used.\nConsider checking if the regular version check needs to be updated.", self.bot.logger.WARNING)
-                    return v
-                except:
+                return v
+            except:
+                if i == 0 and 'maintenance' in res.lower():
+                    return "Maintenance"
+                elif i == len(self.VERSION_REGEX) - 1:
                     return None
+            i += 1
 
     """gbf_update()
     Compare a GBF version number with the one stored in memory and update if needed
