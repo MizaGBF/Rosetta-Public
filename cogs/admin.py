@@ -751,11 +751,11 @@ class Admin(commands.Cog):
             if ck == "": ck = None
             if ua == "": ua = None
             if uid is None and ck is None and ua is None:
-                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{}: Current values".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Account #{}: Current values".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
             elif not self.bot.net.update_account(num, uid=uid, ck=ck, ua=ua):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A parameter is invalid", color=self.COLOR))
             else:
-                await inter.edit_original_message('debug', embed=self.bot.embed(title="Account #{}: Updated".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Account #{}: Updated".format(num), description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc[self.bot.net.ACC_UID], acc[self.bot.net.ACC_CK], acc[self.bot.net.ACC_UA]), color=self.COLOR))
 
     @_owner.sub_command_group()
     async def db(self, inter: disnake.GuildCommandInteraction) -> None:

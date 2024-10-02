@@ -13,7 +13,8 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 
 class Network():
-    VERSION_REGEX = re.compile("Game\.version = \"(\d+)\";")
+    VERSION_REGEX = re.compile("\"version\": \"(\d+)\"")
+    VERSION_REGEX_FALLBACK = re.compile("\\/assets_en\\/(\d+)\\/")
     GET = 0
     POST = 1
     HEAD = 2
@@ -397,10 +398,13 @@ class Network():
         try:
             return self.gbf_update(int(self.VERSION_REGEX.findall(res)[0]))
         except:
-            if 'maintenance' in res.lower():
-                return "Maintenance"
-            else:
-                return None
+            try:
+                return self.gbf_update(int(self.VERSION_REGEX_FALLBACK.findall(res)[0]))
+            except:
+                if 'maintenance' in res.lower():
+                    return "Maintenance"
+                else:
+                    return None
 
     """gbf_update()
     Compare a GBF version number with the one stored in memory and update if needed
