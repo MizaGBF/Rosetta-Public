@@ -159,7 +159,14 @@ class GranblueFantasy(commands.Cog):
                         if a != -1:
                             b = description.find('"', a+10)
                             if b != -1:
-                                thumb = "https://prd-game-a-granbluefantasy.akamaized.net" + description[a+10:b]
+                                tmp = description[a+10:b]
+                                thumb = "https://prd-game-a-granbluefantasy.akamaized.net"
+                                if tmp.startswith("assets"):
+                                    thumb += "/" + tmp
+                                elif tmp.startswith("http"):
+                                    thumb = tmp
+                                else:
+                                    thumb += tmp
                         # remove div
                         cur = 0
                         while True:
