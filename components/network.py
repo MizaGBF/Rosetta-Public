@@ -14,9 +14,9 @@ from deep_translator import GoogleTranslator
 
 class Network():
     VERSION_REGEX = [ # possible regex to detect the game version
-        re.compile("Game\.version = \"(\d+)\";"), # old one
         re.compile("\"version\": \"(\d+)\""), # new one
         re.compile("\\/assets_en\\/(\d+)\\/"), # alternative/fallback
+        re.compile("Game\.version = \"(\d+)\";") # old one
     ]
     GET = 0
     POST = 1
@@ -401,10 +401,7 @@ class Network():
         i = 0
         while i < len(self.VERSION_REGEX):
             try:
-                v = self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0]))
-                if i > 0:
-                    self.bot.logger.push("[GBF] In 'gbf_version':\nThe version check fallback has been used.\nConsider checking if the regular version check needs to be updated.", self.bot.logger.WARNING)
-                return v
+                return self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0]))
             except:
                 if i == 0 and 'maintenance' in res.lower():
                     return "Maintenance"
