@@ -340,18 +340,18 @@ class Data():
                 remindcog = self.bot.get_cog('Reminder')
                 if ct.day == 1:
                     try:
-                        target = ct.replace(hour=7, minute=0, second=0, microsecond=0)
+                        target = ct.replace(hour=5, minute=0, second=0, microsecond=0)
                         if target.month == 12:
                             target = (target + timedelta(days=31)).replace(day=1)
                         else:
                             target = target.replace(month=target.month+1)
-                        remindcog.addBotReminder(target, "A new month started!\nDon't forget to check out the various shops (Casino, FP, pendant, login, Prisms...).")
+                        remindcog.addBotReminder(target, "**A new month started!**\nDon't forget to check out the various shops (Casino, FP, pendant, login, Prisms...).")
                     except Exception as se:
                          self.bot.logger.pushError("[TASK] 'maintenance' Task Error (Monthly reminder):", se)
                 try: # GW
                     if self.bot.get_cog('GuildWar').isGWRunning():
                         target = self.bot.data.save['gw']['dates']["End"] - timedelta(seconds=25200)
-                        remindcog.addBotReminder(target, "The Final Rally is ending soon!\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(target, "**The Final Rally is ending soon!**\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
                 except Exception as se:
@@ -359,7 +359,7 @@ class Data():
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
                         target = self.bot.data.save['valiant']['dates']["End"] - timedelta(seconds=25200)
-                        remindcog.addBotReminder(target, "Dread Barrage is ending soon!\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(target, "**Dread Barrage is ending soon!**\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
