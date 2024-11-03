@@ -128,24 +128,28 @@ class GranblueFantasy(commands.Cog):
     Coroutine to check https://bsky.app/profile/grandcypher.com latest tweets and repost them
     """
     async def checkBlueSky(self) -> None:
-        result = await self.bot.net.request("https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed", params={"actor":"grandcypher.com", "filter":"posts_no_replies", "limit":20}, expect_JSON=True)
-        if result is not None:
-            posts = []
-            for feed in result["feed"]: # get list of uri id
-                posts.append(feed["post"]["uri"].split('/')[-1])
-            posts.reverse() # reverse order (to get first posted first)
-            if "granblue_en" not in self.bot.data.save['gbfdata']: # initialization
-                self.bot.data.save['gbfdata']["granblue_en"] = posts
-                self.bot.data.pending = True
-                return
-            else:
-                for post_id in posts:
-                    if post_id not in self.bot.data.save['gbfdata']["granblue_en"]: # has it been posted?
-                        self.bot.data.save['gbfdata']["granblue_en"].append(post_id)
-                        self.bot.data.pending = True
-                        await self.bot.sendMulti(self.bot.channel.announcements, "https://bsky.app/profile/grandcypher.com/post/"+id, publish=True)
-        if self.bot.data.pending and len(self.bot.data.save['gbfdata']["granblue_en"]) > 40:
-            self.bot.data.save['gbfdata']["granblue_en"] = self.bot.data.save['gbfdata']["granblue_en"][-20:]
+        try:
+            result = await self.bot.net.request("https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed", params={"actor":"grandcypher.com", "filter":"posts_no_replies", "limit":20}, expect_JSON=True)
+            if result is not None:
+                posts = []
+                for feed in result["feed"]: # get list of uri id
+                    posts.append((feed["post"]["uri"].split('/')[-1], datetime.strptime(feed["post"]["indexedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")))
+                posts.reverse() # reverse order (to get first posted first)
+                if "granblue_en" not in self.bot.data.save['gbfdata']: # initialization
+                    self.bot.data.save['gbfdata']["granblue_en"] = [post_id for post_id, post_time in posts]
+                    self.bot.data.pending = True
+                    return
+                else:
+                    now = self.bot.util.UTC()
+                    for post_id, post_time in posts:
+                        if (now - post_time).seconds < 360 and post_id not in self.bot.data.save['gbfdata']["granblue_en"]: # has it been posted?
+                            self.bot.data.save['gbfdata']["granblue_en"].append(post_id)
+                            self.bot.data.pending = True
+                            await self.bot.sendMulti(self.bot.channel.announcements, "https://bsky.app/profile/grandcypher.com/post/"+post_id, publish=True)
+            if self.bot.data.pending and len(self.bot.data.save['gbfdata']["granblue_en"]) > 40:
+                self.bot.data.save['gbfdata']["granblue_en"] = self.bot.data.save['gbfdata']["granblue_en"][-20:]
+        except Exception as e:
+            self.bot.logger.pushError("[TASK] 'test' Task Error:", e)
 
     """checkGameNews()
     Coroutine checking for new in-game news, to post them in announcement channels
