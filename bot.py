@@ -27,10 +27,9 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.10.1" # bot version
+    VERSION = "11.10.2" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-        "**v11.7.2** - Extra Drops timer added to `/gbf info` and `/gbf schedule`.",
         "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
         "**v11.8.3** - Moved `/gbf check crystal` to `/gbf campaign crystal`. Added `/gbf campaign element`.",
         "**v11.8.4** - Moved `/gw utility nm` to `/gw nm hp90_95`. Added `/gw nm hp100`.",
@@ -39,6 +38,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.9.2** - Removed `/gw stats` commands. The website gbfteamraid.fun seems to be dead.",
         "**v11.9.3** - Revamped `/gw utility` commands. `/gw utility clump` has been merged into `/gw utility meat`.",
         "**v11.10.0** - Fixed a bug in `/reminder` commands and added automatic reminders. Make sure your server receives Bot Announcements.",
+        "**v11.10.2** - Added the @Granblue_en tweet feed using [BlueSky](https://bsky.app/profile/grandcypher.com). It only checks every 5 minutes, for now.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1
