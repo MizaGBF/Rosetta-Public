@@ -15,7 +15,7 @@ from deep_translator import GoogleTranslator
 class Network():
     VERSION_REGEX = [ # possible regex to detect the game version
         re.compile("\"version\": \"(\d+)\""), # new one
-        re.compile("\\/assets_en\\/(\d+)\\/"), # alternative/fallback
+        re.compile("\\/assets\\/(\d+)\\/"), # alternative/fallback
         re.compile("Game\.version = \"(\d+)\";") # old one
     ]
     GET = 0
