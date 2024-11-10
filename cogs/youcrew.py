@@ -23,7 +23,6 @@ class YouCrew(commands.Cog):
     if CREW_SERVER_ID is None: guild_ids = []
     else: guild_ids = [CREW_SERVER_ID]
     COLOR = 0xffce47
-    YOU_MEAT_REGEX = re.compile('(?<!.)(\\d+(\\.\\d+)?)([kK])?')
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -218,63 +217,6 @@ class YouCrew(commands.Cog):
     async def you(self, inter: disnake.GuildCommandInteraction) -> None:
         """Command Group (Owner Only)"""
         pass
-
-    @you.sub_command()
-    async def meat(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Collect meat stats of (You) ((You) Server Only) (Mod Only)"""
-        await inter.response.defer(ephemeral=True)
-        if not self.bot.isMod(inter):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Only a moderator can use this command", color=self.COLOR))
-        elif inter.channel.id != self.bot.data.config['ids'].get('you_meat', -1):
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="This command isn't usable in this channel", color=self.COLOR))
-        else:
-            data = {}
-            errors = set()
-            attach ={}
-            users = {}
-            async for message in inter.channel.history(limit=100):
-                if message.author.id == inter.me.id:
-                    break
-                else:
-                    try:
-                        match = self.YOU_MEAT_REGEX.findall(message.content)[0]
-                        number = float(match[0])
-                        if match[2] and match[2].lower() == 'k' or match[1] and not match[2]:
-                            number = number * 1000
-                        if message.author.id not in data:
-                            data[message.author.id] = 0
-                        data[message.author.id] = int(max(number, data[message.author.id]))
-                    except:
-                        errors.add(message.author.id)
-                    if message.author.id not in attach:
-                        attach[message.author.id] = []
-                    for at in message.attachments:
-                        attach[message.author.id].append(at.url)
-                    try:
-                        users[message.author.id] = (await message.guild.get_or_fetch_member(message.author.id)).display_name
-                    except:
-                        users[message.author.id] = message.author.display_name
-            msg = ""
-            total = 0
-            for uid in users:
-                line = []
-                if uid in data:
-                    line.append(str(data[uid]))
-                    total += data[uid]
-                if uid in errors: line.append("**?**")
-                if uid in attach:
-                    for url in attach[uid]:
-                        line.append("[#]({})".format(url))
-                if len(line) > 0:
-                    msg += "{}: {}\n".format(users[uid], " ".join(line))
-                if len(msg) > 3800:
-                    await inter.channel.send(embed=self.bot.embed(title="Meat Collection", description=msg, color=self.COLOR))
-                    msg = ""
-            if total > 0:
-                msg += "\n**Total: {} meats**".format(total)
-            if len(msg) > 0:
-                await inter.channel.send(embed=self.bot.embed(title="Meat Collection", description=msg, color=self.COLOR))
-            await inter.edit_original_message(embed=self.bot.embed(title="Meat Collection", description="Done", color=self.COLOR))
 
     @you.sub_command()
     async def lead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
