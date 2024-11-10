@@ -7,7 +7,6 @@ from cogs import CREW_SERVER_ID
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
 import sqlite3
-import re
 import math
 from io import BytesIO
 
