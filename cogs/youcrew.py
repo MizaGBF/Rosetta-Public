@@ -214,7 +214,7 @@ class YouCrew(commands.Cog):
     @commands.slash_command(guild_ids=guild_ids)
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     async def you(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Command Group (Owner Only)"""
+        """Command Group"""
         pass
 
     @you.sub_command()
@@ -319,3 +319,31 @@ class YouCrew(commands.Cog):
 
                 await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description=msg, timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
                 await self.bot.util.clean(inter, 90)
+
+    @you.sub_command()
+    async def honor(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Retrieve (You) members's honor ((You) Server Only)"""
+        await inter.response.defer(ephemeral=True)
+        crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
+        crews.sort()
+        cid = self.bot.data.config['granblue'].get('gbfgcrew', {}).get("(you)", None)
+        if cid is None:
+            await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="Crew not found", color=self.COLOR))
+        else:
+            data = await self.bot.get_cog('GuildWar').updateGBFGData(crews)
+            if data is None or cid not in data or len(data[cid][-1]) == 0:
+                await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="No player data found", color=self.COLOR))
+            else:
+                players = data[cid][-1]
+                await asyncio.sleep(0)
+                # query
+                data = await self.bot.ranking.searchGWDB("(" + ",".join(players) + ")", 4)
+                
+                if data[1] is None:
+                    await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="No GW data found", color=self.COLOR))
+                else:
+                    players = {int(p) : "n/a" for p in players}
+                    for p in data[1]:
+                        if p.id in players:
+                            players[p.id] = str(p.current)
+                    await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="\n".join(list(players.values())), color=self.COLOR))

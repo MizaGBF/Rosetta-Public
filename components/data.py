@@ -15,7 +15,7 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 17
+    SAVEVERSION = 18
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -204,6 +204,9 @@ class Data():
                     if ver <= 16:
                         if 'teamraid_cookie' in data['gbfdata']:
                             data['gbfdata'].pop('teamraid_cookie')
+                    if ver <= 17:
+                        if 'granblue_en' in data['gbfdata']:
+                            data['gbfdata'].pop("granblue_en")
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
