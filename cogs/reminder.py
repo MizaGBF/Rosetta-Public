@@ -91,7 +91,7 @@ class Reminder(commands.Cog):
         for m in self.bot.data.save['reminders'][self.bot.user.id]:
             if m[0] == date and m[1] == msg:
                 return
-        self.bot.data.save['reminders'][self.bot.user.id].append([date, msg])
+        self.bot.data.save['reminders'][str(self.bot.user.id)].append([date, msg])
         self.bot.data.pending = True
 
     @commands.slash_command()
