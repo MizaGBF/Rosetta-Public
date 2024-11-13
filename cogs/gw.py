@@ -1435,10 +1435,12 @@ class GuildWar(commands.Cog):
             dancho_ranking = []
             players = {}
             danchos = {}
+            private = 0
             # build dancho and player id list
             for cid in gbfgdata:
                 danchos[str(gbfgdata[cid][2])] = (gbfgdata[cid][0], gbfgdata[cid][1])
                 if len(gbfgdata[cid][3]) == 0:
+                    private += 1
                     players[str(gbfgdata[cid][2])] = gbfgdata[cid][0]
                 else:
                     for v in gbfgdata[cid][3]:
@@ -1446,13 +1448,16 @@ class GuildWar(commands.Cog):
             await asyncio.sleep(0)
             # query
             data = await self.bot.ranking.searchGWDB("(" + ",".join(list(players.keys())) + ")", 4)
-            desc = ""
+            match private:
+                case 0: desc = ""
+                case 1: desc = "*1 crew is private*"
+                case _: desc = "*{} crews are private*".format(private)
             # store result
             if data is not None and data[1] is not None:
                 if data[2][1] is not None:
                     timestamp = data[2][1].timestamp
                     if timestamp is not None:
-                        desc = "Updated: **{}** ago".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0))
+                        desc = "Updated: **{}** ago\n".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0)) + desc
                 if len(data[1]) > 0:
                     gwid = data[1][0].gw
                     for res in data[1]:
