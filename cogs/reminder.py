@@ -87,8 +87,8 @@ class Reminder(commands.Cog):
     """
     def addBotReminder(self, date : datetime, msg : str):
         if self.bot.user.id not in self.bot.data.save['reminders']:
-            self.bot.data.save['reminders'][self.bot.user.id] = []
-        for m in self.bot.data.save['reminders'][self.bot.user.id]:
+            self.bot.data.save['reminders'][str(self.bot.user.id)] = []
+        for m in self.bot.data.save['reminders'][str(self.bot.user.id)]:
             if m[0] == date and m[1] == msg:
                 return
         self.bot.data.save['reminders'][str(self.bot.user.id)].append([date, msg])
