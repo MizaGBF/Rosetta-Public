@@ -57,7 +57,7 @@ class Games(commands.Cog):
         pass
 
     @roll.sub_command()
-    async def single(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def single(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a single draw"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("single", banner, self.COLOR)
@@ -67,7 +67,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def ten(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def ten(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate ten draws"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
@@ -87,7 +87,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def spark(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def spark(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a spark"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
@@ -97,7 +97,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def count(self, inter: disnake.GuildCommandInteraction, num : int = commands.Param(description='Number of rolls (2 ~ 600)', ge=2, le=600), legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def count(self, inter: disnake.GuildCommandInteraction, num : int = commands.Param(description='Number of rolls (2 ~ 600)', ge=2, le=600), legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a specific amount of draw"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
@@ -107,7 +107,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def gachapin(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def gachapin(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a Gachapin Frenzy"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("gachapin", banner, self.COLOR)
@@ -117,7 +117,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def mukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def mukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a Mukku Frenzy"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("mukku", banner, self.COLOR)
@@ -127,7 +127,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def supermukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def supermukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate a Super Mukku Frenzy"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("supermukku", banner, self.COLOR)
@@ -137,7 +137,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def memeroll(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), rateup : str = commands.Param(description='Input anything to roll until a rate up SSR', default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2)) -> None:
+    async def memeroll(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), rateup : str = commands.Param(description='Input anything to roll until a rate up SSR', default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Simulate rolls until a SSR"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("memerollB" if rateup != "" else "memerollA", banner, self.COLOR)
@@ -147,7 +147,7 @@ class Games(commands.Cog):
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
-    async def roulette(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0, le=2), realist : int = commands.Param(description='1 to set Realist Mode (if allowed by owner)', default=0, ge=0, le=1)) -> None:
+    async def roulette(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0), realist : int = commands.Param(description='1 to set Realist Mode (if allowed by owner)', default=0, ge=0, le=1)) -> None:
         """Imitate the GBF roulette"""
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)

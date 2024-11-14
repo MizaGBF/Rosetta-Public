@@ -16,6 +16,7 @@ from views.roll_tap import Tap
 
 class Gacha():
     ZODIAC_WPN = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius']
+    CLASSIC_COUNT = 2
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -136,7 +137,8 @@ class Gacha():
             data = await self.bot.net.requestGBF("gacha/list", expect_JSON=True)
             if data is None: raise Exception()
             # will contain the data
-            gacha_data = {}
+            gacha_data = {'banners':[]}
+            # retrieve id and scams
             index = -1
             scam_ids = []
             for i, g in enumerate(data['legend']['lineup']):
@@ -145,6 +147,7 @@ class Gacha():
                     for subscam in g['campaign_gacha_ids']:
                         scam_ids.append(subscam['id'])
             
+            # set timers
             gacha_data['time'] = datetime.strptime(str(c.year) + '/' + data['legend']['lineup'][index]['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
             NY = False
             if c > gacha_data['time']:
@@ -157,12 +160,13 @@ class Gacha():
             logo = {'logo_fire':1, 'logo_water':2, 'logo_earth':3, 'logo_wind':4, 'logo_dark':5, 'logo_light':6}.get(data.get('logo_image', ''), data.get('logo_image', '').replace('logo_', ''))
             gid = data['legend']['lineup'][index]['id']
 
-            # draw rate
-            gacha_data['ratio'], gacha_data['list'], gacha_data['rateup'] = await self.process('legend', gid, 1)
-            if gacha_data['ratio'] is None:
-                raise Exception()
+            # main banner
+            gratio, glist, grateup = await self.process('legend', gid, 1)
+            if gratio is None:
+                raise Exception("Couldn't retrieve main gacha banner")
+            gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
 
-            # scam gachas
+            # scam detail
             for sid in scam_ids:
                 gratio, glist, grateup = await self.process('legend', sid, 3)
                 if gratio is not None:
@@ -170,14 +174,17 @@ class Gacha():
                         gacha_data['scam'] = []
                     gacha_data['scam'].append({'ratio':gratio, 'list':glist, 'rateup':grateup, 'items': (await self.getScamRate('legend', sid))})
 
-            # classic gacha
-            gacha_data['classic'] = []
-            for i in [500021, 501021]:
+            # additional banners
+            # # classic gacha
+            for i in [500021, 501021]: # id has to be set manually (for now)
                 data = await self.bot.net.requestGBF("rest/gacha/classic/toppage_data_by_classic_series_id/{}".format(i), expect_JSON=True)
                 if data is not None and 'appearance_gacha_id' in data:
                     gratio, glist, grateup = await self.process('classic', data['appearance_gacha_id'], 1)
                     if gratio is not None:
-                        gacha_data['classic'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
+                        gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
+            # # collab gacha
+            # PLACEHOLDER
+            #
 
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
@@ -188,9 +195,6 @@ class Gacha():
                     break
 
             # save
-            # clean old version
-            for key in ['rateup', 'gachatime', 'gachatimesub', 'gachabanner', 'gachacontent', 'gacharateups']:
-                self.bot.data.save['gbfdata'].pop(key, None)
             self.bot.data.save['gbfdata']['gacha'] = gacha_data
             self.bot.data.pending = True
             return True
@@ -217,46 +221,48 @@ class Gacha():
         try:
             content = await self.get()
             if len(content) > 0:
-                description = "{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(content[1]['time'] - content[0], 2))
-                if content[1]['time'] != content[1]['timesub']:
-                    description += "\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(content[1]['timesub'] - content[0], 2))
+                remaining, data = tuple(content)
+                # timer
+                description = "{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(data['time'] - remaining, 2))
+                if data['time'] != data['timesub']:
+                    description += "\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(data['timesub'] - remaining, 2))
 
                 # calculate real ssr rate
                 sum_ssr = 0
                 # sum_total = 0 # NOTE: ignoring it for now
-                for i, rarity in enumerate(content[1]['list']):
+                for i, rarity in enumerate(data['banners'][0]['list']):
                     for r in rarity['list']:
                         # sum_total += float(r) * len(rarity['list'][r]) # NOTE: ignoring it for now
                         if i == 2: sum_ssr += float(r) * len(rarity['list'][r])
 
                 # rate description
-                description += "\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), content[1]['ratio'])
-                if not content[1]['ratio'].startswith('3'):
+                description += "\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][0]['ratio'])
+                if not data['banners'][0]['ratio'].startswith('3'):
                     description += " **(Premium Gala)**"
                 description += " ▫️ Sum of rates **{:.3f}%**".format(sum_ssr)
-                if 'scam' in content[1]: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(content[1]['scam']))
+                if 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
                 description += "\n"
                 
                 # build rate up list
-                for k in content[1]['rateup']:
+                for k in data['banners'][0]['rateup']:
                     if k == 'zodiac':
-                        if len(content[1]['rateup']['zodiac']) > 0:
+                        if len(data['banners'][0]['rateup']['zodiac']) > 0:
                             description += "{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot'))
-                            for i in content[1]['rateup'][k]:
+                            for i in data['banners'][0]['rateup'][k]:
                                 description += self.formatGachaItem(i) + " "
                             description += "\n"
                     else:
-                        if len(content[1]['rateup'][k]) > 0:
-                            for r in content[1]['rateup'][k]:
+                        if len(data['banners'][0]['rateup'][k]) > 0:
+                            for r in data['banners'][0]['rateup'][k]:
                                 if k.lower().find("weapon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r)
                                 elif k.lower().find("summon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r)
-                                for i, item in enumerate(content[1]['rateup'][k][r]):
-                                    if i >= 8 and len(content[1]['rateup'][k][r]) - i > 1:
-                                        description += " and **{} more!**".format(len(content[1]['rateup'][k][r]) - i)
+                                for i, item in enumerate(data['banners'][0]['rateup'][k][r]):
+                                    if i >= 8 and len(data['banners'][0]['rateup'][k][r]) - i > 1:
+                                        description += " and **{} more!**".format(len(data['banners'][0]['rateup'][k][r]) - i)
                                         break
                                     description += self.formatGachaItem(item) + " "
                                 description += "\n"
-                return description, "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(content[1]['image'])
+                return description, "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
             return None, None
         except Exception as e:
             raise e
@@ -281,16 +287,14 @@ class Gacha():
         - (OPTIONAL): Dict, item list
         - (OPTIONAL): Integer, star premium gacha index
     """
-    async def retrieve(self, scam : Optional[bool] = None, classic : Optional[int] = None) -> tuple:
+    async def retrieve(self, scam : Optional[bool] = None, banner : int = 0) -> tuple:
         try:
             data = (await self.get())[1]
             if scam is None:
-                if classic is not None and classic > 0:
-                    if 'classic' not in data or classic > len(data['classic']):
-                        raise Exception()
-                    gacha_data = data['classic'][classic-1]
+                if 0 <= banner < len(data):
+                    gacha_data = data['banners'][banner]
                 else:
-                    gacha_data = data
+                    gacha_data = data['banners'][0]
             else:
                 if 'scam' not in data or scam < 0 or scam >= len(data['scam']):
                     raise Exception()
@@ -402,7 +406,7 @@ class Gacha():
     Parameters
     --------
     simtype: string, case sensitive. possible values: single, srssr, memerollA, memerollB, scam, ten, gachapin, mukku, supermukku
-    gachatype: string for special gacha (scam...) or integer (0 for normal banner, 1~2 for classic)
+    bannerid: string for special gacha (scam...) or integer (0 for normal banner, 1~2 for classic, 3 for collab...)
     color: color to use for the embeds
     scamindex: index of the premium star gacha to use
     
@@ -410,18 +414,17 @@ class Gacha():
     --------
     GachaSimulator
     """
-    async def simulate(self, simtype : str, gachatype : Union[int, str], color : int, scamindex : int = 1) -> 'GachaSimulator':
+    async def simulate(self, simtype : str, bannerid : Union[int, str], color : int, scamindex : int = 1) -> 'GachaSimulator':
         scamdata = None
-        isclassic = 0
-        match gachatype: # retrieve the data (no need to copy)
+        match bannerid: # retrieve the data (no need to copy)
             case 'scam':
                 gachadata = await self.retrieve()
                 scamdata = await self.retrieve(scam=scamindex-1)
+                bannerid = 0
             case _:
-                if not isinstance(gachatype, int): gachatype = 0
-                gachadata = await self.retrieve(classic=gachatype)
-                isclassic = gachatype
-        gsim = GachaSimulator(self.bot, gachadata, simtype, scamdata, isclassic, color) # create a simulator instance
+                if not isinstance(bannerid, int): bannerid = 0
+                gachadata = await self.retrieve(banner=bannerid)
+        gsim = GachaSimulator(self.bot, gachadata, simtype, scamdata, bannerid, color) # create a simulator instance
         return gsim
 
 class GachaSimulator():
@@ -457,14 +460,14 @@ class GachaSimulator():
     gachadata: output from Gacha.retrieve()
     simtype: value from Gacha.simulate() parameter simtype
     scamdata: Optional, output from Gacha.retrieve(scam=X). None to ignore.
-    isclassic: Boolean, indicate if classic gacha is used
+    bannerid: integer, banner index
     color: Embed color
     """
-    def __init__(self, bot : 'DiscordBot', gachadata : tuple, simtype : str, scamdata : Optional[tuple], isclassic : int, color : int) -> None:
+    def __init__(self, bot : 'DiscordBot', gachadata : tuple, simtype : str, scamdata : Optional[tuple], bannerid : int, color : int) -> None:
         self.bot = bot
         self.data, self.rateups, self.ssrrate, self.complete = gachadata # unpack the data
         self.scamdata = scamdata # no need to unpack the scam gacha one (assume it might be None too)
-        self.isclassic = isclassic
+        self.bannerid = bannerid
         self.color = color
         self.mode = None
         self.changeMode(simtype)
@@ -649,6 +652,26 @@ class GachaSimulator():
         self.best = [99, random.choice(data[2]['list'][list(data[2]['list'].keys())[0]]), True] # force ssr in self.best
         return self.best[1], loot
 
+
+    """bannerIDtoFooter()
+    Appends extra text to an embed footer depending on the banner type
+    
+    Parameters
+    --------
+    footer: String, embed footer
+    
+    Returns
+    --------
+    str: Modified footer
+    """
+    def bannerIDtoFooter(self, footer) -> str:
+        if self.bannerid > 0:
+            if self.bannerid <= self.bot.gacha.CLASSIC_COUNT:
+                footer += " ▫️ Classic {}".format(self.bannerid)
+            else:
+                footer += " ▫️ Collaboration"
+        return footer
+
     """output()
     Output the result via a disnake Interaction
     
@@ -675,8 +698,7 @@ class GachaSimulator():
                 footer += " ▫️ Selected Scam #{}".format(self.scamdata[5]+1)
             case _:
                 pass
-        if self.isclassic:
-            footer += " ▫️ Classic {}".format(self.isclassic)
+        footer = self.bannerIDtoFooter(footer)
         # get scam roll
         if self.scamdata is not None:
             sroll = self.scamRoll()
@@ -895,8 +917,7 @@ class GachaSimulator():
                     else:
                         tmp = ""
                     footer = "{}% SSR rate".format(self.result['rate'])
-                    if self.isclassic:
-                        footer += " ▫️ Classic {}".format(self.isclassic)
+                    footer = self.bannerIDtoFooter(footer)
                     msg += "{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
                     if superFlag: state = 4
                     else: running = False
@@ -915,8 +936,7 @@ class GachaSimulator():
                     else:
                         tmp = ""
                     footer = "{}% SSR rate".format(self.result['rate'])
-                    if self.isclassic:
-                        footer += " ▫️ Classic {}".format(self.isclassic)
+                    footer = self.bannerIDtoFooter(footer)
                     msg += "Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
                     if count == 10 and random.randint(1, 100) <= 99: state = 3
                     elif count == 20 and random.randint(1, 100) <= 60: state = 3
