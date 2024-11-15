@@ -35,7 +35,7 @@ class Gacha():
     """
     async def get(self) -> list:
         c = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=80)
-        if ('gacha' not in self.bot.data.save['gbfdata'] or self.bot.data.save['gbfdata']['gacha'] is None or c >= self.bot.data.save['gbfdata']['gacha']['time']) and not await self.update():
+        if ('gacha' not in self.bot.data.save['gbfdata'] or self.bot.data.save['gbfdata']['gacha'] is None or c >= self.bot.data.save['gbfdata']['gacha']['time'] or c >= self.bot.data.save['gbfdata']['gacha'].get('collaboration', c+timedelta(seconds=10))) and not await self.update():
             return []
         if self.bot.data.save['gbfdata']['gacha']['time'] is None:
             return []
@@ -120,6 +120,21 @@ class Gacha():
             self.bot.logger.pushError("[GACHA] Exception 2:", e)
             return None
     
+    """fix_time_newyear()
+    Adjust banner end time on new year
+    
+    Returns
+    --------
+    tuple:
+        - datetime: Adjusted time
+        - bool: True if it has been modified
+    """
+    def fix_time_newyear(self, current : datetime, d : datetime) -> datetime:
+        NY = False
+        if current > d:
+            d = d.replace(year=d.year+1) # new year fix
+            NY = True
+        return d, NY
 
     """update()
     Request and update the GBF gacha in the save data
@@ -149,10 +164,7 @@ class Gacha():
             
             # set timers
             gacha_data['time'] = datetime.strptime(str(c.year) + '/' + data['legend']['lineup'][index]['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
-            NY = False
-            if c > gacha_data['time']:
-                gacha_data['time'] = gacha_data['time'].replace(year=gacha_data['time'].year+1) # new year fix
-                NY = True
+            gacha_data['time'], NY = self.fix_time_newyear(c, gacha_data['time'])
             gacha_data['timesub'] = datetime.strptime(data['ceiling']['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
             if (NY is False and gacha_data['timesub'] < gacha_data['time']) or (NY is True and gacha_data['timesub'] > gacha_data['time']): gacha_data['time'] = gacha_data['timesub'] # switched
             random_key = data['legend']['random_key']
@@ -183,8 +195,13 @@ class Gacha():
                     if gratio is not None:
                         gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
             # # collab gacha
-            # PLACEHOLDER
-            #
+            data = await self.bot.net.requestGBF("rest/gacha/collaboration/toppage_data", expect_JSON=True)
+            if data is not None and "collaboration" in data and "collaboration_ceiling" in data:
+                gacha_data['collaboration'] = datetime.strptime(data['collaboration_ceiling']['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
+                gacha_data['collaboration'], NY = self.fix_time_newyear(c, gacha_data['collaboration'])
+                gratio, glist, grateup = await self.process('collaboration', data["collaboration"]["lineup"][-1]["id"], 1)
+                if gratio is not None:
+                    gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
 
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
@@ -204,6 +221,50 @@ class Gacha():
             self.bot.data.pending = True # save anyway
             return False
 
+    def summary_subroutine(self, data : dict, description : str, index : int, time : datetime, timesub : Optional[datetime], remaining : datetime) -> str:
+        # timer
+        description = "{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(time - remaining, 2))
+        if timesub is not None and time != timesub:
+            description += "\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(timesub - remaining, 2))
+
+        # calculate real ssr rate
+        sum_ssr = 0
+        # sum_total = 0 # NOTE: ignoring it for now
+        for i, rarity in enumerate(data['banners'][index]['list']):
+            for r in rarity['list']:
+                # sum_total += float(r) * len(rarity['list'][r]) # NOTE: ignoring it for now
+                if i == 2: sum_ssr += float(r) * len(rarity['list'][r])
+
+        # rate description
+        description += "\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][index]['ratio'])
+        if not data['banners'][index]['ratio'].startswith('3'):
+            description += " **(Premium Gala)**"
+        description += " ▫️ Sum of rates **{:.3f}%**".format(sum_ssr)
+        if 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
+        description += "\n"
+        
+        # build rate up list
+        for k in data['banners'][index]['rateup']:
+            if k == 'zodiac':
+                if len(data['banners'][index]['rateup']['zodiac']) > 0:
+                    description += "{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot'))
+                    for i in data['banners'][index]['rateup'][k]:
+                        description += self.formatGachaItem(i) + " "
+                    description += "\n"
+            else:
+                if len(data['banners'][index]['rateup'][k]) > 0:
+                    for r in data['banners'][index]['rateup'][k]:
+                        if k.lower().find("weapon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r)
+                        elif k.lower().find("summon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r)
+                        for i, item in enumerate(data['banners'][index]['rateup'][k][r]):
+                            if i >= 8 and len(data['banners'][index]['rateup'][k][r]) - i > 1:
+                                description += " and **{} more!**".format(len(data['banners'][index]['rateup'][k][r]) - i)
+                                break
+                            description += self.formatGachaItem(item) + " "
+                        description += "\n"
+        return description
+
+
     """summary()
     Make a text summary of the current gacha
     
@@ -222,46 +283,10 @@ class Gacha():
             content = await self.get()
             if len(content) > 0:
                 remaining, data = tuple(content)
-                # timer
-                description = "{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(data['time'] - remaining, 2))
-                if data['time'] != data['timesub']:
-                    description += "\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(data['timesub'] - remaining, 2))
-
-                # calculate real ssr rate
-                sum_ssr = 0
-                # sum_total = 0 # NOTE: ignoring it for now
-                for i, rarity in enumerate(data['banners'][0]['list']):
-                    for r in rarity['list']:
-                        # sum_total += float(r) * len(rarity['list'][r]) # NOTE: ignoring it for now
-                        if i == 2: sum_ssr += float(r) * len(rarity['list'][r])
-
-                # rate description
-                description += "\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][0]['ratio'])
-                if not data['banners'][0]['ratio'].startswith('3'):
-                    description += " **(Premium Gala)**"
-                description += " ▫️ Sum of rates **{:.3f}%**".format(sum_ssr)
-                if 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
-                description += "\n"
-                
-                # build rate up list
-                for k in data['banners'][0]['rateup']:
-                    if k == 'zodiac':
-                        if len(data['banners'][0]['rateup']['zodiac']) > 0:
-                            description += "{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot'))
-                            for i in data['banners'][0]['rateup'][k]:
-                                description += self.formatGachaItem(i) + " "
-                            description += "\n"
-                    else:
-                        if len(data['banners'][0]['rateup'][k]) > 0:
-                            for r in data['banners'][0]['rateup'][k]:
-                                if k.lower().find("weapon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r)
-                                elif k.lower().find("summon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r)
-                                for i, item in enumerate(data['banners'][0]['rateup'][k][r]):
-                                    if i >= 8 and len(data['banners'][0]['rateup'][k][r]) - i > 1:
-                                        description += " and **{} more!**".format(len(data['banners'][0]['rateup'][k][r]) - i)
-                                        break
-                                    description += self.formatGachaItem(item) + " "
-                                description += "\n"
+                description = ""
+                description = self.summary_subroutine(data, description, 0, data['time'], data['timesub'], remaining)
+                if len(data["banners"]) > self.CLASSIC_COUNT and "collaboration" in data and remaining < data["collaboration"]:
+                    description += "{} **Collaboration**\n".format(self.bot.emote.get('crystal')) + self.summary_subroutine(data, description, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)
                 return description, "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
             return None, None
         except Exception as e:
