@@ -240,7 +240,7 @@ class Gacha():
         if not data['banners'][index]['ratio'].startswith('3'):
             description += " **(Premium Gala)**"
         description += " ▫️ Sum of rates **{:.3f}%**".format(sum_ssr)
-        if 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
+        if index == 0 and 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
         description += "\n"
         
         # build rate up list
