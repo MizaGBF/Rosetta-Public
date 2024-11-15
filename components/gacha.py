@@ -372,19 +372,23 @@ class Gacha():
     """allRates()
     Return a list of all different possible SSR rates in the current gacha
     
+    Parameters
+    --------
+    index: Integer, banner index (0 default, 1-2 classic, 3 collab...)
+    
     Returns
     --------
     tuple:
         float: ssr rate, return None if error
         list: Rate list, return None if error
     """
-    def allRates(self) -> tuple:
+    def allRates(self, index : int) -> tuple:
         try:
             r = []
-            for rate in list(self.bot.data.save['gbfdata']['gacha']['list'][2]['list'].keys()):
+            for rate in list(self.bot.data.save['gbfdata']['gacha']['banners'][index]['list'][-1]['list'].keys()): # SSR list
                 if float(rate) not in r:
                     r.append(float(rate))
-            return float(self.bot.data.save['gbfdata']['gacha']['ratio'][:-1]), sorted(r, reverse=True)
+            return float(self.bot.data.save['gbfdata']['gacha']['banners'][index]['ratio'][:-1]), sorted(r, reverse=True)
         except:
             return None, None
 

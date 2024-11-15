@@ -163,7 +163,7 @@ class General(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="{} {:%Y/%m/%d %H:%M} JST".format(self.bot.emote.get('clock'), self.bot.util.JST()), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @utility.sub_command()
-    async def rollchance(self, inter: disnake.MessageCommandInteraction, count : str = commands.Param(description="Amount of rolls. Leave empty to use your set spark count", default="")) -> None:
+    async def rollchance(self, inter: disnake.MessageCommandInteraction, count : str = commands.Param(description="Amount of rolls. Leave empty to use your set spark count", default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Calculate your chance of rolling the rate up for a given amount of rolls."""
         await inter.response.defer(ephemeral=True)
         try:
@@ -178,8 +178,8 @@ class General(commands.Cog):
             else:
                 count = int(count)
             msg = "Your chances of getting at least one SSR of the following rates with {} rolls:\n".format(count)
-            ssrrate, rateups = self.bot.gacha.allRates()
-            if ssrrate is None: raise Exception("Unavailable")
+            ssrrate, rateups = self.bot.gacha.allRates(banner)
+            if ssrrate is None: raise Exception("An error occured or no GBF gacha data is available.\nConsider using {} instead in the meantime.".format(self.bot.util.command2mention('utility dropchance')))
             for r in rateups:
                 msg += "{:} **{:.3f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), r, 100*(1-math.pow(1-r*0.01, count)))
             msg += "Your chances of getting at least one SSR with {} rolls:\n".format(count)
