@@ -665,7 +665,7 @@ class Admin(commands.Cog):
             self.bot.data.save['schedule'][name] = timestamps
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Entry added", color=self.COLOR))
         except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Error, exception:\n`{}`".format(self.bot.pexc(e)), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Error, did you set the date in the proper format (DD/MM/YY)?\nException:\n`{}`".format(self.bot.pexc(e)), color=self.COLOR))
             
 
     @_owner.sub_command_group()

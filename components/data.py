@@ -390,44 +390,53 @@ class Data():
             data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
             if data is not None:
                 new_events = {}
+                modified = False
+                c = self.bot.util.UTC()
                 for ev in data:
                     if 'utc start' in ev and 'enname' in ev:
-                        new_events[ev['enname']] = [ev['utc start']]
+                        event_times = [ev['utc start']]
                         if 'utc end' in ev:
-                            new_events[ev['enname']].append(ev['utc end'])
+                            if c < datetime.utcfromtimestamp(ev['utc end']):
+                                event_times.append(ev['utc end'])
+                            else:
+                                continue # event over
+                        else:
+                            if c >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1):
+                                continue # event over
+                        new_events[html.unescape(ev['enname'])] = event_times
                 # NOTE: wiki timestamps are in UTC
                 if len(new_events) > 0:
-                    new_schedule = {}
-                    # detect unlabeled story event
-                    stev = None
-                    for k, v in self.save['schedule'].items():
-                        if "story event" in k.lower():
-                            stev = k
-                            break
-                    # add new entries
-                    for event, ts in new_events.items():
-                        try:
-                            uevent = html.unescape(event)
-                            if ts[0] is None: continue
-                            elif ts[1] is None: time_range = ts[:1]
-                            else: time_range = ts
-                            ets = self.save['schedule'].get(uevent, None)
-                            if ets is None or len(time_range) > len(ets) or str(time_range) != str(ets):
-                                new_schedule[uevent] = time_range
-                                if stev is not None and uevent != stev and str(time_range) == str(self.save['schedule'].get(stev, None)): # remove unlabeled story event
-                                    self.save['schedule'].pop(stev, None)
-                        except:
-                            pass
-                    new_schedule = self.save['schedule'] | new_schedule
-                    c = self.bot.util.UTC()
-                    keys = list(new_schedule.keys())
-                    for k in keys:
-                        if (len(new_schedule[k]) == 2 and c > datetime.utcfromtimestamp(new_schedule[k][1])) or (len(new_schedule[k]) == 1 and c > datetime.utcfromtimestamp(new_schedule[k][0]) + timedelta(days=1)):
-                            new_schedule.pop(k, None)
-                    if str(new_schedule) != str(self.save['schedule']):
-                        self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success")
-                        self.save['schedule'] = new_schedule
-                        self.pending = True
+                    # add manual entry starting with specific keywords
+                    for ev in self.save['schedule']:
+                        evl = ev.lower()
+                        if evl.startswith("update") or evl.startswith("maintenance") or evl.startswith("granblue fes") or evl.startswith("summer stream") or evl.startswith("christmas stream") or evl.startswith("anniversary stream"):
+                            new_events[ev] = self.save['schedule'][ev]
+                    # verify for changes
+                    akeys = list(new_events.keys())
+                    akeys.sort()
+                    bkeys = list(self.save['schedule'].keys())
+                    bkeys.sort()
+                    if akeys != bkeys:
+                        # different event list
+                        self.save['schedule'] = new_events
+                        modified = True
+                    else:
+                        # check for date
+                        for k, v in new_events.items():
+                            if v != self.save['schedule'][k]:
+                                # different
+                                self.save['schedule'] = new_events
+                                modified = True
+                                break
+                # remove events which ended
+                keys = list(self.save['schedule'].keys())
+                for k in keys:
+                    if (len(self.save['schedule'][k]) == 2 and c > datetime.utcfromtimestamp(self.save['schedule'][k][1])) or (len(self.save['schedule'][k]) == 1 and c > datetime.utcfromtimestamp(self.save['schedule'][k][0]) + timedelta(days=1)):
+                        self.save['schedule'].pop(k, None)
+                        modified = True
+                if modified:
+                    self.bot.logger.push("[DATA] update_schedule:\nSchedule updated with success")
+                    self.pending = True
         except Exception as e:
             self.bot.logger.pushError("[DATA] update_schedule Error:", e)
 
