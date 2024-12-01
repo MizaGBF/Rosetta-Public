@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.10.6" # bot version
+    VERSION = "11.10.7" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
@@ -39,6 +39,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.9.3** - Revamped `/gw utility` commands. `/gw utility clump` has been merged into `/gw utility meat`.",
         "**v11.10.0** - Fixed a bug in `/reminder` commands and added automatic reminders. Make sure your server receives Bot Announcements.",
         "**v11.10.5** - Support has been added for additional banners in various commands.",
+        "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
     ]
     EMOJI_INIT_NONE = 0
     EMOJI_INIT_RUNNING = 1

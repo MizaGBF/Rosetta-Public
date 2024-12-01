@@ -21,7 +21,7 @@ class GranblueFantasy(commands.Cog):
     """Granblue Fantasy Utility."""
     COLOR = 0x34aeeb
     COLOR_NEWS = 0x00b07b
-    SUMMON_ELEMENTS = ['fire','water','earth','wind','light','dark','misc']
+    SUMMON_ELEMENTS = ['misc', 'fire','water','earth','wind','light','dark']
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -856,7 +856,8 @@ class GranblueFantasy(commands.Cog):
         # support summons
         try:
             script = BeautifulSoup(soup.find("script", id="tpl-summon").get_text().replace(" <%=obj.summon_list.shift().viewClassName%>", ""), "html.parser")
-            summon_list = [[None for i in range(7)], [None for i in range(7)]]
+            summon_list = [[] for i in range(7)]
+            i = 0
             for x, e in enumerate(script.find_all("div", class_="prt-fix-support-wrap")):
                 for y, v in enumerate(e.findChildren("div", class_="prt-fix-support", recursive=False)):
                     t = v.findChildren("div", recursive=False)[-1]
@@ -868,16 +869,23 @@ class GranblueFantasy(commands.Cog):
                             squal = "star{}".format(cname.split('bless-rank')[-1].split('-', 1)[0])
                         else:
                             squal = "star0"
-                        summon_list[y][(x+6)%7] = (sname, squal)
-            fields = [{'name':"{} **Summons**".format(self.bot.emote.get('summon')), 'value':'', 'inline':True}, {'name':"{} **Summons**".format(self.bot.emote.get('summon')), 'value':'', 'inline':True}]
-            for i in range(len(summon_list)):
-                for j in range(len(summon_list[i])):
-                    if summon_list[i][j] is None:
-                        fields[i]['value'] += "{} *None*\n".format(self.bot.emote.get(self.SUMMON_ELEMENTS[j]))
-                    else:
-                        fields[i]['value'] += "{} {}{}\n".format(self.bot.emote.get(self.SUMMON_ELEMENTS[j]), self.bot.emote.get(summon_list[i][j][1]), summon_list[i][j][0])
+                        summon_list[i].append((sname, squal))
+                i += 1
+            suppA = "{} **Support Summons**\n".format(self.bot.emote.get('summon'))
+            suppB = ""
+            for i, summons in enumerate(summon_list):
+                tmp = "{} ".format(self.bot.emote.get(self.SUMMON_ELEMENTS[i]))
+                for j, summon in enumerate(summons):
+                    if j > 0: tmp += " ▫️ "
+                    tmp += "{}{}".format(self.bot.emote.get(summon[1]), summon[0])
+                if len(summons) == 0:
+                    tmp += "None"
+                tmp += "\n"
+                if i == 0: suppB = tmp
+                else: suppA += tmp
+            summons = (suppA, suppB)
         except:
-            fields = []
+            summons = ("", "")
         await asyncio.sleep(0)
 
         # star chara
@@ -904,7 +912,7 @@ class GranblueFantasy(commands.Cog):
 
         if trophy == "No Trophy Displayed": title = "\u202d{} **{}**".format(self.bot.emote.get(rarity), name)
         else: title = "\u202d{} **{}**▫️{}".format(self.bot.emote.get(rarity), name, trophy)
-        return title, "{}{}\n{} Crew ▫️ {}\n{}{}".format(rank, comment, self.bot.emote.get('gw'), crew, scores, star), fields, mc_url
+        return title, "{}{}\n{} Crew ▫️ {}\n{}{}\n\n{}{}".format(rank, comment, self.bot.emote.get('gw'), crew, scores, star, summons[0], summons[1]), mc_url
 
     """_profile()
     Retrieve a GBF profile and post it
@@ -941,8 +949,8 @@ class GranblueFantasy(commands.Cog):
         if name is None:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Profile is Private", color=color), view=view)
         else:
-            title, description, fields, thumbnail = await self.processProfile(pid, data)
-            await inter.edit_original_message(embed=self.bot.embed(title=title, description=description, url="https://game.granbluefantasy.jp/#profile/{}".format(pid), thumbnail=thumbnail, fields=fields, inline=True, color=color), view=view)
+            title, description, thumbnail = await self.processProfile(pid, data)
+            await inter.edit_original_message(embed=self.bot.embed(title=title, description=description, url="https://game.granbluefantasy.jp/#profile/{}".format(pid), thumbnail=thumbnail, inline=True, color=color), view=view)
         if clean:
             await self.bot.util.clean(inter, 45)
 
