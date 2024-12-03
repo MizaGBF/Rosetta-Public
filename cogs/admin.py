@@ -587,13 +587,15 @@ class Admin(commands.Cog):
 
     @stream.sub_command()
     async def time(self, inter: disnake.GuildCommandInteraction, day : int = commands.Param(ge=1, le=31), month : int = commands.Param(ge=1, le=12), year : int = commands.Param(ge=2021), hour : int = commands.Param(ge=0, le=23)) -> None:
-        """Set the stream time (Owner Only)
-        The text needs to contain {} for the cooldown to show up"""
+        """Set the stream time (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            self.bot.data.save['stream']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour, minute=0, second=0, microsecond=0)
-            self.bot.data.pending = True
-            await inter.edit_original_message(embed=self.bot.embed(title="Stream time set", color=self.COLOR))
+            if self.bot.data.save['stream'] is None:
+                await inter.edit_original_message(embed=self.bot.embed(title="Stream Error", description="No Stream set.\nSet one first with {}.".format(self.bot.util.command2mention("owner stream set")), color=self.COLOR))
+            else:
+                self.bot.data.save['stream']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour, minute=0, second=0, microsecond=0)
+                self.bot.data.pending = True
+                await inter.edit_original_message(embed=self.bot.embed(title="Stream time set", color=self.COLOR))
         except Exception as e:
             self.bot.logger.pushError("[OWNER] In 'owner stream time' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
@@ -654,13 +656,13 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Process finished", color=self.COLOR))
 
     @schedule.sub_command(name="add")
-    async def scheduleadd(self, inter: disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), end : str = commands.Param(description="End date (DD/MM/YY format)", default="")) -> None:
+    async def scheduleadd(self, inter: disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), start_hour : int = commands.Param(description="Start Hour UTC (Default is 8)", default=17, ge=0, le=23), end : str = commands.Param(description="End date (DD/MM/YY format)", default=""), end_hour : int = commands.Param(description="Ending Hour UTC (Default is 8)", default=17, ge=0, le=23)) -> None:
         """Add or modify an entry (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try:
-            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=9, minute=0, second=0).timestamp())]
+            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=start_hour, minute=0, second=0).timestamp())]
             if end != "":
-                timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=9, minute=0, second=0).timestamp()))
+                timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=end_hour, minute=0, second=0).timestamp()))
                 if timestamps[1] <= timestamps[0]: raise Exception("Event Ending timestamp is lesser than the Starting timestamp")
             self.bot.data.save['schedule'][name] = timestamps
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Entry added", color=self.COLOR))

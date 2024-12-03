@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.10.7" # bot version
+    VERSION = "11.10.8" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",

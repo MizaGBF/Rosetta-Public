@@ -370,6 +370,7 @@ class Data():
                 # update schedule
                 await self.update_schedule()
                 # various clean up
+                await self.clean_stream() # clean stream data
                 await self.clean_spark() # clean up spark data
                 if ct.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
@@ -439,6 +440,17 @@ class Data():
                     self.pending = True
         except Exception as e:
             self.bot.logger.pushError("[DATA] update_schedule Error:", e)
+
+    """clean_stream()
+    Coroutine to clear stream data (if set)
+    """
+    async def clean_stream(self) -> None:
+        await asyncio.sleep(0)
+        # delete if stream exists and it's 4 days old or more
+        if self.save['stream'] is not None and self.save['stream'].get('time', None) is not None and self.bot.util.UTC() - self.save['stream']['time'] >= timedelta(days=4):
+            self.save['stream'] = None
+            self.pending = True
+            self.bot.logger.push("[DATA] clean_stream:\nCleaned the Stream data")
 
     """clean_spark()
     Coroutine to clear user spark data from the save data
