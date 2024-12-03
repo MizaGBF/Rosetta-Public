@@ -77,6 +77,9 @@ class Emote():
             return True
         return False
 
+    """load_app_emojis()
+    Coroutine to load applicaiton emojis and add new/missing ones if any is found in assets/emojis
+    """
     async def load_app_emojis(self) -> None:
         emote_file_table = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
         # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis

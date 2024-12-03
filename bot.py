@@ -22,7 +22,6 @@ import time
 import signal
 import sys
 import os
-import json
 import traceback
 
 # Main Bot Class (overload commands.Bot)
