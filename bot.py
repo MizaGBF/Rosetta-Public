@@ -442,8 +442,6 @@ class DiscordBot(commands.InteractionBot):
             # set our used channels for the send function
             self.channel.setMultiple([['debug', 'debug_channel'], ['image', 'image_upload']])
             await self.send('debug', embed=self.embed(title="{} is Ready".format(self.user.display_name), description=self.util.statusString(), thumbnail=self.user.display_avatar, timestamp=self.util.UTC()))
-            # set load app emojis
-            await self.emote.load_app_emojis()
             # check guilds and start the tasks
             self.booted = True
             self.logger.push("[MAIN] Rosetta is ready", send_to_discord=False)
@@ -454,6 +452,8 @@ class DiscordBot(commands.InteractionBot):
                 msg += "- {}\n".format(t)
             if msg != "":
                 self.logger.push("[MAIN] {} Tasks started\n{}".format(len(self.tasks), msg))
+            # set load app emojis
+            await self.emote.load_app_emojis()
 
     """embed()
     Create a disnake.Embed object
