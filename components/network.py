@@ -33,7 +33,7 @@ class Network():
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
+        self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
         self.client_req = {}
