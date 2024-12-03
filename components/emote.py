@@ -81,32 +81,40 @@ class Emote():
     Coroutine to load applicaiton emojis and add new/missing ones if any is found in assets/emojis
     """
     async def load_app_emojis(self) -> None:
-        emote_file_table = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
-        # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis
-        existing = await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
-        for item in existing['items']:
-            emote_file_table.pop(item['name'], None)
-        if len(emote_file_table) > 0:
-            self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.1)))
-            try:
-                for k, v in emote_file_table.items():
-                    with open("assets/emojis/" + v, mode="rb") as f:
-                        # NOTE: Once disnake 2.10 is out, replace by create_app_emoji
-                        await self.bot.http.request(disnake.http.Route('POST', '/applications/{app_id}/emojis', app_id=self.bot.user.id), json={'name': k, 'image':await disnake.utils._assetbytes_to_base64_data(f.read())})
-                        await asyncio.sleep(1)
-                self.bot.logger.push("[UPLOAD EMOJI] Done.\nEmojis have been uploaded")
-            except Exception as e:
-                self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
-                self.bot.logger.push("[UPLOAD EMOJI] An error occured.\nThe upload process has been aborted.")
-            # get new updated list
+        try:
+            emote_file_table = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
             # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis
             existing = await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
-        # initializing app emoji list
-        for item in existing['items']:
-            name = item['name']
-            if len(name) == 2 and name.endswith('_'):
-                name = name[0]
-            # NOTE: Once disnake 2.10 is out, replace by get_emoji or equivalent
-            em = disnake.Emoji(guild=self.bot.get_guild(self.bot.data.config['ids']['debug_server']), state=self.bot._connection, data=item)
-            em._from_data(item)
-            self.app_emojis[name] = em
+            for item in existing['items']:
+                emote_file_table.pop(item['name'], None)
+            if len(emote_file_table) > 0:
+                self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.1)))
+                try:
+                    for k, v in emote_file_table.items():
+                        with open("assets/emojis/" + v, mode="rb") as f:
+                            # NOTE: Once disnake 2.10 is out, replace by create_app_emoji
+                            await self.bot.http.request(disnake.http.Route('POST', '/applications/{app_id}/emojis', app_id=self.bot.user.id), json={'name': k, 'image':await disnake.utils._assetbytes_to_base64_data(f.read())})
+                            await asyncio.sleep(1)
+                    self.bot.logger.push("[UPLOAD EMOJI] Done.\nEmojis have been uploaded")
+                except Exception as e:
+                    self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
+                    self.bot.logger.push("[UPLOAD EMOJI] An error occured.\nThe upload process has been aborted.")
+                # get new updated list
+                # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis
+                existing = await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
+        except Exception as xe:
+            self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error A", xe)
+            self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
+        try:
+            # initializing app emoji list
+            for item in existing['items']:
+                name = item['name']
+                if len(name) == 2 and name.endswith('_'):
+                    name = name[0]
+                # NOTE: Once disnake 2.10 is out, replace by get_emoji or equivalent
+                em = disnake.Emoji(guild=self.bot.get_guild(self.bot.data.config['ids']['debug_server']), state=self.bot._connection, data=item)
+                em._from_data(item)
+                self.app_emojis[name] = em
+        except Exception as e:
+            self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error B", e)
+            self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
