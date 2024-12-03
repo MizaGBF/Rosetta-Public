@@ -452,7 +452,7 @@ class DiscordBot(commands.InteractionBot):
                 msg += "- {}\n".format(t)
             if msg != "":
                 self.logger.push("[MAIN] {} Tasks started\n{}".format(len(self.tasks), msg))
-            # set load app emojis
+            # load app emojis
             await self.emote.load_app_emojis()
 
     """embed()

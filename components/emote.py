@@ -88,7 +88,7 @@ class Emote():
             for item in existing['items']:
                 emote_file_table.pop(item['name'], None)
             if len(emote_file_table) > 0:
-                self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.1)))
+                self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.3)))
                 try:
                     for k, v in emote_file_table.items():
                         with open("assets/emojis/" + v, mode="rb") as f:
