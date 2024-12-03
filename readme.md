@@ -27,7 +27,7 @@
 
 The `assets` folder contains various images and other files used by the bot:  
 * The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.
-* The content of the `emojis` folder is used during the setup (see below).
+* The content of the `emojis` folder is automatically used during the boot.
 * The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
 * `font.ttf` is used by one command specific to my crew. You can remove it if you remove the corresponding cog.  
 
@@ -76,7 +76,6 @@ There are three ways to start the bot:
 `-run`: Start the bot.  
 `-test`: Start the bot but stop before connecting to Discord. Used to test if bot can start properly.  
 `-remove`: Start the bot without loading any commands. Mainly used to desync and remove a test bot commands from a server.  
-`-emoji`: To initialize the emojis. See in the guide below.  
   
 You can also add the following to change its behavior:  
 `-debug`: Start the bot in debug mode. `config_test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
@@ -133,74 +132,6 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "Granblue Fantasy: Versus Rising",
         "Granblue Fantasy: Relink"
     ],
-    "emotes" : {
-        "fire" : 614733962736042005,
-        "water" : 614733963399004170,
-        "earth" : 614733962937630752,
-        "wind" : 614733962991894529,
-        "dark" : 614733962937499648,
-        "light" : 614733963054809098,
-        "R" : 614733962807607316,
-        "SR" : 614733962543366155,
-        "SSR" : 614733962832773120,
-        "sword" : 614733962744561675,
-        "dagger" : 614733962899750912,
-        "spear" : 614733963105140736,
-        "axe" : 614733963076042762,
-        "staff" : 614733962979442688,
-        "gun" : 614733963105271809,
-        "melee" : 614733963008933888,
-        "bow" : 614733962924916751,
-        "harp" : 614733962669064205,
-        "katana" : 614733962790567938,
-        "skill1" : 614733961717088257,
-        "skill2" : 614733962681647124,
-        "atk" : 614733962719395850,
-        "hp" : 614733962966728714,
-        "summon" : 614733962555686984,
-        "kmr" : 614735088391028737,
-        "gw" : 614733962996350977,
-        "st" : 614733962937630764,
-        "time" : 614733963222843392,
-        "1" : 614733962178330665,
-        "2" : 614733962643767322,
-        "3" : 614733962698555392,
-        "4" : 614733962711138314,
-        "5" : 614733962476257292,
-        "6" : 614733962601824257,
-        "red" : 614733963017060363,
-        "gold" : 614733962983768094,
-        "wood" : 614733963092688896,
-        "loot" : 614733962622926849,
-        "mark" : 614733962698555415,
-        "mark_a" : 614736075272880139,
-        "clock" : 614733962652155906,
-        "question" : 614733963004477445,
-        "cog" : 614736426516480009,
-        "ensign" : 700731360012271616,
-        "captain" : 700732615879032842,
-        "atkace" : 614733963071586344,
-        "deface" : 614733963029643264,
-        "foace" : 614733962870259713,
-        "crystal" : 614733963067392015,
-        "crown" : 614733963046551561,
-        "misc" : 653259257998999584,
-        "singledraw" : 734795587207299094,
-        "tendraw" : 734795587630661752,
-        "crystal0" : 756821583636725780,
-        "crystal0+" : 756821618139070575,
-        "crystal1" : 756822019491758160,
-        "crystal2": 756821671230439424,
-        "crew": 766297948467494924,
-        "lyria" : 920696070764376084,
-        "shrimp": 959392828847448124,
-        "star0": 1050429257995792424,
-        "star1": 1050429259593830400,
-        "star2": 1050429261435117598,
-        "star3": 1050429263217692714,
-        "star4": 1056646303527997450,
-        "arcarum": 1052232990727622706
-    },
     "granblue": {
         "gbfgcrew" : {"aion no me":"645927", "aion":"645927", "bellabarca":"977866", "bullies":"745085", "bullied":"1317803", "chococat":"940560", "chococats":"940560", "cogfriends":"1049216", "cog":"1049216", "cowfag":"841064", "cowfags":"841064", "\u4e2d\u51fa\u3057\u306e\u5e78\u305b":"1036007", "cumshot":"1036007", "cumshot happiness":"1036007", "dem bois":"705648", "ded bois":"705648", "dembois":"705648", "demboi":"705648", "dedbois":"705648", "fleet":"599992", "haruna":"472465", "cug":"1161924", "lilypals":"1161924", "lilypal":"1161924", "\u5c0f\u3055\u306a\u5973\u306e\u5b50":"432330", "little girls":"432330", "lg":"432330", "little girl":"432330", "sixters":"1380234", "sixter":"1380234", "soy":"1601132", "onion":"1601132", "onions":"1601132", "oppaisuki":"678459", "oppai":"678459", "pcs":"632242", "quatrebois":"1141898", "quatreboi":"1141898", "the bathtub":"1580990", "thebathtub":"1580990", "bathtub":"1580990", "(you)":"581111", "you":"581111", "(you) too":"1010961", "(you)too":"1010961", "u2":"1010961", "youtoo":"1010961", "you too":"1010961", "a-team":"1744673", "ateam":"1744673", "a":"1744673", "grape":"1807204", "grapes":"1807204", "toot":"844716", "nier":"1837508", "nier2":"1880420"},
         "othercrew" : {"ssf":"677159", "hsp":"147448", "kingdom":"1377462", "atelier":"418206", "lum1":"388489", "lum2":"401211", "beafriends":"940700", "waifuanon":"588156", "lolibabas":"1593480", "lolibaba":"1593480", "hagchads":"1593480", "hagchad":"1593480", "mesugaki":"1593480", "lazytown":"1586134", "mavericks":"1629318", "maverick":"1629318"}
@@ -260,15 +191,22 @@ If Rosetta is starting properly, you should get a **Rosetta is Ready** message i
 The logs should also look similar to this:  
   
 ```
-INFO:Rosetta:2024-02-18 17:43:39 | [BOOT] Loading the config file...
-INFO:Rosetta:2024-02-18 17:43:39 | [BOOT] Downloading the save file...
-INFO:Rosetta:2024-02-18 17:43:40 | [BOOT] Reading the save file...
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Logger started up. Loading components...
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Components loaded
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Initializing important components...
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Important components initialized
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Loading the config file...
+INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Downloading the save file...
+INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Reading the save file...
+INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initializing remaining components...
+INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Remaining components initialized
+INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initializing disnake.InteractionBot with Intent flags: 0b1100011111111011111101
 WARNING:disnake.client:PyNaCl is not installed, voice will NOT be supported
-INFO:Rosetta:2024-02-18 17:43:40 | [BOOT] Initialization complete
-INFO:Rosetta:2024-02-18 17:43:40 | [MAIN] Loading cogs...
-INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] All cogs loaded
-INFO:Rosetta:2024-02-18 17:43:41 | [MAIN] v11.1.5 starting up...
-INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
+INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initialization complete
+INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] Loading cogs...
+INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] All cogs loaded
+INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] v11.11.0 starting up...
+INFO:Rosetta:2024-12-03 21:51:08 | [MAIN] Rosetta is ready
 ```  
   
 > [!CAUTION]  
@@ -279,15 +217,23 @@ INFO:Rosetta:2024-02-18 17:43:47 | [MAIN] Rosetta is ready
 > All the remaining setup is done via the `/owner` commands.  
 > Refer to *Additional Informations* below if you need more help.  
   
-> [!IMPORTANT]  
-> The emotes used by the bot will likely not be working.  
-> See one of the section below for moe informations.  
-  
 You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.  
   
 > [!TIP]  
 > On Windows, the Task Manager sends a SIGKILL, so CTRL+C is preferred.  
 > On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
+  
+## Emojis  
+The emotes found in `assets/emojis` folder will be automatically uploaded on boot.  
+It can take some time.
+  
+> [!IMPORTANT]
+> You're limited to 2000 emojis par application.  
+> You can manage them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+
+To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
+For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
+If you decide to add more emojis for custom commands, make sure they don't have special characters or the upload might fail.  
   
 ## Other config.json keys
 `games`: The list of game which will appear in the bot status. Feel free to modify it. **At least one game is required** in the list.  
@@ -314,72 +260,7 @@ Same principle, but shorter:
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.   
-  
-## Set the Emojis  
-  
-The bot uses various emojis to pretty up its messages.  
-Discord Bots have **innate** Nitro, kind of. We use this fact by uploading the emojis to a server which the bot has a permanent access to (such as Server you made during setup).  
-  
-There are two ways to do it:  
-### Method 1:  
-  
-On your local machine, in a command prompt or terminal, run `python bot.py -emoji` in the bot folder.  
-The bot will boot, do various checks and, if your Server (the one set in `config.json`, under `debug_server`) has enough emoji spaces, it will upload all emojis.  
-Once done, it will ask you to confirm and then save the changes to `config.json`.  
-You can then use this new `config.json` to run your bot as normal.  
-  
-> [!WARNING]  
-> It can take time if you're hit by a Discord Rate Limit. Simply wait if it happens, the log will tell you how much time.  
-  
-> [!IMPORTANT]  
-> If you're hit by an error, read the logs carefully.  
-> If the errors is not of your fault, please report it to me (ideally with the complete log).  
-> In the meantime, use Method 2 below.  
-  
-Here's what the log of a successful run should look like (on version 11.8.0):  
-```
-2024-07-14 15:02:41 | [INIT EMOJI] 66 file(s) in the 'assets/emojis' folder
-2024-07-14 15:02:41 | [INIT EMOJI] 66 emoji(s) expected in 'config.json'
-2024-07-14 15:02:41 | [INIT EMOJI] Checking correspondances...
-2024-07-14 15:02:41 | [INIT EMOJI] Check finished
-2024-07-14 15:02:41 | [INIT EMOJI] 50 normal emoji(s) and 16 animated emoji(s)
-2024-07-14 15:02:41 | [INIT EMOJI] Connecting to Discord...
-2024-07-14 15:02:44 | [INIT_EMOJI] Checking for free emoji slots...
-2024-07-14 15:02:44 | [INIT_EMOJI] 50 free normal emoji slots for 50 required
-2024-07-14 15:02:44 | [INIT_EMOJI] 50 free animated emoji slots for 16 required
-2024-07-14 15:02:44 | [INIT_EMOJI] Not enough emoji slots, please make space and try again
-2024-07-14 15:02:44 | [INIT_EMOJI] Uploading Emojis...
-2024-07-14 15:17:44 | [INIT_EMOJI] Uploading Complete...
-2024-07-14 15:17:44 | [INIT EMOJI] Disconnected from Discord
-2024-07-14 15:17:44 | [INIT EMOJI] Initialization is over
-2024-07-14 15:17:44 | [INIT EMOJI] Type 'confirm' to confirm the changes to config.json
-2024-07-14 15:17:44 | [INIT EMOJI] Type 'cancel' to cancel
-2024-07-14 15:17:44 | [INIT EMOJI] Loading config.json...
-2024-07-14 15:17:45 | [INIT EMOJI] Creating backup...
-2024-07-14 15:17:45 | [INIT EMOJI] Loading JSON...
-2024-07-14 15:17:45 | [INIT EMOJI] Applying changes...
-2024-07-14 15:17:45 | [INIT EMOJI] Saving config.json...
-2024-07-14 15:17:45 | [INIT EMOJI] Emoji Initialization complete
-```  
-  
-> [!WARNING]  
-> A backup of `config.json` called `config.bak.json` is created upon confirmation.  
-> If, for some reason, an error happens after its creation, I recommend **making a manual copy of this backup if you plan to rerun the command**, so it doesn't get overwritten  
-  
-> [!IMPORTANT]  
-> If new emojis are added in future updates, don't rerun the command.  
-> Use the Method 2 below instead..  
-> `python bot.py -emoji` is intended to be used only **once**, on the first install.  
-  
-### Method 2:  
-  
-The original and more tedious way.  
-Simply add the various emotes in `assets/emojis` to your Server.  
-Once done, retrieve their IDs one by one to set them in `config.json`.  
-A way is to add a slash before the emote in chat. Example, type `\:whatever_your_emote_is:` and it will show `<:whatever_your_emote_is:0000000000000>` where `0000000000000` is the emote ID.  
-  
-An alternative way is to use the Chrome dev tools (F12 or CTRL+SHIFT+J) and the network tab then load your Emoji list. The ID of each emoji can be retrieved from their URLs.  
+Do note the bot is unable to write to your Google Drive in this mode.  
   
 ## Updating  
   

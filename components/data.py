@@ -68,7 +68,7 @@ class Data():
                 data = json.load(f) # deserializer here
                 self.config = data
                 # basic validity check
-                for check in ['tokens', 'ids', 'emotes', 'games']:
+                for check in ['tokens', 'ids', 'games']:
                     if check not in self.config:
                         raise Exception("'{}' section not found in 'config.json'".format(check))
             if self.debug:
@@ -76,9 +76,9 @@ class Data():
                     data = json.load(f) # deserializer here
                     self.config = self.config | data
                     # basic validity check
-                    for check in ['tokens', 'ids', 'emotes', 'games']:
+                    for check in ['tokens', 'ids', 'games']:
                         if check not in self.config:
-                            raise Exception("'{}' section not found in 'config_test.json'".format(check))
+                            raise Exception("'{}' section not found in neither 'config.json' and 'config_test.json'".format(check))
             return True
         except Exception as e:
             self.bot.logger.pushError("[BOOT] An error occured while loading the configuration file:", e)

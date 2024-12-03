@@ -1,6 +1,8 @@
 import disnake
 from typing import Union, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
+import asyncio
+import os
 
 # ----------------------------------------------------------------------------------------------------------------
 # Emote Component
@@ -12,7 +14,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 class Emote():
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.cache = {}
+        self.app_emojis = {}
         self.unicode_emoji = {}
 
     def init(self) -> None:
@@ -51,18 +53,7 @@ class Emote():
     unknown: Discord Emoji if success, empty string if error, key if not found
     """
     def get(self, key : str) -> Union[str, disnake.Emoji]:
-        if key in self.cache:
-            return self.cache[key]
-        elif key in self.bot.data.config['emotes']:
-            try:
-                e = self.bot.get_emoji(self.bot.data.config['emotes'][key]) # ids are defined in config.json
-                if e is not None:
-                    self.cache[key] = e
-                    return e
-                return ""
-            except:
-                return ""
-        return key
+        return self.app_emojis.get(key, key)
 
     """isValid()
     Return True if the string is an emoji the bot has access to
@@ -85,3 +76,34 @@ class Emote():
         elif len(emoji) > 1 and ord(emoji[0]) in self.unicode_emoji:
             return True
         return False
+
+    async def load_app_emojis(self) -> None:
+        emote_file_table = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
+        # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis
+        existing = await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
+        for item in existing['items']:
+            emote_file_table.pop(item['name'], None)
+        if len(emote_file_table) > 0:
+            self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.1)))
+            try:
+                for k, v in emote_file_table.items():
+                    with open("assets/emojis/" + v, mode="rb") as f:
+                        # NOTE: Once disnake 2.10 is out, replace by create_app_emoji
+                        await self.bot.http.request(disnake.http.Route('POST', '/applications/{app_id}/emojis', app_id=self.bot.user.id), json={'name': k, 'image':await disnake.utils._assetbytes_to_base64_data(f.read())})
+                        await asyncio.sleep(1)
+                self.bot.logger.push("[UPLOAD EMOJI] Done.\nEmojis have been uploaded")
+            except Exception as e:
+                self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
+                self.bot.logger.push("[UPLOAD EMOJI] An error occured.\nThe upload process has been aborted.")
+            # get new updated list
+            # NOTE: Once disnake 2.10 is out, replace by get_all_app_emojis
+            existing = await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
+        # initializing app emoji list
+        for item in existing['items']:
+            name = item['name']
+            if len(name) == 2 and name.endswith('_'):
+                name = name[0]
+            # NOTE: Once disnake 2.10 is out, replace by get_emoji or equivalent
+            em = disnake.Emoji(guild=self.bot.get_guild(self.bot.data.config['ids']['debug_server']), state=self.bot._connection, data=item)
+            em._from_data(item)
+            self.app_emojis[name] = em

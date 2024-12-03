@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.10.8" # bot version
+    VERSION = "11.11.0" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
@@ -41,16 +41,11 @@ class DiscordBot(commands.InteractionBot):
         "**v11.10.5** - Support has been added for additional banners in various commands.",
         "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
     ]
-    EMOJI_INIT_NONE = 0
-    EMOJI_INIT_RUNNING = 1
-    EMOJI_INIT_ERROR = -1
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
         self.running = True # is False when the bot is shutting down
         self.debug_mode = debug_mode # indicate if we are running the debug version of the bot
         self.test_mode = test_mode # indicate if we are running the test version of the bot
-        self.emoji_initialization = self.EMOJI_INIT_NONE # set by init_emoji()
-        self.emoji_initialization_content = None # set by init_emoji()
         self.booted = False # goes up to True after the first on_ready event
         self.tasks = {} # contain our user tasks
         self.cogn = 0 # number of cog loaded
@@ -60,6 +55,7 @@ class DiscordBot(commands.InteractionBot):
             self.util = Util(self)
             self.logger = Logger(self)
             self.logger.push("[BOOT] Logger started up. Loading components...", send_to_discord=False)
+            if self.debug_mode: self.logger.push("[INFO] The bot is running in DEBUG mode.", send_to_discord=False)
             self.data = Data(self)
             try:
                 self.drive = Drive(self)
@@ -226,96 +222,6 @@ class DiscordBot(commands.InteractionBot):
                     self.data.saveData()
         if self.data.pending:
             self.data.saveData()
-
-    """init_emoji()
-    Init the emojis ID in config.json. See the README for more infos.
-    """
-    def init_emoji(self) -> None:
-        # laod cogs to not delete integrations
-        self.logger.push("[MAIN] Loading cogs...", send_to_discord=False)
-        self.cogn, failed = cogs.load(self) # load cogs
-        if failed > 0:
-            self.logger.push("[MAIN] {} cog(s) / {} failed to load".format(failed, self.cogn), send_to_discord=False, level=self.logger.CRITICAL)
-            return
-        else:
-            self.logger.push("[MAIN] All cogs loaded", send_to_discord=False)
-        # emoji initialization
-        try:
-            self.emoji_initialization = self.EMOJI_INIT_RUNNING
-            filenames = next(os.walk("assets/emojis"), (None, None, []))[2]
-            self.logger.push("[INIT EMOJI] {} file(s) in the 'assets/emojis' folder".format(len(filenames)), send_to_discord=False)
-            table = self.data.config['emotes'].copy()
-            for k in table:
-                table[k] = None
-            self.logger.push("[INIT EMOJI] {} emoji(s) expected in 'config.json'".format(len(table)), send_to_discord=False)
-            if len(filenames) != len(table):
-                self.logger.push("[INIT EMOJI] Numbers of file and emoji don't match", send_to_discord=False, level=self.logger.WARNING)
-            self.logger.push("[INIT EMOJI] Checking correspondances...", send_to_discord=False)
-            normal = 0
-            animated = 0
-            for k in filenames:
-                v = k.rpartition('.')
-                if v[0] in table:
-                    pass
-                elif v[0].lower() in table:
-                    v[0] = v[0].lower()
-                elif v[0].upper() in table:
-                    v[0] = v[0].upper()
-                elif v[0].capitalize() in table:
-                    v[0] = v[0].capitalize()
-                else:
-                    self.logger.push("[INIT EMOJI] '{}' doesn't seem to match any key in 'config.json'".format(k), send_to_discord=False, level=self.logger.ERROR)
-                    raise Exception("Unknown emoji " + k)
-                table[v[0]] = ''.join(v)
-                if v[2].lower() == 'gif': animated += 1
-                else: normal += 1
-            self.logger.push("[INIT EMOJI] Check finished", send_to_discord=False)
-            self.logger.push("[INIT EMOJI] {} normal emoji(s) and {} animated emoji(s)".format(normal, animated), send_to_discord=False)
-            self.logger.push("[INIT EMOJI] Connecting to Discord...", send_to_discord=False)
-            self.emoji_initialization_content = [table, normal, animated]
-            try:
-                self.loop.run_until_complete(self.start(self.data.config['tokens']['discord']))
-            except:
-                pass
-            self.logger.push("[INIT EMOJI] Disconnected from Discord", send_to_discord=False)
-            if self.emoji_initialization == self.EMOJI_INIT_ERROR:
-                raise Exception("emoji_initialization error flag is set")
-            self.logger.push("[INIT EMOJI] Initialization is over", send_to_discord=False)
-            self.logger.push("[INIT EMOJI] Type 'confirm' to confirm the changes to config.json", send_to_discord=False)
-            self.logger.push("[INIT EMOJI] Type 'cancel' to cancel", send_to_discord=False)
-            while True:
-                i = input().lower()
-                if i == 'confirm':
-                    i = True
-                    break
-                elif i == 'cancel':
-                    i = False
-                    break
-                else:
-                    self.logger.push("[INIT EMOJI] Invalid answer", send_to_discord=False)
-                    self.logger.push("[INIT EMOJI] Type 'confirm' or 'cancel' to continue.", send_to_discord=False)
-            if i:
-                self.logger.push("[INIT EMOJI] Loading config.json...", send_to_discord=False)
-                with open('config.json', mode="r", encoding="utf-8") as f:
-                    filecontent = f.read()
-                self.logger.push("[INIT EMOJI] Creating backup...", send_to_discord=False)
-                with open('config.bak.json', mode="w", encoding="utf-8") as f:
-                    f.write(filecontent)
-                self.logger.push("[INIT EMOJI] Loading JSON...", send_to_discord=False)
-                data = json.loads(filecontent)
-                self.logger.push("[INIT EMOJI] Applying changes...", send_to_discord=False)
-                data['emotes'] = self.emoji_initialization_content[0]
-                self.logger.push("[INIT EMOJI] Saving config.json...", send_to_discord=False)
-                with open('config.json', mode="w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=4, ensure_ascii=False)
-                self.logger.push("[INIT EMOJI] Emoji Initialization complete", send_to_discord=False)
-            else:
-                self.logger.push("[INIT EMOJI] Initialization has been cancelled", send_to_discord=False)
-                self.logger.push("[INIT EMOJI] Changes won't be saved", send_to_discord=False)
-                self.logger.push("[INIT EMOJI] Note: The uploaded Emojis won't be deleted. It's recommended to do it yourself.", send_to_discord=False)
-        except Exception as e:
-            self.logger.pushError("[INIT EMOJI] init_emoji Error", e, send_to_discord=False)
-            self.logger.push("[INIT EMOJI] Initialization is aborted...", send_to_discord=False, level=self.logger.CRITICAL)
 
     """run_bot()
     Followup from start_bot(). Switch to asyncio and initialize the aiohttp client
@@ -533,46 +439,12 @@ class DiscordBot(commands.InteractionBot):
     Event. Called on connection
     """
     async def on_ready(self) -> None: # called when the bot starts
-        if self.emoji_initialization == self.EMOJI_INIT_RUNNING: # init_emoji() sequence
-            try:
-                uploaded = []
-                self.emoji_initialization = self.EMOJI_INIT_NONE
-                guild = self.get_guild(self.data.config['ids']['debug_server'])
-                normal_limit = guild.emoji_limit
-                animated_limit = guild.emoji_limit
-                self.logger.push("[INIT_EMOJI] Checking for free emoji slots...", send_to_discord=False)
-                for e in guild.emojis:
-                    if e.animated: animated_limit -= 1
-                    else: normal_limit -= 1
-                self.logger.push("[INIT_EMOJI] {} free normal emoji slots for {} required".format(normal_limit, self.emoji_initialization_content[1]), send_to_discord=False)
-                self.logger.push("[INIT_EMOJI] {} free animated emoji slots for {} required".format(animated_limit, self.emoji_initialization_content[2]), send_to_discord=False)
-                if self.emoji_initialization_content[1] > normal_limit or self.emoji_initialization_content[2] > animated_limit:
-                    self.logger.push("[INIT_EMOJI] Not enough emoji slots, please make space and try again", send_to_discord=False, level=self.logger.ERROR)
-                    self.emoji_initialization = self.EMOJI_INIT_ERROR
-                else:
-                    self.logger.push("[INIT_EMOJI] Uploading emojis...", send_to_discord=False)
-                    for k, v in self.emoji_initialization_content[0].items():
-                        with open("assets/emojis/" + v, mode="rb") as f:
-                            emoji = await guild.create_custom_emoji(name=k.ljust(2, '_'), image=f.read())
-                        self.emoji_initialization_content[0][k] = emoji.id
-                        uploaded.append(emoji)
-                        await asyncio.sleep(0.2) # for rate limit
-                    self.logger.push("[INIT_EMOJI] Upload complete", send_to_discord=False)
-            except Exception as e:
-                self.emoji_initialization = self.EMOJI_INIT_ERROR
-                self.logger.pushError("[INIT_EMOJI] on_ready Error", e, send_to_discord=False)
-                if len(uploaded) > 0:
-                    self.logger.push("[INIT_EMOJI] Attempting to cleaning up uploaded emojis...", send_to_discord=False)
-                    for emoji in uploaded:
-                        try: await guild.delete_emoji(emoji)
-                        except: pass
-            # disconnect
-            self.logger.push("[INIT_EMOJI] Disconnecting from Discord...", send_to_discord=False)
-            await self.http.close() # note: self.close() crashes Python 3.11 on windows
-        elif not self.booted: # normal boot sequence
+        if not self.booted: # normal boot sequence
             # set our used channels for the send function
             self.channel.setMultiple([['debug', 'debug_channel'], ['image', 'image_upload']])
             await self.send('debug', embed=self.embed(title="{} is Ready".format(self.user.display_name), description=self.util.statusString(), thumbnail=self.user.display_avatar, timestamp=self.util.UTC()))
+            # set load app emojis
+            await self.emote.load_app_emojis()
             # check guilds and start the tasks
             self.booted = True
             self.logger.push("[MAIN] Rosetta is ready", send_to_discord=False)
@@ -853,9 +725,6 @@ if __name__ == "__main__":
     elif '-run' in sys.argv:
         bot = DiscordBot(debug_mode=('-debug' in sys.argv))
         bot.start_bot()
-    elif '-emoji' in sys.argv:
-        bot = DiscordBot()
-        bot.init_emoji()
     else:
         print("Usage: python bot.py [options]")
         print("")
@@ -863,7 +732,6 @@ if __name__ == "__main__":
         print("-remove: Used to desync Guild slash commands (use to remove a test bot commands).")
         print("-test: Run the bot in test mode (to check if the cogs are loading).")
         print("-run: Run the bot.")
-        print("-emoji: Init the emoji in config.json and the corresponding debug server.")
         print("")
         print("# Others Parameters:")
         print("-debug: Put the bot in debug mode (config_test.json will be used, test.py Cog will be loaded, some operations such as saving will be impossible).")
