@@ -297,7 +297,7 @@ Here's a quick overview of the sub command groups:
 * `/owner gacha`: Commands to clear the gacha banner and change the `/roll roulette` command settings.  
 
 > [!WARNING]  
-> I rarely use most of those commands, there is a small chance it might be hiding some bugs.  
+> I rarely use most of those commands, there is a small chance they might be hiding some bugs.  
   
 If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
   
