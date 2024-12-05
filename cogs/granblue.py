@@ -438,7 +438,7 @@ class GranblueFantasy(commands.Cog):
         try:
             buf = await self.bot.gacha.get()
             if len(buf) > 0:
-                output.append("{} Current gacha ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
+                output.append("{} Current {} ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.command2mention('gbf gacha'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
                 if buf[1]['time'] != buf[1]['timesub']:
                     output.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
                 output.append('\n')
@@ -449,7 +449,9 @@ class GranblueFantasy(commands.Cog):
             buf = self.bot.get_cog('GuildWar').getGWState()
             if len(buf) > 0:
                 output.append(buf)
-                output.append("\n")
+                output.append(" (")
+                output.append(self.bot.util.command2mention("gw time"))
+                output.append(")\n")
         except:
             pass
 
@@ -457,7 +459,9 @@ class GranblueFantasy(commands.Cog):
             buf = self.bot.get_cog('DreadBarrage').getBarrageState()
             if len(buf) > 0:
                 output.append(buf)
-                output.append("\n")
+                output.append(" (")
+                output.append(self.bot.util.command2mention("gw time"))
+                output.append(")\n")
         except:
             pass
 
@@ -478,7 +482,7 @@ class GranblueFantasy(commands.Cog):
 
         try:
             if current_time < self.bot.data.save['stream']['time']:
-                output.append("{} Stream at **{}**\n".format(self.bot.emote.get('crystal'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
+                output.append("{} {} on the **{}**\n".format(self.bot.emote.get('crystal'), self.bot.util.command2mention('gbf stream'), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d','t'], removejst=True)))
         except:
             pass
         return ''.join(output)
@@ -636,50 +640,56 @@ class GranblueFantasy(commands.Cog):
         """Post the GBF schedule"""
         await inter.response.defer()
         c = self.bot.util.UTC()
-        # assemble schedule data
-        sorted = {}
-        for event, dates in self.bot.data.save['schedule'].items():
-            if dates[0] not in sorted:
-                sorted[dates[0]] = {}
-            try: end = dates[1]
-            except: end = 0
-            if end not in sorted[dates[0]]:
-                sorted[dates[0]][end] = []
-            sorted[dates[0]][end].append(event)
-        # sort and read schedule data
-        msg = []
-        starts = list(sorted.keys())
-        starts.sort()
+        events = {}
         next = None
-        for start in starts:
-            await asyncio.sleep(0)
-            dstart = datetime.utcfromtimestamp(start)
-            ends = list(sorted[start].keys())
-            for end in ends:
-                dend = datetime.utcfromtimestamp(end)
-                for event in sorted[start][end]:
-                    if end == 0: # no end date
-                        if c >= dstart: # event started
-                            msg.append("- **{}** ▫️ **On going**\n".format(event))
-                        else:
-                            msg.append("- {} ▫️ {}\n".format(event, self.bot.util.time(dstart, style=['d'])))
-                            if next is None: next = dstart
-                    elif c >= dend:
-                        msg.append("- ~~{}~~ ▫️ *Ended*\n".format(event))
+        for event, dates in self.bot.data.save['schedule'].items():
+            if dates[0] not in events:
+                events[dates[0]] = []
+            match len(dates):
+                case 1:
+                    start = datetime.utcfromtimestamp(dates[0])
+                    if c < start:
+                        events[dates[0]].append("- {} ▫️ {}\n".format(event, self.bot.util.time(start, style=['d'])))
+                        if next is None or start < next[0]:
+                            next = [start, event]
+                    elif c - start > timedelta(days=3): # don't display
+                        continue
                     else:
-                        if c >= dstart: # event started
-                            msg.append("- **{}** ▫️ Ends in **{}** {}\n".format(event, self.bot.util.delta2str(dend - c, 2), self.bot.util.time(dend, style=['d'])))
-                        else:
-                            msg.append("- {} ▫️ {} - {}\n".format(event, self.bot.util.time(dstart, style=['d']), self.bot.util.time(dend, style=['d'])))
-                            if next is None: next = dstart
-        if len(msg) == 0:
+                        events[dates[0]].append("- **{}** ▫️ **On going**\n".format(event))
+                case 2:
+                    start = datetime.utcfromtimestamp(dates[0])
+                    end = datetime.utcfromtimestamp(dates[1])
+                    if c < start:
+                        events[dates[0]].append("- {} ▫️ {} - {}\n".format(event, self.bot.util.time(start, style=['d']), self.bot.util.time(end, style=['d'])))
+                        if next is None or start < next[0]:
+                            next = [start, event]
+                    elif c >= end:
+                        if c - end > timedelta(days=3): # don't display
+                            continue
+                        events[dates[0]].append("- ~~{}~~ ▫️ *Ended*\n".format(event))
+                    else:
+                        events[dates[0]].append("- **{}** ▫️ Ends in **{}** {}\n".format(event, self.bot.util.delta2str(end - c, 2), self.bot.util.time(end, style=['d'])))
+                case _:
+                    continue
+        dates = list(events.keys())
+        dates.sort()
+        msgs = []
+        for date in dates:
+            msgs += events[date]
+        if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
         else:
-            current_time = self.bot.util.JST()
-            msg.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%I:%M %p")))
-            if next is not None: msg.append("{} Next event approximately in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(next - c, 2)))
-            msg.append(await self.getGBFInfoTimers(inter, current_time))
-            await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=''.join(msg), footer="source: https://gbf.wiki/"))
+            msgs.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), c.strftime("%I:%M %p")))
+            if next is not None:
+                if next[1].startswith("Update"):
+                    next[1] = "update"
+                elif next[1].startswith("Maintenance"):
+                    next[1] = "maintenance"
+                else:
+                    next[1] = "event"
+                msgs.append("{} Next {} approximately in **{}**\n".format(self.bot.emote.get('mark'), next[1], self.bot.util.delta2str(next[0] - c, 2)))
+            msgs.append(await self.getGBFInfoTimers(inter, c))
+            await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=''.join(msgs), footer="source: https://gbf.wiki/"))
 
     """getGrandList()
     Request the grand character list from the wiki page and return the list of latest released ones

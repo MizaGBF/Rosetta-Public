@@ -26,19 +26,16 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION = "11.11.1" # bot version
+    VERSION = "11.11.2" # bot version
     CHANGELOG = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
-        "**v11.8.2** - `/gw utility` commands updated with the new Nightmare, using **Placeholder** values for now.",
-        "**v11.8.3** - Moved `/gbf check crystal` to `/gbf campaign crystal`. Added `/gbf campaign element`.",
-        "**v11.8.4** - Moved `/gw utility nm` to `/gw nm hp90_95`. Added `/gw nm hp100`.",
-        "**v11.8.5** - Updated `/guide defense`.",
         "**v11.9.1** - Updated some `/gw` commands. Added `/gw utility clump`.",
         "**v11.9.2** - Removed `/gw stats` commands. The website gbfteamraid.fun seems to be dead.",
         "**v11.9.3** - Revamped `/gw utility` commands. `/gw utility clump` has been merged into `/gw utility meat`.",
         "**v11.10.0** - Fixed a bug in `/reminder` commands and added automatic reminders. Make sure your server receives Bot Announcements.",
         "**v11.10.5** - Support has been added for additional banners in various commands.",
         "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
+        "**v11.11.2** - Reworked `/gbf schedule`. Added command mentions to it and to `/gbf info`.",
     ]
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
