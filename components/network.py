@@ -34,7 +34,7 @@ class Network():
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.user_agent = None
+        self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
         self.client_req = {}
@@ -59,7 +59,6 @@ class Network():
                             return
             raise Exception("Missing data")
         except Exception as e:
-            self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION
             self.bot.logger.pushError("[NET] Couldn't retrieve the latest Chrome user-agent from `https://jnrbsn.github.io/user-agents/user-agents.json`.\nIt has been set to `{}` in the meantime.".format(self.user_agent), e)
 
     """init_clients()
