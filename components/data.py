@@ -329,6 +329,9 @@ class Data():
                         self.bot.logger.pushError("[TASK] 'maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
                 
+                # update user agent (only on first day of month)
+                if ct.day == 1:
+                    await self.bot.net.update_user_agent()
                 # update avatar on first day of some month
                 if ct.day == 1:
                     match ct.month:

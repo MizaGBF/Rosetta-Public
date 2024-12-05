@@ -30,10 +30,11 @@ class Network():
     ACC_STATUS_UNDEF = 0
     ACC_STATUS_OK = 1
     ACC_STATUS_DOWN = 2
+    DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Rosetta/'+bot.VERSION
+        self.user_agent = None
         self.translator = GoogleTranslator(source='auto', target='en')
         self.client = None
         self.client_req = {}
@@ -42,6 +43,24 @@ class Network():
 
     def init(self) -> None:
         pass
+
+    """update_user_agent()
+    Automatically update the default Chrome user agent used by Rosetta
+    """
+    async def update_user_agent(self) -> None:
+        try:
+            response = await self.client.get("https://jnrbsn.github.io/user-agents/user-agents.json")
+            async with response:
+                if 200 <= response.status < 400:
+                    for ua in await response.json():
+                        if "Windows" in ua and "Chrome" in ua:
+                            self.user_agent = ua + ' Rosetta/' + self.bot.VERSION
+                            self.bot.logger.push("[NET] Default user-agent set to `{}`".format(self.user_agent), send_to_discord=False)
+                            return
+            raise Exception("Missing data")
+        except Exception as e:
+            self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION
+            self.bot.logger.pushError("[NET] Couldn't retrieve the latest Chrome user-agent from `https://jnrbsn.github.io/user-agents/user-agents.json`.\nIt has been set to `{}` in the meantime.".format(self.user_agent), e)
 
     """init_clients()
     Context manager for the aiohttp clients, to ensure it will be closed upon exit. Used in bot.py
@@ -62,6 +81,8 @@ class Network():
             self.gbf_client_req[self.POST] = self.gbf_client.post
             self.gbf_client_req[self.HEAD] = self.gbf_client.head
             self.gbf_client_req[self.CONDITIONAL_GET] = self.gbf_client.get
+            # update user agent
+            await self.update_user_agent()
             yield (self.client, self.gbf_client)
         finally:
             await self.client.close()
