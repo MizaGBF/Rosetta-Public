@@ -45,6 +45,7 @@ class DiscordBot(commands.InteractionBot):
         self.test_mode = test_mode # indicate if we are running the test version of the bot
         self.booted = False # goes up to True after the first on_ready event
         self.tasks = {} # contain our user tasks
+        self.reaction_hooks = {} # for on_raw_reaction_add, see related function
         self.cogn = 0 # number of cog loaded
         
         # components
@@ -665,14 +666,21 @@ class DiscordBot(commands.InteractionBot):
         await self.application_error_handling(inter, error)
 
     """on_raw_reaction_add()
-    Event. Called when a new reaction is added by an user, for the pinboard system
+    Event. Called when a new reaction is added by an user.
+    Go through the registered reaction_hooks and call them.
+    If one return True, stop.
+    
+    A reaction hook must be a coroutine taking a disnake.RawReactionActionEvent as a parameter and returning a bool.
+    See pin() in components/pinboard.py for an example.
     
     Parameters
     ----------
     payload: Raw payload
     """
     async def on_raw_reaction_add(self, payload : disnake.RawReactionActionEvent) -> None:
-        await self.pinboard.pin(payload)
+        for name, coroutine in self.reaction_hooks.items():
+            if await coroutine(payload):
+                return
 
     """on_message()
     Event. Called when a new message is posted.
