@@ -57,9 +57,8 @@ class General(commands.Cog):
     async def help(self, inter: disnake.GuildCommandInteraction, search : str = commands.Param(description="What are you searching for?", default="")) -> None:
         """Get the bot help"""
         await inter.response.defer(ephemeral=True)
-        msg = ""
         if len(search) == 0: # empty string
-            msg = "Online Help [here](https://mizagbf.github.io/discordbot.html)"
+            msgs = ["Online Help [here](https://mizagbf.github.io/discordbot.html)"]
         else:
             global_slash_commands = self.bot.global_slash_commands
             search = search.split(' ')
@@ -73,17 +72,20 @@ class General(commands.Cog):
                         if (s in r[0] or s in r[2]) and r[2] != "Command Group":
                             results.append(r)
             if len(results) == 0: # no results
-                msg = "No results found for `{}`\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(' '.join(search))
-            else:   
+                msgs = ["No results found for `{}`\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(' '.join(search))]
+            else:
+                msgs = []
+                length = 0
                 count = len(results)
                 for r in results:
-                    msg += "</{}:{}> ▫️ *{}*\n".format(r[0], r[1], r[2])
+                    msgs.append("</{}:{}> ▫️ *{}*\n".format(r[0], r[1], r[2]))
+                    length += len(msgs[-1])
                     count -= 1
-                    if len(msg) > 1500 and count > 0: # if message too big, stop and put how many remaining commands were found
-                        msg += "**And {} more commands...**\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(count)
+                    if length > 1500 and count > 0: # if message too big, stop and put how many remaining commands were found
+                        msgs.append("**And {} more commands...**\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(count))
                         break
 
-        await inter.edit_original_message(embed=self.bot.embed(title=self.bot.user.name + " Help", description=msg, thumbnail=self.bot.user.display_avatar, color=self.COLOR, url="https://mizagbf.github.io/discordbot.html"))
+        await inter.edit_original_message(embed=self.bot.embed(title=self.bot.user.name + " Help", description="".join(msgs), thumbnail=self.bot.user.display_avatar, color=self.COLOR, url="https://mizagbf.github.io/discordbot.html"))
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -103,15 +105,18 @@ class General(commands.Cog):
     async def changelog(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the bot changelog"""
         await inter.response.defer(ephemeral=True)
-        msg = ""
+        msgs = []
         for c in self.bot.CHANGELOG:
             e = c.split('`')
             for i in range(1, len(e), 2):
                 e[i] = self.bot.util.command2mention(e[i])
                 if not e[i].startswith('<'): e[i] = '`' + e[i] + '`'
-            msg += "- {}\n".format(''.join(e))
-        if msg != "":
-            await inter.edit_original_message(embed=self.bot.embed(title="{} ▫️ v{}".format(inter.me.display_name, self.bot.VERSION), description="### Changelog\n" + msg, thumbnail=inter.me.display_avatar, color=self.COLOR))
+            msgs.append("- ")
+            msgs += e
+            msgs.append("\n")
+        if len(msgs) > 0:
+            msgs.insert(0, "### Changelog\n")
+            await inter.edit_original_message(embed=self.bot.embed(title="{} ▫️ v{}".format(inter.me.display_name, self.bot.VERSION), description="".join(msgs), thumbnail=inter.me.display_avatar, color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Changelog available", color=self.COLOR))
 
@@ -146,14 +151,16 @@ class General(commands.Cog):
                 x = m[i].replace(" ", "").split("=")
                 if len(x) == 2: d[x[0]] = float(x[1])
                 else: raise Exception('')
-            msg = "`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))
+            msgs = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))]
             if len(d) > 0:
-                msg += "\nwith:\n"
+                msgs.append("\nwith:\n")
                 for k in d:
-                    msg += "{} = {}\n".format(k, d[k])
-            await inter.edit_original_message(embed=self.bot.embed(title="Calculator", description=msg, color=self.COLOR))
+                    msgs.append("{}".format(k))
+                    msgs.append(" = ")
+                    msgs.append("{}\n".format(d[k]))
+            await inter.edit_original_message(embed=self.bot.embed(title="Calculator", description="".join(msgs), color=self.COLOR))
         except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Error\n"+str(e), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Error\n{}".format(e), color=self.COLOR))
         await self.bot.util.clean(inter, 60)
 
     @utility.sub_command()
@@ -177,14 +184,16 @@ class General(commands.Cog):
                 raise Exception("Please specify a valid number of rolls")
             else:
                 count = int(count)
-            msg = "Your chances of getting at least one SSR of the following rates with {} rolls:\n".format(count)
+            msgs = []
             ssrrate, rateups = self.bot.gacha.allRates(banner)
             if ssrrate is None: raise Exception("An error occured or no GBF gacha data is available.\nConsider using {} instead in the meantime.".format(self.bot.util.command2mention('utility dropchance')))
             for r in rateups:
-                msg += "{:} **{:.3f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), r, 100*(1-math.pow(1-r*0.01, count)))
-            msg += "Your chances of getting at least one SSR with {} rolls:\n".format(count)
-            msg += "{:} **{:.2f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), ssrrate, 100*(1-math.pow(1-ssrrate*0.01, count)))
-            await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator", description=msg.replace('100.000%', '99.999%'), color=self.COLOR))
+                msgs.append("{:} **{:.3f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), r, 100*(1-math.pow(1-r*0.01, count))))
+            if len(msgs) > 0:
+                msgs.insert(0, "Your chances of getting at least one SSR of the following rates with {} rolls:\n".format(count))
+            msgs.append("Your chances of getting at least one SSR with {} rolls:\n".format(count))
+            msgs.append("{:} **{:.2f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), ssrrate, 100*(1-math.pow(1-ssrrate*0.01, count))))
+            await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator", description="".join(msgs).replace('100.000%', '99.999%'), color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator Error", description=str(e), color=self.COLOR))
 
