@@ -1005,12 +1005,13 @@ class GranblueFantasy(commands.Cog):
 
     @_utility.sub_command()
     async def leechlist(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Post a link to /gbfg/ leechlist collection"""
+        """Post a link to /gbfg/ leechlist collection and GW data"""
         await inter.response.defer()
         urls = [
             ('Anon #1 GW26-46', 'https://drive.google.com/open?id=1kfUi2GNcwXobEWnG_sdqPQu2r5YSLNpk'),
             ('Anon #2 GW47-58', 'https://drive.google.com/drive/folders/1f6DJ-u9D17CubY24ZHl9BtNv3uxTgPnQ'),
-            ('My Data GW47-75', 'https://drive.google.com/drive/folders/18ZY2SHsa3CVTpusDHPg-IqNPFuXhYRHw')
+            ('My Data GW47-75 + Databases', 'https://drive.google.com/drive/folders/18ZY2SHsa3CVTpusDHPg-IqNPFuXhYRHw'),
+            ('Rosetta Databases', 'https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2')
         ]
         view = UrlButton(self.bot, urls)
         await inter.edit_original_message('\u200b', view=view)

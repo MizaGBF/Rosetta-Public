@@ -27,7 +27,10 @@ def loadCogFile(bot : 'DiscordBot', p : str, f : str, r : re.Pattern, relative :
                     return False
     except Exception as e2:
         if not silent:
-            bot.logger.pushError("[COG] Exception in file {}:".format(p), e2)
+            if 'No such file or directory:' in str(e2):
+                bot.logger.pushError("[COG] Exception in file {}:".format(p), e2)
+            else:
+                bot.logger.pushError("[COG] Exception in file {}:".format(p), e2)
     return False
 
 def load(bot : 'DiscordBot') -> tuple: # load all cogs in the 'cog' folder
