@@ -38,8 +38,7 @@ class Data():
         'pinboard': {},
         'ban': {},
         'announcement': {},
-        'log': [],
-        'vxtwitter' : {}
+        'log': []
     }
     
     def __init__(self, bot : 'DiscordBot') -> None:
