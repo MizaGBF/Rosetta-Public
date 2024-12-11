@@ -42,7 +42,7 @@ class Admin(commands.Cog):
             try:
                 await asyncio.sleep(1800) # 30 min
                 num = (num + 1) % 4
-                if num == 0: # status change every two hours an refresh GBF account
+                if num == 0: # status change every two hours and refresh GBF account
                     await self.bot.change_presence(status=disnake.Status.online, activity=disnake.activity.Game(name=random.choice(self.bot.data.config['games'])))
                     await self.bot.net.refresh_account()
                 # autosave every half hour
