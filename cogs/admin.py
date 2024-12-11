@@ -95,18 +95,19 @@ class Admin(commands.Cog):
     Output the server list of the bot in the debug channel
     """
     async def guildList(self) -> None: # list all guilds the bot is in and send it in the debug channel
-        msg = ""
+        msgs = []
+        length = 0
         for s in self.bot.guilds:
-            msg += "**{}** `{}`owned by `{}`\n".format(s.name, s.id, s.owner_id)
-            if len(msg) > 1800:
-                await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description=msg, thumbnail=self.bot.user.display_avatar, color=self.COLOR))
-                msg = ""
-        if msg != "":
-            await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description=msg, thumbnail=self.bot.user.display_avatar, color=self.COLOR))
-            msg = ""
+            msgs.append("**{}** `{}`owned by `{}`\n".format(s.name, s.id, s.owner_id))
+            length += len(msgs[-1])
+            if length > 1800:
+                await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description="".join(msgs), thumbnail=self.bot.user.display_avatar, color=self.COLOR))
+                msgs = []
+                length = 0
+        if len(msgs) > 0:
+            await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description="".join(msgs), thumbnail=self.bot.user.display_avatar, color=self.COLOR))
         if len(self.bot.data.save['banned_guilds']) > 0:
-            msg += "Banned Guilds are `" + "` `".join(str(x) for x in self.bot.data.save['banned_guilds']) + "`\n"
-        if msg != "":
+            msg = "Banned Guilds are `" + "` `".join(str(x) for x in self.bot.data.save['banned_guilds']) + "`\n"
             await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description=msg, thumbnail=self.bot.user.display_avatar, color=self.COLOR))
 
     @commands.slash_command(name="owner", guild_ids=guild_ids)
@@ -304,13 +305,13 @@ class Admin(commands.Cog):
     async def checkid(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID Based Check if an user has a ban registered in the bot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        msg = ""
-        if self.bot.ban.check(user_id, self.bot.ban.OWNER): msg += "Banned from having the bot in its own servers\n"
-        if self.bot.ban.check(user_id, self.bot.ban.SPARK): msg += "Banned from appearing in {}\n".format(self.bot.util.command2mention('spark ranking'))
-        if self.bot.ban.check(user_id, self.bot.ban.PROFILE): msg += "Banned from using {}\n".format(self.bot.util.command2mention('gbf profile set'))
-        if self.bot.ban.check(user_id, self.bot.ban.USE_BOT): msg += "Banned from using the bot\n"
-        if msg == "": msg = "No Bans set for this user"
-        await inter.edit_original_message(embed=self.bot.embed(title="User {}".format(user_id), description=msg, color=self.COLOR))
+        msgs = []
+        if self.bot.ban.check(user_id, self.bot.ban.OWNER): msgs.append("Banned from having the bot in its own servers\n")
+        if self.bot.ban.check(user_id, self.bot.ban.SPARK): msgs.append("Banned from appearing in {}\n".format(self.bot.util.command2mention('spark ranking')))
+        if self.bot.ban.check(user_id, self.bot.ban.PROFILE): msgs.append("Banned from using {}\n".format(self.bot.util.command2mention('gbf profile set')))
+        if self.bot.ban.check(user_id, self.bot.ban.USE_BOT): msgs.append("Banned from using the bot\n")
+        if len(msgs) == 0: msgs = ["No Bans set for this user"]
+        await inter.edit_original_message(embed=self.bot.embed(title="User {}".format(user_id), description="".join(msgs), color=self.COLOR))
 
     @ban.sub_command()
     async def all(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
@@ -1026,8 +1027,7 @@ class Admin(commands.Cog):
         await inter.response.defer(ephemeral=True)
         if 'roulette' not in self.bot.data.save['gbfdata']:
             self.bot.data.save['gbfdata']['roulette'] = {}
-        error = ""
-        settings = ""
+        msgs = []
         if guaranteddate > 240100:
             try:
                 self.bot.util.JST().replace(year=2000+guaranteddate//10000, month=(guaranteddate//100)%100, day=guaranteddate%100, hour=5, minute=0, second=0, microsecond=0)
@@ -1036,43 +1036,43 @@ class Admin(commands.Cog):
                 self.bot.data.save['gbfdata']['roulette']['day'] = guaranteddate%100
                 self.bot.data.pending = True
             except:
-                error += "**Error**: Invalid date `{}`\n\n".format(guaranteddate)
-        settings += "- Guaranted roll start date: `{}{}{}`\n".format(str(self.bot.data.save['gbfdata']['roulette'].get('year', 24)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('month', 1)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('day', 1)).zfill(2))
+                msgs.append("**Error**: Invalid date `{}`\n\n".format(guaranteddate))
+        msgs.append("- Guaranted roll start date: `{}{}{}`\n".format(str(self.bot.data.save['gbfdata']['roulette'].get('year', 24)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('month', 1)).zfill(2), str(self.bot.data.save['gbfdata']['roulette'].get('day', 1)).zfill(2)))
         if forced3pc != -1:
             self.bot.data.save['gbfdata']['roulette']['forced3%'] = (forced3pc == 1)
             self.bot.data.pending = True
-        settings += "- Guaranted roll real rate: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forced3%', True) else "Disabled")
+        msgs.append("- Guaranted roll real rate: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forced3%', True) else "Disabled"))
         if forcedroll != -1:
             self.bot.data.save['gbfdata']['roulette']['forcedroll'] = forcedroll
             self.bot.data.pending = True
-        settings += "- Number of Guaranted rolls: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('forcedroll', 100))
+        msgs.append("- Number of Guaranted rolls: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('forcedroll', 100)))
         if forcedsuper != -1:
             self.bot.data.save['gbfdata']['roulette']['forcedsuper'] = (forcedsuper == 1)
             self.bot.data.pending = True
-        settings += "- Super Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forcedsuper', True) else "Disabled")
+        msgs.append("- Super Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('forcedsuper', True) else "Disabled"))
         if enable200 != -1:
             self.bot.data.save['gbfdata']['roulette']['enable200'] = (enable200 == 1)
             self.bot.data.pending = True
-        settings += "- 200 rolls on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enable200', False) else "Disabled")
+        msgs.append("- 200 rolls on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enable200', False) else "Disabled"))
         if janken != -1:
             self.bot.data.save['gbfdata']['roulette']['enablejanken'] = (janken == 1)
             self.bot.data.pending = True
-        settings += "- Janken mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enablejanken', False) else "Disabled")
+        msgs.append("- Janken mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('enablejanken', False) else "Disabled"))
         if maxjanken != 0:
             self.bot.data.save['gbfdata']['roulette']['maxjanken'] = maxjanken
             self.bot.data.pending = True
-        settings += "- Max number of Janken: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('maxjanken', 1))
+        msgs.append("- Max number of Janken: `{}`\n".format(self.bot.data.save['gbfdata']['roulette'].get('maxjanken', 1)))
         if doublemukku != -1:
             self.bot.data.save['gbfdata']['roulette']['doublemukku'] = (doublemukku == 1)
             self.bot.data.pending = True
-        settings += "- Double Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('doublemukku', False) else "Disabled")
+        msgs.append("- Double Mukku: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('doublemukku', False) else "Disabled"))
         if realist != -1:
             self.bot.data.save['gbfdata']['roulette']['realist'] = (realist == 1)
             self.bot.data.pending = True
-        settings += "- Realist mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('realist', False) else "Disabled")
+        msgs.append("- Realist mode: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('realist', False) else "Disabled"))
         if birthday != -1:
             self.bot.data.save['gbfdata']['roulette']['birthday'] = (birthday == 1)
             self.bot.data.pending = True
-        settings += "- Birthday Zone on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('birthday', False) else "Disabled")
+        msgs.append("- Birthday Zone on Wheel: {}\n".format("**Enabled**" if self.bot.data.save['gbfdata']['roulette'].get('birthday', False) else "Disabled"))
             
-        await inter.edit_original_message(embed=self.bot.embed(title="Roulette Simulator settings", description=error+settings, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Roulette Simulator settings", description="".join(msgs), color=self.COLOR))
