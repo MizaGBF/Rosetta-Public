@@ -159,13 +159,12 @@ class GranblueFantasy(commands.Cog):
                             b = description.find('"', a+10)
                             if b != -1:
                                 tmp = description[a+10:b]
-                                thumb = "https://prd-game-a-granbluefantasy.akamaized.net"
                                 if tmp.startswith("assets"):
-                                    thumb += "/" + tmp
+                                    thumb += "https://prd-game-a-granbluefantasy.akamaized.net/" + tmp
                                 elif tmp.startswith("http"):
                                     thumb = tmp
                                 else:
-                                    thumb += tmp
+                                    thumb += "https://prd-game-a-granbluefantasy.akamaized.net" + tmp
                         # remove div
                         cur = 0
                         while True:
@@ -233,13 +232,17 @@ class GranblueFantasy(commands.Cog):
                         description = description.replace('<li>', '**')
                         # final
                         elements = description.replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').split('\n')
-                        description = ""
+                        description = []
+                        length = 0
                         for e in elements:
-                            description += e + '\n'
-                            if len(description) >= limit:
-                                description += "[...]\n"
+                            description.append(e)
+                            length += len(description[-1]) + 1
+                            if length >= limit:
+                                description.append("[...]")
                                 break
-                        description += "\n[News Link](https://game.granbluefantasy.jp/#news/detail/{}/2/1/1)".format(ii)
+                        if len(description) == 0: description.append("")
+                        description.append("[News Link](https://game.granbluefantasy.jp/#news/detail/{}/2/1/1)".format(ii))
+                        description = "\n".join(description)
                         # fixes for when intern kun mess up
                         if thumb is not None and '://' in thumb[8:]: thumb = None
                         if url is not None and '://' in url[8:]: url = None
@@ -518,12 +521,15 @@ class GranblueFantasy(commands.Cog):
                     output["url"] = "https://gbf.wiki/" + title.replace(" ", "_")
                     match t:
                         case 'characters':
-                            output["desc"] = ""
-                            if elem['profile'] is not None: output["desc"] += "*" + html.unescape(elem['profile']) + "*\n\n"
+                            output["desc"] = []
+                            if elem['profile'] is not None:
+                                output["desc"].append("*")
+                                output["desc"].append(html.unescape(elem['profile']))
+                                output["desc"].append("*\n\n")
                             if elem['join weapon'] is not None:
                                 jwpn = html.unescape(elem['join weapon'])
-                                output["desc"] += "Weapon: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(jwpn, quote(jwpn))
-                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                                output["desc"].append("Weapon: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(jwpn, quote(jwpn)))
+                            output["desc"].append("[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"]))
                             max_evo = elem["max evo"]
                             if max_evo is None or max_evo <= 4: max_evo = 1
                             else: max_evo -= 2
@@ -532,8 +538,8 @@ class GranblueFantasy(commands.Cog):
                             output["footer"] = str(elem["id"])
                             if elem["va"] is not None: output["footer"] += " - " + elem["va"]
                         case 'summons':
-                            output["desc"] = ""
-                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                            output["desc"] = []
+                            output["desc"].append("[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"]))
                             max_evo = elem["evo max"]
                             if max_evo is None or max_evo <= 3: max_evo = 1
                             else: max_evo -= 2
@@ -542,33 +548,36 @@ class GranblueFantasy(commands.Cog):
                             output["title"] = "{}{} {}".format(self.bot.emote.get(elem["rarity"]), self.bot.emote.get(elem["element"].lower()), html.unescape(elem["name"])) + (" [{}]".format(elem["series"].capitalize().replace(";", ", ")) if elem["series"] is not None else "")
                             output["footer"] = str(elem["id"])
                         case 'weapons':
-                            output["desc"] = ""
+                            output["desc"] = []
                             if elem['obtain'] is not None:
                                 if "[[" in elem['obtain']:
                                     otxt = html.unescape(elem['obtain']).split("[[", 1)[1].split("]]", 1)[0]
                                     output["desc"] += "Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote(otxt))
                                 else:
-                                    output["desc"] += "Obtain: {}\n".format(elem['obtain'].split(',', 1)[0].capitalize())
+                                    output["desc"].append("Obtain: {}\n".format(elem['obtain'].split(',', 1)[0].capitalize()))
                             if elem['character unlock'] is not None:
                                 chu = html.unescape(elem['character unlock'])
-                                output["desc"] += "Unlock: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(chu, quote(chu))
-                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"])
+                                output["desc"].append("Unlock: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(chu, quote(chu)))
+                            output["desc"].append("[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(elem["id"], elem["id"]))
                             max_evo = elem["evo max"]
                             max_evo = "" if max_evo != 6 else "_03"
                             output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}{}.jpg".format(elem["id"], max_evo)
                             output["title"] = "{}{}{} {}".format(self.bot.emote.get(elem["rarity"]), self.bot.emote.get({'0': 'sword','1': 'dagger','2': 'spear','3': 'axe','4': 'staff','5': 'gun','6': 'melee','7': 'bow','8': 'harp','9': 'katana'}.get(str(elem["id"])[4], '')), self.bot.emote.get(elem["element"].lower()), html.unescape(elem["name"])) + (" [{}]".format(elem["series"].capitalize().replace(";", ", ")) if elem["series"] is not None else "")
                             output["footer"] = str(elem["id"])
                         case 'classes':
-                            output["desc"] = ""
+                            output["desc"] = []
                             output["title"] = "{}".format(html.unescape(elem["name"]))
                             id = str(elem["id"]).split("_", 1)[0]
-                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(id, id)
+                            output["desc"].append("[Assets](https://mizagbf.github.io/GBFAL/?id={})▫️[Animation](https://mizagbf.github.io/GBFAP/?id={})".format(id, id))
                             output["image"] = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/leader/m/{}_01.jpg".format(id)
                             output["footer"] = str(id)
                         case 'npc_characters':
-                            output["desc"] = ""
-                            if elem['profile'] is not None: output["desc"] += "*" + html.unescape(elem['profile']) + "*\n\n"
-                            output["desc"] += "[Assets](https://mizagbf.github.io/GBFAL/?id={})".format(elem["id"])
+                            output["desc"] = []
+                            if elem['profile'] is not None:
+                                output["desc"].append("*")
+                                output["desc"].append(html.unescape(elem['profile']))
+                                output["desc"].append("*\n\n")
+                            output["desc"].append("[Assets](https://mizagbf.github.io/GBFAL/?id={})".format(elem["id"]))
                             output["image"] = "https://prd-game-a3-granbluefantasy.akamaized.net/assets_en/img/sp/assets/npc/m/{}_01.jpg".format(elem["id"])
                             output["title"] = "{}".format(html.unescape(elem["name"])) 
                             output["footer"] = str(elem["id"])
@@ -576,6 +585,8 @@ class GranblueFantasy(commands.Cog):
                     break
                 if output is None:
                     output = {"title":html.unescape(title), "url":"https://gbf.wiki/" + title.replace(" ", "_"), "desc":"*Click to refine the search*"}
+                elif "desc" in output:
+                    output["desc"] = "".join(output["desc"])
                 await inter.edit_original_message(embed=self.bot.embed(title=output["title"], description=output.get("desc", None), image=output.get("image", None), url=output.get("url", None), footer=output.get("footer", None), color=self.COLOR))
                 await self.bot.util.clean(inter, 80)
             except Exception as ex:
@@ -854,15 +865,16 @@ class GranblueFantasy(commands.Cog):
         await asyncio.sleep(0)
 
         # get the last gw score
-        scores = ""
+        scores = []
         pdata = await self.bot.ranking.searchGWDB(pid, 2)
         for n in range(0, 2):
             try:
                 pscore = pdata[n][0]
-                if pscore.ranking is None: scores += "{} GW**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.current)
-                else: scores += "{} GW**{}** ▫️ #**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.ranking, pscore.current)
+                if pscore.ranking is None: scores.append("{} GW**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.current))
+                else: scores.append("{} GW**{}** ▫️ #**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.ranking, pscore.current))
             except:
                 pass
+        scores = "".join(scores)
         await asyncio.sleep(0)
 
         # support summons
@@ -883,19 +895,19 @@ class GranblueFantasy(commands.Cog):
                             squal = "star0"
                         summon_list[i].append((sname, squal))
                 i += 1
-            suppA = "{} **Support Summons**\n".format(self.bot.emote.get('summon'))
-            suppB = ""
+            suppA = ["{} **Support Summons**\n".format(self.bot.emote.get('summon'))] # top, fire to dark
+            suppB = "" # misc line
             for i, summons in enumerate(summon_list):
-                tmp = "{} ".format(self.bot.emote.get(self.SUMMON_ELEMENTS[i]))
+                tmp = ["{} ".format(self.bot.emote.get(self.SUMMON_ELEMENTS[i]))]
                 for j, summon in enumerate(summons):
-                    if j > 0: tmp += " ▫️ "
-                    tmp += "{}{}".format(self.bot.emote.get(summon[1]), summon[0])
+                    if j > 0: tmp.append(" ▫️ ")
+                    tmp.append("{}{}".format(self.bot.emote.get(summon[1]), summon[0]))
                 if len(summons) == 0:
-                    tmp += "None"
-                tmp += "\n"
-                if i == 0: suppB = tmp
+                    tmp.append("None")
+                tmp.append("\n")
+                if i == 0: suppB = "".join(tmp) # misc is always first in the list, so i == 0
                 else: suppA += tmp
-            summons = (suppA, suppB)
+            summons = ("".join(suppA), suppB)
         except:
             summons = ("", "")
         await asyncio.sleep(0)
@@ -904,20 +916,21 @@ class GranblueFantasy(commands.Cog):
         try:
             pushed = soup.find("div", class_="prt-pushed")
             if pushed.find("div", class_="ico-augment2-s", recursive=True) is not None:
-                star = "**\💍** "
+                star = ["**\💍** "]
             else:
-                star = ""
-            star += "{}".format(pushed.findChildren("span", class_="prt-current-npc-name", recursive=True)[0].get_text().strip()) # name
-            if "Lvl" not in star: raise Exception()
-            try: star += " **{}**".format(pushed.find("div", class_="prt-quality", recursive=True).get_text().strip()) # plus
+                star = []
+            star.append("{}".format(pushed.findChildren("span", class_="prt-current-npc-name", recursive=True)[0].get_text().strip())) # name
+            if "Lvl" not in star[-1]: raise Exception()
+            try: star.append(" **{}**".format(pushed.find("div", class_="prt-quality", recursive=True).get_text().strip())) # plus
             except: pass
-            try: star += " ▫️ **{}** EMP".format(pushed.find("div", class_="prt-npc-rank", recursive=True).get_text().strip()) # emp
+            try: star.append(" ▫️ **{}** EMP".format(pushed.find("div", class_="prt-npc-rank", recursive=True).get_text().strip())) # emp
             except: pass
             try:
                 starcom = pushed.find("div", class_="prt-pushed-info", recursive=True).get_text()
-                if starcom != "" and starcom != "(Blank)": star += "\n\u202d💬 `{}`".format(starcom.replace('`', '\''))
+                if starcom != "" and starcom != "(Blank)": star.append("\n\u202d💬 `{}`".format(starcom.replace('`', '\'')))
             except: pass
-            star = "\n{} **Star Character**\n{}".format(self.bot.emote.get('skill2'), star)
+            star.insert(0, "\n{} **Star Character**\n".format(self.bot.emote.get('skill2')))
+            star = "".join(star)
         except:
             star = ""
         await asyncio.sleep(0)
@@ -1034,14 +1047,14 @@ class GranblueFantasy(commands.Cog):
         xptable = [None, 30, 70, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7800, 8100, 8400, 8700, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 50000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 500000, 1000000, 1000000, 1200000, 1200000, 1200000, 1200000, 1200000, 1250000, 1250000, 1250000, 1250000, 1250000, 1300000, 1300000, 1300000, 1300000, 1300000, 1350000, 1350000, 1350000, 1350000, 1350000, 1400000, 1400000, 1400000, 1400000, 1400000, 1450000, 1450000, 1450000, 1450000, 1450000, 1500000, 1500000, 1500000, 1500000, 1500000, 1550000, 1550000, 1550000, 1550000, 1550000, 1600000, 1600000, 1600000, 1600000, 1600000, 1650000, 1650000, 1650000, 1650000, 0]
         if start_level < 1: start_level = 1
         elif start_level >= 150: start_level = 149
-        msg = "From level **{}**, you need:\n".format(start_level)
+        msgs = ["From level **{}**, you need:\n".format(start_level)]
         xpcount = xptable[start_level]
         for lvl in range(start_level+1, 151):
             if lvl in [80, 100, 110, 120, 130, 140, 150, end_level]:
-                msg += "**{:,} XP** for lvl **{:}** ({:} books or {:,} candies)\n".format(xpcount, lvl, math.ceil(xpcount / 300000), math.ceil(xpcount / 745))
+                msgs.append("**{:,} XP** for lvl **{:}** ({:} books or {:,} candies)\n".format(xpcount, lvl, math.ceil(xpcount / 300000), math.ceil(xpcount / 745)))
                 if lvl == end_level: break
             xpcount += xptable[lvl]
-        await inter.edit_original_message(embed=self.bot.embed(title="Experience Calculator", description=msg, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Experience Calculator", description="".join(msgs), color=self.COLOR))
 
     @_utility.sub_command()
     async def kirinanima(self, inter: disnake.GuildCommandInteraction, talisman : int = commands.Param(description="Talisman count", ge=0, le=100000, default=0), ream : int = commands.Param(description="Ream count", ge=0, le=100000, default=0), silver_anima : int = commands.Param(description="Silver Anima count", ge=0, le=100000, default=0), omega_anima : int = commands.Param(description="Omega Anima count", ge=0, le=100000, default=0)) -> None:
@@ -1084,7 +1097,7 @@ class GranblueFantasy(commands.Cog):
     async def doom(self, inter: disnake.GuildCommandInteraction) -> None:
         """Give the time elapsed of various GBF related releases"""
         await inter.response.defer()
-        msg = ""
+        msgs = []
         wiki_checks = ["Main_Quests", "Category:Campaign", "Surprise_Special_Draw_Set", "Damascus_Ingot", "Gold_Brick", "Sunlight_Stone", "Sephira_Evolite"]
         regexs = ["Time since last release\\s*<\/th><\/tr>\\s*<tr>\\s*<td colspan=\"3\" style=\"text-align: center;\">(\\d+ days)", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(-\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last ", "<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td>(\\d+ days)<\\/td>\\s*"]
         for w in wiki_checks:
@@ -1098,32 +1111,32 @@ class GranblueFantasy(commands.Cog):
                 if w == "Sunlight_Stone": # exception
                     ms = re.findall(r, t)
                     for i, m in enumerate(ms):
-                        if i == 0: msg += "**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
-                        elif i == 1: msg += "**{}** since the last [Arcarum Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m)
+                        if i == 0: msgs.append("**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m))
+                        elif i == 1: msgs.append("**{}** since the last [Arcarum Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m))
                     if len(ms) > 0:
                         break
                 else:
                     m = re.search(r, t)
                     if m:
-                        msg += "**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w)
+                        msgs.append("**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w))
                         break
 
         # summer disaster
         c = self.bot.util.JST()
-        msg += "**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
-        msg += "**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0])
-        msg += "**{} days** since {} KMR's retirement\n".format(self.bot.util.delta2str(c - c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), 3).split('d', 1)[0], self.bot.emote.get('kmr'))
+        msgs.append("**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
+        msgs.append("**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
+        msgs.append("**{} days** since {} KMR's retirement\n".format(self.bot.util.delta2str(c - c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), 3).split('d', 1)[0], self.bot.emote.get('kmr')))
         
         # grand
         try:
             grands = await self.getGrandList()
             for e in grands:
-                msg += "**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['release date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_'))
+                msgs.append("**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['release date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_')))
         except:
             pass
 
-        if msg != "":
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=msg, footer="Source: http://gbf.wiki/", color=self.COLOR))
+        if len(msgs) > 0:
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="".join(msgs), footer="Source: http://gbf.wiki/", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
         await self.bot.util.clean(inter, 40)
@@ -1172,19 +1185,19 @@ class GranblueFantasy(commands.Cog):
         if 'news_url' not in self.bot.data.save['gbfdata']:
             self.bot.data.save['gbfdata']['news_url'] = []
             self.bot.data.pending = True
-        msg = ""
+        msgs = []
         for i in range(len(self.bot.data.save['gbfdata']['news_url'])):
-            msg += "{} [{}]({})\n".format(self.bot.emote.get(str(i+1)), self.bot.data.save['gbfdata']['news_url'][i][1], self.bot.data.save['gbfdata']['news_url'][i][0])
+            msgs.append("{} [{}]({})\n".format(self.bot.emote.get(str(i+1)), self.bot.data.save['gbfdata']['news_url'][i][1], self.bot.data.save['gbfdata']['news_url'][i][0]))
         try:
             thumb = self.bot.data.save['gbfdata']['news_url'][0][2]
             if not thumb.startswith('http://granbluefantasy.jp') and not thumb.startswith('https://granbluefantasy.jp'):
                 if thumb.startswith('/'): thumb = 'https://granbluefantasy.jp' + thumb
                 else: thumb = 'https://granbluefantasy.jp/' + thumb
         except: thumb = None
-        if msg == "":
+        if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
         else:
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Latest Granblue Fantasy News", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=msg, image=thumb, color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Latest Granblue Fantasy News", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="".join(msgs), image=thumb, color=self.COLOR))
 
     @check.sub_command()
     async def granblues(self, inter: disnake.GuildCommandInteraction, episode : int = commands.Param(description="A Grand Blues! episode number", default=1, ge=1, le=99999)) -> None:
@@ -1260,23 +1273,24 @@ class GranblueFantasy(commands.Cog):
                     consumed = (available_crystal - crystal)
                     avg_completion_crystal = 1600
                     players = (consumed / ((c - start).days + 1)) / avg_completion_crystal
-                    msg = "{:} **{:,}** crystals remaining (Average **{:}** players/day, at {:,} crystals average).\n".format(self.bot.emote.get('crystal'), crystal, self.bot.util.valToStr(players), avg_completion_crystal)
-                    msg += "{} Event is ending in **{}**.\n".format(self.bot.emote.get('clock'), self.bot.util.delta2str(end - c, 2))
+                    msg = ["{:} **{:,}** crystals remaining (Average **{:}** players/day, at {:,} crystals average).\n".format(self.bot.emote.get('crystal'), crystal, self.bot.util.valToStr(players), avg_completion_crystal)]
+                    msg.append("{} Event is ending in **{}**.\n".format(self.bot.emote.get('clock'), self.bot.util.delta2str(end - c, 2)))
                     elapsed = c - start
                     duration = end - start
                     progresses = [100 * (consumed / available_crystal), 100 * (elapsed.days * 86400 + elapsed.seconds) / (duration.days * 86400 + duration.seconds)]
-                    msg += "Progress ▫️ **{:.2f}%** {:} ▫️ **{:.2f}%** {:} ▫️ ".format(progresses[0], self.bot.emote.get('crystal'), progresses[1], self.bot.emote.get('clock'))
+                    msg.append("Progress ▫️ **{:.2f}%** {:} ▫️ **{:.2f}%** {:} ▫️ ".format(progresses[0], self.bot.emote.get('crystal'), progresses[1], self.bot.emote.get('clock')))
                     if progresses[1] > progresses[0]:
-                        msg += "✅\n" # white check mark
+                        msg.append("✅\n") # white check mark
                         leftover = available_crystal * (100 - (progresses[0] * 100 / progresses[1])) / 100
                         eligible = int(players * 1.1)
-                        msg += "Estimating between **{:,}** and **{:,}** bonus crystals/player at the end.".format(int(leftover / eligible), int(leftover / 550000))
+                        msg.append("Estimating between **{:,}** and **{:,}** bonus crystals/player at the end.".format(int(leftover / eligible), int(leftover / 550000)))
                         if footer != "": footer += " - "
                         footer += "Assuming ~{} eligible players.".format(self.bot.util.valToStr(eligible))
                     else:
-                        msg += "⚠️\n"
+                        msg.append("⚠️\n")
                         t = timedelta(seconds = (duration.days * 86400 + duration.seconds) * (100 - (progresses[1] * 100 / progresses[0])) / 100)
-                        msg += "Crystals will run out in **{}** at current pace.".format(self.bot.util.delta2str(end - t - c, 2))
+                        msg.append("Crystals will run out in **{}** at current pace.".format(self.bot.util.delta2str(end - t - c, 2)))
+                    msg = "".join(msg)
         except Exception as e:
             msg = "An error occured, try again later."
             self.bot.logger.pushError("[GBF] 'crystal' error:", e)
