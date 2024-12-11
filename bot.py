@@ -446,11 +446,11 @@ class DiscordBot(commands.InteractionBot):
             self.logger.push("[MAIN] Rosetta is ready", send_to_discord=False)
             self.startTasks()
             await asyncio.sleep(1)
-            msg = ""
+            msgs = []
             for t in self.tasks:
-                msg += "- {}\n".format(t)
-            if msg != "":
-                self.logger.push("[MAIN] {} Tasks started\n{}".format(len(self.tasks), msg))
+                msgs.append("- {}\n".format(t))
+            if len(msgs) > 0:
+                self.logger.push("[MAIN] {} Tasks started\n{}".format(len(self.tasks), "".join(msgs)))
             # load app emojis
             await self.emote.load_app_emojis()
 
