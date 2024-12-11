@@ -295,15 +295,15 @@ class GuildWar(commands.Cog):
                 return ""
             for b in self.bot.data.save['gw']['buffs']:
                 if not b[3] and current_time < b[0]:
-                    msg = "{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))
+                    msgs = ["{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))]
                     if b[1]:
-                        msg += "Attack {}, Defense {}".format(self.bot.emote.get('atkace'), self.bot.emote.get('deface'))
+                        msgs.append("Attack {}, Defense {}".format(self.bot.emote.get('atkace'), self.bot.emote.get('deface')))
                         if b[2]:
-                            msg += ", FO {}".format(self.bot.emote.get('foace'))
+                            msgs.append(", FO {}".format(self.bot.emote.get('foace')))
                     elif b[2]:
-                        msg += "FO {}".format(self.bot.emote.get('foace'))
-                    msg += ")"
-                    return msg
+                        msgs.append("FO {}".format(self.bot.emote.get('foace')))
+                    msgs.append(")")
+                    return "".join(msgs)
         return ""
 
     @commands.slash_command()
@@ -389,19 +389,22 @@ class GuildWar(commands.Cog):
             if self.bot.data.save['gw']['state'] is False or self.bot.util.JST() < self.bot.data.save['gw']['dates']["Preliminaries"] or self.bot.data.save['gw']['ranking'] is None:
                 await inter.edit_original_message(embed=self.bot.embed(title="Ranking unavailable", color=self.COLOR))
             else:
-                fields = [{'name':'**Crew Ranking**', 'value':''}, {'name':'**Player Ranking**', 'value':''}]
+                fields = [{'name':'**Crew Ranking**', 'value':[]}, {'name':'**Player Ranking**', 'value':[]}]
                 for x in [0, 1]:
                     for c in self.bot.data.save['gw']['ranking'][x]:
                         if int(c) < 1000:
-                            fields[x]['value'] += "**#{:}** - {:,}".format(c, self.bot.data.save['gw']['ranking'][x][c])
+                            fields[x]['value'].append("**#{:}** - {:,}".format(c, self.bot.data.save['gw']['ranking'][x][c]))
                         elif int(c) % 1000 != 0:
-                            fields[x]['value'] += "**#{:,}.{:,}K** - {:,}".format(int(c)//1000, (int(c)%1000)//100, self.bot.data.save['gw']['ranking'][x][c])
+                            fields[x]['value'].append("**#{:,}.{:,}K** - {:,}".format(int(c)//1000, (int(c)%1000)//100, self.bot.data.save['gw']['ranking'][x][c]))
                         else:
-                            fields[x]['value'] += "**#{:,}K** - {:,}".format(int(c)//1000, self.bot.data.save['gw']['ranking'][x][c])
+                            fields[x]['value'].append("**#{:,}K** - {:,}".format(int(c)//1000, self.bot.data.save['gw']['ranking'][x][c]))
                         if c in self.bot.data.save['gw']['ranking'][2+x] and self.bot.data.save['gw']['ranking'][2+x][c] != 0:
-                            fields[x]['value'] += " - {}/min".format(self.bot.util.valToStr(self.bot.data.save['gw']['ranking'][2+x][c]))
-                        fields[x]['value'] += "\n"
-                    if fields[x]['value'] == '': fields[x]['value'] = 'Unavailable'
+                            fields[x]['value'].append(" - {}/min".format(self.bot.util.valToStr(self.bot.data.save['gw']['ranking'][2+x][c])))
+                        fields[x]['value'].append("\n")
+                    if len(fields[x]['value']) == 0:
+                        fields[x]['value'] = 'Unavailable'
+                    else:
+                        fields[x]['value'] = "".join(fields[x]['value'])
 
                 em = self.bot.util.formatElement(self.bot.data.save['gw']['element'])
                 d = self.bot.util.JST() - self.bot.data.save['gw']['ranking'][4]
@@ -446,43 +449,46 @@ class GuildWar(commands.Cog):
                                     current_time_left = self.bot.data.save['gw']['dates'][d] - current_time
                                     target_index = (int((self.bot.data.save['gw']['dates'][d] - self.bot.data.save['gw']['dates']['Preliminaries']).total_seconds()) - 1200) // 1200
                                     break
-                        fields = [{'name':'**Crew Ranking**', 'value':''}, {'name':'**Player Ranking**', 'value':''}]
+                        fields = [{'name':'**Crew Ranking**', 'value':[]}, {'name':'**Player Ranking**', 'value':[]}]
                         for i in [0, 1]:
                             for rank in mods[i]:
-                                msg = ""
                                 if int(rank) < 1000:
-                                    msg += "**#{}** ▫️ ".format(rank)
+                                    fields[i]['value'].append("**#{}** ▫️ ".format(rank))
                                 elif int(rank) % 1000 != 0:
-                                    msg += "**#{}.{}K** ▫️ ".format(int(rank)//1000, (int(rank)%1000)//100)
+                                    fields[i]['value'].append("**#{}.{}K** ▫️ ".format(int(rank)//1000, (int(rank)%1000)//100))
                                 else:
-                                    msg += "**#{}K** ▫️ ".format(int(rank)//1000)
+                                    fields[i]['value'].append("**#{}K** ▫️ ".format(int(rank)//1000))
                                 try:
-                                    msg += "{} (".format(self.bot.util.valToStr(self.bot.data.save['gw']['estimation'][i][rank][target_index]*mods[i][rank], 2))
+                                    fields[i]['value'].append("{} (".format(self.bot.util.valToStr(self.bot.data.save['gw']['estimation'][i][rank][target_index]*mods[i][rank], 2)))
                                     mod = mods[i][rank] - 1
-                                    if mod > 0: msg += "+"
-                                    msg += "{:.1f}%)\n".format(mod*100)
-                                    fields[i]['value'] += msg
+                                    if mod > 0:
+                                        fields[i]['value'].append("+")
+                                    fields[i]['value'].append("{:.1f}%)\n".format(mod*100))
                                 except:
                                     pass
-                            if fields[i]['value'] == "":
+                            if len(fields[i]['value']) == 0:
                                 fields[i]['value'] = "Unavailable"
+                            else:
+                                fields[i]['value'] = "".join(fields[i]['value'])
                         
                         if current_time_left.total_seconds() < 0:
-                            msg = ""
+                            msgs = []
                         else:
                             if current_time_left.days > 0: timestring = self.bot.util.delta2str(current_time_left, 2)
                             else: timestring = self.bot.util.delta2str(current_time_left, 1)
-                            if target_index == -1: msg = "Time left: **{}** ▫️ ".format(timestring)
-                            else: msg = "Next Day: **{}** ▫️ ".format(timestring)
-                        msg += "Updated: **{}** ago\n".format(self.bot.util.delta2str(current_time - update_time, 0))
+                            if target_index == -1:
+                                msgs = ["Time left: **{}** ▫️ ".format(timestring)]
+                            else:
+                                msgs = ["Next Day: **{}** ▫️ ".format(timestring)]
+                        msgs.append("Updated: **{}** ago\n".format(self.bot.util.delta2str(current_time - update_time, 0)))
                         if target_index == -1:
-                            msg += "**Ending** "
+                            msgs.append("**Ending** ")
                             title = "Ending Estimation"
                         else:
-                            msg += "**Today** "
+                            msgs.append("**Today** ")
                             title = "Today Estimation"
-                        msg += "projection, always **take it with a grain of salt**"
-                        embeds.append(self.bot.embed(title="{} **Guild War {} {} {}**".format(self.bot.emote.get('gw'), self.bot.data.save['gw']['id'], self.bot.util.formatElement(self.bot.data.save['gw']['element']), title), description=msg, fields=fields, footer="https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data", timestamp=self.bot.util.UTC(), inline=True, color=self.COLOR))
+                        msgs.append("projection, always **take it with a grain of salt**")
+                        embeds.append(self.bot.embed(title="{} **Guild War {} {} {}**".format(self.bot.emote.get('gw'), self.bot.data.save['gw']['id'], self.bot.util.formatElement(self.bot.data.save['gw']['element']), title), description="".join(msgs), fields=fields, footer="https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data", timestamp=self.bot.util.UTC(), inline=True, color=self.COLOR))
                         if target_index == -1:
                             break
                     if len(embeds) == 0:
@@ -613,7 +619,8 @@ class GuildWar(commands.Cog):
                 else:
                     crew['scores'].append("{} GW**{}** | #**{}** | **{:,}** pts".format(self.bot.emote.get('gw'), gwdata[n][0].gw, gwdata[n][0].ranking, gwdata[n][0].current))
                 if gwdata[n][0].top_speed is not None: crew['scores'][-1] += " | Top **{}/m.**".format(self.bot.util.valToStr(gwdata[n][0].top_speed, 2))
-                if gwdata[n][0].current_speed is not None and gwdata[n][0].current_speed > 0: crew['scores'][-1] += " | Last **{}/m.**".format(self.bot.util.valToStr(gwdata[n][0].current_speed, 2))
+                if gwdata[n][0].current_speed is not None and gwdata[n][0].current_speed > 0:
+                    crew['scores'][-1] += " | Last **{}/m.**".format(self.bot.util.valToStr(gwdata[n][0].current_speed, 2))
             except:
                 pass
 
@@ -705,7 +712,7 @@ class GuildWar(commands.Cog):
             i = 0
             for p in players:
                 if i % 10 == 0:
-                    fields.append({'name':'Page {}'.format(self.bot.emote.get('{}'.format(len(fields)+1))), 'value':''})
+                    fields.append({'name':'Page {}'.format(self.bot.emote.get('{}'.format(len(fields)+1))), 'value':[]})
                     await asyncio.sleep(0)
                 i += 1
                 match p['member_position']:
@@ -714,11 +721,14 @@ class GuildWar(commands.Cog):
                     case "3": r = "atkace"
                     case "4": r = "deface"
                     case _: r = "ensign"
-                entry = '{} [{}](https://game.granbluefantasy.jp/#profile/{})'.format(self.bot.emote.get(r), self.escape(self.bot.util.shortenName(p['name'])), p['id'])
-                if gwstate:  entry += " - {}".format(self.bot.util.valToStr(p['honor'], 2))
-                else: entry += " - r**{}**".format(p['level'])
-                entry += "\n"
-                fields[-1]['value'] += entry
+                fields[-1]['value'].append('{} [{}](https://game.granbluefantasy.jp/#profile/{})'.format(self.bot.emote.get(r), self.escape(self.bot.util.shortenName(p['name'])), p['id']))
+                if gwstate:
+                    fields[-1]['value'].append(" - {}".format(self.bot.util.valToStr(p['honor'], 2)))
+                else:
+                    fields[-1]['value'].append(" - r**{}**".format(p['level']))
+                fields[-1]['value'].append("\n")
+        for field in fields:
+            field['value'] = "".join(field['value'])
         return title, ''.join(description), fields, footer
 
 
@@ -818,14 +828,14 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Unavailable", color=self.COLOR))
             return
         if day >= 10: day = day % 10
-        msg = ""
+        msgs = []
         lead_flag = True
         lead_speed_flag = True
         lead = None
         lead_speed = None
         crew_id_list = self.bot.data.config['granblue'].get('gbfgcrew', {}) | self.bot.data.config['granblue'].get('othercrew', {})
         
-        desc = ""
+        desc = []
         for sid in [id_crew_1, id_crew_2]:
             if sid.lower() in crew_id_list:
                 cid = crew_id_list[sid.lower()]
@@ -840,34 +850,34 @@ class GuildWar(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Unavailable", color=self.COLOR))
                 return
             else:
-                if desc == "" and data[2][1] is not None:
+                if len(desc) == 0 and data[2][1] is not None:
                     timestamp = data[2][1].timestamp
                     if timestamp is not None:
-                        desc = "Updated: **{}** ago\n".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0))
+                        desc.append("Updated: **{}** ago\n".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0)))
                 if data[1] is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="No data available for `{}` the current GW".format(sid), color=self.COLOR))
                     return
                 result = data[1]
                 gwnum = ''
                 if len(result) == 0:
-                    msg += "Crew [{}](https://game.granbluefantasy.jp/#guild/detail/{}) not found\n".format(sid, cid)
+                    msgs.append("Crew [{}](https://game.granbluefantasy.jp/#guild/detail/{}) not found\n".format(sid, cid))
                     lead = None
                     lead_flag = False
                 else:
                     gwnum = result[0].gw
-                    msg += "[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ {:,}".format(result[0].name, cid, result[0].current_day)
+                    msgs.append("[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ {:,}".format(result[0].name, cid, result[0].current_day))
                     if result[0].current_speed is not None and result[0].top_speed is not None:
-                        msg += " ▫️ +{}/m. ▫️ Top {}/m.\n".format(self.bot.util.valToStr(result[0].current_speed), self.bot.util.valToStr(result[0].top_speed))
+                        msgs.append(" ▫️ +{}/m. ▫️ Top {}/m.\n".format(self.bot.util.valToStr(result[0].current_speed), self.bot.util.valToStr(result[0].top_speed)))
                         if timestamp is not None and day - 1 > 0 and day - 1 < 5:
                             if timestamp < self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200):
                                 current_time_left = self.bot.data.save['gw']['dates']['Day ' + str(day)] - timedelta(seconds=25200) - timestamp
                                 current_estimation = result[0].current_day + result[0].current_speed * current_time_left.seconds//60
                                 top_estimation = result[0].current_day + result[0].top_speed * current_time_left.seconds//60
-                                msg += "**Estimation** ▫️ Now {} ▫️ Top {}\n".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3))
+                                msgs.append("**Estimation** ▫️ Now {} ▫️ Top {}\n".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3)))
                         if lead_speed is None: lead_speed = result[0].current_speed
                         else: lead_speed -= result[0].current_speed
                     else:
-                        msg += "\n"
+                        msgs.append("\n")
                         lead_speed_flag = False
                     if lead_flag:
                         if lead is None: lead = result[0].current_day
@@ -876,12 +886,13 @@ class GuildWar(commands.Cog):
             if lead < 0:
                 lead = -lead
                 if lead_speed_flag: lead_speed = -lead_speed
-            msg += "\n**Difference** ▫️ {:,}".format(lead)
+            msgs.append("\n**Difference** ▫️ {:,}".format(lead))
             if lead_speed_flag and lead_speed != 0:
-                msg += " ▫️ "
-                if lead_speed > 0: msg += "+"
-                msg += "{}/m.\n".format(self.bot.util.valToStr(lead_speed, 3))
-        await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), gwnum, day - 1), description=desc+msg, timestamp=self.bot.util.UTC(), color=self.COLOR))
+                msgs.append(" ▫️ ")
+                if lead_speed > 0:
+                    msgs.append("+")
+                msgs.append("{}/m.\n".format(self.bot.util.valToStr(lead_speed, 3)))
+        await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), gwnum, day - 1), description="".join(desc+msgs), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
 
     """updateGBFGData()
@@ -942,14 +953,14 @@ class GuildWar(commands.Cog):
                     i += 1
                 t += self.BOX_COST[i][1]
             t = max(0, t-with_token)
-            msg = "**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))
+            msgs = ["**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))]
             for f, d in self.FIGHTS.items():
                 n = math.ceil(t/d["token"])
-                msg += "**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75)
-                if d["meat_cost"] > 0: msg += ", **{:,}** meats".format(n*d["meat_cost"])
-                if d["clump_cost"] > 0: msg += ", **{:,}** clumps".format(n*d["clump_cost"])
-                msg += ")\n"
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ Box {}".format(self.bot.emote.get('gw'), box), description=msg, color=self.COLOR))
+                msgs.append("**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75))
+                if d["meat_cost"] > 0: msgs.append(", **{:,}** meats".format(n*d["meat_cost"]))
+                if d["clump_cost"] > 0: msgs.append(", **{:,}** clumps".format(n*d["clump_cost"]))
+                msgs.append(")\n")
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ Box {}".format(self.bot.emote.get('gw'), box), description="".join(msgs), color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description=str(e), color=self.COLOR))
 
@@ -971,15 +982,15 @@ class GuildWar(commands.Cog):
                 b += 1
                 while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
                     i += 1
-            msg = ["**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)]
+            msgs = ["**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)]
             for f, d in self.FIGHTS.items():
                 if final_rally: n = math.ceil(t / (d["token"]+d["rally_token"]))
                 else: n = math.ceil(t / d["token"])
-                msg.append("**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75))
-                if d["meat_cost"] > 0: msg.append(", **{:,}** meats".format(n*d["meat_cost"]))
-                if d["clump_cost"] > 0: msg.append(", **{:,}** clumps".format(n*d["clump_cost"]))
-                msg.append(")\n")
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ {} tokens".format(self.bot.emote.get('gw'), t), description="".join(msg), footer=("Imply you solo all your hosts and clear the final rally" if final_rally else ""), color=self.COLOR))
+                msgs.append("**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75))
+                if d["meat_cost"] > 0: msgs.append(", **{:,}** meats".format(n*d["meat_cost"]))
+                if d["clump_cost"] > 0: msgs.append(", **{:,}** clumps".format(n*d["clump_cost"]))
+                msgs.append(")\n")
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Token Calculator ▫️ {} tokens".format(self.bot.emote.get('gw'), t), description="".join(msgs), footer=("Imply you solo all your hosts and clear the final rally" if final_rally else ""), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
@@ -990,17 +1001,17 @@ class GuildWar(commands.Cog):
             await inter.response.defer(ephemeral=True)
             meat = self.bot.util.strToInt(value)
             if meat < 5 or meat > 400000: raise Exception()
-            msg = []
+            msgs = []
             for f, d in self.FIGHTS.items():
                 if d["meat_cost"] > 0:
                     n = meat // d["meat_cost"]
-                    msg.append("**{:,}** {:} or **{:}** honors".format(n, f, self.bot.util.valToStr(n*d["honor"], 2)))
-                    if d["clump_drop"] > 0: msg.append(", for **{:}** clump drops".format(self.bot.util.valToStr(math.ceil(n*d["clump_drop"]), 2)))
-                    msg.append("\n")
+                    msgs.append("**{:,}** {:} or **{:}** honors".format(n, f, self.bot.util.valToStr(n*d["honor"], 2)))
+                    if d["clump_drop"] > 0: msgs.append(", for **{:}** clump drops".format(self.bot.util.valToStr(math.ceil(n*d["clump_drop"]), 2)))
+                    msgs.append("\n")
                 elif d["clump_cost"] > 0:
                     n = meat // d["clump_cost"]
-                    msg.append("**{:,}** {:} or **{:}** honors\n".format(n, f, self.bot.util.valToStr(n*d["honor"], 2)))
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Meat Calculator ▫️ {} meats or clumps".format(self.bot.emote.get('gw'), meat), description="".join(msg), color=self.COLOR))
+                    msgs.append("**{:,}** {:} or **{:}** honors\n".format(n, f, self.bot.util.valToStr(n*d["honor"], 2)))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Meat Calculator ▫️ {} meats or clumps".format(self.bot.emote.get('gw'), meat), description="".join(msgs), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid meat number", color=self.COLOR))
 
@@ -1011,15 +1022,15 @@ class GuildWar(commands.Cog):
             await inter.response.defer(ephemeral=True)
             target = self.bot.util.strToInt(value)
             if target < 10000: raise Exception()
-            msg = []
+            msgs = []
             for f, d in self.FIGHTS.items():
                 n = math.ceil(target / d["honor"])
-                msg.append("**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75))
-                if d["meat_cost"] > 0: msg.append(", **{:,}** meats".format(n * d["meat_cost"]))
-                if d["clump_cost"] > 0: msg.append(", **{:,}** clumps".format(n * d["clump_cost"]))
-                if d["clump_drop"] > 0: msg.append(", **{:,}** clump drops".format(math.ceil(n * d["clump_drop"])))
-                msg.append(")\n")
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Calculator ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="".join(msg), color=self.COLOR))
+                msgs.append("**{:,}** {:} (**{:,}** pots".format(n, f, n*d["AP"]//75))
+                if d["meat_cost"] > 0: msgs.append(", **{:,}** meats".format(n * d["meat_cost"]))
+                if d["clump_cost"] > 0: msgs.append(", **{:,}** clumps".format(n * d["clump_cost"]))
+                if d["clump_drop"] > 0: msgs.append(", **{:,}** clump drops".format(math.ceil(n * d["clump_drop"])))
+                msgs.append(")\n")
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Calculator ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="".join(msgs), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid honor number", color=self.COLOR))
 
@@ -1080,10 +1091,10 @@ class GuildWar(commands.Cog):
                             nm[i] += 1
                             daily += self.FIGHTS[day_nm[i]]["honor"]
                             honor[i+1] += self.FIGHTS[day_nm[i]]["honor"]
-            msg = ["Meat counts ▫️ **{:,}** meats, **{:,}** clumps\nPreliminaries & Interlude ▫️ Around **{:,}** EX+, **{:,}** {}, **{:}** honors".format(math.ceil(total_meat), math.ceil(total_clump), ex, interlude_count, interlude_fight, self.bot.util.valToStr(honor[0], 2))]
+            msgs = ["Meat counts ▫️ **{:,}** meats, **{:,}** clumps\nPreliminaries & Interlude ▫️ Around **{:,}** EX+, **{:,}** {}, **{:}** honors".format(math.ceil(total_meat), math.ceil(total_clump), ex, interlude_count, interlude_fight, self.bot.util.valToStr(honor[0], 2))]
             for i in range(0, len(nm)):
-                msg.append("Day {:} ▫️ **{:,}** {} (**{:}** honors)".format(i+1, nm[i], day_nm[i], self.bot.util.valToStr(honor[i+1], 2)))
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="\n".join(msg), footer="Assuming {} meats / EX+ on average".format(self.MEAT_PER_BATTLE_AVG), color=self.COLOR))
+                msgs.append("Day {:} ▫️ **{:,}** {} (**{:}** honors)".format(i+1, nm[i], day_nm[i], self.bot.util.valToStr(honor[i+1], 2)))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="\n".join(msgs), footer="Assuming {} meats / EX+ on average".format(self.MEAT_PER_BATTLE_AVG), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid honor number", color=self.COLOR))
 
@@ -1094,7 +1105,7 @@ class GuildWar(commands.Cog):
         await inter.response.defer(ephemeral=True)
         loading = int(modal.extra)
         error = False
-        msg = []
+        msgs = []
         for f, v in inter.text_values.items():
             try:
                 if v == '': continue
@@ -1114,17 +1125,17 @@ class GuildWar(commands.Cog):
                 elif time == 0: continue
                 mod = (3600 / (time+loading))
                 if f not in self.FIGHTS: continue
-                msg.append("**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots".format(f, self.bot.emote.get('clock'), v, self.bot.util.valToStr(mod*self.FIGHTS[f]["honor"], 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["token"], 2), self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["AP"]/75), 2)))
-                if self.FIGHTS[f]["meat_cost"] > 0: msg.append(" ▫️ **{}** meats ".format(self.bot.util.valToStr(mod*self.FIGHTS[f]["meat_cost"], 2)))
-                if self.FIGHTS[f]["clump_cost"] > 0: msg.append(" ▫️ **{}** clumps ".format(self.bot.util.valToStr(mod*self.FIGHTS[f]["clump_cost"], 2)))
-                if self.FIGHTS[f]["clump_drop"] > 0: msg.append(" ▫️ **{}** clump drops ".format(self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["clump_drop"]), 2)))
-                msg.append("\n")
+                msgs.append("**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots".format(f, self.bot.emote.get('clock'), v, self.bot.util.valToStr(mod*self.FIGHTS[f]["honor"], 2), self.bot.util.valToStr(mod*self.FIGHTS[f]["token"], 2), self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["AP"]/75), 2)))
+                if self.FIGHTS[f]["meat_cost"] > 0: msgs.append(" ▫️ **{}** meats ".format(self.bot.util.valToStr(mod*self.FIGHTS[f]["meat_cost"], 2)))
+                if self.FIGHTS[f]["clump_cost"] > 0: msgs.append(" ▫️ **{}** clumps ".format(self.bot.util.valToStr(mod*self.FIGHTS[f]["clump_cost"], 2)))
+                if self.FIGHTS[f]["clump_drop"] > 0: msgs.append(" ▫️ **{}** clump drops ".format(self.bot.util.valToStr(math.ceil(mod*self.FIGHTS[f]["clump_drop"]), 2)))
+                msgs.append("\n")
             except:
                 error = True
-        if len(msg) == 0:
+        if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="{} Speed Comparator".format(self.bot.emote.get('gw')), description="No clear times set.\n" + ('' if not error else 'One or multiple values you sent were wrong. Either put a number of seconds **or** a time following the `MM:SS` format'), color=self.COLOR))
         else:
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Speed Comparator".format(self.bot.emote.get('gw')), description="**Per hour**" + (', with {} seconds of wasted time between fights\n'.format(loading) if loading > 0 else '\n') + "".join(msg), color=self.COLOR, footer='' if not error else 'Errors have been ignored'))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Speed Comparator".format(self.bot.emote.get('gw')), description="**Per hour**" + (', with {} seconds of wasted time between fights\n'.format(loading) if loading > 0 else '\n') + "".join(msgs), color=self.COLOR, footer='' if not error else 'Errors have been ignored'))
 
     @utility.sub_command()
     async def speed(self, inter: disnake.GuildCommandInteraction, loading : int = commands.Param(description="Wasted time between fights, in second", default=0)) -> None:
@@ -1190,13 +1201,13 @@ class GuildWar(commands.Cog):
             'light':('Gilbert (Proud)', 180000000, "103571/3"),
             'dark':('Lu Woh (Solo)', 192000000, "103481/3")
         }
-        msg = ""
+        msgs = []
         for el in boss:
             if boss[el] is None:
-                msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
+                msgs.append("{} *No equivalent*\n".format(self.bot.emote.get(el)))
             else:
-                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM95']['hp']) / boss[el][1]), 100 * ((boss[el][1] - self.FIGHTS['NM90']['hp']) / boss[el][1]))
-        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
+                msgs.append("{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM95']['hp']) / boss[el][1]), 100 * ((boss[el][1] - self.FIGHTS['NM90']['hp']) / boss[el][1])))
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description="".join(msgs), color=self.COLOR))
         await self.bot.util.clean(inter, 90)
 
     @nm.sub_command()
@@ -1211,13 +1222,13 @@ class GuildWar(commands.Cog):
             'light':('Osiris', 600000000, "305371/1/0/46"),
             'dark':('Horus', 600000000, "305361/1/0/46")
         }
-        msg = ""
+        msgs = []
         for el in boss:
             if boss[el] is None:
-                msg += "{} *No equivalent*\n".format(self.bot.emote.get(el))
+                msgs.append("{} *No equivalent*\n".format(self.bot.emote.get(el)))
             else:
-                msg += "{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM100: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM100']['hp']) / boss[el][1]))
-        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM100 Simulation".format(self.bot.emote.get('gw')), description=msg, color=self.COLOR))
+                msgs.append("{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM100: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM100']['hp']) / boss[el][1])))
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM100 Simulation".format(self.bot.emote.get('gw')), description="".join(msgs), color=self.COLOR))
         await self.bot.util.clean(inter, 90)
 
     @gw.sub_command_group()
@@ -1316,30 +1327,33 @@ class GuildWar(commands.Cog):
                         i = x * max_v + y
                         if i >= len(result): break
                         if stype: # crew -----------------------------------------------------------------
-                            fields.append({'name':"{}".format(html.unescape(result[i].name)), 'value':''})
+                            fields.append({'name':"{}".format(html.unescape(result[i].name)), 'value':[]})
                             search_list.append((result[i].id, html.unescape(result[i].name)))
-                            if result[i].ranking is not None: fields[-1]['value'] += "▫️**#{}**\n".format(result[i].ranking)
-                            else: fields[-1]['value'] += "\n"
-                            if result[i].preliminaries is not None: fields[-1]['value'] += "**P.** ▫️{:,}\n".format(result[i].preliminaries)
-                            if result[i].day1 is not None: fields[-1]['value'] += "{}▫️{:,}\n".format(self.bot.emote.get('1'), result[i].day1)
-                            if result[i].day2 is not None: fields[-1]['value'] += "{}▫️{:,}\n".format(self.bot.emote.get('2'), result[i].day2)
-                            if result[i].day3 is not None: fields[-1]['value'] += "{}▫️{:,}\n".format(self.bot.emote.get('3'), result[i].day3)
-                            if result[i].day4 is not None: fields[-1]['value'] += "{}▫️{:,}\n".format(self.bot.emote.get('4'), result[i].day4)
-                            if result[i].top_speed is not None: fields[-1]['value'] += "{}▫️Top {}/m.\n".format(self.bot.emote.get('clock'), self.bot.util.valToStr(result[i].top_speed))
-                            if result[i].current_speed is not None and result[i].current_speed > 0: fields[-1]['value'] += "{}▫️Now {}/m.\n".format(self.bot.emote.get('clock'), self.bot.util.valToStr(result[i].current_speed))
-                            if fields[-1]['value'] == "": fields[-1]['value'] = "No data"
-                            fields[-1]['value'] = "[{}](https://game.granbluefantasy.jp/#guild/detail/{}){}".format(result[i].id, result[i].id, fields[-1]['value'])
+                            if result[i].ranking is not None: fields[-1]['value'].append("▫️**#{}**\n".format(result[i].ranking))
+                            else: fields[-1]['value'].append("\n")
+                            if result[i].preliminaries is not None: fields[-1]['value'].append("**P.** ▫️{:,}\n".format(result[i].preliminaries))
+                            if result[i].day1 is not None: fields[-1]['value'].append("{}▫️{:,}\n".format(self.bot.emote.get('1'), result[i].day1))
+                            if result[i].day2 is not None: fields[-1]['value'].append("{}▫️{:,}\n".format(self.bot.emote.get('2'), result[i].day2))
+                            if result[i].day3 is not None: fields[-1]['value'].append("{}▫️{:,}\n".format(self.bot.emote.get('3'), result[i].day3))
+                            if result[i].day4 is not None: fields[-1]['value'].append("{}▫️{:,}\n".format(self.bot.emote.get('4'), result[i].day4))
+                            if result[i].top_speed is not None: fields[-1]['value'].append("{}▫️Top {}/m.\n".format(self.bot.emote.get('clock'), self.bot.util.valToStr(result[i].top_speed)))
+                            if result[i].current_speed is not None and result[i].current_speed > 0: fields[-1]['value'].append("{}▫️Now {}/m.\n".format(self.bot.emote.get('clock'), self.bot.util.valToStr(result[i].current_speed)))
+                            if len(fields[-1]['value']) == 0:
+                                fields[-1]['value'] = ["No data"]
+                            fields[-1]['value'].insert(0, "[{}](https://game.granbluefantasy.jp/#guild/detail/{})".format(result[i].id, result[i].id))
+                            fields[-1]['value'] = "".join(fields[-1]['value'])
                             gwnum = result[i].gw
                         else: # player -----------------------------------------------------------------
                             if y % (max_v // 3) == 0:
-                                fields.append({'name':'Page {}'.format(self.bot.emote.get(str(((i // 5) % 3) + 1))), 'value':''})
+                                fields.append({'name':'Page {}'.format(self.bot.emote.get(str(((i // 5) % 3) + 1))), 'value':[]})
                             search_list.append((result[i].id, self.escape(result[i].name)))
                             if result[i].ranking is None:
-                                fields[-1]['value'] += "[{}](https://game.granbluefantasy.jp/#profile/{})\n".format(self.escape(result[i].name), result[i].id)
+                                fields[-1]['value'].append("[{}](https://game.granbluefantasy.jp/#profile/{})\n".format(self.escape(result[i].name), result[i].id))
                             else:
-                                fields[-1]['value'] += "[{}](https://game.granbluefantasy.jp/#profile/{}) ▫️ **#{}**\n".format(self.escape(result[i].name), result[i].id, result[i].ranking)
-                            if result[i].current is not None: fields[-1]['value'] += "{:,}\n".format(result[i].current)
-                            else: fields[-1]['value'] += "n/a\n"
+                                fields[-1]['value'].append("[{}](https://game.granbluefantasy.jp/#profile/{}) ▫️ **#{}**\n".format(self.escape(result[i].name), result[i].id, result[i].ranking))
+                            if result[i].current is not None: fields[-1]['value'].append("{:,}\n".format(result[i].current))
+                            else: fields[-1]['value'].append("n/a\n")
+                            fields[-1]['value'] = "".join(fields[-1]['value'])
                             gwnum = result[i].gw
                     if len(fields) > 0:
                         embeds.append(self.bot.embed(title="{} **Guild War {}**".format(self.bot.emote.get('gw'), gwnum), description="Page **{}/{}**".format(x+1, 1+len(result)//max_v), fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 3 minutes"))
@@ -1401,13 +1415,15 @@ class GuildWar(commands.Cog):
             search_results = []
             for i, v in enumerate(sortedcrew):
                 if i % size == 0:
-                    fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1))), 'value':''})
+                    fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1))), 'value':[]})
                     search_results.append([])
                 search_results[-1].append((v['id'], v['name']))
-                fields[-1]['value'] += "Rank **{}** ▫️  **{}** ▫️ **{}** slot".format(v['average'], v['name'], 30-v['count'])
-                if 30-v['count'] != 1: fields[-1]['value'] += "s"
-                fields[-1]['value'] += "\n"
+                fields[-1]['value'].append("Rank **{}** ▫️  **{}** ▫️ **{}** slot".format(v['average'], v['name'], 30-v['count']))
+                if 30-v['count'] != 1: fields[-1]['value'].append("s")
+                fields[-1]['value'].append("\n")
                 slots += 30-v['count']
+            for field in fields:
+                field['value'] = "".join(field['value'])
             embed = embed=self.bot.embed(title="{} /gbfg/ recruiting crews ▫️ {} slots".format(self.bot.emote.get('crew'), slots), fields=fields, inline=True, color=self.COLOR, timestamp=self.bot.util.UTC(), footer="Buttons expire in 100 seconds")
             embeds = [embed for i in range(len(search_results))]
             view = PageRanking(self.bot, owner_id=inter.author.id, embeds=embeds, search_results=search_results, color=self.COLOR, stype=True, timeout=100, enable_timeout_cleanup=True)
@@ -1492,7 +1508,7 @@ class GuildWar(commands.Cog):
                     for i, v in enumerate(ranking):
                         if i == 30: break
                         elif i % 15 == 0:
-                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+captain*2))), 'value':''})
+                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+captain*2))), 'value':[]})
                             search_results.append([])
                             await asyncio.sleep(0)
                         if v[4] is not None:
@@ -1505,8 +1521,10 @@ class GuildWar(commands.Cog):
                             rt = "**n/a** "
                             ht = ""
                         ct = ' - ' if v[3] not in dancho_list else self.bot.emote.get('captain')
-                        fields[-1]['value'] += "{}{}{} *{}*{}\n".format(rt, ct, v[1], v[0], ht)
+                        fields[-1]['value'].append("{}{}{} *{}*{}\n".format(rt, ct, v[1], v[0], ht))
                         search_results[-1].append((v[3], v[1]))
+                    for field in fields:
+                        field['value'] = "".join(field['value'])
                     embed = self.bot.embed(title="{} /gbfg/ GW{} Top {} Ranking".format(self.bot.emote.get('gw'), gwid, title_string), description=desc, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - {} on page {}, {}".format(("Players" if captain == 1 else "Captains"), (captain * 2 + 2) % 4 + 1, (captain * 2 + 2) % 4 + 2))
                     embeds += [embed for i in range(len(search_results))]
                     final_results += search_results
@@ -1600,16 +1618,18 @@ class GuildWar(commands.Cog):
                     search_results = []
                     for i, v in enumerate(sorted):
                         if i % 15 == 0:
-                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+len(embeds)))), 'value':''})
+                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+len(embeds)))), 'value':[]})
                             search_results.append([])
                             await asyncio.sleep(0)
-                        fields[-1]['value'] += "#**{}** - {} - **{}".format(self.bot.util.valToStr(v[3]), v[1], self.bot.util.valToStr(v[2], 2))
+                        fields[-1]['value'].append("#**{}** - {} - **{}".format(self.bot.util.valToStr(v[3]), v[1], self.bot.util.valToStr(v[2], 2)))
                         search_results[-1].append((v[0], v[1]))
-                        if sort_mode > 0: fields[-1]['value'] += "/min**\n"
-                        else: fields[-1]['value'] += "**\n"
+                        if sort_mode > 0: fields[-1]['value'].append("/min**\n")
+                        else: fields[-1]['value'].append("**\n")
                 notranked = len(crews) - len(cdata[1])
                 if notranked > 0:
-                    fields[-1]['value'] += "**{}** unranked crew{}".format(notranked, 's' if notranked > 1 else '')
+                    fields[-1]['value'].append("**{}** unranked crew{}".format(notranked, 's' if notranked > 1 else ''))
+                for field in fields:
+                    field['value'] = "".join(field['value'])
                 # append embed and results
                 title = ["", "Top Speed ", "Current Speed "][sort_mode]
                 desc = ""
