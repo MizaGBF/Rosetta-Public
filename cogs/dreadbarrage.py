@@ -57,14 +57,14 @@ class DreadBarrage(commands.Cog):
                 it = ['End', 'Day 8', 'Day 7', 'Day 6', 'Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
                 for i in range(1, len(it)):
                     if it[i] in self.bot.data.save['valiant']['dates'] and current_time > self.bot.data.save['valiant']['dates'][it[i]]:
-                        msg = "{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[i-1]] - current_time))
+                        msgs = ["{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[i-1]] - current_time))]
                         if current_time < self.bot.data.save['valiant']['dates']['NM135']:
-                            msg += "\n{} NM135 available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM135'] - current_time, 2))
+                            msgs.append("\n{} NM135 available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM135'] - current_time, 2)))
                         elif current_time < self.bot.data.save['valiant']['dates']['NM175']:
-                            msg += "\n{} NM175 & Valiants available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM175'] - current_time, 2))
+                            msgs.append("\n{} NM175 & Valiants available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM175'] - current_time, 2)))
                         else:
-                            msg += "\n{} Barrage is ending in **{}**".format(self.bot.emote.get('time'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[0]] - current_time, 2))
-                        return msg
+                            msgs.append("\n{} Barrage is ending in **{}**".format(self.bot.emote.get('time'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[0]] - current_time, 2)))
+                        return "".join(msgs)
             else:
                 return ""
         else:
@@ -110,17 +110,17 @@ class DreadBarrage(commands.Cog):
                 current_time = self.bot.util.JST()
                 em = self.bot.util.formatElement(self.bot.data.save['valiant']['element'])
                 title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['valiant']['id'], em, self.bot.util.time(current_time, removejst=True))
-                description = ""
+                description = []
                 if current_time < self.bot.data.save['valiant']['dates']["End"]:
                     if current_time < self.bot.data.save['valiant']['dates']["Day 2"]:
-                        description += "▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 1'], removejst=True))
+                        description.append("▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 1'], removejst=True)))
                     if current_time < self.bot.data.save['valiant']['dates']["Day 4"]:
-                        description += "▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], removejst=True))
+                        description.append("▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], removejst=True)))
                     if current_time < self.bot.data.save['valiant']['dates']["Day 6"]:
-                        description += "▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], removejst=True))
+                        description.append("▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], removejst=True)))
                     days = [d for d in list(self.bot.data.save['valiant']['dates'].keys()) if d.startswith('Day')]
                     days.sort()
-                    description += "▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates'][days[-1]], removejst=True))
+                    description.append("▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates'][days[-1]], removejst=True)))
                 else:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
                     self.bot.data.save['valiant']['state'] = False
@@ -129,11 +129,11 @@ class DreadBarrage(commands.Cog):
                     await self.bot.util.clean(inter, 40)
                     return
                 try:
-                    description += self.getBarrageState()
+                    description.append(self.getBarrageState())
                 except Exception as e:
                     self.bot.logger.pushError("[DREAD] 'getBarrageState' error:", e)
 
-                await inter.edit_original_message(embed=self.bot.embed(title=title, description=description, color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title=title, description="".join(description), color=self.COLOR))
             except Exception as e:
                 self.bot.logger.pushError("[DREAD] In 'db time' command:", e)
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
@@ -159,11 +159,11 @@ class DreadBarrage(commands.Cog):
                 b += 1
                 while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
                     i += 1
-            msg = "**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)
+            msgs = ["**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)]
             for f, d in self.FIGHTS.items():
                 n = math.ceil(t / d["token"])
-                msg += "**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description=msg, color=self.COLOR))
+                msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description="".join(msgs), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
@@ -182,10 +182,10 @@ class DreadBarrage(commands.Cog):
                     i += 1
                 t += self.BOX_COST[i][1]
             t = max(0, t-with_token)
-            msg = "**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))
+            msgs = ["**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))]
             for f, d in self.FIGHTS.items():
                 n = math.ceil(t/d["token"])
-                msg += "**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)
-            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description=msg, color=self.COLOR))
+                msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75))
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description="".join(msgs), color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description=str(e), color=self.COLOR))
