@@ -28,7 +28,7 @@ def loadCogFile(bot : 'DiscordBot', p : str, f : str, r : re.Pattern, relative :
     except Exception as e2:
         if not silent:
             if 'No such file or directory:' in str(e2):
-                bot.logger.pushError("[COG] Exception in file {}:".format(p), e2)
+                bot.logger.pushError("[COG] {} is missing and will be ignored.\nIgnore this message if it's intended.".format(p), level=bot.logger.WARNING)
             else:
                 bot.logger.pushError("[COG] Exception in file {}:".format(p), e2)
     return False
