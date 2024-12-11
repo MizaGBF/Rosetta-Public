@@ -15,12 +15,11 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 18
+    SAVEVERSION = 19
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
-        'gbfaccounts': [],
-        'gbfcurrent': 0,
+        'gbfaccount': {},
         'gbfversion': None,
         'gbfupdate': False,
         'gbfdata': {},
@@ -207,6 +206,12 @@ class Data():
                     if ver <= 17:
                         if 'granblue_en' in data['gbfdata']:
                             data['gbfdata'].pop("granblue_en")
+                    if ver <= 18:
+                        if 'gbfaccounts' in data and len(data['gbfaccounts']) > 0:
+                            data['gbfaccount'] = {'id':data['gbfaccounts'][0][0], 'ck':data['gbfaccounts'][0][1], 'ua':data['gbfaccounts'][0][2], 'state':data['gbfaccounts'][0][3], 'last':data['gbfaccounts'][0][4]}
+                            if len(data['gbfaccounts']) > 1:
+                                self.bot.logger.push("[DATA] Only the first GBF account was kept during the save data conversion to **v19**.")
+                            data.pop("gbfaccounts")
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")

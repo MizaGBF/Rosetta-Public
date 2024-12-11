@@ -290,7 +290,7 @@ Here's a quick overview of the sub command groups:
 * `/owner maintenance`: Commands to manually set or clear a GBF maintenance date.  
 * `/owner stream`: Commands to manually set a GBF upcoming stream date and infos.  
 * `/owner schedule`: Commands to manually edit the GBF schedule or to force an update.  
-* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this.  
+* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this and the commands are self-explanatory.  
 * `/owner db`: Commands to manually set a Dread Barrage event.  
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
