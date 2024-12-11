@@ -58,8 +58,6 @@ class Moderation(commands.Cog):
         elif is_mod: jk += ":warning: **Auto cleanup** disabled\n"
         if self.bot.pinboard.is_enabled(gid): jk += ":star: **Pinboard** enabled\n"
         elif is_mod: jk += ":warning: **Pinboard** disabled.\n"
-        if self.bot.data.save['vxtwitter'].get(gid, False): jk += ":bird: **vxtwitter** enabled\n"
-        elif is_mod: jk += ":black_bird: **vxtwitter** disabled\n"
         if gid in self.bot.data.save['announcement']: jk += ":new: **Announcements** enabled\n"
         elif is_mod: jk += ":warning: **Announcements** disabled\n"
         if gid in self.bot.data.save['assignablerole']: jk += ":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys()))
@@ -306,15 +304,3 @@ class Moderation(commands.Cog):
     async def serverinfo_cmd(self, inter: disnake.GuildCommandInteraction) -> None:
         """Get informations on the current guild (Mod Only)"""
         await self._serverinfo(inter, True)
-
-    @server.sub_command()
-    async def toggle_vxtwitter(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Enable/Disable auto conversion of twitter links to vxtwitter for this server (Mod Only)"""
-        await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
-        self.bot.data.save['vxtwitter'][gid] = not self.bot.data.save['vxtwitter'].get(gid, False)
-        self.bot.data.pending = True
-        if self.bot.data.save['vxtwitter'][gid]:
-            await inter.edit_original_message(embed=self.bot.embed(title="vxtwitter Setting", description="Twitter links will be converted to [vxtwitter](https://vxtwitter.com) ones.", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="vxtwitter Setting", description="Twitter links won't be converted to [vxtwitter](https://vxtwitter.com) ones.", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))

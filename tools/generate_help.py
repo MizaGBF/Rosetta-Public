@@ -239,7 +239,6 @@ def generate_html(command_list): # main function to generate the html
 		
 		<h2>Data Collected Automatically</h2>
 		<p>When reacting to a message, this message is processed by the bot, for the purpose of the Pinboard feature. The message itself isn't saved or stored for further use, nor used for any other purpose, and no data is collected from the message itself.</p>
-		<p>Same thing applies if you use the <b>vxtwitter</b> feature to convert your twitter links: Message ares read and processed upon received by the bot but nothing is saved or stored for further use.</p>
 		
 		<h2>Data Collected by Commands</h2>
 		<p>The following data is stored: <br>

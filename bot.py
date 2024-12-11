@@ -36,7 +36,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.10.5** - Support has been added for additional banners in various commands.",
         "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
         "**v11.11.2** - Reworked `/gbf schedule`. Added command mentions to it and to `/gbf info`.",
-        "**v12.0.0** - Removed some commands/cogs.",
+        "**v12.0.0** - Removed: Unused commands/cogs, the vxtwitter feature.",
     ]
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
@@ -681,44 +681,6 @@ class DiscordBot(commands.InteractionBot):
         for name, coroutine in self.reaction_hooks.items():
             if await coroutine(payload):
                 return
-
-    """on_message()
-    Event. Called when a new message is posted.
-    Replace twitter links with vxtwitter links.
-    
-    Parameters
-    ----------
-    message: a Disnake message
-    """
-    async def on_message(self, message : disnake.Message) -> None:
-        try:
-            if message.guild.me.id != message.author.id and self.data.save['vxtwitter'].get(str(message.guild.id), False) and ('https://twitter.com/' in message.content or 'https://x.com/' in message.content): # if not posted by Rosetta and guild setting enabled and got twitter link
-                if len(message.embeds) == 0:
-                    await asyncio.sleep(3) # wait
-                    message = await message.channel.fetch_message(message.id)
-                for embed in message.embeds: # don't do anything if twitter embed exists
-                    d = embed.to_dict()
-                    if d.get('footer', {}).get('text', '') == 'Twitter' and 'twitter.com' in d.get('url', '') and 'video' not in d.get('image', {}).get('url', ''):
-                        return
-                b = 0
-                already_posted = set()
-                while True:
-                    # search url starting from character #b
-                    a = message.content.find('https://twitter.com/', b)
-                    if a == -1: a = message.content.find('https://x.com/', b)
-                    if a == -1: return # not found, stop
-                    # search a stopping point
-                    b = message.content.find(' ', a+10)
-                    if b == -1: link = message.content[a:]
-                    else: link = message.content[a:b]
-                    # modify link
-                    link = link.split('?', 1)[0].replace('https://twitter.com/', 'https://vxtwitter.com/').replace('https://x.com/', 'https://vxtwitter.com/')
-                    if '/status/' in link and link not in already_posted: # if not found previously in the same message
-                        await message.reply(link) # reply with
-                        already_posted.add(link)
-                    if b == -1: return
-        except:
-            pass
 
 if __name__ == "__main__":
     if '-remove' in sys.argv:
