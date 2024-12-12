@@ -346,9 +346,6 @@ class YouCrew(commands.Cog):
         """Check when is the next GW buff ((You) Server Only)"""
         try:
             await inter.response.defer()
-            if inter.guild.id != self.bot.data.config['ids'].get('you_server', -1):
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in this server", color=self.COLOR))
-                return
             d = self.getNextBuff(inter)
             if d != "":
                 await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description=d, color=self.COLOR))
@@ -357,7 +354,7 @@ class YouCrew(commands.Cog):
                 await self.bot.util.clean(inter, 40)
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
-            self.bot.logger.pushError("[GW] In 'gw buff' command:", e)
+            self.bot.logger.pushError("[YOU] In 'you buff' command:", e)
             await self.bot.util.clean(inter, 40)
 
     @you.sub_command()
