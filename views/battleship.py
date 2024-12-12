@@ -55,11 +55,11 @@ class BattleShipButton(disnake.ui.Button):
                         self.disabled = True
                     await self.view.update(interaction)
             else:
-                extra_notif = "\n{} is selecting **".format(self.view.players[self.view.state].display_name)
-                extra_notif += ('?' if self.view.input[0] is None else self.view.input[0])
-                extra_notif += ('?' if self.view.input[1] is None else self.view.input[1])
-                extra_notif += "**..."
-                await self.view.update(interaction, extra_notif=extra_notif)
+                extra_notif = ["\n{} is selecting **".format(self.view.players[self.view.state].display_name)]
+                extra_notif.append('?' if self.view.input[0] is None else self.view.input[0])
+                extra_notif.append('?' if self.view.input[1] is None else self.view.input[1])
+                extra_notif.append("**...")
+                await self.view.update(interaction, extra_notif="".join(extra_notif))
         else:
             await interaction.response.send_message("It's not your turn to play or you aren't the player", ephemeral=True)
 
@@ -144,23 +144,23 @@ class BattleShip(BaseView):
     str: resulting string
     """
     def render(self, grid_id : int) -> str:
-        msg = ":white_square_button::regional_indicator_a::regional_indicator_b::regional_indicator_c::regional_indicator_d::regional_indicator_e:\n"
+        msgs = [":white_square_button::regional_indicator_a::regional_indicator_b::regional_indicator_c::regional_indicator_d::regional_indicator_e:\n"]
         for r in range(5):
             match r:
-                case 0: msg += ":one:"
-                case 1: msg += ":two:"
-                case 2: msg += ":three:"
-                case 3: msg += ":four:"
-                case 4: msg += ":five:"
+                case 0: msgs.append(":one:")
+                case 1: msgs.append(":two:")
+                case 2: msgs.append(":three:")
+                case 3: msgs.append(":four:")
+                case 4: msgs.append(":five:")
             for c in range(5):
                 match self.grids[grid_id][c + r * 5]:
-                    case 0: msg += ":blue_square:"
+                    case 0: msgs.append(":blue_square:")
                     case 10:
-                        if self.state >= 0: msg += ":blue_square:"
-                        else: msg += ":cruise_ship:"
+                        if self.state >= 0: msgs.append(":blue_square:")
+                        else: msgs.append(":cruise_ship:")
                     case 1:
-                        msg += ":purple_square:"
+                        msgs.append(":purple_square:")
                     case 11:
-                        msg += ":boom:"
-            msg += "\n"
-        return msg
+                        msgs.append(":boom:")
+            msgs.append("\n")
+        return "".join(msgs)
