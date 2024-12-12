@@ -208,10 +208,10 @@ class Ranking():
                     else:
                         await asyncio.sleep(60)
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'check_ranking' Task Cancelled")
+                self.bot.logger.push("[TASK] 'gw:ranking' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'check_ranking' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'gw:ranking' Task Error:", e)
                 return
 
     """init_estimation()
@@ -345,7 +345,7 @@ class Ranking():
             self.bot.logger.push("[RANKING] Main Ranking aborted: No data to retrieve", send_to_discord=False, level=self.bot.logger.WARNING)
             return False
         except Exception as ex:
-            self.bot.logger.pushError("[TASK] 'check_ranking (Sub)' Task Error:", ex)
+            self.bot.logger.pushError("[TASK] 'gw:ranking' Task Error:", ex)
             self.bot.data.save['gw']['ranking'] = None
             self.bot.data.pending = True
             return False

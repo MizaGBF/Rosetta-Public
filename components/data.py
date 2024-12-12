@@ -309,10 +309,10 @@ class Data():
             # used for the gw cog crew cache
             first_loop = True
         except asyncio.CancelledError:
-            self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
+            self.bot.logger.push("[TASK] 'owner:maintenance' Task Cancelled")
             return
         except Exception as e:
-            self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
+            self.bot.logger.pushError("[TASK] 'owner:maintenance' Task Error:", e)
         
         # loop
         while True:
@@ -323,14 +323,14 @@ class Data():
                     await asyncio.sleep((target_time - ct).seconds + 1)
                     continue
                 target_time += timedelta(days=1) # move target_time to next day
-                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup started", send_to_discord=False)
+                self.bot.logger.push("[TASK] 'owner:maintenance': Daily cleanup started", send_to_discord=False)
                 
                 # empty crew cache
                 if not first_loop:
                     try:
                         self.bot.get_cog('GuildWar').crewcache = {}
                     except Exception as xe:
-                        self.bot.logger.pushError("[TASK] 'maintenance (Crew Cache)' Task Error:", xe)
+                        self.bot.logger.pushError("[TASK] 'owner:maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
                 
                 # update user agent (only on first day of month)
@@ -357,7 +357,7 @@ class Data():
                             target = target.replace(month=target.month+1)
                         remindcog.addBotReminder(target, "**A new month started!**\nDon't forget to check out the various shops (Casino, FP, pendant, login, Prisms...).")
                     except Exception as se:
-                         self.bot.logger.pushError("[TASK] 'maintenance' Task Error (Monthly reminder):", se)
+                         self.bot.logger.pushError("[TASK] 'owner:maintenance' Task Error (Monthly reminder):", se)
                 try: # GW
                     if self.bot.get_cog('GuildWar').isGWRunning():
                         target = self.bot.data.save['gw']['dates']["End"] - timedelta(seconds=25200)
@@ -365,7 +365,7 @@ class Data():
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'maintenance' Task Error (GW reminders):", se)
+                     self.bot.logger.pushError("[TASK] 'owner:maintenance' Task Error (GW reminders):", se)
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
                         target = self.bot.data.save['valiant']['dates']["End"] - timedelta(seconds=25200)
@@ -373,7 +373,7 @@ class Data():
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'maintenance' Task Error (DB reminders):", se)
+                     self.bot.logger.pushError("[TASK] 'owner:maintenance' Task Error (DB reminders):", se)
                 # update schedule
                 await self.update_schedule()
                 # various clean up
@@ -383,12 +383,12 @@ class Data():
                     await self.clean_profile() # clean up profile data
                 await self.clean_general() # clean up everything else
                 
-                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup ended", send_to_discord=False)
+                self.bot.logger.push("[TASK] 'owner:maintenance': Daily cleanup ended", send_to_discord=False)
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
+                self.bot.logger.push("[TASK] 'owner:maintenance' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'owner:maintenance' Task Error:", e)
 
     """update_schedule()
     Coroutine to request the wiki to update the schedule
