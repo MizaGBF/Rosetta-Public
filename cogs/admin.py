@@ -448,12 +448,13 @@ class Admin(commands.Cog):
     async def load(self, inter: disnake.GuildCommandInteraction, drive : int = commands.Param(description="Add 1 to use the file from the drive", default=0)) -> None:
         """Command to reload the bot saved data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.cancelTask('gw:buff')
         if drive != 0: 
             if self.bot.drive.load() is False:
                 await inter.edit_original_message("Failed to retrieve save.json on the Google Drive")
                 return
         if self.bot.data.loadData():
+            try: self.bot.get_cog('YouCrew').setBuffTask(True) # reload gw buff task
+            except: pass
             self.bot.data.pending = False
             await self.bot.send('debug', embed=self.bot.embed(title=inter.me.name, description="save.json reloaded", color=self.COLOR))
         else:
@@ -815,7 +816,8 @@ class Admin(commands.Cog):
         """Disable the GW mode (Owner Only)
         It doesn't delete the GW settings"""
         await inter.response.defer(ephemeral=True)
-        self.bot.cancelTask('gw:buff')
+        try: self.bot.get_cog('YouCrew').setBuffTask(False)
+        except: pass
         self.bot.data.save['gw']['state'] = False
         self.bot.data.pending = True
         await inter.edit_original_message(embed=self.bot.embed(title="GW disabled", color=self.COLOR))
@@ -829,7 +831,7 @@ class Admin(commands.Cog):
         elif len(self.bot.data.save['gw']['dates']) == 8:
             self.bot.data.save['gw']['state'] = True
             self.bot.data.pending = True
-            try: self.bot.runTask('gw:buff', self.bot.get_cog('GuildWar').checkGWBuff)
+            try: self.bot.get_cog('YouCrew').setBuffTask(True)
             except: pass
             await inter.edit_original_message(embed=self.bot.embed(title="GW enabled", color=self.COLOR))
         else:
@@ -860,7 +862,8 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             # stop the task
-            self.bot.cancelTask('gw:buff')
+            try: self.bot.get_cog('YouCrew').setBuffTask(False)
+            except: pass
             self.bot.data.save['gw'] = {}
             self.bot.data.save['gw']['state'] = False
             self.bot.data.save['gw']['id'] = gw_id
@@ -876,7 +879,7 @@ class Admin(commands.Cog):
             self.bot.data.save['gw']['dates']["Day 4"] = self.bot.data.save['gw']['dates']["Day 3"] + timedelta(days=1) # +24h
             self.bot.data.save['gw']['dates']["Day 5"] = self.bot.data.save['gw']['dates']["Day 4"] + timedelta(days=1) # +24h
             self.bot.data.save['gw']['dates']["End"] = self.bot.data.save['gw']['dates']["Day 5"] + timedelta(seconds=61200) # +17h
-            # build the buff list for (you)
+            # build the buff list for (You)
             self.bot.data.save['gw']['buffs'] = []
             # Data format: Date, ATK/DEF buff bool, FO buff bool, warning bool, double buff bool
             # Prelims all
@@ -929,11 +932,13 @@ class Admin(commands.Cog):
             self.bot.data.save['gw']['skip'] = False
             self.bot.data.pending = True
             await asyncio.sleep(0)
-            try: self.bot.runTask('gw:buff', self.bot.get_cog('GuildWar').checkGWBuff)
+            # start the buff task
+            try: self.bot.get_cog('YouCrew').setBuffTask(True)
             except: pass
             await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War Mode".format(self.bot.emote.get('gw')), description="Set to : **{:%m/%d %H:%M}**".format(self.bot.data.save['gw']['dates']["Preliminaries"]), color=self.COLOR))
         except Exception as e:
-            self.bot.cancelTask('gw:buff')
+            try: self.bot.get_cog('YouCrew').setBuffTask(False)
+            except: pass
             self.bot.data.save['gw']['dates'] = {}
             self.bot.data.save['gw']['buffs'] = []
             self.bot.data.save['gw']['state'] = False
@@ -984,7 +989,7 @@ class Admin(commands.Cog):
     async def newtask(self, inter: disnake.GuildCommandInteraction) -> None:
         """Start a new checkGWBuff() task (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        try: self.bot.runTask('gw:buff', self.bot.get_cog('GuildWar').checkGWBuff)
+        try: self.bot.get_cog('YouCrew').setBuffTask(True)
         except: pass
         await inter.edit_original_message(embed=self.bot.embed(title="The Task (re)started", color=self.COLOR))
 

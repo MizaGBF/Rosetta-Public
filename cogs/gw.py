@@ -48,64 +48,7 @@ class GuildWar(commands.Cog):
         self.crewcache = {}
 
     def startTasks(self) -> None:
-        self.bot.runTask('gw:buff', self.checkGWBuff)
         self.bot.runTask('gw:ranking', self.bot.ranking.checkGWRanking)
-
-    """checkGWBuff()
-    Bot Task managing the buff alert of the (You) server
-    """
-    async def checkGWBuff(self) -> None:
-        self.getGWState()
-        if self.bot.data.save['gw']['state'] is False or len(self.bot.data.save['gw']['buffs']) == 0: return
-        try:
-            guild = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
-            if guild is None:
-                self.bot.logger.push("[TASK] 'gw:buff' Task Cancelled, no guild found")
-            channel = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
-            if 'skip' not in self.bot.data.save['gw']:
-                self.bot.data.save['gw']['skip'] = False
-                self.bot.data.pending = True
-            gl_role = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
-            fo_role = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
-            buff_role = [[guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface']]
-            msg = []
-            while self.bot.data.save['gw']['state'] and (len(self.bot.data.save['gw']['buffs']) > 0 or len(msg) != 0):
-                current_time = self.bot.util.JST() + timedelta(seconds=32)
-                if len(self.bot.data.save['gw']['buffs']) > 0 and current_time >= self.bot.data.save['gw']['buffs'][0][0]:
-                    msg = []
-                    if (current_time - self.bot.data.save['gw']['buffs'][0][0]) < timedelta(seconds=200):
-                        if self.bot.data.save['gw']['buffs'][0][1]:
-                            for r in buff_role:
-                                msg.append("{} {}\n".format(self.bot.emote.get(r[1]), r[0].mention))
-                        if self.bot.data.save['gw']['buffs'][0][2]:
-                            msg.append("{} {}\n".format(self.bot.emote.get('foace'), fo_role.mention))
-                        if self.bot.data.save['gw']['buffs'][0][3]:
-                            msg.append('*Buffs in* **5 minutes**')
-                        else:
-                            msg.append('Buffs now!')
-                        if self.bot.data.save['gw']['buffs'][0][4]: msg.append('\n**(Use everything this time! They are reset later.)**')
-                        msg.append("\nhttps://game.granbluefantasy.jp/#event/teamraid{}/guild_ability".format(str(self.bot.data.save['gw']['id']).zfill(3)))
-                        if self.bot.data.save['gw']['skip']:
-                            msg = []
-                        if not self.bot.data.save['gw']['buffs'][0][3]:
-                            self.bot.data.save['gw']['skip'] = False
-                    self.bot.data.save['gw']['buffs'].pop(0)
-                    self.bot.data.pending = True
-                else:
-                    if len(msg) > 0:
-                        await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msg)))
-                        msg = []
-                    if len(self.bot.data.save['gw']['buffs']) > 0:
-                        d = self.bot.data.save['gw']['buffs'][0][0] - current_time
-                        if d.seconds > 1:
-                            await asyncio.sleep(d.seconds-1)
-            if len(msg) > 0:
-                await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msg)))
-        except asyncio.CancelledError:
-            self.bot.logger.push("[TASK] 'gw:buff' Task Cancelled")
-        except Exception as e:
-            self.bot.logger.pushError("[TASK] 'gw:buff' Task Error:", e)
-        await self.bot.send('debug', embed=self.bot.embed(color=self.COLOR, title="User task ended", description="gw:buff", timestamp=self.bot.util.UTC()))
 
     """buildDayList()
     Generate the day list used by the gw command
@@ -142,7 +85,8 @@ class GuildWar(commands.Cog):
             elif current_time >= self.bot.data.save['gw']['dates']["End"]:
                 self.bot.data.save['gw']['state'] = False
                 self.bot.data.save['gw']['dates'] = {}
-                self.bot.cancelTask('gw:buff')
+                try: self.bot.get_cog('YouCrew').setBuffTask(False)
+                except: pass
                 self.bot.data.pending = True
                 return False
             else:
@@ -217,7 +161,8 @@ class GuildWar(commands.Cog):
             elif current_time >= self.bot.data.save['gw']['dates']["End"]:
                 self.bot.data.save['gw']['state'] = False
                 self.bot.data.save['gw']['dates'] = {}
-                self.bot.cancelTask('gw:buff')
+                try: self.bot.get_cog('YouCrew').setBuffTask(False)
+                except: pass
                 self.bot.data.save['youtracker'] = None
                 self.bot.data.pending = True
                 return ""
@@ -338,7 +283,8 @@ class GuildWar(commands.Cog):
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Not available", color=self.COLOR))
                     self.bot.data.save['gw']['state'] = False
                     self.bot.data.save['gw']['dates'] = {}
-                    self.bot.cancelTask('gw:buff')
+                    try: self.bot.get_cog('YouCrew').setBuffTask(False)
+                    except: pass
                     self.bot.data.save['youtracker'] = None
                     self.bot.data.pending = True
                     await self.bot.util.clean(inter, 40)

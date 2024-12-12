@@ -27,7 +27,102 @@ class YouCrew(commands.Cog):
         self.bot = bot
 
     def startTasks(self) -> None:
-        pass
+        self.bot.runTask('you:buff', self.checkGWBuff)
+
+    """checkGWBuff()
+    Bot Task managing the buff alert of the (You) server
+    """
+    async def checkGWBuff(self) -> None:
+        gwcog = self.bot.get_cog('GuildWar')
+        if gwcog is None:
+            # add warning in log, just in case
+            self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, the 'GuildWar' Cog is missing.", send_to_discord=False, level=self.logger.WARNING)
+            return
+        # check if gw is on going
+        self.gwcog.getGWState()
+        if self.bot.data.save['gw']['state'] is False or len(self.bot.data.save['gw']['buffs']) == 0:
+            return # silently cancel if not
+        try:
+            # check if guild set in config.json
+            guild = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
+            if guild is None:
+                self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no guild 'you_server' found")
+                return
+            # check if channel set in config.json
+            channel = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
+            if guild is None:
+                self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no channel 'you_announcement' found")
+                return
+            # init skip flag if missing
+            if 'skip' not in self.bot.data.save['gw']:
+                self.bot.data.save['gw']['skip'] = False
+                self.bot.data.pending = True
+            # retrieve roles
+            gl_role = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
+            fo_role = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
+            buff_role = [[guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface']]
+            # task loop (as long as gw is on and buffs are remaining in the queue)
+            msgs = []
+            while self.bot.data.save['gw']['state'] and (len(self.bot.data.save['gw']['buffs']) > 0 or len(msgs) != 0):
+                # check if we passed next buff date
+                current_time = self.bot.util.JST() + timedelta(seconds=32)
+                if len(self.bot.data.save['gw']['buffs']) > 0 and current_time >= self.bot.data.save['gw']['buffs'][0][0]:
+                    msgs = []
+                    # if recent (in the last 200s)
+                    if (current_time - self.bot.data.save['gw']['buffs'][0][0]) < timedelta(seconds=200):
+                        if self.bot.data.save['gw']['buffs'][0][1]: # flag 1: ATK and DEF aces
+                            for r in buff_role:
+                                msgs.append("{} {}\n".format(self.bot.emote.get(r[1]), r[0].mention))
+                        if self.bot.data.save['gw']['buffs'][0][2]: # flag 2: First Officers
+                            msgs.append("{} {}\n".format(self.bot.emote.get('foace'), fo_role.mention))
+                        if self.bot.data.save['gw']['buffs'][0][3]: # flag 3: Merely an advance warning
+                            msgs.append('*Buffs in* **5 minutes**')
+                        else:
+                            msgs.append('Buffs now!')
+                        # flag 4: Prelims "Use Twice" mention
+                        if self.bot.data.save['gw']['buffs'][0][4]:
+                            msgs.append('\n**(Use everything this time! They are reset later.)**')
+                        # add Link
+                        msgs.append("\nhttps://game.granbluefantasy.jp/#event/teamraid{}/guild_ability".format(str(self.bot.data.save['gw']['id']).zfill(3)))
+                        # If skip flag is on, reset and ignore
+                        if self.bot.data.save['gw']['skip']:
+                            msgs = []
+                        # If flag 3 was off: Reset skip flag
+                        if not self.bot.data.save['gw']['buffs'][0][3]:
+                            self.bot.data.save['gw']['skip'] = False
+                    self.bot.data.save['gw']['buffs'].pop(0)
+                    self.bot.data.pending = True
+                else:
+                    # if a message is pending
+                    if len(msgs) > 0: # send and reset
+                        await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msgs)))
+                        msgs = []
+                    if len(self.bot.data.save['gw']['buffs']) > 0: # if a buff is remaining, sleep until its time
+                        d = self.bot.data.save['gw']['buffs'][0][0] - current_time
+                        if d.seconds > 1:
+                            await asyncio.sleep(d.seconds-1)
+            # send message if any is pending
+            if len(msgs) > 0:
+                await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msgs)))
+        except asyncio.CancelledError:
+            self.bot.logger.push("[TASK] 'you:buff' Task Cancelled")
+        except Exception as e:
+            self.bot.logger.pushError("[TASK] 'you:buff' Task Error:", e)
+        # quit
+        await self.bot.send('debug', embed=self.bot.embed(color=self.COLOR, title="User task ended", description="you:buff", timestamp=self.bot.util.UTC()))
+
+    """setBuffTask()
+    Start or stop the checkGWBuff() coroutine as a task.
+    
+    Parameters
+    ----------
+    state: Boolean, True to (re)start the task, False to stop it
+    """
+    def setBuffTask(self, state : bool) -> None:
+        if state:
+            self.bot.runTask('you:buff', self.checkGWBuff)
+        else:
+            self.bot.cancelTask('you:buff')
 
     """searchScoreForTracker()
     Search the targeted crews for the YouTracker in the database being built
