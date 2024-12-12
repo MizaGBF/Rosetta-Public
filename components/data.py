@@ -28,7 +28,7 @@ class Data():
         'schedule': {},
         'spark': {},
         'gw': {'state':False},
-        'valiant': {'state':False},
+        'dread': {'state':False},
         'reminders': {},
         'permitted': {},
         'extra': {},
@@ -211,6 +211,9 @@ class Data():
                             if len(data['gbfaccounts']) > 1:
                                 self.bot.logger.push("[DATA] Only the first GBF account was kept during the save data conversion to **v19**.")
                             data.pop("gbfaccounts")
+                        if 'dread' in data:
+                            data['dread'] = data['dread']
+                            data.pop("valiant")
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
@@ -368,7 +371,7 @@ class Data():
                      self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (GW reminders):", se)
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
-                        target = self.bot.data.save['valiant']['dates']["End"] - timedelta(seconds=25200)
+                        target = self.bot.data.save['dread']['dates']["End"] - timedelta(seconds=25200)
                         remindcog.addBotReminder(target, "**Dread Barrage is ending soon!**\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
