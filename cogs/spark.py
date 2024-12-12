@@ -260,21 +260,22 @@ class Sparking(commands.Cog):
         ar = -1
         i = 0
         emotes = {0:self.bot.emote.get('SSR'), 1:self.bot.emote.get('SR'), 2:self.bot.emote.get('R')}
-        msg = ""
+        msgs = []
         top = 15
         for key, value in sorted(ranking.items(), key = itemgetter(1), reverse = True):
             if i < top:
                 fr = math.floor(value)
-                msg += "**#{:<2}{} {}** with {} roll".format(i+1, emotes.pop(i, "▫️"), (await guild.get_or_fetch_member(int(key))).display_name, fr)
-                if fr != 1: msg += "s"
-                msg += "\n"
+                msgs.append("**#{:<2}{} {}** with {} roll".format(i+1, emotes.pop(i, "▫️"), (await guild.get_or_fetch_member(int(key))).display_name, fr))
+                if fr != 1:
+                    msgs.append("s")
+                msgs.append("\n")
             if key == str(inter.author.id):
                 ar = i
                 if i >= top: break
             i += 1
             if i >= 100:
                 break
-        return msg, ar, top
+        return "".join(msgs), ar, top
 
     @spark.sub_command()
     async def ranking(self, inter: disnake.GuildCommandInteraction) -> None:

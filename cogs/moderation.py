@@ -37,32 +37,34 @@ class Moderation(commands.Cog):
         try: icon = guild.icon.url
         except: icon = None
         owner = await self.bot.get_or_fetch_user(guild.owner_id)
-        msg = ":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)
-        if len(guild.categories) > 0: msg += ":file_folder: **{}** Categories\n".format(len(guild.categories))
-        if len(guild.text_channels) > 0: msg += ":printer: **{}** Text Channels\n".format(len(guild.text_channels))
-        if len(guild.voice_channels) > 0: msg += ":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels))
-        if len(guild.forum_channels) > 0: msg += ":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels))
-        if len(guild.stage_channels) > 0: msg += ":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels))
-        if guild.safety_alerts_channel is not None: msg += ":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url)
-        msg += ":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000))
-        if len(guild.roles) > 0: msg += ":scroll: **{}** Roles\n".format(len(guild.roles))
-        if len(guild.emojis) > 0: msg += "🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2)
-        if len(guild.stickers) > 0: msg += "🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit)
-        if len(guild.scheduled_events) > 0: msg += ":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events))
-        if guild.premium_tier > 0: msg += ":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count)
-        if guild.vanity_url_code: msg += ":wave: Has Vanity Invite\n"
-        jk = ""
+        msgs = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
+        if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
+        if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
+        if len(guild.voice_channels) > 0: msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
+        if len(guild.forum_channels) > 0: msgs.append(":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels)))
+        if len(guild.stage_channels) > 0: msgs.append(":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels)))
+        if guild.safety_alerts_channel is not None: msgs.append(":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url))
+        msgs.append(":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000)))
+        if len(guild.roles) > 0: msgs.append(":scroll: **{}** Roles\n".format(len(guild.roles)))
+        if len(guild.emojis) > 0: msgs.append("🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2))
+        if len(guild.stickers) > 0: msgs.append("🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit))
+        if len(guild.scheduled_events) > 0: msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
+        if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
+        if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")
+        rosetta = []
         gid = str(guild.id)
-        if is_mod and not inter.me.guild_permissions.external_emojis: jk += ":x: **External Emoji** permission is **Missing**\n"
-        if len(self.bot.data.save['permitted'].get(gid, [])) > 0: jk += "{} **Auto cleanup** enabled\n".format(self.bot.emote.get('lyria'))
-        elif is_mod: jk += ":warning: **Auto cleanup** disabled\n"
-        if self.bot.pinboard.is_enabled(gid): jk += ":star: **Pinboard** enabled\n"
-        elif is_mod: jk += ":warning: **Pinboard** disabled.\n"
-        if gid in self.bot.data.save['announcement']: jk += ":new: **Announcements** enabled\n"
-        elif is_mod: jk += ":warning: **Announcements** disabled\n"
-        if gid in self.bot.data.save['assignablerole']: jk += ":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys()))
-        if jk != "": msg += "\n**Rosetta Settings**\n" + jk
-        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description=msg, thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
+        if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
+        if len(self.bot.data.save['permitted'].get(gid, [])) > 0: rosetta.append("{} **Auto cleanup** enabled\n".format(self.bot.emote.get('lyria')))
+        elif is_mod: rosetta.append(":warning: **Auto cleanup** disabled\n")
+        if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
+        elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
+        if gid in self.bot.data.save['announcement']: rosetta.append(":new: **Announcements** enabled\n")
+        elif is_mod: rosetta.append(":warning: **Announcements** disabled\n")
+        if gid in self.bot.data.save['assignablerole']: rosetta.append(":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys())))
+        if len(rosetta) > 0:
+            msgs.append("\n**Rosetta Settings**\n")
+            msgs += rosetta
+        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description="".join(msgs), thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
 
 
     @commands.message_command(name="Server Info")
@@ -105,14 +107,14 @@ class Moderation(commands.Cog):
     async def _seeCleanupSetting(self, inter: disnake.GuildCommandInteraction) -> None:
         gid = str(inter.guild.id)
         if gid in self.bot.data.save['permitted'] and len(self.bot.data.save['permitted'][gid]) > 0:
-            msg = ""
+            msgs = []
             for c in inter.guild.channels:
                 if c.id in self.bot.data.save['permitted'][gid]:
                     try:
-                        msg += c.name + "\n"
+                        msgs.append(c.name)
                     except:
                         pass
-            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is enable in all channels but the following ones:", description=msg, footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is enable in all channels but the following ones:", description="\n".join(msgs), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is disabled in all channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
 
