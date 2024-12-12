@@ -29,7 +29,7 @@ class Admin(commands.Cog):
 
     def startTasks(self) -> None:
         self.bot.runTask('owner:status', self.status)
-        self.bot.runTask('owner:maintenance', self.bot.data.maintenance)
+        self.bot.runTask('data:maintenance', self.bot.data.maintenance)
 
     """status()
     Bot Task managing the autosave and update of the bot status
