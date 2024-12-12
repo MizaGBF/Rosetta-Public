@@ -143,15 +143,14 @@ class Util():
     """
     def time(self, to_convert : Optional[datetime] = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
         if to_convert is None: to_convert = self.UTC()
-        msg = ""
+        msgs = []
         if removejst:
             to_convert -= timedelta(seconds=self.JSTDIFF)
         if naivecheck and (to_convert.tzinfo is None or to_convert.tzinfo.utcoffset(to_convert)):
             to_convert = to_convert.replace(tzinfo=timezone.utc)
         for c in style:
-            msg += disnake.utils.format_dt(to_convert, c)
-            msg += " "
-        return msg[:-1]
+            msgs.append(disnake.utils.format_dt(to_convert, c))
+        return " ".join(msgs)
 
     """uptime()
     Return the bot uptime
@@ -257,10 +256,10 @@ class Util():
     """
     def statusString(self) -> str:
         status = self.status()
-        msg = ""
+        msgs = []
         for k in status:
-            msg += "**{}**▫️{}\n".format(k, status[k])
-        return msg
+            msgs.append("**{}**▫️{}\n".format(k, status[k]))
+        return "".join(msgs)
 
     """react()
     React to a message with an emoji
@@ -504,11 +503,10 @@ class Util():
     str: resulting string
     """
     def players2mentions(self, players : list) -> str:
-        s = ""
+        s = []
         for p in players:
-            s += p.mention + " "
-        if len(s) > 0: s = s[:-1]
-        return s
+            s.append(p.mention)
+        return " ".join(s)
 
     """search_wiki_for_id()
     Search the wiki for a weapon/character/summon id
