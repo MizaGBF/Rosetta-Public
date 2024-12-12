@@ -468,7 +468,7 @@ class GranblueFantasy(commands.Cog):
             pass
 
         try:
-            buf = self.bot.get_cog('GuildWar').getNextBuff(inter)
+            buf = self.bot.get_cog('YouCrew').getNextBuff(inter)
             if len(buf) > 0:
                 output.append(buf)
                 output.append("\n")

@@ -124,6 +124,35 @@ class YouCrew(commands.Cog):
         else:
             self.bot.cancelTask('you:buff')
 
+    """getNextBuff()
+    Return the time left until the next buffs for the (You) server
+    
+    Parameters
+    ----------
+    inter: Command interaction (to check the server)
+    
+    Returns
+    --------
+    str: Time left, empty if error
+    """
+    def getNextBuff(self, inter: disnake.GuildCommandInteraction) -> str: # for the (you) crew, get the next set of buffs to be called
+        if self.bot.data.save['gw']['state'] is True and inter.guild.id == self.bot.data.config['ids'].get('you_server', 0):
+            current_time = self.bot.util.JST()
+            if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]:
+                return ""
+            for b in self.bot.data.save['gw']['buffs']:
+                if not b[3] and current_time < b[0]:
+                    msgs = ["{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))]
+                    if b[1]:
+                        msgs.append("Attack {}, Defense {}".format(self.bot.emote.get('atkace'), self.bot.emote.get('deface')))
+                        if b[2]:
+                            msgs.append(", FO {}".format(self.bot.emote.get('foace')))
+                    elif b[2]:
+                        msgs.append("FO {}".format(self.bot.emote.get('foace')))
+                    msgs.append(")")
+                    return "".join(msgs)
+        return ""
+
     """searchScoreForTracker()
     Search the targeted crews for the YouTracker in the database being built
     
@@ -311,6 +340,25 @@ class YouCrew(commands.Cog):
     async def you(self, inter: disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
+
+    @you.sub_command()
+    async def buff(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Check when is the next GW buff ((You) Server Only)"""
+        try:
+            await inter.response.defer()
+            if inter.guild.id != self.bot.data.config['ids'].get('you_server', -1):
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in this server", color=self.COLOR))
+                return
+            d = self.getNextBuff(inter)
+            if d != "":
+                await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description=d, color=self.COLOR))
+            else:
+                await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description="Only available when Guild War is on going", color=self.COLOR))
+                await self.bot.util.clean(inter, 40)
+        except Exception as e:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
+            self.bot.logger.pushError("[GW] In 'gw buff' command:", e)
+            await self.bot.util.clean(inter, 40)
 
     @you.sub_command()
     async def lead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
