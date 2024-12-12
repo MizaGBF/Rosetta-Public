@@ -48,24 +48,29 @@ class Blackjack(BaseView):
     str: resulting string
     """
     def formatHand(self, hand : list, playing : bool) -> str:
-        msg = ""
+        msgs = []
         score = 0
         for card in hand[1]:
-            msg += "{}, ".format(card.replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️").replace("11", "J").replace("12", "Q").replace("13", "K").replace("10", "tmp").replace("1", "A").replace("tmp", "10"))
-            if card[:-1] == "1" and score < 11: score += 11
-            elif int(card[:-1]) >= 10: score += 10
-            else: score += int(card[:-1])
-        msg = msg[:-2]
+            msgs.append("{}".format(card.replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️").replace("11", "J").replace("12", "Q").replace("13", "K").replace("10", "tmp").replace("1", "A").replace("tmp", "10")))
+            msgs.append(", ")
+            if card[:-1] == "1" and score < 11:
+                score += 11
+            elif int(card[:-1]) >= 10:
+                score += 10
+            else:
+                score += int(card[:-1])
         if playing:
-            msg += ", 🎴"
-        msg += " ▫️"
+            msgs.append("🎴")
+        else:
+            msgs.pop(-1)
+        msgs.append(" ▫️")
         match hand[0]:
-            case 0: msg += " Score is **{}**".format(score)
-            case 1: msg += " Stopped at **{}**".format(score)
-            case 2: msg += " **Blackjack**"
-            case 3: msg += " Reached **21**"
-            case 4: msg += " **Lost**"
-        return msg
+            case 0: msgs.append(" Score is **{}**".format(score))
+            case 1: msgs.append(" Stopped at **{}**".format(score))
+            case 2: msgs.append(" **Blackjack**")
+            case 3: msgs.append(" Reached **21**")
+            case 4: msgs.append(" **Lost**")
+        return "".join(msgs)
 
     """getWinner()
     Generate a string indicating who won the game
@@ -98,10 +103,11 @@ class Blackjack(BaseView):
             case 1:
                 return "**{}** is the winner".format(winner[0].display_name)
             case _:
-                msg = "It's a **draw** between "
+                msgs = ["It's a **draw** between "]
                 for p in winner:
-                    msg += "{}, ".format(p.display_name)
-                return msg[:-2]
+                    msgs.append(p.display_name)
+                    msgs.append(", ")
+                return "".join(msgs[:-1])
 
     """update()
     Update the embed
@@ -112,10 +118,11 @@ class Blackjack(BaseView):
     init: if True, it uses a different method (only used from the command call itself)
     """
     async def update(self, inter : disnake.Interaction, init : bool = False) -> None:
-        self.embed.description = ""
+        desc = []
         for i, p in enumerate(self.players):
-            self.embed.description += "{} {} ▫️ {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), self.formatHand(self.hands[i], (i == self.state)))
-        self.embed.description += self.notification
+            desc.append("{} {} ▫️ {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), self.formatHand(self.hands[i], (i == self.state))))
+        desc.append(self.notification)
+        self.embed.description = "".join(desc)
         if init: await inter.edit_original_message(embed=self.embed, view=self)
         elif self.state >= 0: await inter.response.edit_message(embed=self.embed, view=self)
         else: await inter.response.edit_message(embed=self.embed, view=None)

@@ -128,19 +128,19 @@ class Poker(BaseView):
     init: if True, it uses a different method (only used from the command call itself)
     """
     async def update(self, inter : disnake.Interaction, init=False) -> None:
-        self.embed.description = ":spy: Dealer ▫️ "
+        desc = [":spy: Dealer ▫️ "]
         match self.state:
-            case 0: self.embed.description += "{}, 🎴, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0]))
-            case 1: self.embed.description += "{}, {}, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1]))
-            case _: self.embed.description += "{}, {}, {}\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1]), Poker.valueNsuit2head(self.dealer[2]))
+            case 0: desc.append("{}, 🎴, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0])))
+            case 1: desc.append("{}, {}, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1])))
+            case _: desc.append("{}, {}, {}\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1]), Poker.valueNsuit2head(self.dealer[2])))
         s = self.state - 3
         self.winners = []
         best = 0
         for i, p in enumerate(self.players):
             if s < 0:
-                self.embed.description += "{} {} ▫️ 🎴, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."))
+                desc.append("{} {} ▫️ 🎴, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...")))
             elif s == 0:
-                self.embed.description += "{} {} ▫️ {}, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0]))
+                desc.append("{} {} ▫️ {}, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0])))
             else:
                 hs, hstr = await Poker.checkPokerHand(self.dealer + self.hands[i][1])
                 if hs <= self.min_value:
@@ -150,24 +150,26 @@ class Poker(BaseView):
                 elif hs > best:
                     best = hs
                     self.winners = [p]
-                self.embed.description += "{} {} ▫️ {}, {}, {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0]), Poker.valueNsuit2head(self.hands[i][1][1]), hstr)
+                desc.append("{} {} ▫️ {}, {}, {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0]), Poker.valueNsuit2head(self.hands[i][1][1]), hstr))
             s -= 2
         if self.state == 0:
-            self.embed.description += "Waiting for all players to make their choices"
+            desc.append("Waiting for all players to make their choices")
         elif self.state >= self.max_state - 1:
             match len(self.winners):
                 case 0: pass # shouldn't happen
                 case 1:
-                    self.embed.description += "**{}** is the winner".format(self.winners[0].display_name)
+                    desc.append("**{}** is the winner".format(self.winners[0].display_name))
                 case _:
-                    self.embed.description += "It's a **draw** between "
+                    desc.append("It's a **draw** between ")
                     for p in self.winners:
-                        self.embed.description += "{}, ".format(p.display_name)
-                    self.embed.description = self.embed.description[:-2]
+                        desc.append(p.display_name)
+                        desc.append(", ")
+                    desc.pop(-1)
             match self.remaining:
                 case 0: pass
-                case 1: self.embed.description += "\n*Please wait for the results*"
-                case _: self.embed.description += "\n*Next round in 10 seconds...*"
+                case 1: desc.append("\n*Please wait for the results*")
+                case _: desc.append("\n*Next round in 10 seconds...*")
+        self.embed.description = "".join(desc)
         if init: self.message = await inter.followup.send(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self)
         elif self.state >= 0: await self.message.edit(embed=self.embed, view=None)
         else: await self.message.edit(embed=self.embed, view=self)

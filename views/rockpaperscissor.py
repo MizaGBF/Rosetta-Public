@@ -41,24 +41,28 @@ class RPS(BaseView):
     """
     async def update(self, inter : disnake.Interaction, init : bool = False) -> None:
         if not self.won:
+            desc = []
             if self.state[0] == -1 or self.state[1] == -1:
-                self.embed.description = ""
                 for i, p in enumerate(self.players):
-                    self.embed.description += "**{}** ▫️ ".format(p.display_name)
-                    if self.state[i] == -1: self.embed.description += "*is thinking...*\n"
-                    else: self.embed.description += "*made its choice.*\n"
+                    desc.append("**")
+                    desc.append(p.display_name)
+                    desc.append("** ▫️ ")
+                    if self.state[i] == -1:
+                        desc.append("*is thinking...*\n")
+                    else:
+                        desc.append("*made its choice.*\n")
+                self.embed.description = "".join(desc)
             else:
-                self.embed.description = ""
                 for i, p in enumerate(self.players):
-                    self.embed.description += "**{}** ▫️ ".format(p.display_name)
+                    desc.append("**{}** ▫️ ".format(p.display_name))
                     match self.state[i]:
-                        case 0: self.embed.description += "selected 🪨 **Rock**\n"
-                        case 1: self.embed.description += "selected 🧻 **Paper**\n"
-                        case 2: self.embed.description += "selected ✂️ **Scissor**\n"
+                        case 0: desc.append("selected 🪨 **Rock**\n")
+                        case 1: desc.append("selected 🧻 **Paper**\n")
+                        case 2: desc.append("selected ✂️ **Scissor**\n")
                 # winner selection
                 if self.state[0] == self.state[1]:
-                    self.embed.description += "This round is a **draw**\n"
-                    self.embed.description += "**Next round in 10 seconds...**"
+                    desc.append("This round is a **draw**\n")
+                    desc.append("**Next round in 10 seconds...**")
                     self.won = True
                 else:
                     v = self.state[0] * 10 + self.state[1]
@@ -73,14 +77,15 @@ class RPS(BaseView):
                     self.scores[win] += 1
                     self.won = True
                     if self.target > 1:
-                        self.embed.description += "**{}** won this round\n".format(self.players[win].display_name)
-                        self.embed.description += "**{}** won {} time(s) ▫️ **{}** won {} time(s)\n".format(self.players[0].display_name, self.scores[0], self.players[1].display_name, self.scores[1])
+                        desc.append("**{}** won this round\n".format(self.players[win].display_name))
+                        desc.append("**{}** won {} time(s) ▫️ **{}** won {} time(s)\n".format(self.players[0].display_name, self.scores[0], self.players[1].display_name, self.scores[1]))
                         if self.scores[win] >= self.target:
-                            self.embed.description += "**{}** is the **Winner**".format(self.players[win].display_name)
+                            desc.append("**{}** is the **Winner**".format(self.players[win].display_name))
                         else:
-                            self.embed.description += "**Next round in 10 seconds...**"
+                            desc.append("**Next round in 10 seconds...**")
                     else:
-                        self.embed.description += "**{}** is the **Winner**".format(self.players[win].display_name)
+                        desc.append("**{}** is the **Winner**".format(self.players[win].display_name))
+                self.embed.description = "".join(desc)
                 self.stopall()
         if init:
             await inter.edit_original_message(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self)

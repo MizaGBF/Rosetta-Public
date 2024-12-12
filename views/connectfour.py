@@ -148,9 +148,18 @@ class ConnectFour(BaseView):
     str: resulting string
     """
     def render(self) -> str:
-        msg = ""
+        msgs = []
         for r in range(6):
             for c in range(7):
-                msg += "{} ".format(self.grid[c + r * 7])
-            msg += "\n"
-        return msg.replace('10 ', ':blue_circle:').replace('11 ', ':brown_circle:').replace('12 ', ':orange_circle:').replace('0 ', ':blue_circle:').replace('1 ', ':red_circle:').replace('2 ', ':yellow_circle:') + ":one::two::three::four::five::six::seven:"
+                match self.grid[c + r * 7]:
+                    case 10: msgs.append(":blue_circle:")
+                    case 11: msgs.append(":brown_circle:")
+                    case 12: msgs.append(":orange_circle:")
+                    case 0: msgs.append(":blue_circle:")
+                    case 1: msgs.append(":red_circle:")
+                    case 2: msgs.append(":yellow_circle:")
+                    case _: msgs.append(str(self.grid[c + r * 7]))
+                msgs.append(" ")
+            msgs.append("\n")
+        msgs.append(":one: :two: :three: :four: :five: :six: :seven:")
+        return "".join(msgs)
