@@ -221,11 +221,27 @@ class Gacha():
             self.bot.data.pending = True # save anyway
             return False
 
-    def summary_subroutine(self, data : dict, description : str, index : int, time : datetime, timesub : Optional[datetime], remaining : datetime) -> str:
+
+    """summary_subroutine()
+    summary() subroutine.
+    
+    Parameters
+    --------
+    data: Dict, main gacha data
+    index: Integer, banner index
+    time: Datetime, banner end time
+    timesub: Optional Datetime, sub banner end time
+    remaining: Datetime, remaining banner time
+    
+    Returns
+    --------
+    list: List of string to use to make the description. In list form to use join() later, for less string instantiation.
+    """
+    def summary_subroutine(self, data : dict, index : int, time : datetime, timesub : Optional[datetime], remaining : datetime) -> str:
         # timer
-        description = "{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(time - remaining, 2))
+        description = ["{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(time - remaining, 2))]
         if timesub is not None and time != timesub:
-            description += "\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(timesub - remaining, 2))
+            description.append("\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(timesub - remaining, 2)))
 
         # calculate real ssr rate
         sum_ssr = 0
@@ -236,32 +252,33 @@ class Gacha():
                 if i == 2: sum_ssr += float(r) * len(rarity['list'][r])
 
         # rate description
-        description += "\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][index]['ratio'])
+        description.append("\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][index]['ratio']))
         if not data['banners'][index]['ratio'].startswith('3'):
-            description += " **(Premium Gala)**"
-        description += " ▫️ Sum of rates **{:.3f}%**".format(sum_ssr)
-        if index == 0 and 'scam' in data: description += "\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam']))
-        description += "\n"
+            description.append(" **(Premium Gala)**")
+        description.append(" ▫️ Sum of rates **{:.3f}%**".format(sum_ssr))
+        if index == 0 and 'scam' in data:
+            description.append("\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam'])))
+        description.append("\n")
         
         # build rate up list
         for k in data['banners'][index]['rateup']:
             if k == 'zodiac':
                 if len(data['banners'][index]['rateup']['zodiac']) > 0:
-                    description += "{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot'))
+                    description.append("{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot')))
                     for i in data['banners'][index]['rateup'][k]:
-                        description += self.formatGachaItem(i) + " "
-                    description += "\n"
+                        description.append(self.formatGachaItem(i) + " ")
+                    description.append("\n")
             else:
                 if len(data['banners'][index]['rateup'][k]) > 0:
                     for r in data['banners'][index]['rateup'][k]:
-                        if k.lower().find("weapon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r)
-                        elif k.lower().find("summon") != -1: description += "{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r)
+                        if k.lower().find("weapon") != -1: description.append("{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r))
+                        elif k.lower().find("summon") != -1: description.append("{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r))
                         for i, item in enumerate(data['banners'][index]['rateup'][k][r]):
                             if i >= 8 and len(data['banners'][index]['rateup'][k][r]) - i > 1:
-                                description += " and **{} more!**".format(len(data['banners'][index]['rateup'][k][r]) - i)
+                                description.append(" and **{} more!**".format(len(data['banners'][index]['rateup'][k][r]) - i))
                                 break
-                            description += self.formatGachaItem(item) + " "
-                        description += "\n"
+                            description.append(self.formatGachaItem(item) + " ")
+                        description.append("\n")
         return description
 
 
@@ -283,11 +300,11 @@ class Gacha():
             content = await self.get()
             if len(content) > 0:
                 remaining, data = tuple(content)
-                description = ""
-                description = self.summary_subroutine(data, description, 0, data['time'], data['timesub'], remaining)
+                description = self.summary_subroutine(data, 0, data['time'], data['timesub'], remaining)
                 if len(data["banners"]) > self.CLASSIC_COUNT and "collaboration" in data and remaining < data["collaboration"]:
-                    description += "{} **Collaboration**\n".format(self.bot.emote.get('crystal')) + self.summary_subroutine(data, description, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)
-                return description, "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
+                    description.append("{} **Collaboration**\n".format(self.bot.emote.get('crystal')))
+                    description += self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)
+                return "".join(description), "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
             return None, None
         except Exception as e:
             raise e
@@ -405,29 +422,30 @@ class Gacha():
     """
     def formatGachaItem(self, raw : str) -> str:
         if len(raw) < 3: return raw
-        res = ""
+        res = []
         match raw[0]:
-            case "1": res += str(self.bot.emote.get('fire'))
-            case "2": res += str(self.bot.emote.get('water'))
-            case "3": res += str(self.bot.emote.get('earth'))
-            case "4": res += str(self.bot.emote.get('wind'))
-            case "5": res += str(self.bot.emote.get('light'))
-            case "6": res += str(self.bot.emote.get('dark'))
+            case "1": res.append(str(self.bot.emote.get('fire')))
+            case "2": res.append(str(self.bot.emote.get('water')))
+            case "3": res.append(str(self.bot.emote.get('earth')))
+            case "4": res.append(str(self.bot.emote.get('wind')))
+            case "5": res.append(str(self.bot.emote.get('light')))
+            case "6": res.append(str(self.bot.emote.get('dark')))
             case _: pass
         match raw[1]:
-            case "0": res += str(self.bot.emote.get('sword'))
-            case "1": res += str(self.bot.emote.get('dagger'))
-            case "2": res += str(self.bot.emote.get('spear'))
-            case "3": res += str(self.bot.emote.get('axe'))
-            case "4": res += str(self.bot.emote.get('staff'))
-            case "5": res += str(self.bot.emote.get('gun'))
-            case "6": res += str(self.bot.emote.get('melee'))
-            case "7": res += str(self.bot.emote.get('bow'))
-            case "8": res += str(self.bot.emote.get('harp'))
-            case "9": res += str(self.bot.emote.get('katana'))
-            case "S": res += str(self.bot.emote.get('summon'))
-            case _: res += str(self.bot.emote.get('question'))
-        return res + raw[2:]
+            case "0": res.append(str(self.bot.emote.get('sword')))
+            case "1": res.append(str(self.bot.emote.get('dagger')))
+            case "2": res.append(str(self.bot.emote.get('spear')))
+            case "3": res.append(str(self.bot.emote.get('axe')))
+            case "4": res.append(str(self.bot.emote.get('staff')))
+            case "5": res.append(str(self.bot.emote.get('gun')))
+            case "6": res.append(str(self.bot.emote.get('melee')))
+            case "7": res.append(str(self.bot.emote.get('bow')))
+            case "8": res.append(str(self.bot.emote.get('harp')))
+            case "9": res.append(str(self.bot.emote.get('katana')))
+            case "S": res.append(str(self.bot.emote.get('summon')))
+            case _: res.append(str(self.bot.emote.get('question')))
+        res.append(raw[2:])
+        return "".join(res)
 
     """simulate()
     Create a GachaSimulator instance
@@ -687,18 +705,18 @@ class GachaSimulator():
     
     Parameters
     --------
-    footer: String, embed footer
+    footer: List of string, future embed footer beforer join
     
     Returns
     --------
-    str: Modified footer
+    list: footer reference
     """
-    def bannerIDtoFooter(self, footer) -> str:
+    def bannerIDtoFooter(self, footer : list) -> str:
         if self.bannerid > 0:
             if self.bannerid <= self.bot.gacha.CLASSIC_COUNT:
-                footer += " ▫️ Classic {}".format(self.bannerid)
+                footer.append(" ▫️ Classic {}".format(self.bannerid))
             else:
-                footer += " ▫️ Collaboration"
+                footer.append(" ▫️ Collaboration")
         return footer
 
     """output()
@@ -719,15 +737,15 @@ class GachaSimulator():
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Star Premium Gachas available at selected index", color=self.color))
             return
         # set embed footer
-        footer = "{}% SSR rate".format(self.result['rate'])
+        footer = ["{}% SSR rate".format(self.result['rate'])]
         match self.mode:
             case self.MODE_MEMEB:
-                footer += " ▫️ until rate up"
+                footer.append(" ▫️ until rate up")
             case self.MODE_SCAM:
-                footer += " ▫️ Selected Scam #{}".format(self.scamdata[5]+1)
+                footer.append(" ▫️ Selected Scam #{}".format(self.scamdata[5]+1))
             case _:
                 pass
-        footer = self.bannerIDtoFooter(footer)
+        footer = "".join(self.bannerIDtoFooter(footer))
         # get scam roll
         if self.scamdata is not None:
             sroll = self.scamRoll()
@@ -747,61 +765,78 @@ class GachaSimulator():
                 r = self.result['list'][0]
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(r[0])), r[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 1: # ten roll display
+                scam_position = -1
                 for i in range(0, 11):
-                    msg = []
+                    msgs = []
                     for j in range(0, i):
                         if j >= 10: break
                         # write
-                        msg.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
-                        if j % 2 == 1: msg.append("\n")
+                        msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
+                        if j % 2 == 1:
+                            msgs.append("\n")
                     for j in range(i, 10):
-                        msg.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
-                        if j % 2 == 1: msg.append("\n")
-                    if self.scamdata is not None: msg.append("{}{}\n{}".format(self.bot.emote.get('SSR'), self.bot.emote.get('crystal2'), self.bot.emote.get('red')))
+                        msgs.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
+                        if j % 2 == 1:
+                            msgs.append("\n")
+                    if self.scamdata is not None:
+                        scam_position = len(msgs) - 1
+                        msgs.append(str(self.bot.emote.get('SSR')))
+                        msgs.append(str(self.bot.emote.get('crystal2')))
+                        msgs.append("\n")
+                        msgs.append(str(self.bot.emote.get('red')))
                     await asyncio.sleep(0.7)
-                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msg), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
+                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
                 if self.scamdata is not None:
-                    msg = '\n'.join(''.join(msg).split('\n')[:-2]) + "\n{}**{}**\n{}**{}**".format(self.bot.emote.get('SSR'), self.bot.gacha.formatGachaItem(sroll[0]), self.bot.emote.get('red'), sroll[1])
+                    msgs = msgs[:scam_position]
+                    msgs.append("\n")
+                    msgs.append(str(self.bot.emote.get('SSR')))
+                    msgs.append("**")
+                    msgs.append(self.bot.gacha.formatGachaItem(sroll[0]))
+                    msgs.append("**\n")
+                    msgs.append(str(self.bot.emote.get('red')))
+                    msgs.append("**")
+                    msgs.append(sroll[1])
+                    msgs.append("**")
                     await asyncio.sleep(1)
-                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 2: # meme roll display
                 counter = [0, 0, 0]
-                msg = []
+                msgs = []
                 best = [-1, ""]
                 if self.mode == self.MODE_MEMEB: item_count = 5
                 else: item_count = 3
                 for i, v in enumerate(self.result['list']):
                     if i > 0 and i % item_count == 0:
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), ''.join(msg)), color=self.color, footer=footer), view=None)
+                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(1)
-                        msg = []
-                    msg.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
+                        msgs = []
+                    msgs.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
                     counter[v[0]] += 1
                 title = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n{}".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R'), ''.join(msg)), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 3: # spark display
                 count = len(self.result['list'])
                 rate = (100*self.result['detail'][2]/count)
-                msg = []
+                msgs = []
                 best = [-1, ""]
                 rolls = self.getSSRList()
                 for r in rolls: # check for best roll
                     if best[0] < 3 and '**' in r: best = [3, r.replace('**', '')]
                     elif best[0] < 2: best = [2, r]
                 if len(rolls) > 0 and self.complete:
-                    msg.append("{} ".format(self.bot.emote.get('SSR')))
+                    msgs.append("{} ".format(self.bot.emote.get('SSR')))
                     for item in rolls:
-                        msg.append(item)
-                        if rolls[item] > 1: msg.append(" x{}".format(rolls[item]))
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msg), color=self.color, footer=footer), view=None)
+                        msgs.append(item)
+                        if rolls[item] > 1:
+                            msgs.append(" x{}".format(rolls[item]))
+                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(0.75)
-                        msg.append(" ")
+                        msgs.append(" ")
                 if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_MUKKU: amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_SUPER: amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
                 else: amsg = ""
-                msg = "{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msg), rate)
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description="{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msgs), rate), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
 
     """getSSRList()
     Extract the SSR from a full gacha list generated by gachaRoll()
@@ -816,6 +851,29 @@ class GachaSimulator():
             if r[0] == 2: rolls[r[1]] = rolls.get(r[1], 0) + 1
         return rolls
 
+    """SSRList2StrList()
+    Convert a SSR list to a list of string to be used by roulette()
+    
+    Parameters
+    --------
+    ssrs: List of gacha items
+    
+    Returns
+    --------
+    list: List of string (to be combined with join())
+    """
+    def SSRList2StrList(self, ssrs : list) -> str:
+        if len(ssrs) > 0:
+            tmp = ["\n", str(self.bot.emote.get('SSR')), " "]
+            for item in ssrs:
+                tmp.append(item)
+                if ssrs[item] > 1:
+                    tmp.append(" x{}".format(ssrs[item]))
+                tmp.append(" ")
+            return tmp
+        else:
+            return []
+
     """roulette()
     Simulate a roulette and output the result
     
@@ -826,7 +884,7 @@ class GachaSimulator():
     realist: Bool, True to force 20 and 30 rolls
     """
     async def roulette(self, inter : disnake.Interaction, legfest : int = -1, realist : bool = False) -> None:
-        footer = ""
+        footer = []
         roll = 0
         rps = ['rock', 'paper', 'scissor']
         ct = self.bot.util.JST()
@@ -850,7 +908,7 @@ class GachaSimulator():
         state = 0
         superFlag = False
         if ct >= fixedS and ct < fixedE:
-            msg = "{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), forcedRollCount//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))
+            msgs = ["{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), forcedRollCount//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
             roll = forcedRollCount
             if forcedSuperMukku: superFlag = True
             if legfest == 1 and forced3pc:
@@ -877,30 +935,30 @@ class GachaSimulator():
                 match r[0]:
                     case 0:
                         if enable200:
-                            msg = "{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))
+                            msgs = ["{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
                             roll = 200
                         else:
-                            msg = ":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"
+                            msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
                             roll = 100
                     case 1:
-                        msg = "**Gachapin Frenzy** :four_leaf_clover:\n"
+                        msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
                         roll = -1
                         state = 2
                     case 2:
-                        msg = ":birthday: You got the **Birthday Zone** :birthday:\n"
+                        msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
                         roll = -1
                         state = 5
                     case 30:
-                        msg = "**30** rolls! :clap:\n"
+                        msgs = ["**30** rolls! :clap:\n"]
                         roll = 30
                     case 20:
-                        msg = "**20** rolls :open_mouth:\n"
+                        msgs = ["**20** rolls :open_mouth:\n"]
                         roll = 20
                     case 10:
-                        msg = "**10** rolls :pensive:\n"
+                        msgs = ["**10** rolls :pensive:\n"]
                         roll = 10
                 break
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.color, footer=footer, thumbnail=self.thumbnail))
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))
         if not enableJanken and state < 2: state = 1
         running = True
         # loop
@@ -919,16 +977,16 @@ class GachaSimulator():
                         while a == b:
                             a = random.randint(0, 2)
                             b = random.randint(0, 2)
-                        msg += "You got **{}**, Gachapin got **{}**".format(rps[a], rps[b])
+                        msgs.append("You got **{}**, Gachapin got **{}**".format(rps[a], rps[b]))
                         if (a == 1 and b == 0) or (a == 2 and b == 1) or (a == 0 and b == 2):
-                            msg += " :thumbsup:\nYou **won** rock paper scissor, your rolls are **doubled** :confetti_ball:\n"
+                            msgs.append(" :thumbsup:\nYou **won** rock paper scissor, your rolls are **doubled** :confetti_ball:\n")
                             roll = roll * 2
                             if roll > (200 if enable200 else 100): roll = (200 if enable200 else 100)
                             maxJanken -= 1
                             if maxJanken == 0:
                                 state = 1
                         else:
-                            msg += " :pensive:\n"
+                            msgs.append(" :pensive:\n")
                             state = 1
                     else:
                         state = 1
@@ -936,18 +994,9 @@ class GachaSimulator():
                     await self.generate(roll, legfest)
                     count = len(self.result['list'])
                     rate = (100*self.result['detail'][2]/count)
-                    ssrs = self.getSSRList()
-                    if len(ssrs) > 0: # make the text
-                        tmp = "\n{} ".format(self.bot.emote.get('SSR'))
-                        for item in ssrs:
-                            tmp += item
-                            if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
-                            tmp += " "
-                    else:
-                        tmp = ""
-                    footer = "{}% SSR rate".format(self.result['rate'])
-                    footer = self.bannerIDtoFooter(footer)
-                    msg += "{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
+                    tmp = self.SSRList2StrList(self.getSSRList())
+                    footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
+                    msgs.append("{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
                     if superFlag: state = 4
                     else: running = False
                 case 2: # gachapin
@@ -955,18 +1004,9 @@ class GachaSimulator():
                     await self.generate(300, legfest)
                     count = len(self.result['list'])
                     rate = (100*self.result['detail'][2]/count)
-                    ssrs = self.getSSRList()
-                    if len(ssrs) > 0: # make the text
-                        tmp = "\n{} ".format(self.bot.emote.get('SSR'))
-                        for item in ssrs:
-                            tmp += item
-                            if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
-                            tmp += " "
-                    else:
-                        tmp = ""
-                    footer = "{}% SSR rate".format(self.result['rate'])
-                    footer = self.bannerIDtoFooter(footer)
-                    msg += "Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
+                    tmp = self.SSRList2StrList(self.getSSRList())
+                    footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
+                    msgs.append("Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate))
                     if count == 10 and random.randint(1, 100) <= 99: state = 3
                     elif count == 20 and random.randint(1, 100) <= 60: state = 3
                     elif count == 30 and random.randint(1, 100) <= 30: state = 3
@@ -977,16 +1017,8 @@ class GachaSimulator():
                     await self.generate(300, legfest)
                     count = len(self.result['list'])
                     rate = (100*self.result['detail'][2]/count)
-                    ssrs = self.getSSRList()
-                    if len(ssrs) > 0: # make the text
-                        tmp = "\n{} ".format(self.bot.emote.get('SSR'))
-                        for item in ssrs:
-                            tmp += item
-                            if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
-                            tmp += " "
-                    else:
-                        tmp = ""
-                    msg += ":confetti_ball: Mukku ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
+                    tmp = self.SSRList2StrList(self.getSSRList())
+                    msgs.append(":confetti_ball: Mukku ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
                     if doubleMukku:
                         if random.randint(1, 100) < 25: pass
                         else: running = False
@@ -998,16 +1030,8 @@ class GachaSimulator():
                     await self.generate(300, legfest)
                     count = len(self.result['list'])
                     rate = (100*self.result['detail'][2]/count)
-                    ssrs = self.getSSRList()
-                    if len(ssrs) > 0: # make the text
-                        tmp = "\n{} ".format(self.bot.emote.get('SSR'))
-                        for item in ssrs:
-                            tmp += item
-                            if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
-                            tmp += " "
-                    else:
-                        tmp = ""
-                    msg += ":confetti_ball: **Super Mukku** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
+                    tmp = self.SSRList2StrList(self.getSSRList())
+                    msgs.append(":confetti_ball: **Super Mukku** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
                     running = False
                 case 5: # birthday roulette
                     d = random.randint(1, 10000)
@@ -1020,7 +1044,7 @@ class GachaSimulator():
                     elif d <= 7600: roll = 80
                     elif d <= 9000:
                         state = 2
-                        msg += ":confetti_ball: You got the **Gachapin**!!\n"
+                        msgs.append(":confetti_ball: You got the **Gachapin**!!\n")
                         running = True
                         tmp = "None"
                     else:
@@ -1030,24 +1054,17 @@ class GachaSimulator():
                         await self.generate(roll, legfest)
                         count = len(self.result['list'])
                         rate = (100*self.result['detail'][2]/count)
-                        ssrs = self.getSSRList()
-                        if len(ssrs) > 0: # make the text
-                            tmp = "\n{} ".format(self.bot.emote.get('SSR'))
-                            for item in ssrs:
-                                tmp += item
-                                if ssrs[item] > 1: tmp += " x{}".format(ssrs[item])
-                                tmp += " "
-                        else:
-                            tmp = ""
+                        tmp = self.SSRList2StrList(self.getSSRList())
                         if d > 9000: # guaranted ssr
-                            msg += ":confetti_ball: :confetti_ball: **Guaranted SSR** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp)
+                            msgs.append(":confetti_ball: :confetti_ball: **Guaranted SSR** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp)))
                         else:
-                            msg += ":confetti_ball: **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate)
-                        footer = "{}% SSR rate".format(self.result['rate'])
-            if realist: footer += " ▫️ Realist"
+                            msgs.append(":confetti_ball: **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
+                        footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
+            if realist:
+                footer.append(" ▫️ Realist")
             if prev_best is None or str(self.best) != prev_best:
                 prev_best = str(self.best)
                 await self.updateThumbnail()
             diff = self.ROULETTE_DELAY - (time.time() - start_time)
             if diff > 0: await asyncio.sleep(diff)
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg + ("" if not running else "**...**"), color=self.color, footer=footer, thumbnail=self.thumbnail))
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs) + ("" if not running else "**...**"), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))

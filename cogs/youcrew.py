@@ -27,7 +27,131 @@ class YouCrew(commands.Cog):
         self.bot = bot
 
     def startTasks(self) -> None:
-        pass
+        self.bot.runTask('you:buff', self.checkGWBuff)
+
+    """checkGWBuff()
+    Bot Task managing the buff alert of the (You) server
+    """
+    async def checkGWBuff(self) -> None:
+        gwcog = self.bot.get_cog('GuildWar')
+        if gwcog is None:
+            # add warning in log, just in case
+            self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, the 'GuildWar' Cog is missing.", send_to_discord=False, level=self.logger.WARNING)
+            return
+        # check if gw is on going
+        self.gwcog.getGWState()
+        if self.bot.data.save['gw']['state'] is False or len(self.bot.data.save['gw']['buffs']) == 0:
+            return # silently cancel if not
+        try:
+            # check if guild set in config.json
+            guild = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
+            if guild is None:
+                self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no guild 'you_server' found")
+                return
+            # check if channel set in config.json
+            channel = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
+            if guild is None:
+                self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no channel 'you_announcement' found")
+                return
+            # init skip flag if missing
+            if 'skip' not in self.bot.data.save['gw']:
+                self.bot.data.save['gw']['skip'] = False
+                self.bot.data.pending = True
+            # retrieve roles
+            gl_role = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
+            fo_role = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
+            buff_role = [[guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface']]
+            # task loop (as long as gw is on and buffs are remaining in the queue)
+            msgs = []
+            while self.bot.data.save['gw']['state'] and (len(self.bot.data.save['gw']['buffs']) > 0 or len(msgs) != 0):
+                # check if we passed next buff date
+                current_time = self.bot.util.JST() + timedelta(seconds=32)
+                if len(self.bot.data.save['gw']['buffs']) > 0 and current_time >= self.bot.data.save['gw']['buffs'][0][0]:
+                    msgs = []
+                    # if recent (in the last 200s)
+                    if (current_time - self.bot.data.save['gw']['buffs'][0][0]) < timedelta(seconds=200):
+                        if self.bot.data.save['gw']['buffs'][0][1]: # flag 1: ATK and DEF aces
+                            for r in buff_role:
+                                msgs.append("{} {}\n".format(self.bot.emote.get(r[1]), r[0].mention))
+                        if self.bot.data.save['gw']['buffs'][0][2]: # flag 2: First Officers
+                            msgs.append("{} {}\n".format(self.bot.emote.get('foace'), fo_role.mention))
+                        if self.bot.data.save['gw']['buffs'][0][3]: # flag 3: Merely an advance warning
+                            msgs.append('*Buffs in* **5 minutes**')
+                        else:
+                            msgs.append('Buffs now!')
+                        # flag 4: Prelims "Use Twice" mention
+                        if self.bot.data.save['gw']['buffs'][0][4]:
+                            msgs.append('\n**(Use everything this time! They are reset later.)**')
+                        # add Link
+                        msgs.append("\nhttps://game.granbluefantasy.jp/#event/teamraid{}/guild_ability".format(str(self.bot.data.save['gw']['id']).zfill(3)))
+                        # If skip flag is on, reset and ignore
+                        if self.bot.data.save['gw']['skip']:
+                            msgs = []
+                        # If flag 3 was off: Reset skip flag
+                        if not self.bot.data.save['gw']['buffs'][0][3]:
+                            self.bot.data.save['gw']['skip'] = False
+                    self.bot.data.save['gw']['buffs'].pop(0)
+                    self.bot.data.pending = True
+                else:
+                    # if a message is pending
+                    if len(msgs) > 0: # send and reset
+                        await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msgs)))
+                        msgs = []
+                    if len(self.bot.data.save['gw']['buffs']) > 0: # if a buff is remaining, sleep until its time
+                        d = self.bot.data.save['gw']['buffs'][0][0] - current_time
+                        if d.seconds > 1:
+                            await asyncio.sleep(d.seconds-1)
+            # send message if any is pending
+            if len(msgs) > 0:
+                await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msgs)))
+        except asyncio.CancelledError:
+            self.bot.logger.push("[TASK] 'you:buff' Task Cancelled")
+        except Exception as e:
+            self.bot.logger.pushError("[TASK] 'you:buff' Task Error:", e)
+        # quit
+        await self.bot.send('debug', embed=self.bot.embed(color=self.COLOR, title="User task ended", description="you:buff", timestamp=self.bot.util.UTC()))
+
+    """setBuffTask()
+    Start or stop the checkGWBuff() coroutine as a task.
+    
+    Parameters
+    ----------
+    state: Boolean, True to (re)start the task, False to stop it
+    """
+    def setBuffTask(self, state : bool) -> None:
+        if state:
+            self.bot.runTask('you:buff', self.checkGWBuff)
+        else:
+            self.bot.cancelTask('you:buff')
+
+    """getNextBuff()
+    Return the time left until the next buffs for the (You) server
+    
+    Parameters
+    ----------
+    inter: Command interaction (to check the server)
+    
+    Returns
+    --------
+    str: Time left, empty if error
+    """
+    def getNextBuff(self, inter: disnake.GuildCommandInteraction) -> str: # for the (you) crew, get the next set of buffs to be called
+        if self.bot.data.save['gw']['state'] is True and inter.guild.id == self.bot.data.config['ids'].get('you_server', 0):
+            current_time = self.bot.util.JST()
+            if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]:
+                return ""
+            for b in self.bot.data.save['gw']['buffs']:
+                if not b[3] and current_time < b[0]:
+                    msgs = ["{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))]
+                    if b[1]:
+                        msgs.append("Attack {}, Defense {}".format(self.bot.emote.get('atkace'), self.bot.emote.get('deface')))
+                        if b[2]:
+                            msgs.append(", FO {}".format(self.bot.emote.get('foace')))
+                    elif b[2]:
+                        msgs.append("FO {}".format(self.bot.emote.get('foace')))
+                    msgs.append(")")
+                    return "".join(msgs)
+        return ""
 
     """searchScoreForTracker()
     Search the targeted crews for the YouTracker in the database being built
@@ -218,6 +342,22 @@ class YouCrew(commands.Cog):
         pass
 
     @you.sub_command()
+    async def buff(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Check when is the next GW buff ((You) Server Only)"""
+        try:
+            await inter.response.defer()
+            d = self.getNextBuff(inter)
+            if d != "":
+                await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description=d, color=self.COLOR))
+            else:
+                await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description="Only available when Guild War is on going", color=self.COLOR))
+                await self.bot.util.clean(inter, 40)
+        except Exception as e:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
+            self.bot.logger.pushError("[YOU] In 'you buff' command:", e)
+            await self.bot.util.clean(inter, 40)
+
+    @you.sub_command()
     async def lead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
         """Show the current match of (You) ((You) Server Only)"""
         await inter.response.defer()
@@ -247,9 +387,9 @@ class YouCrew(commands.Cog):
                 ct = self.bot.util.JST()
                 you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None)
                 d = ct - self.bot.data.save['matchtracker']['last']
-                msg = "Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))
-                if d.seconds >= 1200 and d.seconds <= 1800: msg += " ▫ *updating*"
-                msg += "\n"
+                msgs = ["Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))]
+                if d.seconds >= 1200 and d.seconds <= 1800: msgs.append(" ▫ *updating*")
+                msgs.append("\n")
                 if self.bot.data.save['matchtracker']['last'].hour < 7:
                     end_time = self.bot.data.save['matchtracker']['last'].replace(hour=0, minute=0, second=0, microsecond=0)
                 else:
@@ -257,67 +397,67 @@ class YouCrew(commands.Cog):
                 remaining = end_time - self.bot.data.save['matchtracker']['last']
                 lead_speed = None
                 for i in range(2):
-                    msg += "[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i])
+                    msgs.append("[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i]))
                     
                     if self.bot.data.save['matchtracker']['speed'] is None:
-                        msg += "\n\n"
+                        msgs.append("\n\n")
                         continue
                     if i == 0: lead_speed = self.bot.data.save['matchtracker']['speed'][0]
                     elif lead_speed is not None: lead_speed -= self.bot.data.save['matchtracker']['speed'][1]
                     else: lead_speed = None
                     
-                    msg += "\n**Speed** ▫️ Now {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['speed'][i], 2))
+                    msgs.append("\n**Speed** ▫️ Now {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['speed'][i], 2)))
                     if self.bot.data.save['matchtracker']['speed'][i] >= self.bot.data.save['matchtracker']['top_speed'][i]:
-                        msg += " ▫️ **Top {}/m** {}".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2), ":white_check_mark:" if i == 0 else ":warning:")
+                        msgs.append(" ▫️ **Top {}/m** {}".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2), ":white_check_mark:" if i == 0 else ":warning:"))
                     else:
-                        msg += " ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2))
+                        msgs.append(" ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2)))
                     max_speed = max(self.bot.data.save['matchtracker']['max_speed'][i], self.bot.data.save['matchtracker']['top_speed'][i])
                     if self.bot.data.save['matchtracker']['speed'][i] >= max_speed:
-                        msg += " ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:")
+                        msgs.append(" ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:"))
                     else:
-                        msg += " ▫️ Max {}/m".format(self.bot.util.valToStr(max_speed, 2))
+                        msgs.append(" ▫️ Max {}/m".format(self.bot.util.valToStr(max_speed, 2)))
                     if end_time > self.bot.data.save['matchtracker']['last']:
                         current_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['speed'][i] * remaining.seconds//60
                         max_estimation = self.bot.data.save['matchtracker']['scores'][i] + max_speed * remaining.seconds//60
                         top_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['top_speed'][i] * remaining.seconds//60
-                        msg += "\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3))
+                        msgs.append("\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3)))
                     else:
                         lead_speed = None # disable lead check if the match ended
-                    msg += "\n\n"
+                    msgs.append("\n\n")
                 lead = self.bot.data.save['matchtracker']['scores'][0] - self.bot.data.save['matchtracker']['scores'][1]
                 if lead != 0:
-                    msg += "**Difference** ▫️ {:,}".format(abs(lead))
+                    msgs.append("**Difference** ▫️ {:,}".format(abs(lead)))
                     if lead_speed is not None and lead_speed != 0:
                         try:
                             if lead < 0: lead_speed *= -1
-                            msg += " ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3))
+                            msgs.append(" ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3)))
                             lead_will_switch = False
                             if lead_speed < 0:
                                 minute = abs(lead) / abs(lead_speed)
                                 d = self.bot.data.save['matchtracker']['last'] + timedelta(seconds=minute*60)
                                 e = ct.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
                                 if e > d:
-                                    if lead > 0: msg += "\n:warning: "
-                                    else: msg += "\n:white_check_mark: "
+                                    if lead > 0: msgs.append("\n:warning: ")
+                                    else: msgs.append("\n:white_check_mark: ")
                                     if d >= ct:
-                                        msg += "The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct))
+                                        msgs.append("The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct)))
                                     else:
-                                        msg += "The Lead might have switched"
+                                        msgs.append("The Lead might have switched")
                                     lead_will_switch = True
                             if not lead_will_switch and lead > 0:
                                 if self.bot.data.save['matchtracker']['scores'][0] > top_estimation:
                                     if self.bot.data.save['matchtracker']['max_speed'][1] > self.bot.data.save['matchtracker']['top_speed'][1]:
-                                        msg += "\n:confetti_ball: Opponent can't catch up but **can still go faster**, be careful"
+                                        msgs.append("\n:confetti_ball: Opponent can't catch up but **can still go faster**, be careful")
                                     else:
-                                        msg += "\n:confetti_ball: Opponent can't catch up without surpassing their **max speed**"
+                                        msgs.append("\n:confetti_ball: Opponent can't catch up without surpassing their **max speed**")
                                 elif self.bot.data.save['matchtracker']['scores'][0] > current_estimation:
-                                    msg += "\n:white_check_mark: Opponent can't catch up without increasing their **current speed**"
+                                    msgs.append("\n:white_check_mark: Opponent can't catch up without increasing their **current speed**")
                                 else:
-                                    msg += "\n:ok: Opponent can't catch up at **current speeds**, keep going!"
+                                    msgs.append("\n:ok: Opponent can't catch up at **current speeds**, keep going!")
                         except:
                             pass
 
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description=msg, timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description="".join(msgs), timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
                 await self.bot.util.clean(inter, 90)
 
     @you.sub_command()

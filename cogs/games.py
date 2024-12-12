@@ -448,16 +448,16 @@ class Games(commands.Cog):
         for x in range(0, 5):
             await asyncio.sleep(1)
             # check result
-            msg = ""
+            msgs = []
             for i in range(len(hand)):
-                if i > x: msg += "🎴"
-                else: msg += Poker.valueNsuit2head(hand[i])
-                if i < 4: msg += ", "
-                else: msg += "\n"
+                if i > x: msgs.append("🎴")
+                else: msgs.append(Poker.valueNsuit2head(hand[i]))
+                if i < 4: msgs.append(", ")
+                else: msgs.append("\n")
             if x == 4:
                 await asyncio.sleep(2)
-                msg += (await Poker.checkPokerHand(hand))[1]
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.COLOR))
+                msgs.append((await Poker.checkPokerHand(hand))[1])
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
         await self.bot.util.clean(inter, 45)
 
     @game.sub_command()
@@ -493,10 +493,10 @@ class Games(commands.Cog):
                 if i < max_round - 1: await view.message.delete()
             if max_round > 1:
                 win_tracker = dict(sorted(win_tracker.items(), key=lambda item: item[1], reverse=True)) # sort in reverse order
-                msg = ""
+                msgs = []
                 for id, s in win_tracker.items(): # make a string
-                    msg += "**{}** ▫️ **{}** win(s)\n".format(s[0], s[1])
-                await view.message.edit(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️ ▫️ Results", description=msg, color=self.COLOR)) # post it
+                    msgs.append("**{}** ▫️ **{}** win(s)\n".format(s[0], s[1]))
+                await view.message.edit(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️ ▫️ Results", description="".join(msgs), color=self.COLOR)) # post it
             await self.bot.util.clean((inter, view.message), 60)
 
     @game.sub_command()
@@ -629,13 +629,13 @@ class Games(commands.Cog):
             rolls = []
             for i in range(n):
                 rolls.append(random.randint(1, d))
-                msg = "### "
+                msgs = []
                 for j in range(len(rolls)):
-                    msg += "{}, ".format(rolls[j])
-                    if j == (len(rolls) - 1): msg = msg[:-2]
+                    msgs.append("{}".format(rolls[j]))
+                msgs = ["### ", ", ".join(msgs)]
                 if len(rolls) == n:
-                    msg += "\n**Total**: {:}, **Average**: {:}, **Percentile**: {:.1f}%".format(sum(rolls), round(sum(rolls)/len(rolls)), sum(rolls) * 100 / (n * d)).replace('.0%', '%')
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':"🎲 {} rolled {}...".format(inter.author.display_name, dice_string), 'icon_url':inter.author.display_avatar}, description=msg, color=self.COLOR))
+                    msgs.append("\n**Total**: {:}, **Average**: {:}, **Percentile**: {:.1f}%".format(sum(rolls), round(sum(rolls)/len(rolls)), sum(rolls) * 100 / (n * d)).replace('.0%', '%'))
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} rolled {}...".format(inter.author.display_name, dice_string), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
                 await asyncio.sleep(1)
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid string `{}`\nFormat must be `NdN` (minimum is `1d6`, maximum is `10d100`)".format(dice_string), color=self.COLOR))
@@ -716,24 +716,24 @@ class Games(commands.Cog):
         seed = (inter.author.id + int(self.bot.util.UTC().timestamp()) // 86400) # based on user id + day
         values = {
             'Rarity' : [['SSR', 'SR', 'R'], 3, True, None], # random strings, modulo to use, bool to use emote.get, seed needed to enable
-            'Race' : [['Human', 'Erun', 'Draph', 'Harvin', 'Primal', 'Other'], 6, False, None],
+            'Race' : [['Human', 'Erune', 'Draph', 'Harvin', 'Primal', 'Other'], 6, False, None],
             'Element' : [['fire', 'water', 'earth', 'wind', 'light', 'dark'], 6, True, None],
             'Gender' : [['Unknown', '\♂️', '\♀️'], 3, False, None],
             'Series' : [['Summer', 'Yukata', 'Grand', 'Holiday', 'Halloween', 'Valentine'], 30, True, 6]
         }
-        msg = ""
+        msgs = []
         rarity_mod = 0
         for k in values:
             v = seed % values[k][1]
             if k == "Rarity": rarity_mod = 7 - 2 * v
             if values[k][3] is not None and v >= values[k][3]:
                 continue
-            if values[k][2]: msg += "**{}** ▫️ {}\n".format(k, self.bot.emote.get(values[k][0][v]))
-            else: msg += "**{}** ▫️ {}\n".format(k, values[k][0][v])
+            if values[k][2]: msgs.append("**{}** ▫️ {}\n".format(k, self.bot.emote.get(values[k][0][v])))
+            else: msgs.append("**{}** ▫️ {}\n".format(k, values[k][0][v]))
             seed = self.randint(seed)
-        msg += "**Rating** ▫️ {:.1f}".format(rarity_mod + (seed % 31) / 10)
+        msgs.append("**Rating** ▫️ {:.1f}".format(rarity_mod + (seed % 31) / 10))
 
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s daily character".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=msg, color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s daily character".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
         await self.bot.util.clean(inter, 30)
 
     @_random.sub_command()

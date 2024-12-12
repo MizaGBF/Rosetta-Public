@@ -15,12 +15,11 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION = 18
+    SAVEVERSION = 19
     BASE_SAVE = {
         'version':SAVEVERSION,
         'banned_guilds': [],
-        'gbfaccounts': [],
-        'gbfcurrent': 0,
+        'gbfaccount': {},
         'gbfversion': None,
         'gbfupdate': False,
         'gbfdata': {},
@@ -29,7 +28,7 @@ class Data():
         'schedule': {},
         'spark': {},
         'gw': {'state':False},
-        'valiant': {'state':False},
+        'dread': {'state':False},
         'reminders': {},
         'permitted': {},
         'extra': {},
@@ -39,8 +38,7 @@ class Data():
         'pinboard': {},
         'ban': {},
         'announcement': {},
-        'log': [],
-        'vxtwitter' : {}
+        'log': []
     }
     
     def __init__(self, bot : 'DiscordBot') -> None:
@@ -207,6 +205,15 @@ class Data():
                     if ver <= 17:
                         if 'granblue_en' in data['gbfdata']:
                             data['gbfdata'].pop("granblue_en")
+                    if ver <= 18:
+                        if 'gbfaccounts' in data and len(data['gbfaccounts']) > 0:
+                            data['gbfaccount'] = {'id':data['gbfaccounts'][0][0], 'ck':data['gbfaccounts'][0][1], 'ua':data['gbfaccounts'][0][2], 'state':data['gbfaccounts'][0][3], 'last':data['gbfaccounts'][0][4]}
+                            if len(data['gbfaccounts']) > 1:
+                                self.bot.logger.push("[DATA] Only the first GBF account was kept during the save data conversion to **v19**.")
+                            data.pop("gbfaccounts")
+                        if 'dread' in data:
+                            data['dread'] = data['dread']
+                            data.pop("valiant")
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION:
                     raise Exception("Save file version higher than the expected version")
@@ -305,10 +312,10 @@ class Data():
             # used for the gw cog crew cache
             first_loop = True
         except asyncio.CancelledError:
-            self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
+            self.bot.logger.push("[TASK] 'data:maintenance' Task Cancelled")
             return
         except Exception as e:
-            self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
+            self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error:", e)
         
         # loop
         while True:
@@ -319,14 +326,14 @@ class Data():
                     await asyncio.sleep((target_time - ct).seconds + 1)
                     continue
                 target_time += timedelta(days=1) # move target_time to next day
-                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup started", send_to_discord=False)
+                self.bot.logger.push("[TASK] 'data:maintenance': Daily cleanup started", send_to_discord=False)
                 
                 # empty crew cache
                 if not first_loop:
                     try:
                         self.bot.get_cog('GuildWar').crewcache = {}
                     except Exception as xe:
-                        self.bot.logger.pushError("[TASK] 'maintenance (Crew Cache)' Task Error:", xe)
+                        self.bot.logger.pushError("[TASK] 'data:maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
                 
                 # update user agent (only on first day of month)
@@ -353,7 +360,7 @@ class Data():
                             target = target.replace(month=target.month+1)
                         remindcog.addBotReminder(target, "**A new month started!**\nDon't forget to check out the various shops (Casino, FP, pendant, login, Prisms...).")
                     except Exception as se:
-                         self.bot.logger.pushError("[TASK] 'maintenance' Task Error (Monthly reminder):", se)
+                         self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Monthly reminder):", se)
                 try: # GW
                     if self.bot.get_cog('GuildWar').isGWRunning():
                         target = self.bot.data.save['gw']['dates']["End"] - timedelta(seconds=25200)
@@ -361,15 +368,15 @@ class Data():
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'maintenance' Task Error (GW reminders):", se)
+                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (GW reminders):", se)
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
-                        target = self.bot.data.save['valiant']['dates']["End"] - timedelta(seconds=25200)
+                        target = self.bot.data.save['dread']['dates']["End"] - timedelta(seconds=25200)
                         remindcog.addBotReminder(target, "**Dread Barrage is ending soon!**\nDon't forget to claim your loot and use your tokens.")
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'maintenance' Task Error (DB reminders):", se)
+                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (DB reminders):", se)
                 # update schedule
                 await self.update_schedule()
                 # various clean up
@@ -379,12 +386,12 @@ class Data():
                     await self.clean_profile() # clean up profile data
                 await self.clean_general() # clean up everything else
                 
-                self.bot.logger.push("[TASK] 'maintenance': Daily cleanup ended", send_to_discord=False)
+                self.bot.logger.push("[TASK] 'data:maintenance': Daily cleanup ended", send_to_discord=False)
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'maintenance' Task Cancelled")
+                self.bot.logger.push("[TASK] 'data:maintenance' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'maintenance' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error:", e)
 
     """update_schedule()
     Coroutine to request the wiki to update the schedule

@@ -22,11 +22,7 @@ class Network():
     POST = 1
     HEAD = 2
     CONDITIONAL_GET = 4
-    ACC_UID = 0
-    ACC_CK = 1
-    ACC_UA = 2
-    ACC_STATE = 3
-    ACC_TIME = 4
+    ACC_STATUS_UNSET = -1
     ACC_STATUS_UNDEF = 0
     ACC_STATUS_OK = 1
     ACC_STATUS_DOWN = 2
@@ -153,7 +149,6 @@ class Network():
     Parameters
     ----------
     path: Url path.
-    account: Integer. Registered account to use. If set to None, it will use the value stored in self.bot.data.save['gbfcurrent']
     rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
     params: Dict. Automatically set when requesting GBF.
     payload: Dict (Default is None), POST request payload. Set to None to do another request type. Additionaly, the 'user_id' value can be automatically set if it's equal to the following:
@@ -168,17 +163,16 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for CONDITIONAL-GET
     """
-    async def requestGBF(self, path : str, *, account : Optional[int] = None, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
+    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
         try:
             silent = True
             if await self.gbf_maintenance(): return None
             if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
             else: url = "https://game.granbluefantasy.jp" + path
             # retrieve account info
-            if account is None: account = self.bot.data.save['gbfcurrent']
-            acc = self.get_account(account)
-            if acc is None: raise Exception("Invalid account #" + str(account))
-            silent = (acc[self.ACC_STATE] == self.ACC_STATUS_DOWN)
+            if not self.has_account(): raise Exception("No GBF account set")
+            acc = self.get_account()
+            silent = (acc['state'] == self.ACC_STATUS_DOWN)
             # retrieve version
             ver = self.bot.data.save['gbfversion']
             if ver == "Maintenance":
@@ -186,15 +180,15 @@ class Network():
             elif ver is None:
                 ver = 0
             # set headers
-            headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc[2], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
+            headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc['ua'], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
             # set cookies
             self.gbf_client.cookie_jar.clear()
-            self.gbf_client.cookie_jar.update_cookies(acc[1])
+            self.gbf_client.cookie_jar.update_cookies(acc['ck'])
             # set params
             ts = int(self.bot.util.UTC().timestamp() * 1000)
             params["_"] = str(ts)
             params["t"] = str(ts+300)
-            params["uid"] = str(acc[0])
+            params["uid"] = str(acc['id'])
             if payload is None:
                 response = await (self.gbf_client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
             else:
@@ -202,9 +196,9 @@ class Network():
                 # auto set ID
                 if 'user_id' in payload:
                     match payload['user_id']:
-                        case "ID": payload['user_id'] = acc[0]
-                        case "SID": payload['user_id'] = str(acc[0])
-                        case "IID": payload['user_id'] = int(acc[0])
+                        case "ID": payload['user_id'] = acc['id']
+                        case "SID": payload['user_id'] = str(acc['id'])
+                        case "IID": payload['user_id'] = int(acc['id'])
                 response = await self.gbf_client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
             # response handling
             async with response:
@@ -216,15 +210,15 @@ class Network():
                         x = await self.gbf_version() # check if update
                         if x is not None and x >= 2: # if some sort of update
                             if x == 3: _updated_ = True
-                            return await self.requestGBF(path, account, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
+                            return await self.requestGBF(path, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
                     raise Exception()
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
                 if expect_JSON and not is_json:
-                    self.set_account_state(account, self.ACC_STATUS_DOWN)
+                    self.set_account_state(self.ACC_STATUS_DOWN)
                     return None
                 if 'set-cookie' in response.headers:
-                    self.refresh_account(account, response.headers['set-cookie'])
+                    self.set_account_cookie(response.headers['set-cookie'])
                 if rtype == self.HEAD: return True
                 elif is_json: return await response.json()
                 else: return await response.read()
@@ -281,23 +275,50 @@ class Network():
             cd[ct[0].strip()] = ct[1].strip()
         return cd
 
-    """get_account()
-    Retrieve a registered GBF account info
-    
-    Parameters
-    ----------
-    aid: Integer, account index
+    """refresh_account()
+    Refresh the GBF account cookie by making a request (only if not done recently)
+    """
+    async def refresh_account(self) -> None:
+        if self.has_account():
+            state = self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET)
+            last = self.bot.data.save['gbfaccount'].get('last', None)
+            if state != self.ACC_STATUS_DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
+                await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
+
+    """has_account()
+    Return if the GBF account is set
+    Doesn't check if the account is down or not, only if it has been set
     
     Returns
     ----------
-    List: None if error, else account data
+    bool: True if valid, False if not
     """
-    def get_account(self, aid : int = 0) -> Optional[list]:
-        try: return self.bot.data.save['gbfaccounts'][aid]
-        except: return None
+    def has_account(self) -> bool:
+        return self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_UNSET and len(self.bot.data.save['gbfaccount'].get('ck', {})) > 0 and self.bot.data.save['gbfaccount'].get('ua', "") != ""
 
-    """add_account()
-    Register a GBF account
+    """is_account_valid()
+    Return True if the GBF account is usable.
+    Like has_account() but perform an extra check.
+    
+    Returns
+    ----------
+    bool: True if usable, False if not
+    """
+    def is_account_valid(self) -> bool:
+        return self.has_account() and self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_DOWN
+
+    """get_account()
+    Return the GBF account data
+    
+    Returns
+    ----------
+    dict: Account data
+    """
+    def get_account(self) -> dict:
+        return self.bot.data.save['gbfaccount']
+
+    """set_account()
+    Set a GBF account
     
     Parameters
     ----------
@@ -305,18 +326,15 @@ class Network():
     ck: String, valid Cookie
     ua: String, User-Agent used to get the Cookie
     """
-    def add_account(self, uid : int, ck : str, ua : str):
-        if 'gbfaccounts' not in self.bot.data.save:
-            self.bot.data.save['gbfaccounts'] = []
-        self.bot.data.save['gbfaccounts'].append([uid, self.str2cookie(ck), ua, self.ACC_STATUS_UNDEF, None])
+    def set_account(self, uid : int, ck : str, ua : str):
+        self.bot.data.save['gbfaccount'] = {"id":uid, "ck":self.str2cookie(ck), "ua":ua, "state":self.ACC_STATUS_UNDEF, "last":None}
         self.bot.data.pending = True
 
-    """update_account()
+    """edit_account()
     Edit an account value
     
     Parameters
     ----------
-    aid: Integer, index of the account to edit
     uid: Integer (Optional), profile ID
     ck: String (Optional), valid Cookie
     ua: String (Optional), User-Agent used to get the Cookie
@@ -325,70 +343,54 @@ class Network():
     ----------
     Boolean: True if success, False if error
     """
-    def update_account(self, aid : int, **options : dict) -> bool:
+    def edit_account(self, **options : dict) -> bool:
         try:
             uid = options.pop('uid', None)
             ck = options.pop('ck', None)
             ua = options.pop('ua', None)
             if uid is not None:
-                self.bot.data.save['gbfaccounts'][aid][self.ACC_UID] = uid
+                self.bot.data.save['gbfaccount']['id'] = uid
                 self.bot.data.pending = True
             if ck is not None:
-                self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = self.str2cookie(ck)
+                self.bot.data.save['gbfaccount']['ck'] = self.str2cookie(ck)
                 self.bot.data.pending = True
             if ua is not None:
-                self.bot.data.save['gbfaccounts'][aid][self.ACC_UA] = ua
+                self.bot.data.save['gbfaccount']['ua'] = ua
                 self.bot.data.pending = True
             return True
         except:
             return False
 
-    """remove_account()
-    Remove a registered account from memory
-    
-    Parameters
-    ----------
-    aid: Integer, index of the account to remove
-    
-    Returns
-    ----------
-    Boolean: True if success, False if error
+    """clear_account()
+    Clear the GBF account data
     """
-    def remove_account(self, aid : int) -> bool:
-        try:
-            if aid < 0 or aid >= len(self.bot.data.save['gbfaccounts']):
-                return False
-            self.bot.data.save['gbfaccounts'].pop(aid)
-            if self.bot.data.save['gbfcurrent'] >= aid and self.bot.data.save['gbfcurrent'] >= 0: self.bot.data.save['gbfcurrent'] -= 1
-            self.bot.data.pending = True
-            return True
-        except:
-            return False
+    def clear_account(self) -> None:
+        self.bot.data.save['gbfaccount'] = {}
+        self.bot.data.pending = True
 
-    """refresh_account()
+    """set_account_cookie()
     Update a registered account cookie. For internal use only.
     
     Parameters
     ----------
-    aid: Integer, index of the account to refresh
     ck: String, new Cookie
     
     Returns
     ----------
     Boolean: True if success, False if error
     """
-    def refresh_account(self, aid : int, ck : str) -> bool:
+    def set_account_cookie(self, ck : str) -> bool:
         try:
             if ck is None: return False
-            A = self.bot.data.save['gbfaccounts'][aid][self.ACC_CK]
+            A = self.bot.data.save['gbfaccount']['ck']
             B = self.str2cookie(ck)
-            self.bot.data.save['gbfaccounts'][aid][self.ACC_CK] = A | {k:v for k, v in B.items() if k in A}
-            self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE] = self.ACC_STATUS_OK
-            self.bot.data.save['gbfaccounts'][aid][self.ACC_TIME] = self.bot.util.JST()
+            self.bot.data.save['gbfaccount']['ck'] = A | {k:v for k, v in B.items() if k in A}
+            self.bot.data.save['gbfaccount']['state'] = self.ACC_STATUS_OK
+            self.bot.data.save['gbfaccount']['last'] = self.bot.util.JST()
             self.bot.data.pending = True
             return True
         except Exception as e:
-            self.bot.logger.pushError("[ACCOUNT] 'refresh' error:", e)
+            self.bot.logger.pushError("[ACCOUNT] 'set_account_cookie' error:", e)
             return False
 
     """set_account_state()
@@ -396,13 +398,12 @@ class Network():
     
     Parameters
     ----------
-    aid: Integer, index of the account to refresh
     state: Integer, 0 for undefined, 1 for good, 2 for bad
     """
-    def set_account_state(self, aid : int, state : int) -> None:
+    def set_account_state(self, state : int) -> None:
         try:
-            if state != self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE]:
-                self.bot.data.save['gbfaccounts'][aid][self.ACC_STATE] = state
+            if state != self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET):
+                self.bot.data.save['gbfaccount']['state'] = state
                 self.bot.data.pending = True
         except:
             pass
