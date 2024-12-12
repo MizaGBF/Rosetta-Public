@@ -103,10 +103,11 @@ class Roles(commands.Cog):
         count = 0
         for k in sorted(list(roles.keys())):
             if count % 10 == 0:
-                fields.append({'name':'{} '.format(self.bot.emote.get(str(len(fields)+1))), 'value':'', 'inline':True})
+                fields.append({'name':'{} '.format(self.bot.emote.get(str(len(fields)+1))), 'value':[], 'inline':True})
             r = inter.guild.get_role(roles[k])
             if r is not None:
-                fields[-1]['value'] += '{}\n'.format(r.name.lower())
+                fields[-1]['value'].append(r.name.lower())
+            fields[-1]['value'] = "\n".join(fields[-1]['value'])
             count += 1
             if count == 30:
                 embeds.append(self.bot.embed(title="Self Assignable Roles", fields=fields, footer="Page {}/{}".format(len(embeds)+1, 1+len(roles)//30), color=self.COLOR))

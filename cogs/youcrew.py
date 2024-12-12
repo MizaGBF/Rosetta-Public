@@ -247,9 +247,9 @@ class YouCrew(commands.Cog):
                 ct = self.bot.util.JST()
                 you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None)
                 d = ct - self.bot.data.save['matchtracker']['last']
-                msg = "Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))
-                if d.seconds >= 1200 and d.seconds <= 1800: msg += " ▫ *updating*"
-                msg += "\n"
+                msgs = ["Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))]
+                if d.seconds >= 1200 and d.seconds <= 1800: msgs.append(" ▫ *updating*")
+                msgs.append("\n")
                 if self.bot.data.save['matchtracker']['last'].hour < 7:
                     end_time = self.bot.data.save['matchtracker']['last'].replace(hour=0, minute=0, second=0, microsecond=0)
                 else:
@@ -257,67 +257,67 @@ class YouCrew(commands.Cog):
                 remaining = end_time - self.bot.data.save['matchtracker']['last']
                 lead_speed = None
                 for i in range(2):
-                    msg += "[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i])
+                    msgs.append("[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i]))
                     
                     if self.bot.data.save['matchtracker']['speed'] is None:
-                        msg += "\n\n"
+                        msgs.append("\n\n")
                         continue
                     if i == 0: lead_speed = self.bot.data.save['matchtracker']['speed'][0]
                     elif lead_speed is not None: lead_speed -= self.bot.data.save['matchtracker']['speed'][1]
                     else: lead_speed = None
                     
-                    msg += "\n**Speed** ▫️ Now {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['speed'][i], 2))
+                    msgs.append("\n**Speed** ▫️ Now {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['speed'][i], 2)))
                     if self.bot.data.save['matchtracker']['speed'][i] >= self.bot.data.save['matchtracker']['top_speed'][i]:
-                        msg += " ▫️ **Top {}/m** {}".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2), ":white_check_mark:" if i == 0 else ":warning:")
+                        msgs.append(" ▫️ **Top {}/m** {}".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2), ":white_check_mark:" if i == 0 else ":warning:"))
                     else:
-                        msg += " ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2))
+                        msgs.append(" ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2)))
                     max_speed = max(self.bot.data.save['matchtracker']['max_speed'][i], self.bot.data.save['matchtracker']['top_speed'][i])
                     if self.bot.data.save['matchtracker']['speed'][i] >= max_speed:
-                        msg += " ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:")
+                        msgs.append(" ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:"))
                     else:
-                        msg += " ▫️ Max {}/m".format(self.bot.util.valToStr(max_speed, 2))
+                        msgs.append(" ▫️ Max {}/m".format(self.bot.util.valToStr(max_speed, 2)))
                     if end_time > self.bot.data.save['matchtracker']['last']:
                         current_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['speed'][i] * remaining.seconds//60
                         max_estimation = self.bot.data.save['matchtracker']['scores'][i] + max_speed * remaining.seconds//60
                         top_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['top_speed'][i] * remaining.seconds//60
-                        msg += "\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3))
+                        msgs.append("\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3)))
                     else:
                         lead_speed = None # disable lead check if the match ended
-                    msg += "\n\n"
+                    msgs.append("\n\n")
                 lead = self.bot.data.save['matchtracker']['scores'][0] - self.bot.data.save['matchtracker']['scores'][1]
                 if lead != 0:
-                    msg += "**Difference** ▫️ {:,}".format(abs(lead))
+                    msgs.append("**Difference** ▫️ {:,}".format(abs(lead)))
                     if lead_speed is not None and lead_speed != 0:
                         try:
                             if lead < 0: lead_speed *= -1
-                            msg += " ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3))
+                            msgs.append(" ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3)))
                             lead_will_switch = False
                             if lead_speed < 0:
                                 minute = abs(lead) / abs(lead_speed)
                                 d = self.bot.data.save['matchtracker']['last'] + timedelta(seconds=minute*60)
                                 e = ct.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
                                 if e > d:
-                                    if lead > 0: msg += "\n:warning: "
-                                    else: msg += "\n:white_check_mark: "
+                                    if lead > 0: msgs.append("\n:warning: ")
+                                    else: msgs.append("\n:white_check_mark: ")
                                     if d >= ct:
-                                        msg += "The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct))
+                                        msgs.append("The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct)))
                                     else:
-                                        msg += "The Lead might have switched"
+                                        msgs.append("The Lead might have switched")
                                     lead_will_switch = True
                             if not lead_will_switch and lead > 0:
                                 if self.bot.data.save['matchtracker']['scores'][0] > top_estimation:
                                     if self.bot.data.save['matchtracker']['max_speed'][1] > self.bot.data.save['matchtracker']['top_speed'][1]:
-                                        msg += "\n:confetti_ball: Opponent can't catch up but **can still go faster**, be careful"
+                                        msgs.append("\n:confetti_ball: Opponent can't catch up but **can still go faster**, be careful")
                                     else:
-                                        msg += "\n:confetti_ball: Opponent can't catch up without surpassing their **max speed**"
+                                        msgs.append("\n:confetti_ball: Opponent can't catch up without surpassing their **max speed**")
                                 elif self.bot.data.save['matchtracker']['scores'][0] > current_estimation:
-                                    msg += "\n:white_check_mark: Opponent can't catch up without increasing their **current speed**"
+                                    msgs.append("\n:white_check_mark: Opponent can't catch up without increasing their **current speed**")
                                 else:
-                                    msg += "\n:ok: Opponent can't catch up at **current speeds**, keep going!"
+                                    msgs.append("\n:ok: Opponent can't catch up at **current speeds**, keep going!")
                         except:
                             pass
 
-                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description=msg, timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description="".join(msgs), timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
                 await self.bot.util.clean(inter, 90)
 
     @you.sub_command()
