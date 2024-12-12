@@ -115,7 +115,6 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "debug_channel" : BOT_DEBUG_CHANNEL_ID,
         "image_upload" : BOT_IMAGE_UPLOAD_CHANNEL_ID,
         "debug_server" : BOT_SERVER_ID,
-        "owner" : YOUR_USER_ID_ID,
         "you_server" : YOUR_CREW_OR_THE_BOT_SERVER_ID,
         "you_announcement" : YOUR_CREW_ANNOUNCEMENT_CHANNEl_ID,
         "you_meat" : YOUR_CREW_MEAT_CHANNEl_ID,
