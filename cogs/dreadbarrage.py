@@ -43,27 +43,27 @@ class DreadBarrage(commands.Cog):
     str: Dread Barrage state
     """
     def getBarrageState(self) -> str: # return the current state of the valiant in string format (which day is on going, etc...)
-        if self.bot.data.save['valiant']['state'] is True:
+        if self.bot.data.save['dread']['state'] is True:
             current_time = self.bot.util.JST()
-            if current_time < self.bot.data.save['valiant']['dates']["Day 1"]:
-                d = self.bot.data.save['valiant']['dates']["Day 1"] - current_time
+            if current_time < self.bot.data.save['dread']['dates']["Day 1"]:
+                d = self.bot.data.save['dread']['dates']["Day 1"] - current_time
                 return "{} Dread Barrage starts in **{}**".format(self.bot.emote.get('crew'), self.bot.util.delta2str(d, 2))
-            elif current_time >= self.bot.data.save['valiant']['dates']["End"]:
-                self.bot.data.save['valiant']['state'] = False
-                self.bot.data.save['valiant']['dates'] = {}
+            elif current_time >= self.bot.data.save['dread']['dates']["End"]:
+                self.bot.data.save['dread']['state'] = False
+                self.bot.data.save['dread']['dates'] = {}
                 self.bot.data.pending = True
                 return ""
-            elif current_time >= self.bot.data.save['valiant']['dates']["Day 1"]:
+            elif current_time >= self.bot.data.save['dread']['dates']["Day 1"]:
                 it = ['End', 'Day 8', 'Day 7', 'Day 6', 'Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
                 for i in range(1, len(it)):
-                    if it[i] in self.bot.data.save['valiant']['dates'] and current_time > self.bot.data.save['valiant']['dates'][it[i]]:
-                        msgs = ["{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[i-1]] - current_time))]
-                        if current_time < self.bot.data.save['valiant']['dates']['NM135']:
-                            msgs.append("\n{} NM135 available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM135'] - current_time, 2)))
-                        elif current_time < self.bot.data.save['valiant']['dates']['NM175']:
-                            msgs.append("\n{} NM175 & Valiants available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates']['NM175'] - current_time, 2)))
+                    if it[i] in self.bot.data.save['dread']['dates'] and current_time > self.bot.data.save['dread']['dates'][it[i]]:
+                        msgs = ["{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['dread']['dates'][it[i-1]] - current_time))]
+                        if current_time < self.bot.data.save['dread']['dates']['NM135']:
+                            msgs.append("\n{} NM135 available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['dread']['dates']['NM135'] - current_time, 2)))
+                        elif current_time < self.bot.data.save['dread']['dates']['NM175']:
+                            msgs.append("\n{} NM175 & Valiants available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['dread']['dates']['NM175'] - current_time, 2)))
                         else:
-                            msgs.append("\n{} Barrage is ending in **{}**".format(self.bot.emote.get('time'), self.bot.util.delta2str(self.bot.data.save['valiant']['dates'][it[0]] - current_time, 2)))
+                            msgs.append("\n{} Barrage is ending in **{}**".format(self.bot.emote.get('time'), self.bot.util.delta2str(self.bot.data.save['dread']['dates'][it[0]] - current_time, 2)))
                         return "".join(msgs)
             else:
                 return ""
@@ -79,13 +79,13 @@ class DreadBarrage(commands.Cog):
     bool: True if it's running, False if it's not
     """
     def isDBRunning(self) -> bool:
-        if self.bot.data.save['valiant']['state'] is True:
+        if self.bot.data.save['dread']['state'] is True:
             current_time = self.bot.util.JST()
-            if current_time < self.bot.data.save['valiant']['dates']["Day 1"]:
+            if current_time < self.bot.data.save['dread']['dates']["Day 1"]:
                 return False
-            elif current_time >= self.bot.data.save['valiant']['dates']["End"]:
-                self.bot.data.save['valiant']['state'] = False
-                self.bot.data.save['valiant']['dates'] = {}
+            elif current_time >= self.bot.data.save['dread']['dates']["End"]:
+                self.bot.data.save['dread']['state'] = False
+                self.bot.data.save['dread']['dates'] = {}
                 self.bot.data.pending = True
                 return False
             else:
@@ -105,26 +105,26 @@ class DreadBarrage(commands.Cog):
     async def time(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the Dread Barrage schedule"""
         await inter.response.defer()
-        if self.bot.data.save['valiant']['state'] is True:
+        if self.bot.data.save['dread']['state'] is True:
             try:
                 current_time = self.bot.util.JST()
-                em = self.bot.util.formatElement(self.bot.data.save['valiant']['element'])
-                title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['valiant']['id'], em, self.bot.util.time(current_time, removejst=True))
+                em = self.bot.util.formatElement(self.bot.data.save['dread']['element'])
+                title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['dread']['id'], em, self.bot.util.time(current_time, removejst=True))
                 description = []
-                if current_time < self.bot.data.save['valiant']['dates']["End"]:
-                    if current_time < self.bot.data.save['valiant']['dates']["Day 2"]:
-                        description.append("▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['Day 1'], removejst=True)))
-                    if current_time < self.bot.data.save['valiant']['dates']["Day 4"]:
-                        description.append("▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM135'], removejst=True)))
-                    if current_time < self.bot.data.save['valiant']['dates']["Day 6"]:
-                        description.append("▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates']['NM175'], removejst=True)))
-                    days = [d for d in list(self.bot.data.save['valiant']['dates'].keys()) if d.startswith('Day')]
+                if current_time < self.bot.data.save['dread']['dates']["End"]:
+                    if current_time < self.bot.data.save['dread']['dates']["Day 2"]:
+                        description.append("▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates']['Day 1'], removejst=True)))
+                    if current_time < self.bot.data.save['dread']['dates']["Day 4"]:
+                        description.append("▫️ NM135: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates']['NM135'], removejst=True)))
+                    if current_time < self.bot.data.save['dread']['dates']["Day 6"]:
+                        description.append("▫️ NM175 & Valiants: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates']['NM175'], removejst=True)))
+                    days = [d for d in list(self.bot.data.save['dread']['dates'].keys()) if d.startswith('Day')]
                     days.sort()
-                    description.append("▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['valiant']['dates'][days[-1]], removejst=True)))
+                    description.append("▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates'][days[-1]], removejst=True)))
                 else:
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
-                    self.bot.data.save['valiant']['state'] = False
-                    self.bot.data.save['valiant']['dates'] = {}
+                    self.bot.data.save['dread']['state'] = False
+                    self.bot.data.save['dread']['dates'] = {}
                     self.bot.data.pending = True
                     await self.bot.util.clean(inter, 40)
                     return
