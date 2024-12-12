@@ -534,13 +534,12 @@ class DiscordBot(commands.InteractionBot):
                 pass
 
     """startTasks()
-    Start all tasks from each cogs (if any)
+    Start all tasks from each cogs (if any), along with the logger
     Note: In test mode, only the log is started
     """
     def startTasks(self) -> None:
-        if self.debug_mode or self.test_mode:
-            self.runTask('log', self.logger.process) 
-        else:
+        self.runTask('bot:log', self.logger.process) 
+        if not self.debug_mode and not self.test_mode:
             for c in self.cogs:
                 try: self.get_cog(c).startTasks()
                 except: pass

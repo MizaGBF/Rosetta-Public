@@ -27,7 +27,7 @@ class GranblueFantasy(commands.Cog):
         self.bot = bot
 
     def startTasks(self) -> None:
-        self.bot.runTask('granblue_watcher', self.granblue_watcher)
+        self.bot.runTask('granblue:watcher', self.granblue_watcher)
 
     """granblue_watcher()
     Bot Task checking for new content related to GBF
@@ -44,7 +44,7 @@ class GranblueFantasy(commands.Cog):
                 await asyncio.sleep(355 - t)
                 if not self.bot.running: return
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
 
             try: # news checker
@@ -60,10 +60,10 @@ class GranblueFantasy(commands.Cog):
                         footer = ""
                     await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(author={'name':"Granblue Fantasy News", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="[{}]({})".format(title, n[0]), image=n[2], footer=footer, color=self.COLOR_NEWS))
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'granblue_watcher (News)' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'granblue:watcher (News)' Task Error:", e)
 
             try: # update check
                 if maint_check:
@@ -84,10 +84,10 @@ class GranblueFantasy(commands.Cog):
                     await self.bot.send("debug", embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Game has been updated to version `{} ({})`".format(v, self.bot.util.version2str(v)), color=self.COLOR))
                     await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Game has been updated", color=self.COLOR))
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'granblue_watcher (Update)' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'granblue:watcher (Update)' Task Error:", e)
 
             if maint_check:
                 continue
@@ -95,25 +95,25 @@ class GranblueFantasy(commands.Cog):
             if not self.bot.net.is_account_valid():
                 if not acc_check:
                     acc_check = True
-                    self.bot.logger.push("[TASK] 'granblue_watcher' checks will be skipped.\nPossible cause:\n- Game server is down (Check if it works)\n- Account is down (Try to set the cookie anew).\n- GBF Version check failed (See if other logs reported this issue).\n- Other undetermined causes.", level=self.bot.logger.WARNING)
+                    self.bot.logger.push("[TASK] 'granblue:watcher' checks will be skipped.\nPossible cause:\n- Game server is down (Check if it works)\n- Account is down (Try to set the cookie anew).\n- GBF Version check failed (See if other logs reported this issue).\n- Other undetermined causes.", level=self.bot.logger.WARNING)
                 continue
             acc_check = False
 
             try: # 4koma news
                 await self.check4koma()
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'granblue_watcher (4koma)' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'granblue:watcher (4koma)' Task Error:", e)
 
             try: # game news
                 await self.checkGameNews()
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue_watcher' Task Cancelled")
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'granblue_watcher (checkGameNews)' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'granblue:watcher (checkGameNews)' Task Error:", e)
 
     """checkGameNews()
     Coroutine checking for new in-game news, to post them in announcement channels

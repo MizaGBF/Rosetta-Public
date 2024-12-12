@@ -48,8 +48,8 @@ class GuildWar(commands.Cog):
         self.crewcache = {}
 
     def startTasks(self) -> None:
-        self.bot.runTask('check_buff', self.checkGWBuff)
-        self.bot.runTask('check_ranking', self.bot.ranking.checkGWRanking)
+        self.bot.runTask('gw:buff', self.checkGWBuff)
+        self.bot.runTask('gw:ranking', self.bot.ranking.checkGWRanking)
 
     """checkGWBuff()
     Bot Task managing the buff alert of the (You) server
@@ -60,7 +60,7 @@ class GuildWar(commands.Cog):
         try:
             guild = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
             if guild is None:
-                self.bot.logger.push("[TASK] 'checkgwbuff' Task Cancelled, no guild found")
+                self.bot.logger.push("[TASK] 'gw:buff' Task Cancelled, no guild found")
             channel = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
             if 'skip' not in self.bot.data.save['gw']:
                 self.bot.data.save['gw']['skip'] = False
@@ -102,10 +102,10 @@ class GuildWar(commands.Cog):
             if len(msg) > 0:
                 await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msg)))
         except asyncio.CancelledError:
-            self.bot.logger.push("[TASK] 'checkgwbuff' Task Cancelled")
+            self.bot.logger.push("[TASK] 'gw:buff' Task Cancelled")
         except Exception as e:
-            self.bot.logger.pushError("[TASK] 'checkgwbuff' Task Error:", e)
-        await self.bot.send('debug', embed=self.bot.embed(color=self.COLOR, title="User task ended", description="check_buff", timestamp=self.bot.util.UTC()))
+            self.bot.logger.pushError("[TASK] 'gw:buff' Task Error:", e)
+        await self.bot.send('debug', embed=self.bot.embed(color=self.COLOR, title="User task ended", description="gw:buff", timestamp=self.bot.util.UTC()))
 
     """buildDayList()
     Generate the day list used by the gw command
@@ -142,7 +142,7 @@ class GuildWar(commands.Cog):
             elif current_time >= self.bot.data.save['gw']['dates']["End"]:
                 self.bot.data.save['gw']['state'] = False
                 self.bot.data.save['gw']['dates'] = {}
-                self.bot.cancelTask('check_buff')
+                self.bot.cancelTask('gw:buff')
                 self.bot.data.pending = True
                 return False
             else:
@@ -217,7 +217,7 @@ class GuildWar(commands.Cog):
             elif current_time >= self.bot.data.save['gw']['dates']["End"]:
                 self.bot.data.save['gw']['state'] = False
                 self.bot.data.save['gw']['dates'] = {}
-                self.bot.cancelTask('check_buff')
+                self.bot.cancelTask('gw:buff')
                 self.bot.data.save['youtracker'] = None
                 self.bot.data.pending = True
                 return ""
@@ -338,7 +338,7 @@ class GuildWar(commands.Cog):
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Not available", color=self.COLOR))
                     self.bot.data.save['gw']['state'] = False
                     self.bot.data.save['gw']['dates'] = {}
-                    self.bot.cancelTask('check_buff')
+                    self.bot.cancelTask('gw:buff')
                     self.bot.data.save['youtracker'] = None
                     self.bot.data.pending = True
                     await self.bot.util.clean(inter, 40)

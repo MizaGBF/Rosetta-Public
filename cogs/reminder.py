@@ -19,7 +19,7 @@ class Reminder(commands.Cog):
         self.bot = bot
 
     def startTasks(self) -> None:
-        self.bot.runTask('reminder', self.remindertask)
+        self.bot.runTask('reminder:task', self.remindertask)
 
     """checkReminders()
     Check the reminders ready to send.
@@ -67,13 +67,13 @@ class Reminder(commands.Cog):
                             try:
                                 await u.send(embed=self.bot.embed(title="Reminder", description=m))
                             except Exception as e:
-                                self.bot.logger.pushError("[TASK] 'remindertask' Task Error:\nUser: {}\nReminder: {}".format(u.name, m), e)
+                                self.bot.logger.pushError("[TASK] 'reminder:task' Task Error:\nUser: {}\nReminder: {}".format(u.name, m), e)
                                 break
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'remindertask' Task Cancelled")
+                self.bot.logger.push("[TASK] 'reminder:task' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'remindertask' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'reminder:task' Task Error:", e)
                 await asyncio.sleep(200)
             await asyncio.sleep(50)
 

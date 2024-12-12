@@ -71,10 +71,10 @@ class Logger():
                         await self.bot.send('debug', embed=self.bot.embed(title="Rosetta Log", description="### " + msg[1], footer=("Occured {} times".format(msg[2]) if msg[2] > 1 else ''), timestamp=msg[0], color=self.color(msg[3])))
                     logs = None # discard
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'logger' Task Cancelled")
+                self.bot.logger.push("[TASK] 'bot:log' Task Cancelled")
                 await asyncio.sleep(30)
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'logger' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'bot:log' Task Error:", e)
                 return
 
     """push()
