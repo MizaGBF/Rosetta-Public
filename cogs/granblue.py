@@ -1196,6 +1196,13 @@ class GranblueFantasy(commands.Cog):
                 pass
         return grand_list
 
+    """retrieve_wiki_wait_intervals()
+    Request specific wiki pages to retrieve the latest release dates of these elements
+    
+    Returns
+    ----------
+    dict: Pairs of String and Tuple (containing release dates and wiki page names)
+    """
     async def retrieve_wiki_wait_intervals(self) -> dict:
         # targeted pages
         targets = [
