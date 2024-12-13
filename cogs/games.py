@@ -644,7 +644,7 @@ class Games(commands.Cog):
         pass
 
     @_random.sub_command()
-    async def dice(self, inter: disnake.GuildCommandInteraction, dice_string : str = commands.Param(description="Format is NdN. Minimum is 1d6, Maximum is 10d100")) -> None:
+    async def dice(self, inter: disnake.GuildCommandInteraction, dice_string : str = commands.Param(description="Format is NdN. Minimum is 1d4, Maximum is 10d100")) -> None:
         """Roll some dies"""
         try:
             await inter.response.defer()
@@ -653,7 +653,7 @@ class Games(commands.Cog):
             n = int(tmp[0]) # number of dice
             d = int(tmp[1]) # dice strength
             # check limits
-            if n <= 0 or n> 10 or d < 6 or d > 100:
+            if n <= 0 or n> 10 or d < 4 or d > 100:
                 raise Exception()
             # roll and reveal, one by one
             rolls = []
