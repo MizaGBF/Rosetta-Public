@@ -42,7 +42,7 @@ class ChestRushButton(disnake.ui.Button):
                 self.style = disnake.ButtonStyle.primary
             if self.view.check_status():
                 self.view.stopall()
-                await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} opened".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, color=self.view.color), view=self.view)
+                await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} opened the chests".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, description="Here's the collected loot.", color=self.view.color), view=self.view)
                 await self.view.bot.util.clean(interaction, 70)
             else:
                 await interaction.response.edit_message(view=self.view)
