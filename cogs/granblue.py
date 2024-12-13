@@ -1,7 +1,7 @@
 ﻿import disnake
 from disnake.ext import commands
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
 import re
@@ -21,7 +21,11 @@ class GranblueFantasy(commands.Cog):
     """Granblue Fantasy Utility."""
     COLOR = 0x34aeeb
     COLOR_NEWS = 0x00b07b
-    SUMMON_ELEMENTS = ['misc', 'fire','water','earth','wind','light','dark']
+    # Constants
+    SUMMON_ELEMENTS = ['fire','water','earth','wind','light','dark','misc']
+    DEFAULT_NEWS=8335
+    EXTRA_DROPS_TABLE = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'} # quest : element
+    XP_TABLE = [None, 30, 70, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7800, 8100, 8400, 8700, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 50000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 500000, 1000000, 1000000, 1200000, 1200000, 1200000, 1200000, 1200000, 1250000, 1250000, 1250000, 1250000, 1250000, 1300000, 1300000, 1300000, 1300000, 1300000, 1350000, 1350000, 1350000, 1350000, 1350000, 1400000, 1400000, 1400000, 1400000, 1400000, 1450000, 1450000, 1450000, 1450000, 1450000, 1500000, 1500000, 1500000, 1500000, 1500000, 1550000, 1550000, 1550000, 1550000, 1550000, 1600000, 1600000, 1600000, 1600000, 1600000, 1650000, 1650000, 1650000, 1650000, 0]
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -38,7 +42,7 @@ class GranblueFantasy(commands.Cog):
         v = None
         await asyncio.sleep(30)
         while True:
-            # check
+            # we only check every 5 minutes
             try:
                 t = int(self.bot.util.UTC().timestamp()) % 300
                 await asyncio.sleep(355 - t)
@@ -51,9 +55,9 @@ class GranblueFantasy(commands.Cog):
                 news = await self.checkNews()
                 if len(news) > 0: 
                     self.bot.logger.push("[GBF] {} new posts on the main website".format(len(news)), send_to_discord=False)
-                for n in news:
+                for n in news: # for each news
                     try:
-                        title = self.bot.net.translate(n[1])
+                        title = self.bot.net.translate(n[1]) # translate title
                         footer = "Title from Google Translate"
                     except:
                         title = n[1]
@@ -66,8 +70,8 @@ class GranblueFantasy(commands.Cog):
                 self.bot.logger.pushError("[TASK] 'granblue:watcher (News)' Task Error:", e)
 
             try: # update check
-                if maint_check:
-                    if not await self.bot.net.gbf_maintenance(check_maintenance_end=True):
+                if maint_check: # maintenance was on going
+                    if not await self.bot.net.gbf_maintenance(check_maintenance_end=True): # is it not anymore?
                         maint_check = False # maintenance ended
                         await self.bot.net.gbf_version() # update version
                         self.bot.data.save['gbfupdate'] = False
@@ -75,7 +79,8 @@ class GranblueFantasy(commands.Cog):
                     else:
                         continue # maintenance still on going
                 else:
-                    maint_check = await self.bot.net.gbf_maintenance(check_maintenance_end=True)
+                    maint_check = await self.bot.net.gbf_maintenance(check_maintenance_end=True) # check if there is a maintenance
+                # check for updates if no maintenance
                 if not maint_check and (self.bot.data.save['gbfupdate'] is True or (await self.bot.net.gbf_version()) == 3):
                     v = self.bot.data.save['gbfversion']
                     self.bot.logger.push("[GBF] The game has been updated to version {}".format(v), send_to_discord=False)
@@ -89,9 +94,10 @@ class GranblueFantasy(commands.Cog):
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'granblue:watcher (Update)' Task Error:", e)
 
-            if maint_check:
+            if maint_check: # stop here if there is a maintenance
                 continue
 
+            # check if our GBF account is usable
             if not self.bot.net.is_account_valid():
                 if not acc_check:
                     acc_check = True
@@ -119,31 +125,28 @@ class GranblueFantasy(commands.Cog):
     Coroutine checking for new in-game news, to post them in announcement channels
     """
     async def checkGameNews(self) -> None:
-        # init
-        try:
-            if 'game_news' not in self.bot.data.save['gbfdata']:
-                self.bot.data.save['gbfdata']['game_news'] = [7832]
-                silent = True
-                ncheck = 100
-            else:
-                ii = self.bot.data.save['gbfdata']['game_news'][0]
-                silent = False
-                ncheck = 10 + max(self.bot.data.save['gbfdata']['game_news']) - min(self.bot.data.save['gbfdata']['game_news'])
-        except:
-            ii = 7832
-            silent = True
+        if 'game_news' not in self.bot.data.save['gbfdata']: # init data
+            self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
+            ii = self.DEFAULT_NEWS
+            silent = True # set silent mode
             ncheck = 100
+        else:
+            ii = self.bot.data.save['gbfdata']['game_news'][0] # ii is the iterator
+            silent = False
+            ncheck = 10 + max(self.bot.data.save['gbfdata']['game_news']) - min(self.bot.data.save['gbfdata']['game_news']) # max number of check
+        # build a list of id to check
         to_process = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
-        # loop
+        # loop over this list
         news = []
         for ii in to_process:
+            # request news patch
             data = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), expect_JSON=True)
             if data is None:
                 continue
-            elif data[0]['id'] == str(ii):
+            elif data[0]['id'] == str(ii): # check if id matches
                 try:
-                    news.append(ii)
-                    if not silent:
+                    news.append(ii) # append id to news list
+                    if not silent: # if not silent, we process the content
                         if data[0]['title'].startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in data[0]['title'] or 'Star Premium Draw Set On Sale' in data[0]['title']: continue
                         elif data[0]['title'].endswith(" Concluded"): limit = 40
                         elif data[0]['title'].endswith(" Premium Draw Update"): limit = 100
@@ -151,8 +154,10 @@ class GranblueFantasy(commands.Cog):
                         elif data[0]['title'].endswith(" Added to Side Stories"): limit = 30
                         elif data[0]['title'].endswith(" Underway!"): limit = 30
                         else: limit = 250
+                        # WARNING: The following code is ugly
+                        # remove/transform specific tags
                         description = data[0]['contents'].replace('</div>', '').replace('</span>', '').replace('<br>', '').replace('<Br>', '').replace('<ul>', '').replace('</ul>', '').replace('<li>', '').replace('</li>', '').replace('<i>', '*').replace('</i>', '*').replace('<b>', '**').replace('</b>', '**').replace('<u>', '__').replace('</u>', '__').replace('    ', '')
-                        # first img
+                        # detect and retrieve first image url
                         thumb = None
                         a = description.find('<img src="')
                         if a != -1:
@@ -165,7 +170,7 @@ class GranblueFantasy(commands.Cog):
                                     thumb = tmp
                                 else:
                                     thumb += "https://prd-game-a-granbluefantasy.akamaized.net" + tmp
-                        # remove div
+                        # remove div tags
                         cur = 0
                         while True:
                             a = description.find('<div', cur)
@@ -174,7 +179,7 @@ class GranblueFantasy(commands.Cog):
                             if b == -1: break
                             description = description[:a] + description[b+1:]
                             cur = a
-                        # remove span
+                        # remove span tags
                         cur = 0
                         while True:
                             a = description.find('<span', cur)
@@ -183,14 +188,14 @@ class GranblueFantasy(commands.Cog):
                             if b == -1: break
                             description = description[:a] + description[b+1:]
                             cur = a
-                        # first a
+                        # retrieve first a tag url for later use
                         url = None
                         a = description.find('<a href="')
                         if a != -1:
                             b = description.find('"', a+9)
                             if b != -1:
                                 url = "https://game.granbluefantasy.jp/" + description[a+9:b]
-                        # remove a
+                        # remove a tags
                         cur = 0
                         while True:
                             a = description.find('<a ', cur)
@@ -200,7 +205,7 @@ class GranblueFantasy(commands.Cog):
                             b += 2
                             description = description[:a] + description[b+1:]
                             cur = a
-                        # remove font
+                        # remove font tags
                         cur = 0
                         while True:
                             a = description.find('<font ', cur)
@@ -210,7 +215,7 @@ class GranblueFantasy(commands.Cog):
                             b += 5
                             description = description[:a] + description[b+1:]
                             cur = a
-                        # remove img
+                        # remove img tags
                         cur = 0
                         while True:
                             a = description.find('<img ', cur)
@@ -220,7 +225,7 @@ class GranblueFantasy(commands.Cog):
                             description = description[:a] + description[b+1:]
                             cur = a
                         description = description.replace('<li>', '**')
-                        # remove comment
+                        # remove comments
                         cur = 0
                         while True:
                             a = description.find('<!--', cur)
@@ -229,9 +234,10 @@ class GranblueFantasy(commands.Cog):
                             if b == -1: break
                             description = description[:a] + description[b+3:]
                             cur = a
+                        # final tweaks
                         description = description.replace('<li>', '**')
-                        # final
                         elements = description.replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').split('\n')
+                        # build description
                         description = []
                         length = 0
                         for e in elements:
@@ -246,12 +252,16 @@ class GranblueFantasy(commands.Cog):
                         # fixes for when intern kun mess up
                         if thumb is not None and '://' in thumb[8:]: thumb = None
                         if url is not None and '://' in url[8:]: url = None
+                        # send news
                         await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'].replace('<br>', ' '), description=description, url=url, image=thumb, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
-                        # maintenance detect
+                        # detect maintenance to automatically sets the date
+                        # we check for specific titles
                         if data[0]['title'].endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
                             try:
+                                # extract the dates and parse
                                 try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
                                 except: description = description.split('. ', 1)[0][len("Server maintenance and game updates are scheduled for "):].split(',')
+                                # time
                                 t = description[0].split(",", 1)[0]
                                 u = t.split('–')
                                 for e in range(len(u)):
@@ -265,6 +275,7 @@ class GranblueFantasy(commands.Cog):
                                 if len(u[1]) > 1 and u[1][1] == 'p.m.':
                                     hour_end += 12
                                 t = description[1].strip().split(" ")
+                                # date
                                 day = int(t[1])
                                 match t[0].lower():
                                     case 'jan': month = 1
@@ -282,6 +293,7 @@ class GranblueFantasy(commands.Cog):
                                     case _: raise Exception("Month Error")
                                 t = description[2].strip().split(" ")
                                 year = int(t[0])
+                                # set in memory
                                 self.bot.data.save['maintenance']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour_start, minute=0, second=0, microsecond=0)
                                 self.bot.data.save['maintenance']['duration'] = hour_end-hour_start
                                 self.bot.data.save['maintenance']['state'] = True
@@ -291,10 +303,10 @@ class GranblueFantasy(commands.Cog):
                 except Exception as e:
                     self.bot.logger.pushError("[PRIVATE] 'checkGameNews' Error:", e)
                     return
-        if len(news) > 0:
+        if len(news) > 0: # add processed news
             self.bot.data.save['gbfdata']['game_news'] = self.bot.data.save['gbfdata']['game_news'] + news
             self.bot.data.save['gbfdata']['game_news'].sort()
-            if len(self.bot.data.save['gbfdata']['game_news']) > 25:
+            if len(self.bot.data.save['gbfdata']['game_news']) > 25: # remove old ones
                 self.bot.data.save['gbfdata']['game_news'] = self.bot.data.save['gbfdata']['game_news'][max(0, len(self.bot.data.save['gbfdata']['game_news']) - 25):]
             self.bot.data.pending = True
             self.bot.logger.push("[GBF] {} new in-game News".format(len(news)), send_to_discord=False)
@@ -307,19 +319,22 @@ class GranblueFantasy(commands.Cog):
     list: List of new news
     """
     async def checkNews(self) -> list:
-        res = []
-        ret = []
+        res = [] # news list
+        ret = [] # new news articles to return
+        # retrieve news page
         data = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
         if data is not None:
             soup = BeautifulSoup(data, 'html.parser')
+            # extract articles
             at = soup.find_all("article", class_="scroll_show_box")
             try:
                 for a in at:
+                    # get content and url
                     inner = a.findChildren("div", class_="inner", recursive=False)[0]
                     section = inner.findChildren("section", class_="content", recursive=False)[0]
                     h1 = section.findChildren("h1", recursive=False)[0]
                     url = h1.findChildren("a", class_="change_news_trigger", recursive=False)[0]
-
+                    # retrieve news image
                     try:
                         mb25 = section.findChildren("div", class_="mb25", recursive=False)[0]
                         href = mb25.findChildren("a", class_="change_news_trigger", recursive=False)[0]
@@ -329,27 +344,26 @@ class GranblueFantasy(commands.Cog):
                             else: img = 'https://granbluefantasy.jp/' + img
                     except:
                         img = None
-
+                    # add to list
                     res.append([url.attrs['href'], url.text, img])
 
-                if 'news_url' in self.bot.data.save['gbfdata']:
+                if 'news_url' in self.bot.data.save['gbfdata']: # if data exists in memory
                     foundNew = False
-                    for i in range(0, len(res)):
+                    for i in range(0, len(res)): # process detected news
                         found = False
-                        for j in range(0, len(self.bot.data.save['gbfdata']['news_url'])):
+                        for j in range(0, len(self.bot.data.save['gbfdata']['news_url'])): # check if it exists
                             if res[i][0] == self.bot.data.save['gbfdata']['news_url'][j][0]:
                                 found = True
                                 break
-                        if not found:
-                            ret.append(res[i])
+                        if not found: # if it doesn't
+                            ret.append(res[i]) # add to list
                             foundNew = True
-                    if foundNew:
+                    if foundNew: # update memory data
                         self.bot.data.save['gbfdata']['news_url'] = res
                         self.bot.data.pending = True
-                else:
+                else: # update memory data
                     self.bot.data.save['gbfdata']['news_url'] = res
                     self.bot.data.pending = True
-
             except:
                 pass
         return ret
@@ -358,23 +372,26 @@ class GranblueFantasy(commands.Cog):
     Check for new GBF grand blues
     """
     async def check4koma(self) -> None:
+        # retrieve gran blues page
         data = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
         if data is None: return
+        # get last one
         last = data['list'][0]
-        if '4koma' in self.bot.data.save['gbfdata']:
-            if last is not None and int(last['id']) > int(self.bot.data.save['gbfdata']['4koma']):
-                self.bot.data.save['gbfdata']['4koma'] = last['id']
+        if '4koma' in self.bot.data.save['gbfdata']: # check the one in memory
+            if last is not None and int(last['id']) > int(self.bot.data.save['gbfdata']['4koma']): # last one is newer
+                self.bot.data.save['gbfdata']['4koma'] = last['id'] # we update
                 self.bot.data.pending = True
+                # and post it
                 title = last['title_en']
                 mtl = False
-                if title == "":
+                if title == "": # translate title if no english title
                     try:
                         title = self.bot.net.translate(last['title'])
                         mtl = True
                     except:
                         title = last['title']
                 await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=title, url="https://prd-game-a1-granbluefantasy.akamaized.net/assets/img/sp/assets/comic/episode/episode_{}.jpg".format(last['id']), image="https://prd-game-a1-granbluefantasy.akamaized.net/assets/img/sp/assets/comic/thumbnail/thum_{}.png".format(last['id'].zfill(5)), footer="Title from Google Translate" if mtl else "", color=self.COLOR), publish=True)
-        else:
+        else: # set in memory silently if no data exists
             self.bot.data.save['gbfdata']['4koma'] = last['id']
             self.bot.data.pending = True
 
@@ -388,23 +405,25 @@ class GranblueFantasy(commands.Cog):
     async def checkExtraDrops(self) -> Optional[list]:
         try:
             c = self.bot.util.JST()
+            # retrieve data (if it exists)
             extra = self.bot.data.save['gbfdata'].get('extradrop', None)
             if extra is None or c > extra[0]: # outdated/not valid
+                # call endpoint
                 r = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
                 if r is None: # no extra
-                    self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to unvalid
+                    self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to None to make it NOT VALID
                     self.bot.data.pending = True
                     return None
                 else:
-                    elem_table = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'} # quest = element table
                     data = [None, None]
                     data[0] =  datetime.strptime(r['message_info']['ended_at'].replace(' (JST)', '').replace('a.m.', 'AM').replace('p.m.', 'PM'), '%I:%M %p, %b %d, %Y') # store end time
                     for e in r['quest_list']: # check quest name for element match
                         cs = e['quest_name'].split(' ')
                         for s in cs:
-                            data[1] = elem_table.get(s, None)
+                            data[1] = self.EXTRA_DROPS_TABLE.get(s, None)
                             if data[1] is not None: break
                         if data[1] is not None: break
+                    # set in memory
                     self.bot.data.save['gbfdata']['extradrop'] = data
                     self.bot.data.pending = True
                     return data
@@ -428,7 +447,8 @@ class GranblueFantasy(commands.Cog):
     str: Resulting string. Intended to be appended to an embed description.
     """
     async def getGBFInfoTimers(self, inter: disnake.GuildCommandInteraction, current_time : datetime) -> str:
-        output = []
+        output = [] # will container strings before .join()
+        # in this function, we simply call various info functions from various cog and component and compile the result in one big string
         try:
             buf = await self.bot.net.gbf_maintenance_status()
             if len(buf) > 0:
@@ -501,25 +521,30 @@ class GranblueFantasy(commands.Cog):
     async def wiki(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
+        # call the search API
         r = await self.bot.net.requestWiki("api.php", params={"action":"query", "format":"json", "list":"search", "srsearch":terms, "redirects":"return"})
-        if r is None or len(r['query']['search']) == 0:
+        if r is None or len(r['query']['search']) == 0: # no result, let user search themselves
             await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), color=self.COLOR))
             await self.bot.util.clean(inter, 40)
         else:
             try:
+                # retrieve first result
                 page = r['query']['search'][0]
                 title = page['title']
+                # access cargo tables to try to refine the result
                 tables = {'characters':'id,rarity,name,series,title,element,max_evo,join_weapon,profile,va', 'summons':'id,rarity,name,series,element,evo_max', 'weapons':'id,rarity,name,series,element,obtain,character_unlock,evo_max', 'classes':'id,name', 'npc_characters':'id,name,va,profile'}
                 output = None
                 for t, f in tables.items():
+                    # request the table
                     r = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":t, "fields":"_pageName,{}".format(f), "format":"json", "where":'_pageName="{}"'.format(title)})
                     if r is None or len(r) == 0:
                         await asyncio.sleep(0.1)
                         continue
+                    # first element should match
                     elem = r[0]
                     output = {}
-                    output["url"] = "https://gbf.wiki/" + title.replace(" ", "_")
-                    match t:
+                    output["url"] = "https://gbf.wiki/" + title.replace(" ", "_") # make article url
+                    match t: # process cargo data depending on current table
                         case 'characters':
                             output["desc"] = []
                             if elem['profile'] is not None:
@@ -583,10 +608,11 @@ class GranblueFantasy(commands.Cog):
                             output["footer"] = str(elem["id"])
                             if elem["va"] is not None and len(elem["va"]) > 0: output["footer"] += " - " + ",".join(elem["va"])
                     break
-                if output is None:
+                if output is None: # no data
                     output = {"title":html.unescape(title), "url":"https://gbf.wiki/" + title.replace(" ", "_"), "desc":"*Click to refine the search*"}
-                elif "desc" in output:
+                elif "desc" in output: # join description strings
                     output["desc"] = "".join(output["desc"])
+                # send result
                 await inter.edit_original_message(embed=self.bot.embed(title=output["title"], description=output.get("desc", None), image=output.get("image", None), url=output.get("url", None), footer=output.get("footer", None), color=self.COLOR))
                 await self.bot.util.clean(inter, 80)
             except Exception as ex:
@@ -605,13 +631,17 @@ class GranblueFantasy(commands.Cog):
         if self.bot.data.save['gbfversion'] is not None:
             description.append("\n{} Version is `{}` (`{}`)".format(self.bot.emote.get('cog'), self.bot.data.save['gbfversion'], self.bot.util.version2str(self.bot.data.save['gbfversion'])))
 
+        # reset timer
         reset = current_time.replace(hour=5, minute=0, second=0, microsecond=0)
         if current_time.hour >= reset.hour:
             reset += timedelta(days=1)
         d = reset - current_time
         description.append("\n{} Reset in **{}**\n".format(self.bot.emote.get('mark'), self.bot.util.delta2str(d)))
+        
+        # add informations
         description.append(await self.getGBFInfoTimers(inter, current_time))
 
+        # send message
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(description), color=self.COLOR))
 
     @gbf.sub_command()
@@ -619,7 +649,7 @@ class GranblueFantasy(commands.Cog):
         """Post GBF maintenance status"""
         try:
             await inter.response.defer()
-            description = await self.bot.net.gbf_maintenance_status()
+            description = await self.bot.net.gbf_maintenance_status() # simply retrieve maintenance string
             if len(description) > 0:
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=description, color=self.COLOR))
             else:
@@ -636,7 +666,7 @@ class GranblueFantasy(commands.Cog):
         else:
             msg = ""
             current_time = self.bot.util.JST()
-            if self.bot.data.save['stream']['time'] is not None:
+            if self.bot.data.save['stream']['time'] is not None: # retrieve stream time and add it before the description
                 if current_time < self.bot.data.save['stream']['time']:
                     d = self.bot.data.save['stream']['time'] - current_time
                     msg = "Stream starts in **{} ({})**\n".format(self.bot.util.delta2str(d, 2), self.bot.util.time(self.bot.data.save['stream']['time'], style=['d'], removejst=True))
@@ -652,46 +682,51 @@ class GranblueFantasy(commands.Cog):
         c = self.bot.util.UTC()
         events = {}
         next = None
-        for event, dates in self.bot.data.save['schedule'].items():
-            if dates[0] not in events:
+        # we'll first build and event list, stored in events, the key being the event(s) start date
+        # next will store the next event to occur after our current time c
+        for event, dates in self.bot.data.save['schedule'].items(): # for each schedule entry
+            if dates[0] not in events: # make array if no events at this date
                 events[dates[0]] = []
             match len(dates):
-                case 1:
+                case 1: # single timestamp event
                     start = datetime.utcfromtimestamp(dates[0])
                     diff = c - start
-                    if c < start:
+                    if c < start: # event hasn't started
                         events[dates[0]].append("- {} ▫️ {}\n".format(event, self.bot.util.time(start, style=['d'])))
                         if next is None or start < next[0]:
                             next = [start, event]
-                    elif diff > timedelta(days=1): # show as ended
+                    elif diff > timedelta(days=1): # 1 day old, show as ended
                         events[dates[0]].append("- ~~{}~~\n".format(event))
-                    elif diff > timedelta(days=3): # don't display
+                    elif diff > timedelta(days=3): # 3 days old, don't display
                         continue
                     else: # on going/happened
                         events[dates[0]].append("- **{}**\n".format(event))
-                case 2:
+                case 2: # double timestamp event
                     start = datetime.utcfromtimestamp(dates[0])
                     end = datetime.utcfromtimestamp(dates[1])
-                    if c < start:
+                    if c < start: # event hasn't started
                         events[dates[0]].append("- {} ▫️ {} - {}\n".format(event, self.bot.util.time(start, style=['d']), self.bot.util.time(end, style=['d'])))
                         if next is None or start < next[0]:
                             next = [start, event]
-                    elif c >= end:
+                    elif c >= end: # event has ended
                         if c - end > timedelta(days=3): # don't display
                             continue
                         events[dates[0]].append("- ~~{}~~ ▫️ *Ended*\n".format(event))
-                    else:
+                    else: # on going
                         events[dates[0]].append("- **{}** ▫️ Ends in **{}** {}\n".format(event, self.bot.util.delta2str(end - c, 2), self.bot.util.time(end, style=['d'])))
                 case _:
                     continue
+        # get and sort date list
         dates = list(events.keys())
         dates.sort()
+        # make schedule by going over sorted dates
         msgs = []
         for date in dates:
             msgs += events[date]
         if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
         else:
+            # add extra infos at the bottom
             msgs.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), c.strftime("%I:%M %p")))
             if next is not None:
                 if next[1].startswith("Update"):
@@ -704,36 +739,12 @@ class GranblueFantasy(commands.Cog):
             msgs.append(await self.getGBFInfoTimers(inter, c))
             await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=''.join(msgs), footer="source: https://gbf.wiki/"))
 
-    """getGrandList()
-    Request the grand character list from the wiki page and return the list of latest released ones
-    
-    Returns
-    ----------
-    dict: Grand per element
-    """
-    async def getGrandList(self) -> dict:
-        data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"characters", "fields":"series,name,element,release_date", "where":'series = "grand"', "format":"json", "limit":"200"})
-        if data is None:
-            return {}
-        grand_list = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}
-        for c in data:
-            try:
-                if c['series'] != 'grand': continue
-                grand = c
-                d = grand['release date'].split('-')
-                grand['release date'] = self.bot.util.UTC().replace(year=int(d[0]), month=int(d[1]), day=int(d[2]), hour=(12 if (int(d[2]) > 25) else 19), minute=0, second=0, microsecond=0)
-                grand['element'] = grand['element'].lower()
-                if grand_list[grand['element']] is None or grand['release date'] > grand_list[grand['element']]['release date']:
-                    grand_list[grand['element']] = grand
-            except:
-                pass
-        return grand_list
-
     @gbf.sub_command()
     async def gacha(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the current gacha informations"""
         try:
             await inter.response.defer()
+            # simply retrieve and display gacha component summary
             description, thumbnail = await self.bot.gacha.summary()
             if description is None: raise Exception('No Gacha')
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=description, thumbnail=thumbnail, color=self.COLOR))
@@ -778,17 +789,15 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Your GBF profile has been unlinked", color=self.COLOR))
 
     @profile.sub_command(name="set")
-    async def setprofile(self, inter: disnake.GuildCommandInteraction, profile_id : int = commands.Param(description="A valid GBF Profile ID. Usurpation will result in ban.", ge=0)) -> None:
+    async def setprofile(self, inter: disnake.GuildCommandInteraction, profile_id : int = commands.Param(description="A valid GBF Profile ID. Usurpation will result in ban.", ge=0, le=50000000)) -> None:
         """Link your GBF id to your Discord ID"""
         try:
             await inter.response.defer(ephemeral=True)
-            if self.bot.ban.check(inter.author.id, self.bot.ban.PROFILE):
+            if self.bot.ban.check(inter.author.id, self.bot.ban.PROFILE): # check if author is banned
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="You are banned to use this feature", color=self.COLOR))
                 return
-            if profile_id < 0 or profile_id >= 100000000:
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid ID", color=self.COLOR))
-                return
-            if not await self.bot.net.gbf_available():
+            # check if account exists
+            if not await self.bot.net.gbf_available(): # gbf must be available
                 data = "Maintenance"
             else:
                 data = await self.bot.net.requestGBF("profile/content/index/{}".format(profile_id), expect_JSON=True)
@@ -801,6 +810,7 @@ class GranblueFantasy(commands.Cog):
                     await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Profile not found or Service Unavailable", color=self.COLOR))
                     return
                 case _:
+                    # check if profile is already linked
                     uid = self.searchprofile(profile_id)
                     if uid is not None:
                         if int(uid) == profile_id:
@@ -808,7 +818,7 @@ class GranblueFantasy(commands.Cog):
                         else:
                             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="This id is already in use, use {} if it's a case of griefing and send me the ID".format(self.bot.util.command2mention('bug_report')), color=self.COLOR))
                         return
-            # register
+            # register linked GBF profile
             self.bot.data.save['gbfids'][str(inter.author.id)] = profile_id
             self.bot.data.pending = True
             await inter.edit_original_message(embed=self.bot.embed(title="Success", description="Your ID `{}` is now linked to your Discord ID `{}`".format(profile_id, inter.author.id), color=self.COLOR))
@@ -821,23 +831,23 @@ class GranblueFantasy(commands.Cog):
     
     Parameters
     ----------
-    pid: Profile id
-    data: Profile data
+    pid: Integer or String, Profile id
+    soup: BeautifulSoup instance, HTML profile page soup
     
     Returns
     --------
     tuple: Containing:
         title: Discord embed title
         description: Discord embed description
-        fields: Discord embed field
         thumbnail: main character thumbnail
     """
-    async def processProfile(self, pid, data) -> None:
-        soup = BeautifulSoup(data, 'html.parser')
-        try: name = self.bot.util.shortenName(soup.find("span", class_="txt-other-name").string)
-        except: name = None
-        try: rank = "**Rank " + soup.find('div', class_='prt-user-name').get_text().split()[-1] + "**"
-        except: name = ""
+    async def processProfile(self, pid : Union[int, str], soup : BeautifulSoup) -> tuple:
+        titles = ["\u202d"]
+        descs = []
+        thumbnail = None
+        
+        # # Generate Embed Title #################################
+        # Trophy rarity
         rarity = "R"
         possible_headers = [("prt-title-bg-gld", "SSR"), ("prt-title-bg-slv", "SR"), ("prt-title-bg-nml", "R"), ("prt-title-bg-cpr", "R")]
         for h in possible_headers:
@@ -847,97 +857,158 @@ class GranblueFantasy(commands.Cog):
                     break
             except:
                 pass
+        titles.append(str(self.bot.emote.get(rarity)))
+        # Profile name
+        try:
+            titles.append(" **")
+            titles.append(self.bot.util.shortenName(soup.find("span", class_="txt-other-name").string))
+            titles.append("**")
+        except:
+            pass
+        # Trophy text
         trophy = soup.find_all("div", class_="prt-title-name")[0].string
+        if trophy != "No Trophy Displayed":
+            titles.append("▫️")
+            titles.append(trophy)
+        # Final
+        titles = "".join(titles)
+        
+        # # Generate Embed Description #################################
+        # Rank
+        try:
+            descs.append("**Rank ")
+            descs.append(soup.find('div', class_='prt-user-name').get_text().split()[-1])
+            descs.append("**")
+        except:
+            pass
+        # Profile message
         comment = html.unescape(soup.find_all("div", class_="prt-other-comment")[0].string).replace('\t', '').replace('\n', '')
-        if comment == "": pass
-        elif rank == "": comment = "💬 `{}`".format(comment.replace('`', '\''))
-        else: comment = " ▫️ 💬 `{}`".format(comment.replace('`', '\''))
-        mc_url = soup.find_all("img", class_="img-pc")[0]['src'].replace("/po/", "/talk/").replace("/img_low/", "/img/")
-
+        if comment != "":
+            if len(descs) > 0:
+                descs.append(" ▫️ 💬 `")
+            else:
+                descs.append("💬 `")
+            descs.append(comment.replace('`', '\'')) # Replace ` by '
+            descs.append("`\n")
+        elif len(descs) > 0:
+            descs.append("\n")
+        # Crew name and id
         try:
             try:
                 crew = self.bot.util.shortenName(soup.find_all("div", class_="prt-guild-name")[0].string)
                 crewid = soup.find_all("div", class_="btn-guild-detail")[0]['data-location-href']
                 crew = "[{}](https://game.granbluefantasy.jp/#{})".format(crew, crewid)
-            except: crew = soup.find_all("div", class_="txt-notjoin")[0].string
+            except:
+                crew = soup.find_all("div", class_="txt-notjoin")[0].string
+            descs.append(str(self.bot.emote.get('gw')))
+            descs.append(" Crew ▫️ ")
+            descs.append(crew)
+            descs.append("\n")
         except:
-            crew = None
-        await asyncio.sleep(0)
-
-        # get the last gw score
-        scores = []
-        pdata = await self.bot.ranking.searchGWDB(pid, 2)
+            pass
+        # GW Scores
+        pdata = await self.bot.ranking.searchGWDB(str(pid), 2)
         for n in range(0, 2):
             try:
                 pscore = pdata[n][0]
-                if pscore.ranking is None: scores.append("{} GW**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.current))
-                else: scores.append("{} GW**{}** ▫️ #**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.ranking, pscore.current))
+                if pscore.ranking is None:
+                    descs.append("{} GW**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.current))
+                else:
+                    descs.append("{} GW**{}** ▫️ #**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.ranking, pscore.current))
             except:
                 pass
-        scores = "".join(scores)
-        await asyncio.sleep(0)
-
-        # support summons
+        # Spacer
+        if len(descs) > 0:
+            descs.append("\n")
+        # Star character
+        try:
+            pushed = soup.find("div", class_="prt-pushed")
+            if pushed.find("div", class_="ico-augment2-s", recursive=True) is not None: # Check perp ring
+                star = ["**\💍** "]
+            else:
+                star = []
+            star.append(pushed.findChildren("span", class_="prt-current-npc-name", recursive=True)[0].get_text().strip()) # name
+            if "Lvl" not in star[-1]: # something went wrong if level is missing
+                raise Exception()
+            # add plus bonus if it exists
+            try: star.append(" **{}**".format(pushed.find("div", class_="prt-quality", recursive=True).get_text().strip())) # plus
+            except: pass
+            # add EMP level if it exists
+            try: star.append(" ▫️ **{}** EMP".format(pushed.find("div", class_="prt-npc-rank", recursive=True).get_text().strip())) # emp
+            except: pass
+            
+            descs.append(str(self.bot.emote.get('skill2')))
+            descs.append("**Star Character**\n")
+            descs += star
+            descs.append("\n")
+            
+            # Add star character comment if it exists
+            try:
+                starcom = pushed.find("div", class_="prt-pushed-info", recursive=True).get_text()
+                if starcom != "" and starcom != "(Blank)":
+                    descs.append("\u202d💬 `")
+                    descs.append(starcom.replace('`', '\''))
+                    descs.append("`\n")
+            except:
+                pass
+        except:
+            pass
+        # Spacer
+        if len(descs) > 1:
+            descs.append("\n")
+        # Support Summons
         try:
             script = BeautifulSoup(soup.find("script", id="tpl-summon").get_text().replace(" <%=obj.summon_list.shift().viewClassName%>", ""), "html.parser")
-            summon_list = [[] for i in range(7)]
+            summon_lines = [[] for i in range(7*2)] # 2 lines for each element + misc. Misc is located last. Also, we support up to 4 summons per element.
             i = 0
-            for x, e in enumerate(script.find_all("div", class_="prt-fix-support-wrap")):
+            for x, e in enumerate(script.find_all("div", class_="prt-fix-support-wrap")): # iterate over summons
                 for y, v in enumerate(e.findChildren("div", class_="prt-fix-support", recursive=False)):
                     t = v.findChildren("div", recursive=False)[-1]
-                    if "No support summon is set." not in t.get_text():
+                    if "No support summon is set." not in t.get_text(): # check if set
                         c = t.findChildren("div", recursive=False)
-                        sname = c[0].get_text()
-                        cname = c[1].get('class')[-1]
+                        sname = c[0].get_text() # summon name
+                        cname = c[1].get('class')[-1] # HTML text class
+                        # determine quality (i.e. uncap level)
                         if 'bless-rank' in cname:
                             squal = "star{}".format(cname.split('bless-rank')[-1].split('-', 1)[0])
                         else:
                             squal = "star0"
-                        summon_list[i].append((sname, squal))
+                        # misc summons are first in the list but last in our summon_lines array
+                        j = (i-1) * 2 if i > 0 else 6 * 2
+                        if len(summon_lines[j]) >= 2: j += 1 # switch to second line if first line is "full"
+                        summon_lines[j].append((sname, squal))
                 i += 1
-            suppA = ["{} **Support Summons**\n".format(self.bot.emote.get('summon'))] # top, fire to dark
-            suppB = "" # misc line
-            for i, summons in enumerate(summon_list):
-                tmp = ["{} ".format(self.bot.emote.get(self.SUMMON_ELEMENTS[i]))]
-                for j, summon in enumerate(summons):
-                    if j > 0: tmp.append(" ▫️ ")
-                    tmp.append("{}{}".format(self.bot.emote.get(summon[1]), summon[0]))
-                if len(summons) == 0:
-                    tmp.append("None")
-                tmp.append("\n")
-                if i == 0: suppB = "".join(tmp) # misc is always first in the list, so i == 0
-                else: suppA += tmp
-            summons = ("".join(suppA), suppB)
+            
+            support_summons = []
+            
+            for i, summons in enumerate(summon_lines):
+                if len(summons) > 0:
+                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[i//2])))
+                    support_summons.append(" ")
+                    for j, summon in enumerate(summons):
+                        if j > 0:
+                            support_summons.append(" ▫️ ")
+                        support_summons.append(str(self.bot.emote.get(summon[1])))
+                        support_summons.append(summon[0])
+                    support_summons.append("\n")
+                elif i % 2 == 0: # display None on first line
+                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[i//2])))
+                    support_summons.append(" None\n")
+            if len(support_summons) > 0:
+                descs.append(str(self.bot.emote.get('summon')))
+                descs.append(" **Support Summons**\n")
+                descs += support_summons
         except:
-            summons = ("", "")
-        await asyncio.sleep(0)
-
-        # star chara
-        try:
-            pushed = soup.find("div", class_="prt-pushed")
-            if pushed.find("div", class_="ico-augment2-s", recursive=True) is not None:
-                star = ["**\💍** "]
-            else:
-                star = []
-            star.append("{}".format(pushed.findChildren("span", class_="prt-current-npc-name", recursive=True)[0].get_text().strip())) # name
-            if "Lvl" not in star[-1]: raise Exception()
-            try: star.append(" **{}**".format(pushed.find("div", class_="prt-quality", recursive=True).get_text().strip())) # plus
-            except: pass
-            try: star.append(" ▫️ **{}** EMP".format(pushed.find("div", class_="prt-npc-rank", recursive=True).get_text().strip())) # emp
-            except: pass
-            try:
-                starcom = pushed.find("div", class_="prt-pushed-info", recursive=True).get_text()
-                if starcom != "" and starcom != "(Blank)": star.append("\n\u202d💬 `{}`".format(starcom.replace('`', '\'')))
-            except: pass
-            star.insert(0, "\n{} **Star Character**\n".format(self.bot.emote.get('skill2')))
-            star = "".join(star)
-        except:
-            star = ""
-        await asyncio.sleep(0)
-
-        if trophy == "No Trophy Displayed": title = "\u202d{} **{}**".format(self.bot.emote.get(rarity), name)
-        else: title = "\u202d{} **{}**▫️{}".format(self.bot.emote.get(rarity), name, trophy)
-        return title, "{}{}\n{} Crew ▫️ {}\n{}{}\n\n{}{}".format(rank, comment, self.bot.emote.get('gw'), crew, scores, star, summons[0], summons[1]), mc_url
+            pass
+        # Final
+        descs = "".join(descs)
+            
+        # # Generate Embed Thumbnail #################################
+        # MC class image. We use the talk bubble path
+        try: thumbnail = soup.find_all("img", class_="img-pc")[0]['src'].replace("/po/", "/talk/").replace("/img_low/", "/img/")
+        except: pass
+            
+        return titles, descs, thumbnail
 
     """_profile()
     Retrieve a GBF profile and post it
@@ -951,13 +1022,14 @@ class GranblueFantasy(commands.Cog):
     view: Optional view
     """
     async def _profile(self, inter, pid, *, clean=True, color=None, view=None) -> None:
-        if color is None: color = self.COLOR
+        if color is None: color = self.COLOR # use cog color
+        # retrieve profile data
         if not await self.bot.net.gbf_available():
             data = "Maintenance"
         else:
             data = await self.bot.net.requestGBF("profile/content/index/{}".format(pid), expect_JSON=True)
             if data is not None: data = unquote(data['data'])
-        match data:
+        match data: # check validity
             case "Maintenance":
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Game is in maintenance", color=color), view=view)
                 if clean:
@@ -968,13 +1040,14 @@ class GranblueFantasy(commands.Cog):
                 if clean:
                     await self.bot.util.clean(inter, 45)
                 return
+        # parse page
         soup = BeautifulSoup(data, 'html.parser')
         try: name = soup.find_all("span", class_="txt-other-name")[0].string
         except: name = None
         if name is None:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Profile is Private", color=color), view=view)
         else:
-            title, description, thumbnail = await self.processProfile(pid, data)
+            title, description, thumbnail = await self.processProfile(pid, soup)
             await inter.edit_original_message(embed=self.bot.embed(title=title, description=description, url="https://game.granbluefantasy.jp/#profile/{}".format(pid), thumbnail=thumbnail, inline=True, color=color), view=view)
         if clean:
             await self.bot.util.clean(inter, 45)
@@ -988,7 +1061,7 @@ class GranblueFantasy(commands.Cog):
             if isinstance(pid, str):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description=pid, color=self.COLOR))
             else:
-                await self._profile(inter, pid)
+                await self._profile(inter, pid) # call _profile above
         except Exception as e:
             self.bot.logger.pushError("[GBF] In 'gbf profile see' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
@@ -1000,7 +1073,7 @@ class GranblueFantasy(commands.Cog):
     @commands.max_concurrency(4, commands.BucketType.default)
     async def gbfprofile(self, inter: disnake.UserCommandInteraction, member: disnake.Member) -> None:
         """Retrieve a GBF profile"""
-        try:
+        try: # SAME function as see above
             await inter.response.defer()
             pid = await self.bot.util.str2gbfid(inter, str(member.id), memberTarget=member)
             if isinstance(pid, str):
@@ -1044,16 +1117,16 @@ class GranblueFantasy(commands.Cog):
     async def xp(self, inter: disnake.GuildCommandInteraction, start_level : int = commands.Param(description="Starting Point of the calcul", ge=1, le=149, default=1), end_level : int = commands.Param(description="Final Point of the calcul", ge=1, le=150, default=1)) -> None:
         """Character experience calculator"""
         await inter.response.defer(ephemeral=True)
-        xptable = [None, 30, 70, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7800, 8100, 8400, 8700, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 50000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 500000, 1000000, 1000000, 1200000, 1200000, 1200000, 1200000, 1200000, 1250000, 1250000, 1250000, 1250000, 1250000, 1300000, 1300000, 1300000, 1300000, 1300000, 1350000, 1350000, 1350000, 1350000, 1350000, 1400000, 1400000, 1400000, 1400000, 1400000, 1450000, 1450000, 1450000, 1450000, 1450000, 1500000, 1500000, 1500000, 1500000, 1500000, 1550000, 1550000, 1550000, 1550000, 1550000, 1600000, 1600000, 1600000, 1600000, 1600000, 1650000, 1650000, 1650000, 1650000, 0]
         if start_level < 1: start_level = 1
         elif start_level >= 150: start_level = 149
         msgs = ["From level **{}**, you need:\n".format(start_level)]
-        xpcount = xptable[start_level]
+        xpcount = self.XP_TABLE[start_level]
+        # iterate over level and counts the exp
         for lvl in range(start_level+1, 151):
-            if lvl in [80, 100, 110, 120, 130, 140, 150, end_level]:
+            if lvl in [80, 100, 110, 120, 130, 140, 150, end_level]: # add messages at specific thresholds
                 msgs.append("**{:,} XP** for lvl **{:}** ({:} books or {:,} candies)\n".format(xpcount, lvl, math.ceil(xpcount / 300000), math.ceil(xpcount / 745)))
                 if lvl == end_level: break
-            xpcount += xptable[lvl]
+            xpcount += self.XP_TABLE[lvl]
         await inter.edit_original_message(embed=self.bot.embed(title="Experience Calculator", description="".join(msgs), color=self.COLOR))
 
     @_utility.sub_command()
@@ -1075,40 +1148,72 @@ class GranblueFantasy(commands.Cog):
             if isinstance(id, str):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description=id, color=self.COLOR))
             else:
+                # use the scout endpoint to check for the brand
+                # IMPORTANT: The GBF account used by Rosetta must be in a crew and with access to the scout menu
                 data = await self.bot.net.requestGBF("forum/search_users_id", expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
                 if data is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
                 else:
-                    if len(data['user']) == 0:
+                    if len(data['user']) == 0: # other scout errors/messages
                         await inter.edit_original_message(embed=self.bot.embed(title="Profile Error", description="In game message:\n`{}`".format(data['no_member_msg'].replace("<br>", " ")), url="https://game.granbluefantasy.jp/#profile/{}".format(id), color=self.COLOR))
                     else:
                         try:
-                            if data['user']["restriction_flag_list"]["event_point_deny_flag"]:
+                            if data['user']["restriction_flag_list"]["event_point_deny_flag"]: # check for the brand flag
                                 status = "Account is restricted"
                             else:
                                 status = "Account isn't restricted"
-                        except:
-                            status = "Account isn't restricted"
+                        except: # unexpected error
+                            status = "Account doesn't seem restricted"
                         await inter.edit_original_message(embed=self.bot.embed(title="{} {}".format(self.bot.emote.get('gw'), self.bot.util.shortenName(data['user']['nickname'])), description=status, thumbnail="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/leader/talk/{}.png".format(data['user']['image']), url="https://game.granbluefantasy.jp/#profile/{}".format(id), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
+
+    """getGrandList()
+    Request the grand character list from the wiki page and return the list of latest released ones
+    
+    Returns
+    ----------
+    dict: Grand per element
+    """
+    async def getGrandList(self) -> dict:
+        # get grand list from cargo table
+        data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"characters", "fields":"series,name,element,release_date", "where":'series = "grand"', "format":"json", "limit":"200"})
+        if data is None:
+            return {}
+        grand_list = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}
+        # take note of latest grand for each element
+        for c in data:
+            try:
+                if c['series'] != 'grand': continue
+                grand = c
+                d = grand['release date'].split('-')
+                grand['release date'] = self.bot.util.UTC().replace(year=int(d[0]), month=int(d[1]), day=int(d[2]), hour=(12 if (int(d[2]) > 25) else 19), minute=0, second=0, microsecond=0) # parse release date
+                grand['element'] = grand['element'].lower()
+                # update grand if more recent
+                if grand_list[grand['element']] is None or grand['release date'] > grand_list[grand['element']]['release date']:
+                    grand_list[grand['element']] = grand
+            except:
+                pass
+        return grand_list
 
     @check.sub_command()
     async def doom(self, inter: disnake.GuildCommandInteraction) -> None:
         """Give the time elapsed of various GBF related releases"""
         await inter.response.defer()
         msgs = []
+        # really ugly and inefficient but we check over many wiki pages to collect details for various campaigns, releases, etc...
         wiki_checks = ["Main_Quests", "Category:Campaign", "Surprise_Special_Draw_Set", "Damascus_Ingot", "Gold_Brick", "Sunlight_Stone", "Sephira_Evolite"]
+        # and here's are the possible regexes to extract the values we're looking for
         regexs = ["Time since last release\\s*<\/th><\/tr>\\s*<tr>\\s*<td colspan=\"3\" style=\"text-align: center;\">(\\d+ days)", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(-\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last ", "<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td>(\\d+ days)<\\/td>\\s*"]
         for w in wiki_checks:
             t = await self.bot.net.requestWiki(w, allow_redirects=True)
-            await asyncio.sleep(0.1) # to slow down the request a tiny bit
+            await asyncio.sleep(0.2) # to slow down the request a tiny bit
             if t is None:
                 break
             try: t = t.decode('utf-8')
             except: t = t.decode('iso-8859-1')
             for r in regexs:
-                if w == "Sunlight_Stone": # exception
+                if w == "Sunlight_Stone": # exception for this page
                     ms = re.findall(r, t)
                     for i, m in enumerate(ms):
                         if i == 0: msgs.append("**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m))
@@ -1121,20 +1226,22 @@ class GranblueFantasy(commands.Cog):
                         msgs.append("**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w))
                         break
 
-        # summer disaster
+        # Summer fortune addition
         c = self.bot.util.JST()
         msgs.append("**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
+        # Nerf of sette addition
         msgs.append("**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
+        # KMR retirement addition
         msgs.append("**{} days** since {} KMR's retirement\n".format(self.bot.util.delta2str(c - c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), 3).split('d', 1)[0], self.bot.emote.get('kmr')))
         
-        # grand
+        # Grand List (check getGrandList() above)
         try:
             grands = await self.getGrandList()
             for e in grands:
                 msgs.append("**{} days** since {} [{}](https://gbf.wiki/{})\n".format(self.bot.util.delta2str(c - grands[e]['release date'], 3).split('d', 1)[0], self.bot.emote.get(e), grands[e]['name'], grands[e]['name'].replace(' ', '_')))
         except:
             pass
-
+        # Display the result
         if len(msgs) > 0:
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="".join(msgs), footer="Source: http://gbf.wiki/", color=self.COLOR))
         else:
@@ -1146,6 +1253,7 @@ class GranblueFantasy(commands.Cog):
         """Retrieve the current coop daily missions"""
         try:
             await inter.response.defer(ephemeral=True)
+            # check mission endpoint
             data = (await self.bot.net.requestGBF('coopraid/daily_mission', expect_JSON=True))['daily_mission']
             msg = []
             for i in range(len(data)):
@@ -1168,32 +1276,26 @@ class GranblueFantasy(commands.Cog):
         """Post the time to the next monthly dev post"""
         await inter.response.defer()
         c = self.bot.util.JST()
-        m = c.replace(day=1, hour=12, minute=0, second=0, microsecond=0)
-        while m < c:
-            m += timedelta(days=1)
-        try:
-            if c < self.bot.data.save['stream']['time'] and self.bot.data.save['stream']['time'] < (m + timedelta(days=1)):
-                m = (self.bot.data.save['stream']['time'] + timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
-        except:
-            pass
+        m = c.replace(day=1, hour=12, minute=0, second=0, microsecond=0) # rough estimate of when it's released
+        if m < c and m.month == 12: # new year fix
+            m = m.replace(year=m.year+1, month=1)
         await inter.edit_original_message(embed=self.bot.embed(title="{} Kore Kara".format(self.bot.emote.get('clock')), description="Release approximately in **{}**".format(self.bot.util.delta2str(m - c, 2)),  url="https://granbluefantasy.jp/news/index.php", thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR))
 
     @check.sub_command()
     async def news(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the latest news posts"""
         await inter.response.defer(ephemeral=True)
-        if 'news_url' not in self.bot.data.save['gbfdata']:
-            self.bot.data.save['gbfdata']['news_url'] = []
-            self.bot.data.pending = True
         msgs = []
-        for i in range(len(self.bot.data.save['gbfdata']['news_url'])):
+        for i in range(len(self.bot.data.save['gbfdata'].get('news_url', []))): # simply iterate over stored data
             msgs.append("{} [{}]({})\n".format(self.bot.emote.get(str(i+1)), self.bot.data.save['gbfdata']['news_url'][i][1], self.bot.data.save['gbfdata']['news_url'][i][0]))
         try:
-            thumb = self.bot.data.save['gbfdata']['news_url'][0][2]
+            thumb = self.bot.data.save['gbfdata']['news_url'][0][2] # add thumbnail of most recent element
             if not thumb.startswith('http://granbluefantasy.jp') and not thumb.startswith('https://granbluefantasy.jp'):
                 if thumb.startswith('/'): thumb = 'https://granbluefantasy.jp' + thumb
                 else: thumb = 'https://granbluefantasy.jp/' + thumb
-        except: thumb = None
+        except:
+            thumb = None
+        # send message
         if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
         else:
@@ -1234,8 +1336,10 @@ class GranblueFantasy(commands.Cog):
                 if 'campaign/dividecrystal' not in self.bot.data.save['extra']:
                     self.bot.data.save['extra']['campaign/dividecrystal'] = {'wave':1, 'expire':end}
                 try:
+                    # access endpoint
                     data = unquote((await self.bot.net.requestGBF("campaign/dividecrystal/content/index", expect_JSON=True))['data'])
                 except Exception as tmp:
+                    # hacky way to detect which wave we are at
                     if maxwave > 1 and self.bot.data.save['extra']['campaign/dividecrystal']['wave'] < maxwave and (c - start).days > 2:
                         try:
                             await self.bot.net.requestGBF("campaign/dividecrystal/content/bonus_present", expect_JSON=True)
@@ -1252,6 +1356,7 @@ class GranblueFantasy(commands.Cog):
                             raise tmp
                     else:
                         raise tmp
+                # extract amount
                 s = data.find('<div class="txt-amount">')
                 if s == -1: raise Exception()
                 s += len('<div class="txt-amount">')
@@ -1270,6 +1375,7 @@ class GranblueFantasy(commands.Cog):
                 if crystal <= 0:
                     msg = "{} No crystals remaining".format(self.bot.emote.get('crystal'))
                 else:
+                    # do the math and finalize messages
                     consumed = (available_crystal - crystal)
                     avg_completion_crystal = 1600
                     players = (consumed / ((c - start).days + 1)) / avg_completion_crystal
@@ -1312,6 +1418,7 @@ class GranblueFantasy(commands.Cog):
             elif c < start:
                 msg = "The event hasn't started."
             else:
+                # get data from endpoint
                 data = await self.bot.net.requestGBF("rest/campaign/accumulatebattle/point_list", expect_JSON=True)
                 msg = ["Goal ▫️ **{:,}**".format(data["goal"])]
                 elems = {"1":"fire", "2":"water", "3":"earth", "4":"wind", "5":"light", "6":"dark"}
