@@ -51,7 +51,6 @@ class Games(commands.Cog):
         "Sword Stone x50":1000, "Dagger Stone x50":1000, "Spear Stone x50":1000, "Axe Stone x50":1000, "Staff Stone x50":1000, "Pistol Stone x50":1000, "Melee Stone x50":1000, "Bow Stone x50":1000, "Harp Stone x50":1000, "Katana Stone x50":1000, "Silver Centrum x5":1000, "Ultima Unit x3":1000, "Fire Quartz x50":1000, "Water Quartz x50":1000, "Earth Quartz x50":1000, "Wind Quartz x50":1000, "Light Quartz x50":1000, "Dark Quartz x50":1000, "Shiva Omega Anima x3":1000, "Europa Omega Anima x3":1000, "Alexiel Omega Anima x3":1000, "Grimnir Omega Anima x3":1000, "Metatron Omega Anima x3":1000, "Avatar Omega Anima x3":1000
     }
     
-    
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
 
@@ -70,7 +69,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("single", banner, self.COLOR)
         await sim.generate(1, legfest)
         await sim.output(inter, 0, ("{} did a single roll...", "{} did a single roll"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -80,7 +78,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(10, legfest)
         await sim.output(inter, 1, ("{} did ten rolls...", "{} did ten rolls"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command(name="scam")
@@ -90,7 +87,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("scam", "scam", self.COLOR, scamindex=scam_index)
         await sim.generate(10, legfest)
         await sim.output(inter, 1, ("{} is getting Scammed...", "{} got Scammed"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -100,7 +96,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.output(inter, 3, ("{} is sparking...", "{} sparked"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -110,7 +105,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(num, legfest)
         await sim.output(inter, 3, ("{}" + " is rolling {} times...".format(num), "{} " + "rolled {} times".format(num)))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -120,7 +114,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("gachapin", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.output(inter, 3, ("{} is rolling the Gachapin...", "{} rolled the Gachapin"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -130,7 +123,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("mukku", banner, self.COLOR)
         await sim.generate(300)
         await sim.output(inter, 3, ("{} is rolling the Mukku...", "{} rolled the Mukku"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -140,7 +132,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("supermukku", banner, self.COLOR)
         await sim.generate(300)
         await sim.output(inter, 3, ("{} is rolling the Supper Mukku...", "{} rolled the Super Mukku"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -150,7 +141,6 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("memerollB" if rateup != "" else "memerollA", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.output(inter, 2, ("{} is memerolling...", "{} memerolled {} times"))
-        del sim
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -159,7 +149,6 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.roulette(inter, legfest, (realist==1))
-        del sim
         await self.bot.util.clean(inter, 50)
 
     @commands.slash_command()
@@ -252,7 +241,7 @@ class Games(commands.Cog):
             elif not nofinal and grid[-1] == keys[0]:
                 break
             await asyncio.sleep(0)
-
+        # call the game view
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is scratching...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Click to play the game", footer=footer, color=self.COLOR), view=Scratcher(self.bot, inter.author.id, grid, self.COLOR, footer))
         await self.bot.util.clean(inter, 45)
 
@@ -266,8 +255,9 @@ class Games(commands.Cog):
             mm += self.CHESTRUSH_LOOT[x] # calculated here
             if x == 'Premium 10-Part Ticket': rm = mm
 
+        # roll items
         results = []
-        l = random.randint(1, 9)
+        l = random.randint(1, 9) # number if items
         while len(results) < l:
             n = random.randint(1, mm)
             c = 0
@@ -283,7 +273,7 @@ class Games(commands.Cog):
                 elif n < rm: results.append("$$$" + check) # rare self.CHESTRUSH_LOOT
                 else: results.append(check) # normal self.CHESTRUSH_LOOT
         results.reverse()
-
+        # call the game view
         await inter.edit_original_message(embed=self.bot.embed(author={'name':'{} is opening chests...'.format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, color=self.COLOR), view=ChestRush(self.bot, inter.author.id, results, self.COLOR))
         await self.bot.util.clean(inter, 45)
 
@@ -297,23 +287,30 @@ class Games(commands.Cog):
         - List of tier winning digits
     """
     async def genLoto(self) -> tuple:
+        # generate 13 cards
         cards = []
         while len(cards) < 13:
-            if len(cards) < 10: c = str(10 * random.randint(0, 99) + len(cards) % 10).zfill(3) # generate unique last digit
-            else: c = str(random.randint(0, 999)).zfill(3)
+            if len(cards) < 10:
+                c = str(10 * random.randint(0, 99) + len(cards) % 10).zfill(3) # generate unique last digit
+            else:
+                c = str(random.randint(0, 999)).zfill(3)
             if c not in cards:
                 cards.append(c)
                 if len(cards) == 10: random.shuffle(cards)
             await asyncio.sleep(0)
-        winning = [[], [], [], []]
-        patterns = [[3, 2], [2, 2], [2, 3], [1, 2]]
+        # generate winning numbers for each tiers
+        winning = [[], [], [], []] # tier 1 to 4
+        patterns = [(3, 2), (2, 2), (2, 3), (1, 2)] # (number of digits, number of winning numbers)
         for i, v in enumerate(patterns):
+            # generate the max number according to the pattern, for the rng roll
+            # for example 1000 for a 3 digits number (000 to 999)
             pad = '{:<0' + str(v[0]+1) + 'd}'
             pad = int(pad.format(1))
+            # roll winning numbers for that pattern
             for j in range(0, v[1]):
                 while True:
-                    c = str(random.randint(0, pad-1)).zfill(v[0])
-                    if c not in winning[i]:
+                    c = str(random.randint(0, pad-1)).zfill(v[0]) # random and pad string
+                    if c not in winning[i]: # check if already rolled
                         winning[i].append(c)
                         break
                     await asyncio.sleep(0)
@@ -338,6 +335,7 @@ class Games(commands.Cog):
     async def printLoto(self, revealedCards : list, revealedWinning : list, prize : list, total : bool = False) -> tuple:
         desc = []
         thumb = None
+        # show winning numbers
         if len(revealedWinning) > 0:
             desc.append("The winning numbers are:\n")
             for i in range(0, len(revealedWinning)):
@@ -347,14 +345,18 @@ class Games(commands.Cog):
                     case 1: desc.append("First Two▫️") # tier 3
                     case 2: desc.append("Last Two▫️") # tier 2
                 desc.append("{} ".format(', '.join(revealedWinning[len(revealedWinning)-1-i])))
-                for j in range(0, prize[3-i]): desc.append(":confetti_ball:")
+                # show emote for won prizes
+                for j in range(0, prize[3-i]):
+                    desc.append(":confetti_ball:")
                 desc.append("\n")
+        # show revealed cards
         if len(revealedCards) > 0:
             desc.append("Your cards are: ")
             for c in revealedCards:
                 desc.append(c)
                 if c is not revealedCards[-1]: desc.append(", ")
         await asyncio.sleep(0)
+        # add prize thumbnail
         if total:
             if sum(prize) == 0: desc.append("\n{} You won nothing".format(self.bot.emote.get('kmr')))
             else:
@@ -393,7 +395,7 @@ class Games(commands.Cog):
     int: Prize tier (0 = lost)
     """
     def checkLotoWin(self, card : str, winning : list) -> int:
-        for i in range(0, 4):
+        for i in range(0, 4): # tier (0=t1, 1=t2, etc...)
             match i:
                 case 0: x = card
                 case 1: x = card[1:]
@@ -407,9 +409,12 @@ class Games(commands.Cog):
     async def fortune(self, inter: disnake.GuildCommandInteraction, usercards : str = commands.Param(description='List your cards here', default="")) -> None:
         """Imitate the GBF summer fortune game from Summer 2021"""
         await inter.response.defer()
+        # Starting message
         title = '{} is tempting fate...'.format(inter.author.display_name)
         await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="The winning numbers are...", color=self.COLOR))
+        # generate loto
         cards, winning = await self.genLoto()
+        # read and parse user cards
         cvt = []
         usercards = usercards.split(" ")
         for c in usercards:
@@ -420,12 +425,16 @@ class Games(commands.Cog):
                 cvt = []
                 break
             cvt.append(c.zfill(3))
-            if len(cvt) >= 20: break
-        if len(cvt) != 0: cards = cvt
+            if len(cvt) >= 20: break # limited to 20 cards
+        # if 1 or more usercards, we use these cards instead of loto ones
+        if len(cvt) > 0:
+            cards = cvt
         await asyncio.sleep(2)
+        # show default numbers
         prize = [0, 0, 0, 0]
         desc, thumb = await self.printLoto([], winning, prize)
         await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description=desc, thumbnail=thumb, color=self.COLOR))
+        # reveal result, one by one
         title = "{}'s fortune is".format(inter.author.display_name)
         for i in range(0, len(cards)):
             tier = self.checkLotoWin(cards[:i+1][-1], winning)
@@ -441,12 +450,15 @@ class Games(commands.Cog):
     async def deal(self, inter: disnake.GuildCommandInteraction) -> None:
         """Deal a random poker hand"""
         await inter.response.defer()
+        # generate cards
         hand = []
         while len(hand) < 5:
             card = str(random.randint(2, 14)) + random.choice(["D", "S", "H", "C"])
             if card not in hand:
                 hand.append(card)
+        # default message
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="🎴, 🎴, 🎴, 🎴, 🎴", color=self.COLOR))
+        # reveal cards one by one (Use Poker view for parsing)
         for x in range(0, 5):
             await asyncio.sleep(1)
             # check result
@@ -466,6 +478,7 @@ class Games(commands.Cog):
     async def poker(self, inter: disnake.GuildCommandInteraction, max_round : int = commands.Param(description="Number of rounds to play", ge=1, le=5, default=1)) -> None:
         """Play a poker mini-game with other people (2 to 8 players)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 8, 2)
         desc = "**" + str(max_round) + "** Round(s)\nStarting in {}s\n{}/8 players"
@@ -473,6 +486,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(embed=embed, view=view)
         msg = await inter.original_message()
         await view.updateTimer(msg, embed, desc, 60)
+        # wait players
         await view.wait()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️", description="Error, at least two Players are required", color=self.COLOR))
@@ -505,12 +519,14 @@ class Games(commands.Cog):
     async def blackjack(self, inter: disnake.GuildCommandInteraction) -> None:
         """Play a blackjack mini-game with other people (1 to 8 players)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 8, 1)
         desc = "Starting in {}s\n{}/8 players"
         embed = self.bot.embed(title="♠️ Multiplayer Blackjack ♥️", description=desc.format(60, 1), color=self.COLOR)
         msg = await inter.channel.send(embed=embed, view=view)
         await view.updateTimer(msg, embed, desc, 60)
+        # wait players
         await view.wait()
         await msg.delete()
         embed = self.bot.embed(title="♠️ Multiplayer Blackjack ♥️", description="Initialization", footer="Game limited to 4 minutes", color=self.COLOR)
@@ -523,6 +539,7 @@ class Games(commands.Cog):
     async def tictactoe(self, inter: disnake.GuildCommandInteraction) -> None:
         """Play a game of Tic Tac Toe (2 players Only)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 2, 2)
         desc = "Starting in {}s\n{}/2 players"
@@ -530,6 +547,7 @@ class Games(commands.Cog):
         msg = await inter.channel.send(embed=embed, view=view)
         await view.updateTimer(msg, embed, desc, 45)
         await view.wait()
+        # wait players
         await msg.delete()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title=":x: Multiplayer Tic Tac Toe :o:", description="Error, a 2nd Player is required", color=self.COLOR))
@@ -545,6 +563,7 @@ class Games(commands.Cog):
     async def connectfour(self, inter: disnake.GuildCommandInteraction) -> None:
         """Play a game of Connect Four (2 players Only)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 2, 2)
         desc = "Starting in {}s\n{}/2 players"
@@ -552,6 +571,7 @@ class Games(commands.Cog):
         msg = await inter.channel.send(embed=embed, view=view)
         await view.updateTimer(msg, embed, desc, 45)
         await view.wait()
+        # wait players
         await msg.delete()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title=":red_circle: Multiplayer Connect Four :yellow_circle:", description="Error, a 2nd Player is required", color=self.COLOR))
@@ -567,6 +587,7 @@ class Games(commands.Cog):
     async def battleship(self, inter: disnake.GuildCommandInteraction) -> None:
         """Play a game of Battle Ship (2 players Only)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 2, 2)
         desc = "Starting in {}s\n{}/2 players"
@@ -574,6 +595,7 @@ class Games(commands.Cog):
         msg = await inter.channel.send(embed=embed, view=view)
         await view.updateTimer(msg, embed, desc, 45)
         await view.wait()
+        # wait players
         await msg.delete()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title=":ship: Multiplayer Battle Ship :cruise_ship:", description="Error, a 2nd Player is required", color=self.COLOR))
@@ -589,6 +611,7 @@ class Games(commands.Cog):
     async def rockpaperscissor(self, inter: disnake.GuildCommandInteraction, bestof : int = commands.Param(description="How many rounds to win", ge=1, le=10, default=1)) -> None:
         """Play a Rock Paper Scissor mini-game with other people (2 players Only)"""
         await inter.response.defer()
+        # creating game
         players = [inter.author]
         view = JoinGame(self.bot, players, 2, 2)
         desc = "Best of **" + str(bestof) + "**\nStarting in {}s\n{}/2 players"
@@ -596,6 +619,7 @@ class Games(commands.Cog):
         msg = await inter.channel.send(embed=embed, view=view)
         await view.updateTimer(msg, embed, desc, 45)
         await view.wait()
+        # wait players
         await msg.delete()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title="🪨 Multiplayer Rock Paper Scissor ✂️", description="Error, a 2nd Player is required", color=self.COLOR))
@@ -624,17 +648,23 @@ class Games(commands.Cog):
         """Roll some dies"""
         try:
             await inter.response.defer()
+            # parse dice
             tmp = dice_string.lower().split('d')
-            n = int(tmp[0])
-            d = int(tmp[1])
-            if n <= 0 or n> 10 or d < 6 or d > 100: raise Exception()
+            n = int(tmp[0]) # number of dice
+            d = int(tmp[1]) # dice strength
+            # check limits
+            if n <= 0 or n> 10 or d < 6 or d > 100:
+                raise Exception()
+            # roll and reveal, one by one
             rolls = []
             for i in range(n):
+                # add roll
                 rolls.append(random.randint(1, d))
                 msgs = []
                 for j in range(len(rolls)):
                     msgs.append("{}".format(rolls[j]))
                 msgs = ["### ", ", ".join(msgs)]
+                # print message
                 if len(rolls) == n:
                     msgs.append("\n**Total**: {:}, **Average**: {:}, **Percentile**: {:.1f}%".format(sum(rolls), round(sum(rolls)/len(rolls)), sum(rolls) * 100 / (n * d)).replace('.0%', '%'))
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} rolled {}...".format(inter.author.display_name, dice_string), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
@@ -647,7 +677,7 @@ class Games(commands.Cog):
     async def coin(self, inter: disnake.GuildCommandInteraction) -> None:
         """Flip a coin"""
         await inter.response.defer()
-        coin = random.randint(0, 1)
+        coin = random.randint(0, 1) # roll 0 or 1
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} flipped a coin...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=(":coin: It landed on **Head**" if (coin == 0) else ":coin: It landed on **Tail**"), color=self.COLOR))
         await self.bot.util.clean(inter, 45)
 
@@ -655,10 +685,11 @@ class Games(commands.Cog):
     async def quota(self, inter: disnake.GuildCommandInteraction) -> None:
         """Give you your GW quota for the day"""
         await inter.response.defer()
-        h = random.randint(2000, 10000)
-        m = random.randint(300, 800)
-        c = random.randint(1, 100)
+        h = random.randint(2000, 20000) # honor roll
+        m = random.randint(400, 1200) # meat roll
+        c = random.randint(1, 100) # rng roll
 
+        # process rng roll
         if c < 4:
             c = random.randint(1, 110)
             if c <= 3:
@@ -673,7 +704,7 @@ class Games(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="{} {}'s daily quota".format(self.bot.emote.get('gw'), inter.author.display_name), description="You got a **Free Leech Pass** 👍\nCongratulations!!!", thumbnail=inter.author.display_avatar, color=self.COLOR))
             await self.bot.util.clean(inter, 40)
             return
-        elif c == 4:
+        elif c == 4: # below are extra random multipliers
             h = h * random.randint(50, 80)
             m = m * random.randint(50, 80)
         elif c <= 7:
@@ -691,14 +722,15 @@ class Games(commands.Cog):
         elif c <= 14:
             h = h // random.randint(3, 6)
             m = m // random.randint(3, 6)
-        h = h * 100000
-        m = m * 10
+        h = h * 100000 # x100k
+        m = m * 10 # x10
 
         await inter.edit_original_message(embed=self.bot.embed(title="{} {}'s daily quota".format(self.bot.emote.get('gw'), inter.author.display_name), description="**Honor:** {:,}\n**Meat:** {:,}".format(h, m), thumbnail=inter.author.display_avatar, color=self.COLOR))
         await self.bot.util.clean(inter, 40)
 
     """randint()
-    Generate a simple pseudo random number based on the seed value
+    Generate a simple pseudo random number based on a seed value.
+    Used by character().
     
     Parameters
     ----------
@@ -715,7 +747,7 @@ class Games(commands.Cog):
     async def character(self, inter: disnake.GuildCommandInteraction) -> None:
         """Generate a random GBF character"""
         await inter.response.defer()
-        seed = (inter.author.id + int(self.bot.util.UTC().timestamp()) // 86400) # based on user id + day
+        seed = (inter.author.id + int(self.bot.util.UTC().timestamp()) // 86400) # create seed based on user id + day
         values = {
             'Rarity' : [['SSR', 'SR', 'R'], 3, True, None], # random strings, modulo to use, bool to use emote.get, seed needed to enable
             'Race' : [['Human', 'Erune', 'Draph', 'Harvin', 'Primal', 'Other'], 6, False, None],
@@ -725,6 +757,7 @@ class Games(commands.Cog):
         }
         msgs = []
         rarity_mod = 0
+        # roll for each values
         for k in values:
             v = seed % values[k][1]
             if k == "Rarity": rarity_mod = 7 - 2 * v
@@ -763,9 +796,11 @@ class Games(commands.Cog):
         """Ask me to pick a choice"""
         try:
             await inter.response.defer()
+            # parse choices
             possible = choices.split(";")
             while '' in possible:
                 possible.remove('')
+            # 2 are required at the minimum
             if len(possible) < 2: raise Exception()
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s choice".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Possible choices: `{}`\n### I pick: `{}`".format('` `'.join(possible), random.choice(possible)), color=self.COLOR))
         except:
