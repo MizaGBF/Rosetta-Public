@@ -648,14 +648,17 @@ class GranblueFantasy(commands.Cog):
             match len(dates):
                 case 1:
                     start = datetime.utcfromtimestamp(dates[0])
+                    diff = c - start
                     if c < start:
                         events[dates[0]].append("- {} ▫️ {}\n".format(event, self.bot.util.time(start, style=['d'])))
                         if next is None or start < next[0]:
                             next = [start, event]
-                    elif c - start > timedelta(days=3): # don't display
+                    elif diff > timedelta(days=1): # show as ended
+                        events[dates[0]].append("- ~~{}~~\n".format(event))
+                    elif diff > timedelta(days=3): # don't display
                         continue
-                    else:
-                        events[dates[0]].append("- **{}** ▫️ **On going**\n".format(event))
+                    else: # on going/happened
+                        events[dates[0]].append("- **{}**\n".format(event))
                 case 2:
                     start = datetime.utcfromtimestamp(dates[0])
                     end = datetime.utcfromtimestamp(dates[1])
