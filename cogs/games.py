@@ -24,26 +24,17 @@ class Games(commands.Cog):
     """Granblue-themed (or not) Games and more."""
     COLOR = 0xeb6b34
     SCRATCHER_LOOT = {
-        100 : ['Siero Ticket'],
-        300 : ['Sunlight Stone', 'Gold Brick'],
-        450 : ['Damascus Ingot'],
-        600 : ['Agni', 'Varuna', 'Titan', 'Zephyrus', 'Zeus', 'Hades', 'Shiva', 'Europa', 'Godsworn Alexiel', 'Grimnir', 'Lucifer', 'Bahamut', 'Michael', 'Gabriel', 'Uriel', 'Raphael', 'Metatron', 'Sariel', 'Belial'],
-        400 : ['Murgleis', 'Benedia', 'Gambanteinn', 'Love Eternal', 'AK-4A', 'Reunion', 'Ichigo-Hitofuri', 'Taisai Spirit Bow', 'Unheil', 'Sky Ace', 'Ivory Ark', 'Blutgang', 'Eden', 'Parazonium', 'Ixaba', 'Blue Sphere', 'Certificus', 'Fallen Sword', 'Mirror-Blade Shard', 'Galilei\'s Insight', 'Purifying Thunderbolt', 'Vortex of the Void', 'Sacred Standard', 'Bab-el-Mandeb', 'Cute Ribbon', 'Kerak', 'Sunya', 'Fist of Destruction', 'Yahata\'s Naginata', 'Cerastes', 'World Ender', 'Ouroboros Prime'],
-        8000 : ['Crystals x3000', 'Damascus Crystal', 'Intricacy Ring', 'Gold Moon x2', 'Brimston Earrings', 'Permafrost Earrings', 'Brickearth Earrings', 'Jetstream Earrings', 'Sunbeam Earrings', 'Nightshade Earrings'],
-        11250 : ['Gold Spellbook', 'Moonlight Stone', 'Ultima Unit x3', 'Silver Centrum x5', 'Primeval Horn x3', 'Horn of Bahamut x4', 'Legendary Merit x5', 'Steel Brick'],
-        22000: ['Lineage Ring x2', 'Coronation Ring x3', 'Silver Moon x5', 'Bronze Moon x10'],
-        33000: ['Elixir x100', 'Soul Berry x300']
+        100 : [('Siero Ticket', 'item/article/s/30041.jpg')],
+        1000 : [('Sunlight Stone', 'item/evolution/s/20014.jpg'), ('Gold Brick', 'item/evolution/s/20004.jpg'), ('Damascus Ingot', 'item/evolution/s/20005.jpg')],
+        24000 : [('Murgleis', 'weapon/s/1040004600.jpg'), ('Benedia', 'weapon/s/1040502500.jpg'), ('Gambanteinn', 'weapon/s/1040404300.jpg'), ('Love Eternal', 'weapon/s/1040105400.jpg'), ('AK-4A', 'weapon/s/1040004600.jpg'), ('Reunion', 'weapon/s/1040108200.jpg'), ('Ichigo-Hitofuri', 'weapon/s/1040910000.jpg'), ('Taisai Spirit Bow', 'weapon/s/1040708700.jpg'), ('Unheil', 'weapon/s/1040809100.jpg'), ('Sky Ace', 'weapon/s/1040911500.jpg'), ('Ivory Ark', 'weapon/s/1040112500.jpg'), ('Blutgang', 'weapon/s/1040008700.jpg'), ('Eden', 'weapon/s/1040207000.jpg'), ('Parazonium', 'weapon/s/1040108700.jpg'), ('Ixaba', 'weapon/s/1040906400.jpg'), ('Blue Sphere', 'weapon/s/1040410000.jpg'), ('Certificus', 'weapon/s/1040309000.jpg'), ('Fallen Sword', 'weapon/s/1040014300.jpg'), ('Mirror-Blade Shard', 'weapon/s/1040110600.jpg'), ('Galilei\'s Insight', 'weapon/s/1040211600.jpg'), ('Purifying Thunderbolt', 'weapon/s/1040709000.jpg'), ('Vortex of the Void', 'weapon/s/1040212700.jpg'), ('Sacred Standard', 'weapon/s/1040213400.jpg'), ('Bab-el-Mandeb', 'weapon/s/1040004600.jpg'), ('Cute Ribbon', 'weapon/s/1040605900.jpg'), ('Kerak', 'weapon/s/1040812000.jpg'), ('Sunya', 'weapon/s/1040811800.jpg'), ('Fist of Destruction', 'weapon/s/1040612700.jpg'), ('Yahata\'s Naginata', 'weapon/s/1040312900.jpg'), ('Cerastes', 'weapon/s/1040215300.jpg'), ('World Ender', 'weapon/s/1040020900.jpg'), ('Ouroboros Prime', 'weapon/s/1040418600.jpg'), ('Evanescence', 'weapon/s/1040022000.jpg'), ('Knight of Ice', 'weapon/s/1040115600.jpg'), ('Atlantis', 'weapon/s/1040115600.jpg'), ('Skeletal Eclipse', 'weapon/s/1040216900.jpg'), ('Pain and Suffering', 'weapon/s/1040314300.jpg'), ('Radiant Rinne', 'weapon/s/1040813700.jpg'), ('Lord of Flames', 'weapon/s/1040023700.jpg'), ('Claíomh Solais Díon', 'weapon/s/1040024200.jpg'), ('Firestorm Scythe', 'weapon/s/1040314900.jpg'), ('Calamitous Aquashade', 'weapon/s/1040315500.jpg'), ('Crimson Scale', 'weapon/s/1040315900.jpg'), ('Landslide Scepter', 'weapon/s/1040420500.jpg'), ('Harmonia', 'weapon/s/1040814500.jpg'), ('Eternal Signature', 'weapon/s/1040116600.jpg'), ('Piercing Galewing', 'weapon/s/1040116800.jpg'), ('Kaguya\'s Folding Fan', 'weapon/s/1040117200.jpg'), ('Gospel Of Water And Sky', 'weapon/s/1040117800.jpg'), ('Overrider', 'weapon/s/1040218900.jpg'), ('Imperious Fury', 'weapon/s/1040617300.jpg'), ('Pillardriver', 'weapon/s/1040618200.jpg'), ('Diaitesia', 'weapon/s/1040815700.jpg'), ('Efes', 'weapon/s/1040025900.jpg'), ('Swan', 'weapon/s/1040318400.jpg'), ('Phoenix\'s Torch', 'weapon/s/1040422700.jpg'), ('Causality Driver', 'weapon/s/1040916700.jpg'), ('Bloodwrought Coral', 'weapon/s/1040916800.jpg'), ('Agni', 'summon/s/2040094000.jpg'), ('Varuna', 'summon/s/2040100000.jpg'), ('Titan', 'summon/s/2040084000.jpg'), ('Zephyrus', 'summon/s/2040098000.jpg'), ('Zeus', 'summon/s/2040080000.jpg'), ('Hades', 'summon/s/2040090000.jpg'), ('Shiva', 'summon/s/2040185000.jpg'), ('Europa', 'summon/s/2040225000.jpg'), ('Godsworn Alexiel', 'summon/s/2040205000.jpg'), ('Grimnir', 'summon/s/2040261000.jpg'), ('Lucifer', 'summon/s/2040056000.jpg'), ('Bahamut', 'summon/s/2040030000.jpg'), ('Michael', 'summon/s/2040306000.jpg'), ('Gabriel', 'summon/s/2040311000.jpg'), ('Uriel', 'summon/s/2040203000.jpg'), ('Raphael', 'summon/s/2040202000.jpg'), ('Metatron', 'summon/s/2040330000.jpg'), ('Sariel', 'summon/s/2040327000.jpg'), ('Belial', 'summon/s/2040347000.jpg'), ('Beelzebub', 'summon/s/2040408000.jpg'), ('Yatima', 'summon/s/2040417000.jpg'), ('Triple Zero', 'summon/s/2040425000.jpg')],
+        80000 : [('Crystals x3000', 'item/normal/s/gem.jpg'), ('Damascus Crystal', 'item/article/s/203.jpg'), ('Intricacy Ring', 'item/npcaugment/s/3.jpg'), ('Gold Moon x2', 'item/article/s/30033.jpg'), ('Brimston Earrings', 'item/npcaugment/s/11.jpg'), ('Permafrost Earrings', 'item/npcaugment/s/12.jpg'), ('Brickearth Earrings', 'item/npcaugment/s/13.jpg'), ('Jetstream Earrings', 'item/npcaugment/s/14.jpg'), ('Sunbeam Earrings', 'item/npcaugment/s/15.jpg'), ('Nightshade Earrings', 'item/npcaugment/s/16.jpg')],
+        90000 : [('Gold Spellbook', 'item/evolution/s/20403.jpg'), ('Moonlight Stone', 'item/evolution/s/20013.jpg'), ('Ultima Unit x3', 'item/article/s/138.jpg'), ('Silver Centrum x5', 'item/article/s/107.jpg'), ('Primeval Horn x3', 'item/article/s/79.jpg'), ('Horn of Bahamut x4', 'item/article/s/59.jpg'), ('Legendary Merit x5', 'item/article/s/2003.jpg'), ('Steel Brick', 'item/evolution/s/20003.jpg')],
+        85000 : [('Lineage Ring x2', 'item/npcaugment/s/2.jpg'), ('Coronation Ring x3', 'item/npcaugment/s/1.jpg'), ('Silver Moon x5', 'item/article/s/30032.jpg'), ('Bronze Moon x10', 'item/article/s/30031.jpg')],
+        70000: [('Elixir x100', 'item/normal/s/2.jpg'), ('Soul Berry x300', 'item/normal/s/5.jpg')]
     }
-    SCRATCHER_THUMBNAIL = {
-        'Siero Ticket':'item/article/s/30041.jpg', 'Sunlight Stone':'item/evolution/s/20014.jpg', 'Gold Brick':'item/evolution/s/20004.jpg', 'Damascus Ingot':'item/evolution/s/20005.jpg','Agni':'summon/s/2040094000.jpg', 'Varuna':'summon/s/2040100000.jpg', 'Titan':'summon/s/2040084000.jpg', 'Zephyrus':'summon/s/2040098000.jpg', 'Zeus':'summon/s/2040080000.jpg', 'Hades':'summon/s/2040090000.jpg', 'Shiva':'summon/s/2040185000.jpg', 'Europa':'summon/s/2040225000.jpg', 'Godsworn Alexiel':'summon/s/2040205000.jpg', 'Grimnir':'summon/s/2040261000.jpg', 'Lucifer':'summon/s/2040056000.jpg', 'Bahamut':'summon/s/2040030000.jpg', 'Michael':'summon/s/2040306000.jpg', 'Gabriel':'summon/s/2040311000.jpg', 'Uriel':'summon/s/2040203000.jpg', 'Raphael':'summon/s/2040202000.jpg', 'Metatron':'summon/s/2040330000.jpg', 'Sariel':'summon/s/2040327000.jpg', 'Belial':'summon/s/2040347000.jpg', 'Murgleis':'weapon/s/1040004600.jpg', 'Benedia':'weapon/s/1040502500.jpg',  'Gambanteinn':'weapon/s/1040404300.jpg',  'Love Eternal':'weapon/s/1040105400.jpg',  'AK-4A':'weapon/s/1040004600.jpg',  'Reunion':'weapon/s/1040108200.jpg',  'Ichigo-Hitofuri':'weapon/s/1040910000.jpg',  'Taisai Spirit Bow':'weapon/s/1040708700.jpg',  'Unheil':'weapon/s/1040809100.jpg',  'Sky Ace':'weapon/s/1040911500.jpg',  'Ivory Ark':'weapon/s/1040112500.jpg',  'Blutgang':'weapon/s/1040008700.jpg',  'Eden':'weapon/s/1040207000.jpg',  'Parazonium':'weapon/s/1040108700.jpg',  'Ixaba':'weapon/s/1040906400.jpg',  'Blue Sphere':'weapon/s/1040410000.jpg',  'Certificus':'weapon/s/1040309000.jpg',  'Fallen Sword':'weapon/s/1040014300.jpg',  'Mirror-Blade Shard':'weapon/s/1040110600.jpg',  'Galilei\'s Insight':'weapon/s/1040211600.jpg',  'Purifying Thunderbolt':'weapon/s/1040709000.jpg',  'Vortex of the Void':'weapon/s/1040212700.jpg',  'Sacred Standard':'weapon/s/1040213400.jpg',  'Bab-el-Mandeb':'weapon/s/1040004600.jpg',  'Cute Ribbon':'weapon/s/1040605900.jpg',  'Kerak':'weapon/s/1040812000.jpg',  'Sunya':'weapon/s/1040811800.jpg',  'Fist of Destruction':'weapon/s/1040612700.jpg',  'Yahata\'s Naginata':'weapon/s/1040312900.jpg',  'Cerastes':'weapon/s/1040215300.jpg',  'World Ender':'weapon/s/1040020900.jpg',  'Ouroboros Prime':'weapon/s/1040418600.jpg', 'Crystals x3000':'item/normal/s/gem.jpg', 'Damascus Crystal':'item/article/s/203.jpg', 'Intricacy Ring':'item/npcaugment/s/3.jpg', 'Gold Spellbook':'item/evolution/s/20403.jpg', 'Moonlight Stone':'item/evolution/s/20013.jpg', 'Gold Moon x2':'item/article/s/30033.jpg', 'Ultima Unit x3':'item/article/s/138.jpg', 'Silver Centrum x5':'item/article/s/107.jpg', 'Primeval Horn x3':'item/article/s/79.jpg', 'Horn of Bahamut x4':'item/article/s/59.jpg', 'Legendary Merit x5':'item/article/s/2003.jpg', 'Steel Brick':'item/evolution/s/20003.jpg', 'Brimston Earrings':'item/npcaugment/s/11.jpg', 'Permafrost Earrings':'item/npcaugment/s/12.jpg', 'Brickearth Earrings':'item/npcaugment/s/13.jpg', 'Jetstream Earrings':'item/npcaugment/s/14.jpg', 'Sunbeam Earrings':'item/npcaugment/s/15.jpg', 'Nightshade Earrings':'item/npcaugment/s/16.jpg', 'Lineage Ring x2':'item/npcaugment/s/2.jpg', 'Coronation Ring x3':'item/npcaugment/s/1.jpg', 'Silver Moon x5':'item/article/s/30032.jpg', 'Bronze Moon x10':'item/article/s/30031.jpg', 'Elixir x100':'item/normal/s/2.jpg', 'Soul Berry x300':'item/normal/s/5.jpg'
-    }
-    SCRATCHER_TOTAL = 0
-    SCRATCHER_TOTAL_RARE1 = 0
-    SCRATCHER_TOTAL_RARE2 = 0
-    for r in SCRATCHER_LOOT:
-        SCRATCHER_TOTAL += r * len(SCRATCHER_LOOT[r])
-        if SCRATCHER_LOOT[r][0] == 'Murgleis': SCRATCHER_TOTAL_RARE1 = SCRATCHER_TOTAL
-        if SCRATCHER_LOOT[r][0] == 'Crystals x3000': SCRATCHER_TOTAL_RARE2 = SCRATCHER_TOTAL
+    SCRATCHER_TOTAL = sum([r for r in SCRATCHER_LOOT]) # sum of all rates
+    SCRATCHER_THRESHOLD_GRAND = 100+1000+24000 # rarity threshold of super rare items (Murgleis or rarer)
+    SCRATCHER_THRESHOLD_GOOD = SCRATCHER_THRESHOLD_GRAND+80000 # rarity threshold of rare items (Crystals or rarer)
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -169,45 +160,54 @@ class Games(commands.Cog):
         await inter.response.defer()
         ct = self.bot.util.JST()
         # settings
+        # these settings are here to set a period, during which, the scratcher loot is boosted, to emulate what was done in march 2021
         fixedS = ct.replace(year=2021, month=3, day=29, hour=19, minute=0, second=0, microsecond=0) # beginning of good scratcher
         fixedE = fixedS.replace(day=31, hour=19) # end of good scratcher
         enableBetterDuringPeriod = True
-        betterScratcher = False # if true, only good results possible
+        betterScratcher = False # if true, only good results possible (set to True below if the some conditions are fulfilled)
         # settings end
-        footer = ""
+        
+        # check for better scratcher loot
         if enableBetterDuringPeriod and ct >= fixedS and ct < fixedE:
+            betterScratcher = True
+        if random.randint(1, 100) <= 10: # to simulate the rare scratcher card thing, currently 10%
             betterScratcher = True
 
         # scratcher generation
-        if random.randint(1, 100) <= 10:
-            betterScratcher = True # to simulate the rare scratcher card thing, currently 10%
-        if footer == "" and betterScratcher: footer = "Rare card"
+        footer = "Rare card" if betterScratcher else ""
         selected = {}
-        nloot = random.randint(4, 5)
+        nloot = random.randint(4, 5) # number of different items (4 or 5)
         while len(selected) < nloot:
-            n = self.SCRATCHER_TOTAL
+            # dice roll
             if betterScratcher:
-                while n > self.SCRATCHER_TOTAL_RARE2: # force a rare, according to settings
-                    n = random.randint(1, self.SCRATCHER_TOTAL)
-            elif len(selected) == 1:
-                while n > self.SCRATCHER_TOTAL_RARE1: # force a rare, for the salt
-                    n = random.randint(1, self.SCRATCHER_TOTAL)
+                n = random.randint(1, self.SCRATCHER_THRESHOLD_GOOD) - 1
+            elif len(selected) == 1: # Force a rare item in the list, for extra salt
+                n = random.randint(1, self.SCRATCHER_THRESHOLD_GRAND) - 1
             else:
-                n = random.randint(1, self.SCRATCHER_TOTAL)
-            c = 0
-            found = False
-            for r in self.SCRATCHER_LOOT:
-                for item in self.SCRATCHER_LOOT[r]:
-                    if n <= c:
-                        if item in selected:
-                            n += r
-                        else:
-                            selected[item] = 0
-                            found = True
+                n = random.randint(1, self.SCRATCHER_TOTAL) - 1
+            # search corresponding loot category
+            for k in self.SCRATCHER_LOOT:
+                if n >= k:
+                    n -= k
+                else:
+                    n = k
+                    break
+            # validate
+            can_continue = False
+            if len(self.SCRATCHER_LOOT[n]) < nloot: # check if category has enough remaining items
+                for item in self.SCRATCHER_LOOT[n]:
+                    if item not in selected:
+                        can_continue = True
                         break
-                    else:
-                        c += r
-                if found: break
+            else:
+                can_continue = True
+            if not can_continue:
+                continue
+            # roll items
+            item = random.choice(self.SCRATCHER_LOOT[n])
+            while item in selected:
+                item = random.choice(self.SCRATCHER_LOOT[n])
+            selected[item] = 0
         
         # build the scratch grid
         grid = []
@@ -237,7 +237,7 @@ class Games(commands.Cog):
                 break
             await asyncio.sleep(0)
 
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is scratching...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Click to play the game", footer=footer, color=self.COLOR), view=Scratcher(self.bot, inter.author.id, grid, self.SCRATCHER_THUMBNAIL, self.COLOR, footer))
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is scratching...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Click to play the game", footer=footer, color=self.COLOR), view=Scratcher(self.bot, inter.author.id, grid, self.COLOR, footer))
         await self.bot.util.clean(inter, 45)
 
     @game.sub_command()

@@ -37,6 +37,7 @@ class DiscordBot(commands.InteractionBot):
         "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
         "**v11.11.2** - Reworked `/gbf schedule`. Added command mentions to it and to `/gbf info`.",
         "**v12.0.0** - Removed: Unused commands/cogs, the vxtwitter feature.",
+        "**v12.0.0** - Updated: New items in `/game scratch`.",
     ]
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
