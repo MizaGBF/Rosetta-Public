@@ -25,6 +25,7 @@ class Moderation(commands.Cog):
     """
     _serverinfo()
     Called by Server Info and /mod server info
+    List the server infos and settings
     
     Parameters
     ----------
@@ -37,6 +38,7 @@ class Moderation(commands.Cog):
         try: icon = guild.icon.url
         except: icon = None
         owner = await self.bot.get_or_fetch_user(guild.owner_id)
+        # server infos
         msgs = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
         if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
         if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
@@ -51,6 +53,7 @@ class Moderation(commands.Cog):
         if len(guild.scheduled_events) > 0: msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
         if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
         if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")
+        # rosetta settings
         rosetta = []
         gid = str(guild.id)
         if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
@@ -61,11 +64,11 @@ class Moderation(commands.Cog):
         if gid in self.bot.data.save['announcement']: rosetta.append(":new: **Announcements** enabled\n")
         elif is_mod: rosetta.append(":warning: **Announcements** disabled\n")
         if gid in self.bot.data.save['assignablerole']: rosetta.append(":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys())))
+        # append rosetta setting messages if any
         if len(rosetta) > 0:
             msgs.append("\n**Rosetta Settings**\n")
             msgs += rosetta
         await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description="".join(msgs), thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
-
 
     @commands.message_command(name="Server Info")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -106,10 +109,10 @@ class Moderation(commands.Cog):
     """
     async def _seeCleanupSetting(self, inter: disnake.GuildCommandInteraction) -> None:
         gid = str(inter.guild.id)
-        if gid in self.bot.data.save['permitted'] and len(self.bot.data.save['permitted'][gid]) > 0:
+        if gid in self.bot.data.save['permitted'] and len(self.bot.data.save['permitted'][gid]) > 0: # check if guild has autocleanup setup for any channel
             msgs = []
-            for c in inter.guild.channels:
-                if c.id in self.bot.data.save['permitted'][gid]:
+            for c in inter.guild.channels: # for each channel
+                if c.id in self.bot.data.save['permitted'][gid]: # add to list
                     try:
                         msgs.append(c.name)
                     except:
@@ -123,19 +126,20 @@ class Moderation(commands.Cog):
         """Toggle the auto-cleanup in this channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         gid = str(inter.guild.id)
-        if not isinstance(inter.channel, disnake.TextChannel):
+        if not isinstance(inter.channel, disnake.TextChannel): # only valid for text channels
             await inter.edit_original_message(embed=self.bot.embed(title="This command is only usable in text channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
             return
-        cid = inter.channel.id
+        cid = inter.channel.id # get id
         if gid not in self.bot.data.save['permitted']:
             self.bot.data.save['permitted'][gid] = []
         for i, v in enumerate(self.bot.data.save['permitted'][gid]):
-            if v == cid:
-                self.bot.data.save['permitted'][gid].pop(i)
+            if v == cid: # if channel id already present
+                self.bot.data.save['permitted'][gid].pop(i) # we remove (disable)
                 self.bot.data.pending = True
                 await self._seeCleanupSetting(inter)
                 return
-        self.bot.data.save['permitted'][gid].append(cid)
+        # if channel id hasn't been found
+        self.bot.data.save['permitted'][gid].append(cid) # we add (enable)
         self.bot.data.pending = True
         await self._seeCleanupSetting(inter)
 
@@ -144,7 +148,7 @@ class Moderation(commands.Cog):
         """Reset the auto-cleanup settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         gid = str(inter.guild.id)
-        if gid in self.bot.data.save['permitted']:
+        if gid in self.bot.data.save['permitted']: # simply clear guild autocleanup data
             self.bot.data.save['permitted'].pop(gid)
             self.bot.data.pending = True
             await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is disabled in all channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
@@ -178,18 +182,18 @@ class Moderation(commands.Cog):
     async def toggle_channel(self, inter: disnake.GuildCommandInteraction) -> None:
         """Enable/Disable game announcements in the specified channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        if not isinstance(inter.channel, disnake.TextChannel) and not isinstance(inter.channel, disnake.NewsChannel) and not isinstance(inter.channel, disnake.threads.Thread) and not isinstance(inter.channel, disnake.ForumChannel):
-            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="This command is only usable in text channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+        if not isinstance(inter.channel, disnake.TextChannel) and not isinstance(inter.channel, disnake.NewsChannel) and not isinstance(inter.channel, disnake.threads.Thread) and not isinstance(inter.channel, disnake.ForumChannel): # check channel type
+            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="This command is only usable in text channels or equivalents", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
             return
         cid = inter.channel.id
         gid = str(inter.guild.id)
         b = True
-        if self.bot.data.save['announcement'].get(gid, [-1, False])[0] == cid: # channel, auto_publish
+        if self.bot.data.save['announcement'].get(gid, [-1, False])[0] == cid: # index 0 is the channel id.
             b = False
-            self.bot.data.save['announcement'].pop(gid)
+            self.bot.data.save['announcement'].pop(gid) # simply remove to disable
         else:
-            self.bot.data.save['announcement'][gid] = [cid, True, False, False]
-        self.bot.channel.update_announcement_channels()
+            self.bot.data.save['announcement'][gid] = [cid, True] # else we enable by initializing new data
+        self.bot.channel.update_announcement_channels() # update bot announcement channel list
         self.bot.data.pending = True
         if b:
             await self._announcement_see(inter, "Announcement enabled and channel updated", self.bot.data.save['announcement'][gid])
@@ -204,7 +208,7 @@ class Moderation(commands.Cog):
         if gid not in self.bot.data.save['announcement']:
             await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="Announcements aren't enabled on this server.\nCheck out {}".format(self.bot.util.command2mention('mod announcement toggle_channel')), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
         else:
-            self.bot.data.save['announcement'][gid][1] = (value != 0)
+            self.bot.data.save['announcement'][gid][1] = (value != 0) # index 1 is the publish flag. We simply flip it.
             self.bot.data.pending = True
             self.bot.channel.update_announcement_channels()
             await self._announcement_see(inter, "Auto Publish setting updated", self.bot.data.save['announcement'][gid])
@@ -248,6 +252,7 @@ class Moderation(commands.Cog):
         """Toggle pinboard tracking for the current text or forum channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.pinboard.initialize(str(inter.guild.id))
+        # check for different channel types (some aren't supported)
         if isinstance(inter.channel, disnake.TextChannel):
             r = self.bot.pinboard.track_toggle(str(inter.guild.id), int(inter.channel.id))
             await self.bot.pinboard.display(inter, self.COLOR, "This channel is now tracked" if r is True else "This channel isn't tracked anymore")
@@ -280,6 +285,7 @@ class Moderation(commands.Cog):
         self.bot.pinboard.initialize(str(inter.guild.id))
         updated = False
         emoji = emoji.strip()
+        # process parameters and set accordingly
         if self.bot.emote.isValid(emoji):
             self.bot.pinboard.set(str(inter.guild.id), emoji=emoji)
             updated = True
