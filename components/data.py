@@ -328,10 +328,10 @@ class Data():
                 target_time += timedelta(days=1) # move target_time to next day
                 self.bot.logger.push("[TASK] 'data:maintenance': Daily cleanup started", send_to_discord=False)
                 
-                # empty crew cache
+                # empty GW crew cache
                 if not first_loop:
                     try:
-                        self.bot.get_cog('GuildWar').crewcache = {}
+                        self.bot.get_cog('GuildWar').clearCrewCache()
                     except Exception as xe:
                         self.bot.logger.pushError("[TASK] 'data:maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
