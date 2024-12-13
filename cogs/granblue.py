@@ -1196,38 +1196,82 @@ class GranblueFantasy(commands.Cog):
                 pass
         return grand_list
 
+    async def retrieve_wiki_wait_intervals(self) -> dict:
+        # targeted pages
+        targets = [
+            ("Main_Quest", "MainStoryRelease", None, {}, None), # page, template name, split string, substitutes, tuple containing extra regex to detect extra duration
+            ("Category:Campaign", "WaitInterval", None, {0:"Campaign"}, "\\|duration=([0-9]+)\\|duration2=([0-9]+)"),
+            ("Surprise_Special_Draw_Set", "WaitInterval", None, {}, None),
+            ("Damascus_Ingot", "WaitInterval", None, {}, None),
+            ("Gold_Brick", "WaitInterval", None, {0:"ROTB Gold Brick"}, None),
+            ("Sunlight_Stone", "WaitInterval", "Arcarum Shop", {0:"Sunlight Shard Sunlight Stone", 1:"Arcarum Sunlight Stone"}, None),
+            ("Sephira_Evolite", "WaitInterval", None, {0:"Arcarum Sephira Evolite"}, None)
+        ]
+        result = {}
+        # loop over target
+        for t in targets: # t is short for target
+            await asyncio.sleep(0.2)
+            # make a wiki API request for the page
+            content = await self.bot.net.requestWiki("api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&format=json".format(t[0]))
+            if content is None: # return if error
+                continue
+            page_is_done = False # this flag is used to break out of loops
+            # loop over pages...
+            for p, data in content["query"]["pages"].items():
+                for rev in data["revisions"]: # ... and revisions
+                    # 3rd element from target lets you split the page in parts. Only used for sunlight stones, as it got 2 wait intervals
+                    if t[2] is None:
+                        codes = [rev["slots"]["main"]["*"]]
+                    else:
+                        codes = rev["slots"]["main"]["*"].split(t[2])
+                    # iterate over these parts
+                    for i, code in enumerate(codes):
+                        # 5th element from target is to extend the regex to detect event durations. Only used by campaigns.
+                        if t[4] is None:
+                            matches = re.findall("{{" + t[1] + "\\|(\\d{4}-\\d{2}-\\d{2})", code)
+                        else:
+                            matches = re.findall("{{" + t[1] + "\\|(\\d{4}-\\d{2}-\\d{2})" + t[4], code) # add the extra regex
+                        highest = None
+                        for date in matches:
+                            if t[4] is None:
+                                d = datetime.strptime(date, "%Y-%m-%d")
+                            else: # extended regex
+                                d = datetime.strptime(date[0], "%Y-%m-%d")
+                                duration = 0
+                                for j in range(1, len(date)): # iterate over extra groups
+                                    if date[j] != "0": # Note: we're expected to find numbers only
+                                        duration = max(duration, int(date[j]))
+                                d += timedelta(days=duration) # add to date
+                            # check if our date is the highest, i.e. closest to us
+                            if highest is None or d > highest:
+                                highest = d
+                        if highest is not None:
+                            # 4th element from target is to set the string to be displayed
+                            result[t[3].get(i, data['title'])] = (highest.replace(hour=12), t[0]) # tuple containing time and page url
+                            # Note: set to 12 am JST as reference, even if it's not always the case
+                        page_is_done = True # done, raise the flag
+                    if page_is_done: break
+                if page_is_done: break
+        return result
+
     @check.sub_command()
     async def doom(self, inter: disnake.GuildCommandInteraction) -> None:
         """Give the time elapsed of various GBF related releases"""
         await inter.response.defer()
         msgs = []
-        # really ugly and inefficient but we check over many wiki pages to collect details for various campaigns, releases, etc...
-        wiki_checks = ["Main_Quests", "Category:Campaign", "Surprise_Special_Draw_Set", "Damascus_Ingot", "Gold_Brick", "Sunlight_Stone", "Sephira_Evolite"]
-        # and here's are the possible regexes to extract the values we're looking for
-        regexs = ["Time since last release\\s*<\/th><\/tr>\\s*<tr>\\s*<td colspan=\"3\" style=\"text-align: center;\">(\\d+ days)", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(-\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td>Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last", "<td>(\\d+ days)<\\/td>\\s*<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td style=\"text-align: left;\">Time since last ", "<td style=\"text-align: center;\">\\?\\?\\?<\\/td>\\s*<td>(\\d+ days)<\\/td>\\s*"]
-        for w in wiki_checks:
-            t = await self.bot.net.requestWiki(w, allow_redirects=True)
-            await asyncio.sleep(0.2) # to slow down the request a tiny bit
-            if t is None:
-                break
-            try: t = t.decode('utf-8')
-            except: t = t.decode('iso-8859-1')
-            for r in regexs:
-                if w == "Sunlight_Stone": # exception for this page
-                    ms = re.findall(r, t)
-                    for i, m in enumerate(ms):
-                        if i == 0: msgs.append("**{}** since the last [Sunlight Shard Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m))
-                        elif i == 1: msgs.append("**{}** since the last [Arcarum Sunlight Stone](https://gbf.wiki/Sunlight_Stone)\n".format(m))
-                    if len(ms) > 0:
-                        break
-                else:
-                    m = re.search(r, t)
-                    if m:
-                        msgs.append("**{}** since the last [{}](https://gbf.wiki/{})\n".format(m.group(1), w.replace("_", " ").replace("Category:", "").replace('Sunlight', 'Arcarum Sunlight').replace('Sephira', 'Arcarum Sephira').replace('Gold', 'ROTB Gold'), w))
-                        break
+        c = self.bot.util.JST() # current time
+        
+        # Various releases
+        for k, v in (await self.retrieve_wiki_wait_intervals()).items():
+            msgs.append("**")
+            msgs.append(str((c - v[0]).days))
+            msgs.append("** since the last [")
+            msgs.append(k)
+            msgs.append("](https://gbf.wiki/")
+            msgs.append(v[1])
+            msgs.append(")\n")
 
         # Summer fortune addition
-        c = self.bot.util.JST()
         msgs.append("**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
         # Nerf of sette addition
         msgs.append("**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
