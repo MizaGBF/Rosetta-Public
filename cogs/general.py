@@ -22,6 +22,7 @@ class General(commands.Cog):
     """
     async def bug_report_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
+        # send the user report to the debug channel
         await self.bot.send('debug', embed=self.bot.embed(title="Bug Report ▫️ " + inter.text_values['title'], description=inter.text_values['description'], footer="{} ▫️ User ID: {}".format(inter.author.name, inter.author.id), thumbnail=inter.author.display_avatar, color=self.COLOR))
         await inter.edit_original_message(embed=self.bot.embed(title="Information", description='Thank you, your report has been sent with success', color=self.COLOR))
 
@@ -55,21 +56,28 @@ class General(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def help(self, inter: disnake.GuildCommandInteraction, search : str = commands.Param(description="What are you searching for?", default="")) -> None:
-        """Get the bot help"""
+        """Get the bot help or search global commands."""
         await inter.response.defer(ephemeral=True)
-        if len(search) == 0: # empty string
+        if len(search) == 0: # empty user input
             msgs = ["Online Help [here](https://mizagbf.github.io/discordbot.html)"]
         else:
+            # geet bot slash command list
             global_slash_commands = self.bot.global_slash_commands
+            # breakdown user input
             search = search.split(' ')
             results = []
+            # check if user is a mod (to show mod commands or not)
             is_mod = self.bot.isMod(inter)
+            # loop over commands
             for command in global_slash_commands:
+                # if /owner command or /mod command and user isn't mod, go to next command
                 if command.name.lower() == "owner" or (command.name.lower() == "mod" and not is_mod): continue
+                # retrieve command name, description...
                 rs = self.bot.util.process_command(command)
+                # Search user terms inside these strings
                 for s in search:
                     for r in rs:
-                        if (s in r[0] or s in r[2]) and r[2] != "Command Group":
+                        if (s in r[0] or s in r[2]) and r[2] != "Command Group": # ignore Command Groups
                             results.append(r)
             if len(results) == 0: # no results
                 msgs = ["No results found for `{}`\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(' '.join(search))]
@@ -77,6 +85,7 @@ class General(commands.Cog):
                 msgs = []
                 length = 0
                 count = len(results)
+                # print matching commands
                 for r in results:
                     msgs.append("</{}:{}> ▫️ *{}*\n".format(r[0], r[1], r[2]))
                     length += len(msgs[-1])
@@ -84,7 +93,6 @@ class General(commands.Cog):
                     if length > 1500 and count > 0: # if message too big, stop and put how many remaining commands were found
                         msgs.append("**And {} more commands...**\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(count))
                         break
-
         await inter.edit_original_message(embed=self.bot.embed(title=self.bot.user.name + " Help", description="".join(msgs), thumbnail=self.bot.user.display_avatar, color=self.COLOR, url="https://mizagbf.github.io/discordbot.html"))
 
     @commands.slash_command()
@@ -106,11 +114,15 @@ class General(commands.Cog):
         """Post the bot changelog"""
         await inter.response.defer(ephemeral=True)
         msgs = []
+        # loop over changelog
         for c in self.bot.CHANGELOG:
+            # add command mentions
+            # ` is the character used as delimiter
             e = c.split('`')
             for i in range(1, len(e), 2):
                 e[i] = self.bot.util.command2mention(e[i])
                 if not e[i].startswith('<'): e[i] = '`' + e[i] + '`'
+            # add resulting line
             msgs.append("- ")
             msgs += e
             msgs.append("\n")
@@ -145,14 +157,14 @@ class General(commands.Cog):
         """Process a mathematical expression. Support variables (Example: cos(a + b) / c, a = 1, b=2,c = 3)."""
         try:
             await inter.response.defer()
-            m = expression.split(",")
-            d = {}
+            m = expression.split(",") # split to separate variable definitions
+            d = {} # variable container
             for i in range(1, len(m)): # process the variables if any
-                x = m[i].replace(" ", "").split("=")
+                x = m[i].replace(" ", "").split("=") # remove spaces and split around the equal
                 if len(x) == 2: d[x[0]] = float(x[1])
                 else: raise Exception('')
-            msgs = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))]
-            if len(d) > 0:
+            msgs = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))] # expression and result (using Calc module)
+            if len(d) > 0: # add variables
                 msgs.append("\nwith:\n")
                 for k in d:
                     msgs.append("{}".format(k))
@@ -174,7 +186,7 @@ class General(commands.Cog):
         """Calculate your chance of rolling the rate up for a given amount of rolls."""
         await inter.response.defer(ephemeral=True)
         try:
-            if count == '':
+            if count == '': # retrieve user roll count if they didn't pass a number
                 if str(inter.author.id) in self.bot.data.save['spark']:
                     s = self.bot.data.save['spark'][str(inter.author.id)]
                     count = (s[0] // 300) + s[1] + s[2] * 10
@@ -185,15 +197,17 @@ class General(commands.Cog):
             else:
                 count = int(count)
             msgs = []
-            ssrrate, rateups = self.bot.gacha.allRates(banner)
-            if ssrrate is None: raise Exception("An error occured or no GBF gacha data is available.\nConsider using {} instead in the meantime.".format(self.bot.util.command2mention('utility dropchance')))
+            ssrrate, rateups = self.bot.gacha.allRates(banner) # retrieve rates
+            if ssrrate is None:
+                raise Exception("An error occured or no GBF gacha data is available.\nConsider using {} instead in the meantime.".format(self.bot.util.command2mention('utility dropchance')))
+            # for each rate, we do a simple binomial calcul to determine the chance
             for r in rateups:
                 msgs.append("{:} **{:.3f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), r, 100*(1-math.pow(1-r*0.01, count))))
             if len(msgs) > 0:
                 msgs.insert(0, "Your chances of getting at least one SSR of the following rates with {} rolls:\n".format(count))
             msgs.append("Your chances of getting at least one SSR with {} rolls:\n".format(count))
             msgs.append("{:} **{:.2f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), ssrrate, 100*(1-math.pow(1-ssrrate*0.01, count))))
-            await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator", description="".join(msgs).replace('100.000%', '99.999%'), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator", description="".join(msgs).replace('100.000%', '99.999%'), color=self.COLOR)) # replace 100% by 99%. We assume 100% doesn't exist.
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator Error", description=str(e), color=self.COLOR))
 
@@ -202,14 +216,16 @@ class General(commands.Cog):
         """Calculate your chance of dropping an item."""
         await inter.response.defer(ephemeral=True)
         try:
+            # parse chance (we support either 10% or 0.1 for example)
             if chance.endswith('%'):
                 chance = float(chance[:-1]) / 100
             else:
                 chance = float(chance)
+            # process
             if chance >= 1:
                 await inter.edit_original_message(embed=self.bot.embed(title="Drop Chance Calculator Error", description="Chance can't be higher or equal than 100% or 1", color=self.COLOR))
             else:
-                await inter.edit_original_message(embed=self.bot.embed(title="Drop Chance Calculator", description="Your chance of getting at least one {:.3f}% chance item with **{:}** tries is **{:.3f}%**".format(chance*100, tries, 100*(1-math.pow(1-chance, tries))).replace('100.000%', '99.999%'), color=self.COLOR))
+                await inter.edit_original_message(embed=self.bot.embed(title="Drop Chance Calculator", description="Your chance of getting at least one {:.3f}% chance item with **{:}** tries is **{:.3f}%**".format(chance*100, tries, 100*(1-math.pow(1-chance, tries))).replace('100.000%', '99.999%'), color=self.COLOR)) # simple binomial calcul here
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Drop Chance Calculator Error", description=str(e), color=self.COLOR))
 
@@ -221,25 +237,30 @@ class General(commands.Cog):
         tier3 = []
         tier2 = []
         tier1 = []
+        # we don't check tier 4 as at least 2 were guaranted
         for c in cards:
             try:
                 if c == "": continue
-                if len(c) > 3 or int(c) < 0: raise Exception()
+                if len(c) > 3 or int(c) < 0 or not c.isdigit(): raise Exception()
             except:
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid card number `{}`".format(c), color=self.COLOR))
                 return
+            # convert card number to string
             sc = c.zfill(3)
+            # retrieve relevant part of the card number for each tier
             if sc[:2] not in tier3: tier3.append(sc[:2])
             if sc[1:] not in tier2: tier2.append(sc[1:])
             if sc not in tier1: tier1.append(sc)
-        await inter.edit_original_message(embed=self.bot.embed(title="Summer Fortune Calculator", description="Your chances of winning at least one\n**Tier 3** ▫️ {:.2f}%\n**Tier 2** ▫️ {:.2f}%\n**Tier 1** ▫️ {:.2f}%".format(100*(1-math.pow(1-0.03, len(tier3))), 100*(1-math.pow(1-0.02, len(tier2))), 100*(1-math.pow(1-0.002, len(tier1)))), color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Summer Fortune Calculator", description="Your chances of winning at least one\n**Tier 3** ▫️ {:.2f}%\n**Tier 2** ▫️ {:.2f}%\n**Tier 1** ▫️ {:.2f}%".format(100*(1-math.pow(1-0.03, len(tier3))), 100*(1-math.pow(1-0.02, len(tier2))), 100*(1-math.pow(1-0.002, len(tier1)))), color=self.COLOR)) # simple binomial calcul for each tier
 
     @utility.sub_command()
     async def yen(self, inter) -> None:
         """Retrieve the current yen conversion rate"""
         await inter.response.defer(ephemeral=True)
         try:
+            # retrieve currency details
             data = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml")).decode('utf-8').split('<Cube time="')
+            # calcul yen, euro and dollar rates
             rates = ([None, None], [None, None])
             date = data[1].split('">', 1)[0]
             for i in range(0, 2):
@@ -247,7 +268,6 @@ class General(commands.Cog):
                 rates[1][i] = rates[0][i] / float(data[i+1].split('<Cube currency="USD" rate="', 1)[1].split('"/>', 1)[0])
             for i in range(0, 2):
                 rates[i][1] = 100 * rates[i][0] / rates[i][1] - 100
-            
             await inter.edit_original_message(embed=self.bot.embed(title=":coin: Yen Rate ▫️ " + date, description="▫️ 1 EUR \↔️ {:.2f} JPY ({:+.2f}%)\n▫️ 1 USD \↔️ {:.2f} JPY ({:+.2f}%)".format(rates[0][0], rates[0][1], rates[1][0], rates[1][1]), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR), ephemeral=True)
@@ -285,12 +305,19 @@ class General(commands.Cog):
         """Translate a message embed or content to english"""
         try:
             await inter.response.defer()
-            if len(message.embeds) > 0 and 'description' in message.embeds[0].to_dict(): msg = message.embeds[0].description
-            elif len(message.content) > 0: msg = message.content
-            else: raise Exception('Empty Message')
-            if len(msg) > 3500: raise Exception('Message too long')
+            # read message
+            if len(message.embeds) > 0 and 'description' in message.embeds[0].to_dict():
+                msg = message.embeds[0].description # read embed description if it got one
+            elif len(message.content) > 0:
+                msg = message.content
+            else:
+                raise Exception('Empty Message')
+            if len(msg) > 3500:
+                raise Exception('Message too long')
+            # translate
             t = self.bot.net.translate(msg)
-            if len(t) > 3800: raise Exception('Message too long')
+            if len(t) > 3800:
+                raise Exception('Message too long')
             await inter.edit_original_message(embed=self.bot.embed(title="Google Translate", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, t), color=self.COLOR))
         except Exception as e:
             if str(e) != 'Empty Message' and str(e) != 'Message too long':

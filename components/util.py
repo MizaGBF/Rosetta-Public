@@ -4,6 +4,7 @@ from typing import Optional, Union, Callable, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
 import psutil
+import platform
 import os
 import sys
 import html
@@ -15,7 +16,7 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Util():
-    JSTDIFF = 32400
+    JSTDIFF = 32400 # JST <-> UTC difference in seconds
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
         self.emote = None
@@ -237,6 +238,7 @@ class Util():
         return {
             "Version": self.bot.VERSION,
             "Python": "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
+            "OS": platform.platform(),
             "Uptime": self.uptime(),
             "CPU": "{:.2f}%".format(self.process.cpu_percent()),
             "Memory": "{:.1f}MB ({:.2f}%)".format(self.process.memory_full_info().uss / 1048576, self.process.memory_percent()).replace(".0M", "M").replace(".00%", "%").replace("0%", "%"),
@@ -553,6 +555,7 @@ class Util():
     def process_command(self, cmd : Union[disnake.APISlashCommand, disnake.APIUserCommand, disnake.APIMessageCommand]) -> list:
         has_sub = False
         results = []
+        # check if command has sub command(s)
         try:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
@@ -560,20 +563,23 @@ class Util():
                     break
         except:
             pass
+        # if it has sub command(s)
         if has_sub:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
-                    rs = self.process_command(opt)
-                    for r in rs:
+                    rs = self.process_command(opt) # recursive call for that child
+                    for r in rs: # process result
                         r[0] = cmd.name + " " + r[0]
                         try:
                             if r[1] is None:
                                 r[1] = cmd.id
                         except:
                             pass
+                    # add results to our
                     results += rs
             return results
         else:
+            # return command details (2 possibilities depending if it got an id)
             try: return [[cmd.name, cmd.id, cmd.description]]
             except: return [[cmd.name, None, cmd.description]]
 
