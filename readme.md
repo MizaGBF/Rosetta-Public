@@ -20,6 +20,15 @@
 > I recommend to install [jemalloc](https://github.com/jemalloc/jemalloc) if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
 > Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
   
+### Third-party packages
+Here's the list of third-party python modules installed from [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt).  
+- **[Disnake](https://github.com/DisnakeDev/disnake)**, a Discord API wrapper.  
+- **[Pydrive2](https://github.com/iterative/PyDrive2)**, a Google Drive API wrapper.  
+- **[psutil](https://github.com/giampaolo/psutil)**, a library to retrieve system and process informations.  
+- **[Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)**, a library for HTML parsing.  
+- **[Pillow](https://github.com/python-pillow/Pillow)**, a PIL fork for image processing.  
+- **[deep-translator](https://github.com/nidhaloff/deep-translator)**, a library to access many online translator tools.  
+  
 ## General Informations  
 * Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
 * This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
