@@ -43,26 +43,30 @@ class DreadBarrage(commands.Cog):
     str: Dread Barrage state
     """
     def getBarrageState(self) -> str: # return the current state of the valiant in string format (which day is on going, etc...)
-        if self.bot.data.save['dread']['state'] is True:
+        if self.bot.data.save['dread']['state'] is True: # if enabled
             current_time = self.bot.util.JST()
-            if current_time < self.bot.data.save['dread']['dates']["Day 1"]:
+            if current_time < self.bot.data.save['dread']['dates']["Day 1"]: # hasn't started
                 d = self.bot.data.save['dread']['dates']["Day 1"] - current_time
                 return "{} Dread Barrage starts in **{}**".format(self.bot.emote.get('crew'), self.bot.util.delta2str(d, 2))
-            elif current_time >= self.bot.data.save['dread']['dates']["End"]:
+            elif current_time >= self.bot.data.save['dread']['dates']["End"]: # has ended
+                # we clear the data
                 self.bot.data.save['dread']['state'] = False
                 self.bot.data.save['dread']['dates'] = {}
                 self.bot.data.pending = True
                 return ""
-            elif current_time >= self.bot.data.save['dread']['dates']["Day 1"]:
+            elif current_time >= self.bot.data.save['dread']['dates']["Day 1"]: # on going
                 it = ['End', 'Day 8', 'Day 7', 'Day 6', 'Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
+                # iterate from Day 8 to Day 1
                 for i in range(1, len(it)):
+                    # check if we have passed this date
                     if it[i] in self.bot.data.save['dread']['dates'] and current_time > self.bot.data.save['dread']['dates'][it[i]]:
+                        # then check remaining time to next date (i-1)
                         msgs = ["{} Barrage {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), it[i], self.bot.util.delta2str(self.bot.data.save['dread']['dates'][it[i-1]] - current_time))]
-                        if current_time < self.bot.data.save['dread']['dates']['NM135']:
+                        if current_time < self.bot.data.save['dread']['dates']['NM135']: # add NM135 timer if not passed
                             msgs.append("\n{} NM135 available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['dread']['dates']['NM135'] - current_time, 2)))
-                        elif current_time < self.bot.data.save['dread']['dates']['NM175']:
+                        elif current_time < self.bot.data.save['dread']['dates']['NM175']: # add NM175 timer if not passed
                             msgs.append("\n{} NM175 & Valiants available in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(self.bot.data.save['dread']['dates']['NM175'] - current_time, 2)))
-                        else:
+                        else: # else add time to end
                             msgs.append("\n{} Barrage is ending in **{}**".format(self.bot.emote.get('time'), self.bot.util.delta2str(self.bot.data.save['dread']['dates'][it[0]] - current_time, 2)))
                         return "".join(msgs)
             else:
@@ -84,6 +88,7 @@ class DreadBarrage(commands.Cog):
             if current_time < self.bot.data.save['dread']['dates']["Day 1"]:
                 return False
             elif current_time >= self.bot.data.save['dread']['dates']["End"]:
+                # clear the data if ended
                 self.bot.data.save['dread']['state'] = False
                 self.bot.data.save['dread']['dates'] = {}
                 self.bot.data.pending = True
@@ -111,7 +116,8 @@ class DreadBarrage(commands.Cog):
                 em = self.bot.util.formatElement(self.bot.data.save['dread']['element'])
                 title = "{} **Dread Barrage {}** {} **{}**\n".format(self.bot.emote.get('crew'), self.bot.data.save['dread']['id'], em, self.bot.util.time(current_time, removejst=True))
                 description = []
-                if current_time < self.bot.data.save['dread']['dates']["End"]:
+                if current_time < self.bot.data.save['dread']['dates']["End"]: # if on going
+                    # add various dates based on progress
                     if current_time < self.bot.data.save['dread']['dates']["Day 2"]:
                         description.append("▫️ Start: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates']['Day 1'], removejst=True)))
                     if current_time < self.bot.data.save['dread']['dates']["Day 4"]:
@@ -121,8 +127,9 @@ class DreadBarrage(commands.Cog):
                     days = [d for d in list(self.bot.data.save['dread']['dates'].keys()) if d.startswith('Day')]
                     days.sort()
                     description.append("▫️ Last day: **{}**\n".format(self.bot.util.time(self.bot.data.save['dread']['dates'][days[-1]], removejst=True)))
-                else:
+                else: # ended
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
+                    # clear the data
                     self.bot.data.save['dread']['state'] = False
                     self.bot.data.save['dread']['dates'] = {}
                     self.bot.data.pending = True
@@ -149,20 +156,22 @@ class DreadBarrage(commands.Cog):
             await inter.response.defer(ephemeral=True)
             tok = self.bot.util.strToInt(value)
             if tok < 1 or tok > 9999999999: raise Exception()
-            b = 0
-            t = tok
-            i = 0
+            b = 0 # box count
+            t = tok # copy of token
+            i = 0 # BOX_COST index
+            # increase b (box count) until we run out of tok (tokens)
             while True:
-                if tok < self.BOX_COST[i][1]:
+                if tok < self.BOX_COST[i][1]: # not enough to empty box, we stop
                     break
-                tok -= self.BOX_COST[i][1]
-                b += 1
-                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
+                tok -= self.BOX_COST[i][1] # remove token cost
+                b += 1 # increase box
+                while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]: # move BOX_COST index to next if it exists
                     i += 1
+            # create message
             msgs = ["**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)]
             for f, d in self.FIGHTS.items():
-                n = math.ceil(t / d["token"])
-                msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75))
+                n = math.ceil(t / d["token"]) # number of fights needed
+                msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)) # number of fight, fight name, half elixir count
             await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description="".join(msgs), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
@@ -172,19 +181,22 @@ class DreadBarrage(commands.Cog):
         """Convert Dread Barrage box values"""
         try:
             await inter.response.defer(ephemeral=True)
-            t = 0
             try: with_token = max(0, self.bot.util.strToInt(with_token))
             except: raise Exception("Your current token amount `{}` isn't a valid number".format(with_token))
             if box_done >= box: raise Exception("Your current box count `{}` is higher or equal to your target `{}`".format(box_done, box))
-            i = 0
+            t = 0 # token needed
+            i = 0 # BOX_COST index
+            # we increase t (token needed) until we reach the targeted box count
             for b in range(box_done+1, box+1):
                 while self.BOX_COST[i][0] is not None and b > self.BOX_COST[i][0]:
                     i += 1
                 t += self.BOX_COST[i][1]
+            # we remove with_token
             t = max(0, t-with_token)
+            # create message
             msgs = ["**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token == 0 else " with **{:,}** tokens".format(with_token)))]
             for f, d in self.FIGHTS.items():
-                n = math.ceil(t/d["token"])
+                n = math.ceil(t/d["token"]) # number of fights needed
                 msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75))
             await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description="".join(msgs), color=self.COLOR))
         except Exception as e:
