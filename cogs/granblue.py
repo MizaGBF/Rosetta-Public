@@ -417,7 +417,7 @@ class GranblueFantasy(commands.Cog):
         output = [] # will container strings before .join()
         # in this function, we simply call various info functions from various cog and component and compile the result in one big string
         try:
-            buf = await self.bot.net.gbf_maintenance_status()
+            buf = (await self.bot.net.gbf_maintenance_status())[0]
             if len(buf) > 0:
                 output.append(buf)
                 output.append('\n')
@@ -616,7 +616,7 @@ class GranblueFantasy(commands.Cog):
         """Post GBF maintenance status"""
         try:
             await inter.response.defer()
-            description = await self.bot.net.gbf_maintenance_status() # simply retrieve maintenance string
+            description = (await self.bot.net.gbf_maintenance_status())[0] # simply retrieve maintenance string
             if len(description) > 0:
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=description, color=self.COLOR))
             else:

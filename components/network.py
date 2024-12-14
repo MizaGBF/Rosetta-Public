@@ -13,25 +13,28 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 
 class Network():
-    VERSION_REGEX = [ # possible regex to detect the game version
+    VERSION_REGEX = [ # possible regex to detect the GBF game version
         re.compile("\"version\": \"(\d+)\""), # new one
         re.compile("\\/assets\\/(\d+)\\/"), # alternative/fallback
         re.compile("Game\.version = \"(\d+)\";") # old one
     ]
+    # Request types
     GET = 0
     POST = 1
     HEAD = 2
     CONDITIONAL_GET = 4
+    # Account status
     ACC_STATUS_UNSET = -1
     ACC_STATUS_UNDEF = 0
     ACC_STATUS_OK = 1
     ACC_STATUS_DOWN = 2
+    # Default user agent
     DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION
-        self.translator = GoogleTranslator(source='auto', target='en')
+        self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION # default user agent, we add Rosetta name and version for websites which might have bot exceptions for it
+        self.translator = GoogleTranslator(source='auto', target='en') # translator instance
         self.client = None
         self.client_req = {}
         self.gbf_client = None
@@ -45,12 +48,13 @@ class Network():
     """
     async def update_user_agent(self) -> None:
         try:
+            # access this list of user agents
             response = await self.client.get("https://jnrbsn.github.io/user-agents/user-agents.json")
             async with response:
                 if 200 <= response.status < 400:
-                    for ua in await response.json():
+                    for ua in await response.json(): # look for the latest chrome one...
                         if "Windows" in ua and "Chrome" in ua:
-                            self.user_agent = ua + ' Rosetta/' + self.bot.VERSION
+                            self.user_agent = ua + ' Rosetta/' + self.bot.VERSION # and update our user agent
                             self.bot.logger.push("[NET] Default user-agent set to `{}`".format(self.user_agent), send_to_discord=False)
                             return
             raise Exception("Missing data")
@@ -63,23 +67,24 @@ class Network():
     @asynccontextmanager
     async def init_clients(self) -> Generator[tuple, None, None]:
         try:
+            # The TCPConnector is shared/common to both clients
             conn = aiohttp.TCPConnector(keepalive_timeout=60, ttl_dns_cache=600)
-            # set generic client
+            # set generic client and methods
             self.client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.client_req[self.GET] = self.client.get
             self.client_req[self.POST] = self.client.post
             self.client_req[self.HEAD] = self.client.head
             self.client_req[self.CONDITIONAL_GET] = self.client.get
-            # set gbf client
+            # set gbf client and methods
             self.gbf_client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.gbf_client_req[self.GET] = self.gbf_client.get
             self.gbf_client_req[self.POST] = self.gbf_client.post
             self.gbf_client_req[self.HEAD] = self.gbf_client.head
             self.gbf_client_req[self.CONDITIONAL_GET] = self.gbf_client.get
-            # update user agent
+            # update the default user agent
             await self.update_user_agent()
             yield (self.client, self.gbf_client)
-        finally:
+        finally: # close the clients properly
             await self.client.close()
             await self.gbf_client.close()
 
@@ -108,39 +113,41 @@ class Network():
     allow_redirects: Boolean (Default is False), set to True to follow request redirections if you expect any.
     expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
     ssl: BOolean (Default is True), set to False to disable ssl verifications
-    collect_headers: Default is None. Pass the following '[[None]]' and the request headers will be inserted in place of None.
     
     Returns
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for PARTIAL-GET
     """
-    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True, collect_headers : Optional[dict] = None) -> Any:
+    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> Any:
         try:
             headers['Connection'] = 'keep-alive'
+            # Add user agent
             if add_user_agent and 'User-Agent' not in headers:
                 headers['User-Agent'] = self.user_agent
-            if payload is None:
+            if payload is None: # call request method with given parameters
                 response = await (self.client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
-            else:
+            else: # the request is always POST if we have a payload
                 rtype = self.POST
                 response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
-            if rtype == self.CONDITIONAL_GET:
+            if rtype == self.CONDITIONAL_GET: # CONDITIONAL_GET simply returns the response as it is
                 return response
             async with response:
-                if response.status >= 400 or response.status < 200:
+                if response.status >= 400 or response.status < 200: # raise Exception if our HTTP code isn't in the 200-399 range
                     raise Exception()
-                if collect_headers is not None and collect_headers == [[None]]:
-                    try: collect_headers[0] = response.headers
-                    except: pass
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
-                if expect_JSON and not is_json: raise Exception("Expected `application/json`, got `{}`".format(ct))
-                if rtype == self.HEAD: return True
-                elif is_json: return await response.json()
-                else: return await response.read()
+                # raise error if we expected a json and it's not
+                if expect_JSON and not is_json:
+                    raise Exception("Expected `application/json`, got `{}`".format(ct))
+                if rtype == self.HEAD: # HEAD request, we simply return True to signify it's successful
+                    return True
+                elif is_json: # JSON, we return it as a JSON object
+                    return await response.json()
+                else: # else, binary
+                    return await response.read()
         except Exception as e:
             if str(e) != "":
-                self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e)
+                self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e) # log unexpected errors
             return None
 
     """requestGBF()
@@ -166,62 +173,81 @@ class Network():
     async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
         try:
             silent = True
-            if await self.gbf_maintenance(): return None
+            # don't proceed if the game is down
+            if await self.gbf_maintenance():
+                return None
+            # build the URL
             if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
             else: url = "https://game.granbluefantasy.jp" + path
-            # retrieve account info
-            if not self.has_account(): raise Exception("No GBF account set")
+            # check and retrieve the account info
+            if not self.has_account():
+                raise Exception("No GBF account set")
             acc = self.get_account()
+            # if account is down, we silence errors
             silent = (acc['state'] == self.ACC_STATUS_DOWN)
-            # retrieve version
+            # retrieve the game version
             ver = self.bot.data.save['gbfversion']
-            if ver == "Maintenance":
+            if ver == "Maintenance": # Note: I don't think the version should ever be equal to "Maintenance" but I'm keeping it for safety
                 raise Exception("Maintenance on going")
-            elif ver is None:
+            elif ver is None: # If not set, we proceed with a version of 0. Other mechanisms will take care of the rest
                 ver = 0
-            # set headers
+            # prepare and set headers
             headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc['ua'], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
             # set cookies
+            # Note: To ensure the cookie doesn't expire, we have to clear and reset the jar manually
+            # We use a separe client for that purpose
+            # Clearing just the GBF cookies on a the main client would burn way too much CPU, especially during GW
             self.gbf_client.cookie_jar.clear()
             self.gbf_client.cookie_jar.update_cookies(acc['ck'])
-            # set params
+            # set request params
             ts = int(self.bot.util.UTC().timestamp() * 1000)
             params["_"] = str(ts)
-            params["t"] = str(ts+300)
+            params["t"] = str(ts+300) # second timestamp is always a bit further. No idea if a random number would be better
             params["uid"] = str(acc['id'])
-            if payload is None:
+            if payload is None: # call request method with given parameters
                 response = await (self.gbf_client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
-            else:
+            else: # if we have a payload, it's always a POST request
                 rtype = self.POST
-                # auto set ID
+                # auto set 'user_id' in the payload according to its value
                 if 'user_id' in payload:
                     match payload['user_id']:
                         case "ID": payload['user_id'] = acc['id']
                         case "SID": payload['user_id'] = str(acc['id'])
                         case "IID": payload['user_id'] = int(acc['id'])
+                # do the request
                 response = await self.gbf_client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
             # response handling
             async with response:
-                if rtype == self.CONDITIONAL_GET:
+                if rtype == self.CONDITIONAL_GET: # CONDITIONAL_GET simply returns the response as it is
                     return response
-                if response.status >= 400 or response.status < 200:
-                    # retry if it's a version error
-                    if not _updated_:
-                        x = await self.gbf_version() # check if update
-                        if x is not None and x >= 2: # if some sort of update
-                            if x == 3: _updated_ = True
+                if response.status >= 400 or response.status < 200: # error if our HTTP code isn't in the 200-399 range
+                    if not _updated_: # if _updated_ isn't raised, it MIGHT be due to an invalid version (in case an update happened)
+                        x = await self.gbf_version() # in that case, we check for an update
+                        if x is not None and x >= 2:
+                            # x = 2: our version number in memory wasn't set
+                            # x = 3: an update occured
+                            if x == 3:
+                                _updated_ = True # raise updated flag because an update occured
+                            # we try this request again
                             return await self.requestGBF(path, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
+                    # else, raise exception
                     raise Exception()
+                # check content type
                 ct = response.headers.get('content-type', '')
                 is_json = 'application/json' in ct
-                if expect_JSON and not is_json:
-                    self.set_account_state(self.ACC_STATUS_DOWN)
+                if expect_JSON and not is_json: # we expected a json but we didn't receive one
+                    self.set_account_state(self.ACC_STATUS_DOWN) # the account is likely down
                     return None
+                # retrieve cookies
                 if 'set-cookie' in response.headers:
-                    self.set_account_cookie(response.headers['set-cookie'])
-                if rtype == self.HEAD: return True
-                elif is_json: return await response.json()
-                else: return await response.read()
+                    self.set_account_cookie(response.headers['set-cookie']) # and update our copy
+                # result
+                if rtype == self.HEAD: # HEAD request returns True to signify success
+                    return True
+                elif is_json: # JSON, we return the json object
+                    return await response.json()
+                else: # else the binary
+                    return await response.read()
         except Exception as e:
             if str(e) != "":
                 self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e, send_to_discord=(not silent))
@@ -243,16 +269,21 @@ class Network():
     """
     async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> Any:
         try:
+            # build the URL
             if path[:1] != "/": url = "https://gbf.wiki/" + path
             else: url = "https://gbf.wiki" + path
+            # make the GET request with given parameters
             response = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, params=params, timeout=8, allow_redirects=allow_redirects)
             async with response:
-                if response.status == 403:
+                if response.status == 403: # if you get this error, contact the admins to get your user-agent whitelisted
                     raise Exception("HTTP Error 403 - Possibly Cloudflare related")
-                elif response.status >= 400 or response.status < 200:
+                elif response.status >= 400 or response.status < 200: # valid error codes
                     raise Exception("HTTP Error " + str(response.status))
-                if response.headers.get('content-type', '').startswith('application/json'): return await response.json()
-                else: return await response.read()
+                # result
+                if response.headers.get('content-type', '').startswith('application/json'): # JSON content
+                    return await response.json()
+                else: # binary content
+                    return await response.read()
         except Exception as e:
             self.bot.logger.pushError("[NET] requestWiki `{}` Error:".format(path), e)
             return None
@@ -270,19 +301,22 @@ class Network():
     """
     def str2cookie(self, header : str) -> dict:
         cd = {}
-        for c in header.split(";"):
-            ct = c.split("=", 1)
-            cd[ct[0].strip()] = ct[1].strip()
+        for c in header.split(";"): # split via ;
+            ct = c.split("=", 1) # then each element by =
+            cd[ct[0].strip()] = ct[1].strip() # store each part as a pair in our dict
+        # return the dict
         return cd
 
     """refresh_account()
     Refresh the GBF account cookie by making a request (only if not done recently)
     """
     async def refresh_account(self) -> None:
-        if self.has_account():
+        if self.has_account(): # check if the account exists
             state = self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET)
             last = self.bot.data.save['gbfaccount'].get('last', None)
+            # if it's down...
             if state != self.ACC_STATUS_DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
+                # attempt a request
                 await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
 
     """has_account()
@@ -348,13 +382,13 @@ class Network():
             uid = options.pop('uid', None)
             ck = options.pop('ck', None)
             ua = options.pop('ua', None)
-            if uid is not None:
+            if uid is not None: # GBF user id
                 self.bot.data.save['gbfaccount']['id'] = uid
                 self.bot.data.pending = True
-            if ck is not None:
+            if ck is not None: # GBF cookie
                 self.bot.data.save['gbfaccount']['ck'] = self.str2cookie(ck)
                 self.bot.data.pending = True
-            if ua is not None:
+            if ua is not None: # user-agent used
                 self.bot.data.save['gbfaccount']['ua'] = ua
                 self.bot.data.pending = True
             return True
@@ -382,11 +416,11 @@ class Network():
     def set_account_cookie(self, ck : str) -> bool:
         try:
             if ck is None: return False
-            A = self.bot.data.save['gbfaccount']['ck']
-            B = self.str2cookie(ck)
-            self.bot.data.save['gbfaccount']['ck'] = A | {k:v for k, v in B.items() if k in A}
-            self.bot.data.save['gbfaccount']['state'] = self.ACC_STATUS_OK
-            self.bot.data.save['gbfaccount']['last'] = self.bot.util.JST()
+            cookie = self.str2cookie(ck) # convert it to dict
+            reference = self.bot.data.save['gbfaccount']['ck']
+            self.bot.data.save['gbfaccount']['ck'] = reference | {k:v for k, v in cookie.items() if k in reference}
+            self.bot.data.save['gbfaccount']['state'] = self.ACC_STATUS_OK # account has a new cookie so it should be considered ok
+            self.bot.data.save['gbfaccount']['last'] = self.bot.util.JST() # cookie just updated
             self.bot.data.pending = True
             return True
         except Exception as e:
@@ -416,19 +450,23 @@ class Network():
     unknown: None if GBF is down, "Maintenance" if in maintenance, -1 if version comparison error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
     """
     async def gbf_version(self) -> Any: # retrieve the game version
+        # simply request the main page
         res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
-        if res is None: return None
+        if res is None: # main page is down
+            return None
+        # convert page html to string
         res = str(res)
         i = 0
-        while i < len(self.VERSION_REGEX):
+        while i < len(self.VERSION_REGEX): # look for the version number. it's always embedded in the html. It recently changed tho, so we used multiple regexes to cover our tracks now.
             try:
-                return self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0]))
+                return self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0])) # if the number if found, we call gbf_update and return its result
             except:
-                if i == 0 and 'maintenance' in res.lower():
+                if i == 0 and 'maintenance' in res.lower(): # if maintenance is in the page html
                     return "Maintenance"
-                elif i == len(self.VERSION_REGEX) - 1:
+                elif i == len(self.VERSION_REGEX) - 1: # if we tried all regexes, the version number hasn't been found
                     return None
             i += 1
+        return None
 
     """gbf_update()
     Compare a GBF version number with the one stored in memory and update if needed
@@ -443,25 +481,26 @@ class Network():
     """
     def gbf_update(self, v : Optional[int]) -> int: # compare version with given value, then update and return a value depending on difference
         try:
-            int(v)
             if v is None:
-                return 1 # unchanged because of invalid parameter
-            elif self.bot.data.save['gbfversion'] is None:
-                self.bot.data.save['gbfversion'] = v
+                return 1 # invalid parameter
+            int(v) # double check the version number is a number
+            if self.bot.data.save['gbfversion'] is None: # the version in memory is None
+                self.bot.data.save['gbfversion'] = v # this number replaces it
                 self.bot.data.save['gbfupdate'] = False
                 self.savePending = True
-                return 2 # value is set
-            elif self.bot.data.save['gbfversion'] != v:
-                self.bot.data.save['gbfversion'] = v
+                return 2 # version has been set
+            elif self.bot.data.save['gbfversion'] != v: # this number is DIFFERENT from the one in memory
+                self.bot.data.save['gbfversion'] = v # this number replaces it
                 self.bot.data.save['gbfupdate'] = True
                 self.bot.data.pending = True
-                return 3 # update happened
-            return 0 # unchanged
+                return 3 # an update has occured
+            return 0 # unchanged  version number
         except:
             return -1 # v isn't an integer
 
     """gbf_available()
     Coroutine to retrieve the GBF version to check if the game is available.
+    Use gbf_version() to check if the game is available by looking for the version number.
     
     Parameters
     ----------
@@ -471,20 +510,23 @@ class Network():
     ----------
     Boolean: True if the game is available, False otherwise.
     """
-    async def gbf_available(self, skip_check = False) -> bool: # use the above to check if the game is up
-        if skip_check is False and await self.gbf_maintenance(): return False
-        v = await self.gbf_version()
-        if v is None: v = await self.gbf_version() # try again in case their shitty server is lagging
-        match v:
-            case None:
+    async def gbf_available(self, skip_check = False) -> bool:
+        if skip_check is False and await self.gbf_maintenance(): # if skip_check isn't raised an the game is in maintenance, we return False
+            return False
+        v = await self.gbf_version() # get version number
+        if v is None: # if None, try again in case it was a server lag
+            v = await self.gbf_version() 
+        match v: # check result
+            case None: # Server is down
                 return False
-            case 'Maintenance':
+            case 'Maintenance': # Server is in maintenance
+                # If no maintenance is set in memory, put the bot in emergency maintenance mode
                 if self.bot.data.save['maintenance']['state'] is False or (self.bot.data.save['maintenance']['state'] is True and self.bot.data.save['maintenance']['duration'] > 0 and self.bot.util.JST() > self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration'])):
                     self.bot.data.save['maintenance'] = {"state" : True, "time" : None, "duration" : 0}
                     self.bot.data.pending = True
                     self.bot.logger.push("[GBF] Possible emergency maintenance detected")
                 return False
-            case _:
+            case _: # Server is up
                 return True
 
     """gbf_maintenance_status()
@@ -497,38 +539,42 @@ class Network():
     
     Returns
     --------
-    str: Status string
+    tuple: Containing the Status string and the Status flag (True if on going, False if not)
     """
     async def gbf_maintenance_status(self, check_maintenance_end : bool = False) -> str:
         current_time = self.bot.util.JST()
-        msg = ""
-        if self.bot.data.save['maintenance']['state'] is True:
-            if self.bot.data.save['maintenance']['time'] is not None and current_time < self.bot.data.save['maintenance']['time']:
+        # Check GBF maintenance data in memory
+        if self.bot.data.save['maintenance']['state'] is True: # there is data
+            if self.bot.data.save['maintenance']['time'] is not None and current_time < self.bot.data.save['maintenance']['time']: # Maintenance hasn't started
                 if self.bot.data.save['maintenance']['duration'] == 0:
-                    msg = "{} Maintenance at **{}**".format(self.bot.emote.get('cog'), self.bot.util.time(self.bot.data.save['maintenance']['time'], style=['d','t'], removejst=True))
+                    return "{} Maintenance at **{}**".format(self.bot.emote.get('cog'), self.bot.util.time(self.bot.data.save['maintenance']['time'], style=['d','t'], removejst=True)), False
                 else:
                     d = self.bot.data.save['maintenance']['time'] - current_time
-                    msg = "{} Maintenance starts in **{}**, for **{} hour(s)**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2), self.bot.data.save['maintenance']['duration'])
+                    return "{} Maintenance starts in **{}**, for **{} hour(s)**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2), self.bot.data.save['maintenance']['duration']), False
             else:
-                if self.bot.data.save['maintenance']['duration'] <= 0:
-                    if not check_maintenance_end or (check_maintenance_end and not await self.gbf_available(skip_check=True)):
-                        msg = "{} Emergency maintenance on going".format(self.bot.emote.get('cog'))
-                    else:
+                if self.bot.data.save['maintenance']['duration'] <= 0: # No duration, emergency maintenance
+                    if not check_maintenance_end or (check_maintenance_end and not await self.gbf_available(skip_check=True)): # use gbf_available with skip_check=True to check if it ended
+                        return "{} Emergency maintenance on going".format(self.bot.emote.get('cog')), True
+                    else: # no maintenance
                         self.bot.data.save['maintenance'] = {"state" : False, "time" : None, "duration" : 0}
                         self.bot.data.pending = True
-                else:
+                        return "", False
+                else: # has duration
                     d = current_time - self.bot.data.save['maintenance']['time']
-                    if (d.seconds // 3600) >= self.bot.data.save['maintenance']['duration']:
+                    if (d.seconds // 3600) >= self.bot.data.save['maintenance']['duration']: # check if it ended
+                        # clear data then
                         self.bot.data.save['maintenance'] = {"state" : False, "time" : None, "duration" : 0}
                         self.bot.data.pending = True
+                        return "", False
                     else:
                         e = self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration'])
                         d = e - current_time
-                        msg = "{} Maintenance ends in **{}**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2))
-        return msg
+                        return "{} Maintenance ends in **{}**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2)), True
+        return "", False
 
     """gbf_maintenance()
     Return True if a scheduled or emergency ùaintenance is on going
+    Use gbf_maintenance_status()
     
     Parameters
     ----------
@@ -539,8 +585,7 @@ class Network():
     bool: True if on going, False otherwise
     """
     async def gbf_maintenance(self, check_maintenance_end : bool = False) -> bool:
-        msg = await self.gbf_maintenance_status(check_maintenance_end=check_maintenance_end)
-        return (' ends in ' in msg or 'on going' in msg)
+        return (await self.gbf_maintenance_status(check_maintenance_end=check_maintenance_end))[1]
 
     """translate()
     Machine translate some text to english
@@ -558,5 +603,6 @@ class Network():
     exception: If an error occurs
     """
     def translate(self, original_text : str) -> str:
-        if original_text == "": return original_text
+        if original_text == "": # ignore empty strings
+            return original_text
         return self.translator.translate(original_text)
