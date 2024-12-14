@@ -264,7 +264,7 @@ class Calc():
     float or int: Result
     """
     def number(self) -> Union[int, float]:
-        strValue = ''
+        strValue = []
         decimal_found = False
         c = ''
         
@@ -274,9 +274,9 @@ class Calc():
                 if decimal_found:
                     raise Exception("Found an extra period in a numberat position {}".format(self.index))
                 decimal_found = True
-                strValue += '.'
+                strValue.append('.')
             elif c in '0123456789':
-                strValue += c
+                strValue.append(c)
             else:
                 break
             self.index += 1
@@ -284,4 +284,4 @@ class Calc():
         if len(strValue) == 0:
             if c == '': raise Exception("Unexpected end found\nDid you perhaps forget a bracket?\nExample: `log(20)` not `log 20`")
             else: raise Exception("Unexpected end found\nA value was expectedat position {}".format(self.index))
-        return float(strValue)
+        return float("".join(strValue))

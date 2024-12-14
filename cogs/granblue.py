@@ -544,7 +544,7 @@ class GranblueFantasy(commands.Cog):
                             if elem['obtain'] is not None:
                                 if "[[" in elem['obtain']:
                                     otxt = html.unescape(elem['obtain']).split("[[", 1)[1].split("]]", 1)[0]
-                                    output["desc"] += "Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote(otxt))
+                                    output["desc"].append("Obtain: [{}](https://gbf.wiki/index.php?title=Special:Search&search={})\n".format(otxt, quote(otxt)))
                                 else:
                                     output["desc"].append("Obtain: {}\n".format(elem['obtain'].split(',', 1)[0].capitalize()))
                             if elem['character unlock'] is not None:
@@ -689,7 +689,7 @@ class GranblueFantasy(commands.Cog):
         # make schedule by going over sorted dates
         msgs = []
         for date in dates:
-            msgs += events[date]
+            msgs.extend(events[date])
         if len(msgs) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
         else:
@@ -906,7 +906,7 @@ class GranblueFantasy(commands.Cog):
             
             descs.append(str(self.bot.emote.get('skill2')))
             descs.append("**Star Character**\n")
-            descs += star
+            descs.extend(star)
             descs.append("\n")
             
             # Add star character comment if it exists
@@ -964,7 +964,7 @@ class GranblueFantasy(commands.Cog):
             if len(support_summons) > 0:
                 descs.append(str(self.bot.emote.get('summon')))
                 descs.append(" **Support Summons**\n")
-                descs += support_summons
+                descs.extend(support_summons)
         except:
             pass
         # Final

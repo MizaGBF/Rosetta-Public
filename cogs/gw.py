@@ -1489,8 +1489,8 @@ class GuildWar(commands.Cog):
                     for field in fields:
                         field['value'] = "".join(field['value'])
                     embed = self.bot.embed(title="{} /gbfg/ GW{} Top {} Ranking".format(self.bot.emote.get('gw'), gwid, title_string), description=desc, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - {} on page {}, {}".format(("Players" if captain == 1 else "Captains"), (captain * 2 + 2) % 4 + 1, (captain * 2 + 2) % 4 + 2))
-                    embeds += [embed for i in range(len(search_results))]
-                    final_results += search_results
+                    embeds.extend([embed for i in range(len(search_results))])
+                    final_results.extend(search_results)
             return embeds, final_results
         except:
             return [], []

@@ -595,7 +595,7 @@ class Util():
                         except:
                             pass
                     # add results to our
-                    results += rs
+                    results.extend(rs)
             return results
         else:
             # return command details (2 possibilities depending if it got an id)

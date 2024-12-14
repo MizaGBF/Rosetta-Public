@@ -124,7 +124,7 @@ class General(commands.Cog):
                 if not e[i].startswith('<'): e[i] = '`' + e[i] + '`'
             # add resulting line
             msgs.append("- ")
-            msgs += e
+            msgs.extend(e)
             msgs.append("\n")
         if len(msgs) > 0:
             msgs.insert(0, "### Changelog\n")

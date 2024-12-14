@@ -67,7 +67,7 @@ class Moderation(commands.Cog):
         # append rosetta setting messages if any
         if len(rosetta) > 0:
             msgs.append("\n**Rosetta Settings**\n")
-            msgs += rosetta
+            msgs.extend(rosetta)
         await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description="".join(msgs), thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
 
     @commands.message_command(name="Server Info")

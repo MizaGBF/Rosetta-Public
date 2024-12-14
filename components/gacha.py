@@ -303,7 +303,7 @@ class Gacha():
                 description = self.summary_subroutine(data, 0, data['time'], data['timesub'], remaining)
                 if len(data["banners"]) > self.CLASSIC_COUNT and "collaboration" in data and remaining < data["collaboration"]:
                     description.append("{} **Collaboration**\n".format(self.bot.emote.get('crystal')))
-                    description += self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)
+                    description.extend(self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining))
                 return "".join(description), "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
             return None, None
         except Exception as e:
