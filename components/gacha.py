@@ -15,8 +15,11 @@ from views.roll_tap import Tap
 # ----------------------------------------------------------------------------------------------------------------
 
 class Gacha():
-    ZODIAC_WPN = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius']
-    CLASSIC_COUNT = 2
+    ZODIAC_WPN = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius'] # for the twelve generals detection, gotta update it yearly
+    CLASSIC_COUNT = 2 # number of classic banners
+    # constants
+    NO_INFO = " "
+    SUMMON_KIND = "S"
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -34,12 +37,18 @@ class Gacha():
         - dict: Gacha data
     """
     async def get(self) -> list:
-        c = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=80)
+        c = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=70) # current time, a bit in the past to ensure it's updated later
+        # we check:
+        # - if gacha data doesn't exist
+        # - if gacha data is outdated
+        # - if a gacha collab banner ended
+        # - if the update failed
         if ('gacha' not in self.bot.data.save['gbfdata'] or self.bot.data.save['gbfdata']['gacha'] is None or c >= self.bot.data.save['gbfdata']['gacha']['time'] or c >= self.bot.data.save['gbfdata']['gacha'].get('collaboration', c+timedelta(seconds=10))) and not await self.update():
+            # if all those passed, we return nothing
             return []
-        if self.bot.data.save['gbfdata']['gacha']['time'] is None:
+        if self.bot.data.save['gbfdata']['gacha']['time'] is None: # if we lack the gacha banner timer, we also return nothing
             return []
-        return [c, self.bot.data.save['gbfdata']['gacha']]
+        return [c, self.bot.data.save['gbfdata']['gacha']] # else, return current time used (for timing reasons) and the gacha data
 
     """process()
     Retrieve and process the gacha rates
@@ -59,7 +68,7 @@ class Gacha():
     """
     async def process(self, gtype : str, bid : Union[str, int], sub_id : int) -> tuple:
         try:
-            # draw rate
+            # get the banner draw rate
             data = await self.bot.net.requestGBF("gacha/provision_ratio/{}/{}/{}".format(gtype, bid, sub_id), expect_JSON=True)
             gratio = data['ratio'][0]['ratio']
             
@@ -71,26 +80,35 @@ class Gacha():
                 if rarity < 0 or rarity > 2: continue # eliminate possible N rarity
                 glist[rarity]['rate'] = float(data['ratio'][2 - rarity]['ratio'][:-1])
                 for item in appear['item']:
-                    if item['kind'] is None: # default for summon and scam select
-                        if sub_id == 3 and item.get('name', '').startswith('Item '):
-                            kind = " "
+                    if item['kind'] is None: # summon and scam select use None by default
+                        if sub_id == 3 and item.get('name', '').startswith('Item '): # check if it's an item
+                            kind = self.NO_INFO
                         else:
-                            kind = "S"
+                            kind = self.SUMMON_KIND
                     else:
-                        kind = int(item['kind'])-1
-                    attribute = item.get('attribute', None)
-                    if attribute is None: attribute = " "
-                    if item['drop_rate'] not in glist[rarity]['list']: glist[rarity]['list'][item['drop_rate']] = []
-                    glist[rarity]['list'][item['drop_rate']].append("{}{}{}".format(attribute, kind, item['name']))
+                        kind = int(item['kind'])-1 # weapon prof
+                    attribute = item.get('attribute', None) # get element
+                    if attribute is None:
+                        attribute = self.NO_INFO # empty if element is missing
+                    # if item rate isn't in the data
+                    if item['drop_rate'] not in glist[rarity]['list']:
+                        glist[rarity]['list'][item['drop_rate']] = [] # add a list for that rate
+                    glist[rarity]['list'][item['drop_rate']].append("{}{}{}".format(attribute, kind, item['name'])) # add the item to that array (Format is Element Character, Type character and Item name. Example: 5STriple Zero (5 is light, S for summon, Triple Zero is the name)
 
-                    if rarity == 2: # ssr
-                        if appear['category_name'] not in grateup: grateup[appear['category_name']] = {}
-                        if 'character_name' in item and item.get('name', '') in self.ZODIAC_WPN:
-                            grateup['zodiac'].append("{}{}{}".format(attribute, kind, item['character_name']))
+                    if rarity == 2: # if it's a SSR
+                        if appear['category_name'] not in grateup: # Add rate list for that type of item (Usually Character Weapons and Summon)
+                            grateup[appear['category_name']] = {}
+                        if 'character_name' in item and item.get('name', '') in self.ZODIAC_WPN: # check if it's a twelve general
+                            grateup['zodiac'].append("{}{}{}".format(attribute, kind, item['character_name'])) # add it to the list of generals present in the banner
+                        # Check if on rate up
                         if item.get('incidence', None) is not None:
-                            if item['drop_rate'] not in grateup[appear['category_name']]: grateup[appear['category_name']][item['drop_rate']] = []
-                            if 'character_name' in item and item['character_name'] is not None: grateup[appear['category_name']][item['drop_rate']].append("{}{}{}".format(item['attribute'], kind, item['character_name']))
-                            else: grateup[appear['category_name']][item['drop_rate']].append("{}{}{}".format(attribute, kind, item['name']))
+                            if item['drop_rate'] not in grateup[appear['category_name']]: # If rate isn't in rate list type
+                                grateup[appear['category_name']][item['drop_rate']] = [] # Add list
+                            if 'character_name' in item and item['character_name'] is not None: # If it's a character
+                                grateup[appear['category_name']][item['drop_rate']].append("{}{}{}".format(item['attribute'], kind, item['character_name'])) # Add character to rate up (Format is Element Character, Type character and Item name)
+                            else: # Else item name
+                                grateup[appear['category_name']][item['drop_rate']].append("{}{}{}".format(attribute, kind, item['name'])) # (Format is Element Character, Type character and Item name)
+            # return results
             return gratio, glist, grateup
         except Exception as e:
             self.bot.logger.pushError("[GACHA] Exception 1:", e)
@@ -110,11 +128,15 @@ class Gacha():
     """
     async def getScamRate(self, gtype : str, bid : Union[str, int]) -> dict:
         try:
+            # request given scam data
             appear = (await self.bot.net.requestGBF("gacha/provision_ratio/{}/{}/4".format(gtype, bid), expect_JSON=True))['appear']
             items = {}
-            for e in appear:
-                if e['num'] == '1': items[e['name']] = int(float(e['draw_rate']) * 1000)
-                else:  items[e['name'] + ' x' + e['num']] = int(float(e['draw_rate']) * 1000)
+            for e in appear: # take note of items and their rates
+                if e['num'] == '1':
+                    items[e['name']] = int(float(e['draw_rate']) * 1000)
+                else:
+                    items[e['name'] + ' x' + e['num']] = int(float(e['draw_rate']) * 1000)
+            # return them
             return items
         except Exception as e:
             self.bot.logger.pushError("[GACHA] Exception 2:", e)
@@ -122,6 +144,12 @@ class Gacha():
     
     """fix_time_newyear()
     Adjust banner end time on new year
+    Banner timers usually don't have the year, so we use the current year in our datetime. If a banner carries over from one year to another, this fix is needed.
+    
+    Parameters
+    --------
+    current: Datetime, current time
+    d: Datetime, banner time to adjust
     
     Returns
     --------
@@ -131,8 +159,8 @@ class Gacha():
     """
     def fix_time_newyear(self, current : datetime, d : datetime) -> datetime:
         NY = False
-        if current > d:
-            d = d.replace(year=d.year+1) # new year fix
+        if current > d: # If the banner time is before our current time
+            d = d.replace(year=d.year+1) # we add a year
             NY = True
         return d, NY
 
@@ -144,49 +172,57 @@ class Gacha():
     bool: True if success, False if error
     """
     async def update(self) -> bool:
-        if not await self.bot.net.gbf_available():
+        if not await self.bot.net.gbf_available(): # check if GBF can be accessed
             return False
         try:
-            c = self.bot.util.JST()
-            #gacha page
+            c = self.bot.util.JST() # current time
+            # check the gacha page
             data = await self.bot.net.requestGBF("gacha/list", expect_JSON=True)
             if data is None: raise Exception()
-            # will contain the data
+            # data container
             gacha_data = {'banners':[]}
-            # retrieve id and scams
+            # retrieve data from gacha page request
             index = -1
             scam_ids = []
             for i, g in enumerate(data['legend']['lineup']):
-                if g['name'] == "Premium Draw": index = i
+                if g['name'] == "Premium Draw":
+                    index = i # normal banner index in the data
                 elif g['name'].find("Star Premium") != -1:
-                    for subscam in g['campaign_gacha_ids']:
+                    for subscam in g['campaign_gacha_ids']: # scam(s) ids, if they exist
                         scam_ids.append(subscam['id'])
             
             # set timers
-            gacha_data['time'] = datetime.strptime(str(c.year) + '/' + data['legend']['lineup'][index]['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
-            gacha_data['time'], NY = self.fix_time_newyear(c, gacha_data['time'])
+            gacha_data['time'] = datetime.strptime(str(c.year) + '/' + data['legend']['lineup'][index]['end'], '%Y/%m/%d %H:%M').replace(microsecond=0) # banner end timer
+            gacha_data['time'], NY = self.fix_time_newyear(c, gacha_data['time']) # apply fix
+            # sub banner time (usually for multi element banners, whose sparks carry over)
             gacha_data['timesub'] = datetime.strptime(data['ceiling']['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
-            if (NY is False and gacha_data['timesub'] < gacha_data['time']) or (NY is True and gacha_data['timesub'] > gacha_data['time']): gacha_data['time'] = gacha_data['timesub'] # switched
+            if (NY is False and gacha_data['timesub'] < gacha_data['time']) or (NY is True and gacha_data['timesub'] > gacha_data['time']): gacha_data['time'] = gacha_data['timesub'] # switch around if the New year fix has been applied
+            
+            # read crypto key
             random_key = data['legend']['random_key']
+            # read header images
             header_images = data['header_images']
+            # read logo images
             logo = {'logo_fire':1, 'logo_water':2, 'logo_earth':3, 'logo_wind':4, 'logo_dark':5, 'logo_light':6}.get(data.get('logo_image', ''), data.get('logo_image', '').replace('logo_', ''))
+            # get normal banner id (single draw)
             gid = data['legend']['lineup'][index]['id']
 
-            # main banner
+            # request main banner details
             gratio, glist, grateup = await self.process('legend', gid, 1)
             if gratio is None:
                 raise Exception("Couldn't retrieve main gacha banner")
-            gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup})
+            gacha_data['banners'].append({'ratio':gratio, 'list':glist, 'rateup':grateup}) # append to data
 
-            # scam detail
+            # request scam details (if they exist)
             for sid in scam_ids:
                 gratio, glist, grateup = await self.process('legend', sid, 3)
                 if gratio is not None:
-                    if 'scam' not in gacha_data:
+                    if 'scam' not in gacha_data: # add scam data list if not set
                         gacha_data['scam'] = []
-                    gacha_data['scam'].append({'ratio':gratio, 'list':glist, 'rateup':grateup, 'items': (await self.getScamRate('legend', sid))})
+                    gacha_data['scam'].append({'ratio':gratio, 'list':glist, 'rateup':grateup, 'items': (await self.getScamRate('legend', sid))}) # append to scam data
 
             # additional banners
+            # it works like the main banner request
             # # classic gacha
             for i in [500021, 501021]: # id has to be set manually (for now)
                 data = await self.bot.net.requestGBF("rest/gacha/classic/toppage_data_by_classic_series_id/{}".format(i), expect_JSON=True)
@@ -197,6 +233,7 @@ class Gacha():
             # # collab gacha
             data = await self.bot.net.requestGBF("rest/gacha/collaboration/toppage_data", expect_JSON=True)
             if data is not None and "collaboration" in data and "collaboration_ceiling" in data:
+                # store the collaboration end time
                 gacha_data['collaboration'] = datetime.strptime(data['collaboration_ceiling']['end'], '%Y/%m/%d %H:%M').replace(microsecond=0)
                 gacha_data['collaboration'], NY = self.fix_time_newyear(c, gacha_data['collaboration'])
                 gratio, glist, grateup = await self.process('collaboration', data["collaboration"]["lineup"][-1]["id"], 1)
@@ -205,13 +242,13 @@ class Gacha():
 
             # add image
             gachas = ['{}/tips/description_gacha.jpg'.format(random_key), '{}/tips/description_gacha_{}.jpg'.format(random_key, logo), '{}/tips/description_{}.jpg'.format(random_key, header_images[0]), 'header/{}.png'.format(header_images[0])]
-            for g in gachas:
+            for g in gachas: # check which one exists
                 data = await self.bot.net.request("https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(g))
                 if data is not None:
-                    gacha_data['image'] = g
+                    gacha_data['image'] = g # store the  first one to be found and stop here
                     break
 
-            # save
+            # save the data
             self.bot.data.save['gbfdata']['gacha'] = gacha_data
             self.bot.data.pending = True
             return True
@@ -238,39 +275,38 @@ class Gacha():
     list: List of string to use to make the description. In list form to use join() later, for less string instantiation.
     """
     def summary_subroutine(self, data : dict, index : int, time : datetime, timesub : Optional[datetime], remaining : datetime) -> str:
-        # timer
+        # banner timer
         description = ["{} Current gacha ends in **{}**".format(self.bot.emote.get('clock'), self.bot.util.delta2str(time - remaining, 2))]
         if timesub is not None and time != timesub:
             description.append("\n{} Spark period ends in **{}**".format(self.bot.emote.get('mark'), self.bot.util.delta2str(timesub - remaining, 2)))
 
-        # calculate real ssr rate
+        # calculate ssr rate sum
         sum_ssr = 0
-        # sum_total = 0 # NOTE: ignoring it for now
         for i, rarity in enumerate(data['banners'][index]['list']):
             for r in rarity['list']:
-                # sum_total += float(r) * len(rarity['list'][r]) # NOTE: ignoring it for now
-                if i == 2: sum_ssr += float(r) * len(rarity['list'][r])
+                if i == 2: # SSR
+                    sum_ssr += float(r) * len(rarity['list'][r]) # add rate multiplied by number of item
 
         # rate description
         description.append("\n{} **Rate:** Advertised **{}**".format(self.bot.emote.get('SSR'), data['banners'][index]['ratio']))
         if not data['banners'][index]['ratio'].startswith('3'):
             description.append(" **(Premium Gala)**")
         description.append(" ▫️ Sum of rates **{:.3f}%**".format(sum_ssr))
-        if index == 0 and 'scam' in data:
+        if index == 0 and 'scam' in data: # Add number of available Scam gachas
             description.append("\n{} **{}** Star Premium Draw(s) available".format(self.bot.emote.get('mark'), len(data['scam'])))
         description.append("\n")
         
         # build rate up list
         for k in data['banners'][index]['rateup']:
-            if k == 'zodiac':
-                if len(data['banners'][index]['rateup']['zodiac']) > 0:
+            if k == 'zodiac': # It should be first in the order
+                if len(data['banners'][index]['rateup']['zodiac']) > 0: # Write list of zodiacs to be available in the banner
                     description.append("{} **Zodiac** ▫️ ".format(self.bot.emote.get('loot')))
                     for i in data['banners'][index]['rateup'][k]:
                         description.append(self.formatGachaItem(i) + " ")
                     description.append("\n")
             else:
                 if len(data['banners'][index]['rateup'][k]) > 0:
-                    for r in data['banners'][index]['rateup'][k]:
+                    for r in data['banners'][index]['rateup'][k]: # List top rate up for each category (Weapons and Summons)
                         if k.lower().find("weapon") != -1: description.append("{}**{}%** ▫️ ".format(self.bot.emote.get('sword'), r))
                         elif k.lower().find("summon") != -1: description.append("{}**{}%** ▫️ ".format(self.bot.emote.get('summon'), r))
                         for i, item in enumerate(data['banners'][index]['rateup'][k][r]):
@@ -300,11 +336,11 @@ class Gacha():
             content = await self.get()
             if len(content) > 0:
                 remaining, data = tuple(content)
-                description = self.summary_subroutine(data, 0, data['time'], data['timesub'], remaining)
-                if len(data["banners"]) > self.CLASSIC_COUNT and "collaboration" in data and remaining < data["collaboration"]:
-                    description.append("{} **Collaboration**\n".format(self.bot.emote.get('crystal')))
-                    description.extend(self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining))
-                return "".join(description), "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image'])
+                description = self.summary_subroutine(data, 0, data['time'], data['timesub'], remaining) # main banner summary
+                if len(data["banners"]) > self.CLASSIC_COUNT and "collaboration" in data and remaining < data["collaboration"]: # check if a collab exists
+                    description.append("{} **Collaboration**\n".format(self.bot.emote.get('crystal'))) # add extra line
+                    description.extend(self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)) # and its summary
+                return "".join(description), "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image']) # return message and the image url
             return None, None
         except Exception as e:
             raise e
@@ -331,31 +367,36 @@ class Gacha():
     """
     async def retrieve(self, scam : Optional[bool] = None, banner : int = 0) -> tuple:
         try:
-            data = (await self.get())[1]
-            if scam is None:
-                if 0 <= banner < len(data):
+            data = (await self.get())[1] # retrieve the rate
+            if scam is None: # not asking for scam
+                if 0 <= banner < len(data): # access asked banner
                     gacha_data = data['banners'][banner]
-                else:
+                else: # or first banner if invalid index
                     gacha_data = data['banners'][0]
             else:
-                if 'scam' not in data or scam < 0 or scam >= len(data['scam']):
+                if 'scam' not in data or scam < 0 or scam >= len(data['scam']): # raise error if couldn't get scam
                     raise Exception()
                 gacha_data = data['scam'][scam]
-            if len(gacha_data['list']) == 0: raise Exception()
+            # final check
+            if len(gacha_data['list']) == 0:
+                raise Exception()
+            # gacha_data is now the data to the banner we're interested in
             data = gacha_data['list']
             rateups = []
-            # build a list of rate up
+            # build a list of rate up for this banner
             for k in gacha_data['rateup']:
-                if k == "zodiac": continue
-                if len(gacha_data['rateup'][k]) > 0:
+                if k == "zodiac":
+                    continue # ignore zodiac category
+                elif len(gacha_data['rateup'][k]) > 0:
                     for r in gacha_data['rateup'][k]:
                         if r not in rateups: rateups.append(r)
+            # get SSR rate
             ssrrate = int(gacha_data['ratio'][0])
             complete = True
-            if scam is not None:
+            if scam is not None: # return scam data on top
                 return data, rateups, ssrrate, complete, gacha_data['items'], scam
         except:
-            # legacy mode
+            # legacy mode, dummy data
             data = [{"rate": 82.0, "list": {"82": [None]}}, {"rate": 15.0, "list": {"15": [None]}}, {"rate": 3.0, "list": {"3": [None]}}]
             rateups = None
             ssrrate = 3
@@ -388,6 +429,7 @@ class Gacha():
 
     """allRates()
     Return a list of all different possible SSR rates in the current gacha
+    Doesn't support scam banners
     
     Parameters
     --------
@@ -421,7 +463,8 @@ class Gacha():
     str: self.resulting string
     """
     def formatGachaItem(self, raw : str) -> str:
-        if len(raw) < 3: return raw
+        if len(raw) < 3:
+            return raw
         res = []
         match raw[0]:
             case "1": res.append(str(self.bot.emote.get('fire')))
@@ -442,7 +485,7 @@ class Gacha():
             case "7": res.append(str(self.bot.emote.get('bow')))
             case "8": res.append(str(self.bot.emote.get('harp')))
             case "9": res.append(str(self.bot.emote.get('katana')))
-            case "S": res.append(str(self.bot.emote.get('summon')))
+            case self.SUMMON_KIND: res.append(str(self.bot.emote.get('summon')))
             case _: res.append(str(self.bot.emote.get('question')))
         res.append(raw[2:])
         return "".join(res)
@@ -463,18 +506,20 @@ class Gacha():
     """
     async def simulate(self, simtype : str, bannerid : Union[int, str], color : int, scamindex : int = 1) -> 'GachaSimulator':
         scamdata = None
-        match bannerid: # retrieve the data (no need to copy)
+        match bannerid:
             case 'scam':
-                gachadata = await self.retrieve()
-                scamdata = await self.retrieve(scam=scamindex-1)
+                gachadata = await self.retrieve() # retrieve the data
+                scamdata = await self.retrieve(scam=scamindex-1) # and the scam data
                 bannerid = 0
             case _:
-                if not isinstance(bannerid, int): bannerid = 0
-                gachadata = await self.retrieve(banner=bannerid)
-        gsim = GachaSimulator(self.bot, gachadata, simtype, scamdata, bannerid, color) # create a simulator instance
-        return gsim
+                if not isinstance(bannerid, int): # invalid string, set to default index
+                    bannerid = 0
+                gachadata = await self.retrieve(banner=bannerid) # retrieve the data
+        # create and return a simulator instance
+        return GachaSimulator(self.bot, gachadata, simtype, scamdata, bannerid, color)
 
 class GachaSimulator():
+    # Mode constants
     MODE_SINGLE = 0
     MODE_SRSSR = 1
     MODE_MEMEA = 2
@@ -485,11 +530,14 @@ class GachaSimulator():
     MODE_SUPER = 13
     MODE_SCAM = 14
     MODE_ALL = 20
+    # SSR rates
     RATE_SUPER = 15
     RATE_MUKKU = 9
     RATE_GALA = 6
     RATE_NORMAL = 3
+    # Total rate
     RATE_ALL = 100
+    # Assets
     CRYSTALS = [
         "https://mizagbf.github.io/assets/rosetta-remote-resources/0_s.png",
         "https://mizagbf.github.io/assets/rosetta-remote-resources/1_s.png",
@@ -497,6 +545,8 @@ class GachaSimulator():
         "https://mizagbf.github.io/assets/rosetta-remote-resources/3_s.png"
     ]
     ROULETTE = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
+    # Others
+    RPS = ['rock', 'paper', 'scissor']
     ROULETTE_DELAY = 4
 
     """constructor
@@ -664,13 +714,19 @@ class GachaSimulator():
         try:
             if self.best[0] != -1 and self.best[1] != "":
                 search = self.best[1][2:]
+                # extract element and proficiency for wiki search
                 element = ['fire', 'water', 'earth', 'wind', 'light', 'dark'][int(self.best[1][0])-1]
                 prof = (['sabre', 'dagger', 'spear', 'axe', 'staff', 'gun', 'melee', 'bow', 'harp', 'katana'][int(self.best[1][1])] if self.best[1][1] != 'S' else None)
-                rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons", from_gacha=True, element=element, proficiency=prof) # retrieve the id from the wiki
-                if rid is None: self.thumbnail = None # and update self.thumbnail accordingly
-                elif rid.startswith('1'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
-                elif rid.startswith('2'): self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)
-                else: self.thumbnail = None
+                # retrieve the element id from the wiki
+                rid = await self.bot.util.search_wiki_for_id(search, "summons" if self.best[1][1] == 'S' else "weapons", from_gacha=True, element=element, proficiency=prof)
+                if rid is None: # not found
+                    self.thumbnail = None
+                elif rid.startswith('1'): # weapon
+                    self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg".format(rid)
+                elif rid.startswith('2'): # summon
+                    self.thumbnail = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg".format(rid)
+                else:
+                    self.thumbnail = None
         except:
             pass
 
@@ -766,19 +822,19 @@ class GachaSimulator():
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(r[0])), r[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 1: # ten roll display
                 scam_position = -1
-                for i in range(0, 11):
+                for i in range(0, 11): # 1 by 1 + the final display all ten, so 11
                     msgs = []
-                    for j in range(0, i):
+                    for j in range(0, i): # display revealed items
                         if j >= 10: break
                         # write
                         msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
                         if j & 1 == 1:
                             msgs.append("\n")
-                    for j in range(i, 10):
+                    for j in range(i, 10): # display hidden items
                         msgs.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
                         if j & 1 == 1:
                             msgs.append("\n")
-                    if self.scamdata is not None:
+                    if self.scamdata is not None: # display scam data
                         scam_position = len(msgs) - 1
                         msgs.append(str(self.bot.emote.get('SSR')))
                         msgs.append(str(self.bot.emote.get('crystal2')))
@@ -786,6 +842,7 @@ class GachaSimulator():
                         msgs.append(str(self.bot.emote.get('red')))
                     await asyncio.sleep(0.7)
                     await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
+                # display scam result
                 if self.scamdata is not None:
                     msgs = msgs[:scam_position]
                     msgs.append("\n")
@@ -803,15 +860,22 @@ class GachaSimulator():
                 counter = [0, 0, 0]
                 msgs = []
                 best = [-1, ""]
-                if self.mode == self.MODE_MEMEB: item_count = 5
-                else: item_count = 3
+                # speed selection
+                if self.mode == self.MODE_MEMEB:
+                    item_count = 5 # by 5
+                else:
+                    item_count = 3 # by 3
+                # iterate over rolled items
                 for i, v in enumerate(self.result['list']):
                     if i > 0 and i % item_count == 0:
+                        # display once we reached item_count
                         await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(1)
                         msgs = []
+                    # add result
                     msgs.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
                     counter[v[0]] += 1
+                # update title
                 title = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
                 await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
             case 3: # spark display
@@ -820,18 +884,21 @@ class GachaSimulator():
                 msgs = []
                 best = [-1, ""]
                 rolls = self.getSSRList()
-                for r in rolls: # check for best roll
-                    if best[0] < 3 and '**' in r: best = [3, r.replace('**', '')]
-                    elif best[0] < 2: best = [2, r]
+                for r in rolls: # check for best rolls
+                    if best[0] < 3 and '**' in r:
+                        best = [3, r.replace('**', '')]
+                    elif best[0] < 2:
+                        best = [2, r]
                 if len(rolls) > 0 and self.complete:
                     msgs.append("{} ".format(self.bot.emote.get('SSR')))
-                    for item in rolls:
+                    for item in rolls: # for each ssr
                         msgs.append(item)
-                        if rolls[item] > 1:
+                        if rolls[item] > 1: # add occurence
                             msgs.append(" x{}".format(rolls[item]))
                         await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer), view=None)
                         await asyncio.sleep(0.75)
                         msgs.append(" ")
+                # add extra messages for other modes
                 if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_MUKKU: amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
                 elif self.mode == self.MODE_SUPER: amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
@@ -848,7 +915,8 @@ class GachaSimulator():
     def getSSRList(self) -> dict:
         rolls = {}
         for r in self.result['list']:
-            if r[0] == 2: rolls[r[1]] = rolls.get(r[1], 0) + 1
+            if r[0] == 2: # extra SSRs
+                rolls[r[1]] = rolls.get(r[1], 0) + 1
         return rolls
 
     """SSRList2StrList()
@@ -865,7 +933,7 @@ class GachaSimulator():
     def SSRList2StrList(self, ssrs : list) -> str:
         if len(ssrs) > 0:
             tmp = ["\n", str(self.bot.emote.get('SSR')), " "]
-            for item in ssrs:
+            for item in ssrs: # make a list of SSR only
                 tmp.append(item)
                 if ssrs[item] > 1:
                     tmp.append(" x{}".format(ssrs[item]))
@@ -886,7 +954,6 @@ class GachaSimulator():
     async def roulette(self, inter : disnake.Interaction, legfest : int = -1, realist : bool = False) -> None:
         footer = []
         roll = 0
-        rps = ['rock', 'paper', 'scissor']
         ct = self.bot.util.JST()
         # apply settings
         settings = self.bot.data.save['gbfdata'].get('roulette', {})
@@ -905,46 +972,59 @@ class GachaSimulator():
         # settings end
         self.thumbnail = self.ROULETTE
         prev_best = None
-        state = 0
+        state = 0 # 0 = Janken, 1 = roll, 2 = gachapin, 3 = mukku, 4 = supermukku, 5 = birthday
         superFlag = False
+        jankenThreshold = 0
+        # Check guaranted roll period
         if ct >= fixedS and ct < fixedE:
             msgs = ["{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), forcedRollCount//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
             roll = forcedRollCount
-            if forcedSuperMukku: superFlag = True
+            # set flags
+            enableJanken = False
+            if forcedSuperMukku:
+                superFlag = True
             if legfest == 1 and forced3pc:
                 legfest = -1
             d = 0
             state = 1
         else:
-            d = random.randint(1, 10000)
+            d = random.randint(1, 10000) # roulette roll
+            # Add possible results depending on settings
             results = []
             results.append((1, 800)) # gachapin 8%
-            results.append((30, 2000)) # 30 rolls 20%
-            if birthdayMode: results.append((2, 500)) # birthday 5%
+            if birthdayMode:
+                results.append((2, 500)) # birthday 5%
             if realist:
+                results.append((30, 2000)) # 30 rolls 20%
                 results.append((20, None))
             else:
                 results.append((0, 200)) # hundred 2%
+                results.append((30, 2000)) # 30 rolls 20%
                 results.append((20, 3500)) # 20 rolls 35%
                 results.append((10, None))
-            threshold = 0
+            # Calculate minimum value to get janken
             for r in results:
-                if r[1] is not None and d > threshold + r[1]:
-                    threshold += r[1]
+                if r[0] == 30 or r[0] == 0: break # stop at "normal" rolls
+                jankenThreshold += r[1]
+            threshold = 0
+            # Look for what result we got in variable d
+            for r in results:
+                if r[1] is not None and d > threshold + r[1]: # over threshold
+                    threshold += r[1] # remove and iterate
                     continue
                 match r[0]:
                     case 0:
-                        if enable200:
+                        if enable200: # forced 200 rolls
                             msgs = ["{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
                             roll = 200
-                        else:
+                        else: # forced 100 rolls
                             msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
                             roll = 100
-                    case 1:
+                    case 1: # Gachapin
                         msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
                         roll = -1
                         state = 2
-                    case 2:
+                    case 2: # Birthday zone
                         msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
                         roll = -1
                         state = 5
@@ -958,36 +1038,43 @@ class GachaSimulator():
                         msgs = ["**10** rolls :pensive:\n"]
                         roll = 10
                 break
+        # Default message
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))
-        if not enableJanken and state < 2: state = 1
+        if not enableJanken and state < 2:
+            state = 1 # set state to 1 if we got normal rolls and janken is disabled
         running = True
-        # loop
+        # Main loop
         while running:
-            if self.exception is not None:
+            if self.exception is not None: # error occured, abort
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
                 self.bot.logger.pushError("[GACHA] 'simulator roulette' error:", self.exception)
                 return
             start_time = time.time()
             await asyncio.sleep(0) # to not risk blocking
             match state:
-                case 0: # RPS
-                    if enableJanken and d >= 2000 and random.randint(0, 2) > 0:
+                case 0: # RPS/Janken
+                    if enableJanken and d >= jankenThreshold and random.randint(0, 2) > 0: # only if enabled and we rolled above the threshold and we got lucky (33% chance)
+                        # simulate basic rock paper scisor
                         a = 0
                         b = 0
                         while a == b:
                             a = random.randint(0, 2)
                             b = random.randint(0, 2)
-                        msgs.append("You got **{}**, Gachapin got **{}**".format(rps[a], rps[b]))
-                        if (a == 1 and b == 0) or (a == 2 and b == 1) or (a == 0 and b == 2):
+                        # show result
+                        msgs.append("You got **{}**, Gachapin got **{}**".format(self.RPS[a], self.RPS[b]))
+                        if (a == 1 and b == 0) or (a == 2 and b == 1) or (a == 0 and b == 2): # check win condition
                             msgs.append(" :thumbsup:\nYou **won** rock paper scissor, your rolls are **doubled** :confetti_ball:\n")
-                            roll = roll * 2
-                            if roll > (200 if enable200 else 100): roll = (200 if enable200 else 100)
-                            maxJanken -= 1
+                            roll = roll * 2 # double roll
+                            if roll > (200 if enable200 else 100): # cap roll
+                                roll = (200 if enable200 else 100)
+                                maxJanken = 0
+                            else:
+                                maxJanken -= 1
                             if maxJanken == 0:
-                                state = 1
+                                state = 1 # go to normal roll
                         else:
                             msgs.append(" :pensive:\n")
-                            state = 1
+                            state = 1 # go to normal roll
                     else:
                         state = 1
                 case 1: # normal rolls
@@ -997,8 +1084,10 @@ class GachaSimulator():
                     tmp = self.SSRList2StrList(self.getSSRList())
                     footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
                     msgs.append("{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                    if superFlag: state = 4
-                    else: running = False
+                    if superFlag:
+                        state = 4 # go to Super Mukku
+                    else:
+                        running = False # Over
                 case 2: # gachapin
                     self.changeMode('gachapin')
                     await self.generate(300, legfest)
@@ -1007,11 +1096,17 @@ class GachaSimulator():
                     tmp = self.SSRList2StrList(self.getSSRList())
                     footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
                     msgs.append("Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate))
-                    if count == 10 and random.randint(1, 100) <= 99: state = 3
-                    elif count == 20 and random.randint(1, 100) <= 60: state = 3
-                    elif count == 30 and random.randint(1, 100) <= 30: state = 3
-                    elif random.randint(1, 100) <= 3: state = 3
-                    else: running = False
+                    # Check if we go to Mukku by rolling some dice (based on how many rolls we got
+                    if count == 10 and random.randint(1, 100) <= 99:
+                        state = 3
+                    elif count == 20 and random.randint(1, 100) <= 60:
+                        state = 3
+                    elif count == 30 and random.randint(1, 100) <= 30:
+                        state = 3
+                    elif random.randint(1, 100) <= 3:
+                        state = 3
+                    else:
+                        running = False # Over
                 case 3:
                     self.changeMode('mukku')
                     await self.generate(300, legfest)
@@ -1019,12 +1114,13 @@ class GachaSimulator():
                     rate = (100*self.result['detail'][2]/count)
                     tmp = self.SSRList2StrList(self.getSSRList())
                     msgs.append(":confetti_ball: Mukku ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                    if doubleMukku:
-                        if random.randint(1, 100) < 25: pass
-                        else: running = False
-                        doubleMukku = False
+                    if doubleMukku: # Double mukku enabled
+                        if random.randint(1, 100) < 25: # roll a dice
+                            doubleMukku = False # disable double mukku and wait to go to mukku again
+                        else:
+                            running = False # Over
                     else:
-                        running = False
+                        running = False # Over
                 case 4:
                     self.changeMode('supermukku')
                     await self.generate(300, legfest)
@@ -1033,24 +1129,24 @@ class GachaSimulator():
                     tmp = self.SSRList2StrList(self.getSSRList())
                     msgs.append(":confetti_ball: **Super Mukku** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
                     running = False
-                case 5: # birthday roulette
-                    d = random.randint(1, 10000)
-                    tmp = ""
+                case 5: # birthday zone roulette
+                    d = random.randint(1, 10000) # roll another dice
                     running = False
+                    # see how many rolls we get
                     if d <= 2000: roll = 100
                     elif d <= 3400: roll = 50
                     elif d <= 4800: roll = 60
                     elif d <= 6200: roll = 70
                     elif d <= 7600: roll = 80
                     elif d <= 9000:
-                        state = 2
+                        state = 2 # gachapin state
                         msgs.append(":confetti_ball: You got the **Gachapin**!!\n")
                         running = True
-                        tmp = "None"
                     else:
                         self.changeMode('all')
                         roll = 10
-                    if tmp == "":
+                    if state == 5: # in case of gachapin, this part won't execute
+                        # generate our birthday rolls
                         await self.generate(roll, legfest)
                         count = len(self.result['list'])
                         rate = (100*self.result['detail'][2]/count)
@@ -1060,11 +1156,15 @@ class GachaSimulator():
                         else:
                             msgs.append(":confetti_ball: **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
                         footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
+            # tweak footer
             if realist:
                 footer.append(" ▫️ Realist")
+            # update thumbnail if it changed
             if prev_best is None or str(self.best) != prev_best:
                 prev_best = str(self.best)
                 await self.updateThumbnail()
+            # wait next roulette update
             diff = self.ROULETTE_DELAY - (time.time() - start_time)
             if diff > 0: await asyncio.sleep(diff)
+            # send message
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs) + ("" if not running else "**...**"), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))
