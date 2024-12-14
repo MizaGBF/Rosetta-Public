@@ -26,18 +26,20 @@ class Emote():
     Called once, after the bot boot.
     """
     async def init_request(self) -> None:
-        # get list of valid unicode emojis
+        # get a list of valid unicode emojis
         data = await self.bot.net.request('http://www.unicode.org/Public/emoji/1.0//emoji-data.txt')
         if data is None:
             self.bot.logger.pushError("[Emoji] Couldn't retrieve the list of unicode Emojis")
         else:
             try:
+                # parse file
                 data = data.decode('utf-8').split('\n')
                 for l in data:
                     if l.startswith('#'): continue
                     dat = l.split(';', 1)[0].strip()
                     if dat == "": continue
                     dat = dat.split(' ')
+                    # add emoji to dict
                     if len(dat) == 2:
                         self.unicode_emoji[int(dat[0], 16)] = int(dat[1], 16)
                     elif len(dat) == 1:
@@ -72,13 +74,13 @@ class Emote():
     bool: True if it's an emoji, False otherwise
     """
     def isValid(self, emoji : str) -> bool:
-        if len(emoji) > 5 and emoji.startswith('<a:') and emoji.endswith('>'):
+        if len(emoji) > 5 and emoji.startswith('<a:') and emoji.endswith('>'): # emoji is an animated emoji
             return self.bot.get_emoji(int(emoji[3:-1].split(':')[-1])) is not None
-        elif len(emoji) > 4 and emoji.startswith('<:') and emoji.endswith('>'):
+        elif len(emoji) > 4 and emoji.startswith('<:') and emoji.endswith('>'): # emoji is a non animated emoji
             return self.bot.get_emoji(int(emoji[2:-1].split(':')[-1])) is not None
-        elif len(emoji) > 3 and emoji.startswith(':') and emoji.endswith(':') and ' ' not in emoji:
+        elif len(emoji) > 3 and emoji.startswith(':') and emoji.endswith(':') and ' ' not in emoji: # emoji is a standard :emoji:
             return True
-        elif len(emoji) > 1 and ord(emoji[0]) in self.unicode_emoji:
+        elif len(emoji) > 1 and ord(emoji[0]) in self.unicode_emoji: # emoji is an unicode emoji
             return True
         return False
 
@@ -123,16 +125,19 @@ class Emote():
     """
     async def load_app_emojis(self) -> None:
         try:
+            # list files in the assets/emojis folder
             emote_file_table = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
+            # get the list of app emojis already set
             existing = await self.get_all_app_emojis()
-            for item in existing['items']:
+            for item in existing['items']: # and remove the ones already uploaded from emote_file_table
                 emote_file_table.pop(item['name'], None)
+            # if we have files remaining to be uploaded in emote_file_table...
             if len(emote_file_table) > 0:
                 self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.3)))
                 try:
-                    for k, v in emote_file_table.items():
-                        with open("assets/emojis/" + v, mode="rb") as f:
-                            await self.create_app_emoji(k, f.read())
+                    for k, v in emote_file_table.items(): # for each of them
+                        with open("assets/emojis/" + v, mode="rb") as f: # read the file
+                            await self.create_app_emoji(k, f.read()) # and create an app emoji with it
                             await asyncio.sleep(1)
                     self.bot.logger.push("[UPLOAD EMOJI] Done.\nEmojis have been uploaded")
                 except Exception as e:
@@ -143,13 +148,13 @@ class Emote():
         except Exception as xe:
             self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error A", xe)
             self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
+        # now initializing app emoji list
         try:
-            # initializing app emoji list
-            for item in existing['items']:
+            for item in existing['items']: # for each emoji item
                 name = item['name']
                 if len(name) == 2 and name.endswith('_'):
                     name = name[0]
-                self.create_emoji_in_cache_from(name, item)
+                self.create_emoji_in_cache_from(name, item) # set our custom cache with this emoji
         except Exception as e:
             self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error B", e)
             self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
