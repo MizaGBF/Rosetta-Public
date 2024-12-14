@@ -53,7 +53,7 @@ class File():
     def mv(self, src : str, dst : str) -> None:
         try:
             if self.exist(src):
-                if self.exist(dst): self.rm(dst) # to be sure
+                if self.exist(dst): self.rm(dst) # delete destination beforehand, to be sure
                 shutil.move(src, dst)
         except: pass
 
