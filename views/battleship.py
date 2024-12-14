@@ -48,7 +48,7 @@ class BattleShipButton(disnake.ui.Button):
                         self.view.notification += "**{}** is the winner".format(self.view.players[self.view.state].display_name)
                         self.view.state = -1
                     else:
-                        self.view.state = (self.view.state + 1) % 2
+                        self.view.state = (self.view.state + 1) & 1
                         self.view.notification += "Turn of **{}**".format(self.view.players[self.view.state].display_name)
                     if self.view.state < 0:
                         self.view.stopall()
@@ -119,7 +119,7 @@ class BattleShip(BaseView):
     def shoot(self, value : str) -> int:
         x = 0
         y = int(value[1]) - 1
-        opponent = (self.state + 1) % 2
+        opponent = (self.state + 1) & 1
         match value[0]:
             case 'A': x = 0
             case 'B': x = 1

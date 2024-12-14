@@ -127,7 +127,7 @@ class TicTacToe(BaseView):
                 c.disabled = True
             return True
         else:
-            self.playing_index = (self.playing_index + 1) % 2
+            self.playing_index = (self.playing_index + 1) & 1
             self.playing = self.players[self.playing_index]
             self.notification = "Turn of **{}**".format(self.playing.display_name)
             return False

@@ -40,7 +40,7 @@ class ConnectFourButton(disnake.ui.Button):
                 self.view.notification += "It's a **Draw**..."
                 self.view.state = -1
             else:
-                self.view.state = (self.view.state + 1) % 2
+                self.view.state = (self.view.state + 1) & 1
                 self.view.notification += "Turn of **{}**".format(self.view.players[self.view.state].display_name)
             if self.view.state < 0:
                 self.view.stopall()

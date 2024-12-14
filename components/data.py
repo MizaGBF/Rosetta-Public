@@ -184,8 +184,8 @@ class Data():
                             data['gbfaccounts'][i][1] = self.bot.net.str2cookie(acc[1])
                     if ver <= 11:
                         for gid in data['announcement']:
-                            data['announcement'][gid][1] = (data['announcement'][gid][1] % 2 == 1)
-                            data['announcement'][gid][2] = (data['announcement'][gid][2] % 2 == 1)
+                            data['announcement'][gid][1] = (data['announcement'][gid][1] & 1 == 1)
+                            data['announcement'][gid][2] = (data['announcement'][gid][2] & 1 == 1)
                     if ver <= 12:
                         for gid in data['announcement']:
                             data['announcement'][gid] = [data['announcement'][gid][0], data['announcement'][gid][3]]

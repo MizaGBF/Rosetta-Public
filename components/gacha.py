@@ -772,11 +772,11 @@ class GachaSimulator():
                         if j >= 10: break
                         # write
                         msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
-                        if j % 2 == 1:
+                        if j & 1 == 1:
                             msgs.append("\n")
                     for j in range(i, 10):
                         msgs.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
-                        if j % 2 == 1:
+                        if j & 1 == 1:
                             msgs.append("\n")
                     if self.scamdata is not None:
                         scam_position = len(msgs) - 1

@@ -958,7 +958,7 @@ class GranblueFantasy(commands.Cog):
                         support_summons.append(str(self.bot.emote.get(summon[1])))
                         support_summons.append(summon[0])
                     support_summons.append("\n")
-                elif i % 2 == 0: # display None on first line
+                elif i & 1 == 0: # display None on first line
                     support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[i//2])))
                     support_summons.append(" None\n")
             if len(support_summons) > 0:
@@ -1100,7 +1100,7 @@ class GranblueFantasy(commands.Cog):
     async def kirinanima(self, inter: disnake.GuildCommandInteraction, talisman : int = commands.Param(description="Talisman count", ge=0, le=100000, default=0), ream : int = commands.Param(description="Ream count", ge=0, le=100000, default=0), silver_anima : int = commands.Param(description="Silver Anima count", ge=0, le=100000, default=0), omega_anima : int = commands.Param(description="Omega Anima count", ge=0, le=100000, default=0)) -> None:
         """Calcul how many Omega animas of Kirin or Huanglong you own"""
         await inter.response.defer(ephemeral=True)
-        await inter.edit_original_message(embed=self.bot.embed(title="Kirin Anima Calculator", description="You own the equivalent of **{}** Omega Animas".format(omega_anima + (ream+talisman//5+silver_anima)//10), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img_low/sp/assets/item/article/s/{}.jpg".format([529, 531][int(datetime.now().timestamp())%2]), color=self.COLOR))
+        await inter.edit_original_message(embed=self.bot.embed(title="Kirin Anima Calculator", description="You own the equivalent of **{}** Omega Animas".format(omega_anima + (ream+talisman//5+silver_anima)//10), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img_low/sp/assets/item/article/s/{}.jpg".format([529, 531][int(datetime.now().timestamp()) & 1]), color=self.COLOR))
 
     @gbf.sub_command_group()
     async def check(self, inter: disnake.GuildCommandInteraction) -> None:
