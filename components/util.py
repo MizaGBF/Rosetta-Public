@@ -364,6 +364,25 @@ class Util():
         if arabic > 1: return name[0] + "..."
         else: return name
 
+    """breakdownHTML()
+    Take a string containing HTML tags and break it down in a list.
+    Odd elements should be the tags, even should be the text in between.
+    
+    Parameters
+    ----------
+    content: String, the string to breakdown
+    
+    Returns
+    --------
+    list: The resulting list
+    """
+    def breakdownHTML(self, content : str) -> list:
+        firstsplit = content.replace('\n', '').replace('    ','').split('<')
+        result = [firstsplit[0]]
+        for i in range(1, len(firstsplit)):
+            result.extend(firstsplit[i].split('>', 1))
+        return result
+
     """str2gbfid()
     Convert a string to a GBF profile ID.
     

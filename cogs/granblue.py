@@ -134,6 +134,18 @@ class GranblueFantasy(commands.Cog):
             ii = self.bot.data.save['gbfdata']['game_news'][0] # ii is the iterator
             silent = False
             ncheck = 10 + max(self.bot.data.save['gbfdata']['game_news']) - min(self.bot.data.save['gbfdata']['game_news']) # max number of check
+        # HTML tag substitutions
+        tags = {
+            "br":"\n",
+            "/br":"\n",
+            "b":"**",
+            "/b":"**",
+            "i":"*",
+            "/i":"*",
+            "u":"__",
+            "/u":"__",
+            "tr":"\n"
+        }
         # build a list of id to check
         to_process = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
         # loop over this list
@@ -147,6 +159,7 @@ class GranblueFantasy(commands.Cog):
                 try:
                     news.append(ii) # append id to news list
                     if not silent: # if not silent, we process the content
+                        # filter out some pots, determine the limit of others
                         if data[0]['title'].startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in data[0]['title'] or 'Star Premium Draw Set On Sale' in data[0]['title']: continue
                         elif data[0]['title'].endswith(" Concluded"): limit = 40
                         elif data[0]['title'].endswith(" Premium Draw Update"): limit = 100
@@ -154,89 +167,46 @@ class GranblueFantasy(commands.Cog):
                         elif data[0]['title'].endswith(" Added to Side Stories"): limit = 30
                         elif data[0]['title'].endswith(" Underway!"): limit = 30
                         else: limit = 250
-                        # WARNING: The following code is ugly
-                        # remove/transform specific tags
-                        description = data[0]['contents'].replace('</div>', '').replace('</span>', '').replace('<br>', '').replace('<Br>', '').replace('<ul>', '').replace('</ul>', '').replace('<li>', '').replace('</li>', '').replace('<i>', '*').replace('</i>', '*').replace('<b>', '**').replace('</b>', '**').replace('<u>', '__').replace('</u>', '__').replace('    ', '')
-                        # detect and retrieve first image url
-                        thumb = None
-                        a = description.find('<img src="')
-                        if a != -1:
-                            b = description.find('"', a+10)
-                            if b != -1:
-                                tmp = description[a+10:b]
-                                if tmp.startswith("assets"):
-                                    thumb += "https://prd-game-a-granbluefantasy.akamaized.net/" + tmp
-                                elif tmp.startswith("http"):
-                                    thumb = tmp
+                        # Breakdown the html
+                        content = self.bot.util.breakdownHTML(data[0]['contents'])
+                        elements = []
+                        link = None
+                        thumbnail = None
+                        # Iterate over strings
+                        for i in range(0, len(content)):
+                            if i & 1 == 1: # Odd, it's a tag
+                                if content[i] in tags: # known tag, replace with corresponding string (see 40 lines above)
+                                    elements.append(tags[content[i]])
+                                else: # not a known tag
+                                    if elements[-1].strip() != "": # last element wasn't empty, we add a space
+                                        elements.append(" ")
+                                    if thumbnail is None and content[i].startswith("img "): # thumbnail detection
+                                        thumbnail = content[i].split('src="', 1)[1].split('"', 1)[0]
+                                    elif link is None and content[i].startswith("a "): # url detection
+                                        link = content[i].split('href="', 1)[1].split('"', 1)[0]
+                            else: # even, it's text
+                                tmp = content[i].strip()
+                                if i > 0 and tmp == "" and tmp == elements[-1].strip(): # don't insert spaces if the previous string is also empty or possibly containing white spaces
+                                    pass
                                 else:
-                                    thumb += "https://prd-game-a-granbluefantasy.akamaized.net" + tmp
-                        # remove div tags
-                        cur = 0
-                        while True:
-                            a = description.find('<div', cur)
-                            if a == -1: break
-                            b = description.find('>', a)
-                            if b == -1: break
-                            description = description[:a] + description[b+1:]
-                            cur = a
-                        # remove span tags
-                        cur = 0
-                        while True:
-                            a = description.find('<span', cur)
-                            if a == -1: break
-                            b = description.find('>', a)
-                            if b == -1: break
-                            description = description[:a] + description[b+1:]
-                            cur = a
-                        # retrieve first a tag url for later use
-                        url = None
-                        a = description.find('<a href="')
-                        if a != -1:
-                            b = description.find('"', a+9)
-                            if b != -1:
-                                url = "https://game.granbluefantasy.jp/" + description[a+9:b]
-                        # remove a tags
-                        cur = 0
-                        while True:
-                            a = description.find('<a ', cur)
-                            if a == -1: break
-                            b = description.find('/a>', a)
-                            if b == -1: break
-                            b += 2
-                            description = description[:a] + description[b+1:]
-                            cur = a
-                        # remove font tags
-                        cur = 0
-                        while True:
-                            a = description.find('<font ', cur)
-                            if a == -1: break
-                            b = description.find('/font>', a)
-                            if b == -1: break
-                            b += 5
-                            description = description[:a] + description[b+1:]
-                            cur = a
-                        # remove img tags
-                        cur = 0
-                        while True:
-                            a = description.find('<img ', cur)
-                            if a == -1: break
-                            b = description.find('>', a)
-                            if b == -1: break
-                            description = description[:a] + description[b+1:]
-                            cur = a
-                        description = description.replace('<li>', '**')
-                        # remove comments
-                        cur = 0
-                        while True:
-                            a = description.find('<!--', cur)
-                            if a == -1: break
-                            b = description.find('-->', a)
-                            if b == -1: break
-                            description = description[:a] + description[b+3:]
-                            cur = a
-                        # final tweaks
-                        description = description.replace('<li>', '**')
-                        elements = description.replace('\n\n', '\n').replace('\n\n', '\n').replace('\n\n', '\n').split('\n')
+                                    elements.append(content[i])
+                        # Adjust thumbnail url
+                        if thumbnail is not None and "granbluefantasy" not in thumbnail:
+                            if thumbnail == "":
+                                thumbnail = None
+                            elif not thumbnail.startswith("https://"):
+                                if thumbnail[0] == "/":
+                                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net" + thumbnail
+                                else:
+                                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net/" + thumbnail
+                        # Adjust link url
+                        if link is not None and not link.startswith("https://"):
+                            if link == "":
+                                link = None
+                            elif link[0] == "/":
+                                link = "https://granbluefantasy.jp" + link
+                            else:
+                                link = "https://granbluefantasy.jp/" + link
                         # build description
                         description = []
                         length = 0
@@ -249,11 +219,8 @@ class GranblueFantasy(commands.Cog):
                         if len(description) == 0: description.append("")
                         description.append("[News Link](https://game.granbluefantasy.jp/#news/detail/{}/2/1/1)".format(ii))
                         description = "\n".join(description)
-                        # fixes for when intern kun mess up
-                        if thumb is not None and '://' in thumb[8:]: thumb = None
-                        if url is not None and '://' in url[8:]: url = None
                         # send news
-                        await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'].replace('<br>', ' '), description=description, url=url, image=thumb, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
+                        await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'].replace('<br>', ' '), description=description, url=link, image=thumbnail, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
                         # detect maintenance to automatically sets the date
                         # we check for specific titles
                         if data[0]['title'].endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
