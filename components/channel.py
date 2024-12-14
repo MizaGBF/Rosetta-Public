@@ -12,8 +12,8 @@ class Channel():
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
         self.cache = {}
-        self.announcements = []
-        self.auto_publish = []
+        self.announcements = [] # channels to send announcement to
+        self.auto_publish = [] # channels to auto publish
 
     def init(self) -> None:
         self.cache = {}
@@ -23,11 +23,14 @@ class Channel():
     Update announcement channel lists
     """
     def update_announcement_channels(self) -> None:
+        # reset containers
         self.announcements = []
         self.auto_publish = []
+        # loop over settings
         for v in self.bot.data.save.get('announcement', {}).values():
-            self.announcements.append(v[0])
-            if v[1]: self.auto_publish.append(v[0])
+            self.announcements.append(v[0]) # add channel to announcements
+            if v[1]: # auto publish flag is up
+                self.auto_publish.append(v[0]) # so add to auto_publish too
 
     """can_publish()
     Check if the channel id is in auto_publish
@@ -53,10 +56,15 @@ class Channel():
     """
     def set(self, name : str, id_key : str) -> None:
         try:
-            c = self.bot.get_channel(self.bot.data.config['ids'][id_key])
-            if c is not None: self.cache[name] = c
-        except:
-            self.bot.logger.pushError("[CHANNEL] Invalid key: {}".format(id_key))
+            if name in self.cache:
+                raise Exception("Name already used")
+            c = self.bot.get_channel(self.bot.data.config['ids'][id_key]) # retrieve channel for given config.json id
+            if c is None:
+                raise Exception("Channel not found")
+            self.cache[name] = c # add to cache if it exists
+            self.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+        except Exception as e:
+            self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using key '{}'".format(name, id_key), e)
 
     """setID()
     Register a channel with a name
@@ -68,10 +76,15 @@ class Channel():
     """
     def setID(self, name : str, cid : int) -> None:
         try:
-            c = self.bot.get_channel(cid)
-            if c is not None: self.cache[name] = c
-        except:
-            self.bot.logger.pushError("[CHANNEL] Invalid ID: {}".format(cid))
+            if name in self.cache:
+                raise Exception("Name already used")
+            c = self.bot.get_channel(cid) # retrieve channel for given id
+            if c is None:
+                raise Exception("Channel not found")
+            self.cache[name] = c # add to cache if it exists
+            self.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+        except Exception as e:
+            self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using ID '{}'".format(name, cid), e)
 
     """setMultiple()
     Register multiple channels
@@ -82,9 +95,11 @@ class Channel():
     """
     def setMultiple(self, channel_list: list) -> None:
         for c in channel_list:
-            if len(c) == 2 and isinstance(c[0], str):
-                if isinstance(c[1], str): self.set(c[0], c[1])
-                elif isinstance(c[1], int): self.setID(c[0], c[1])
+            if len(c) == 2 and isinstance(c[0], str): # iterate over list and call corresponding set function
+                if isinstance(c[1], str):
+                    self.set(c[0], c[1])
+                elif isinstance(c[1], int):
+                    self.setID(c[0], c[1])
 
     """has()
     Get a registered channel
@@ -112,4 +127,4 @@ class Channel():
     discord.Channel: Discord Channel, None if error
     """
     def get(self, name : str) -> disnake.abc.Messageable:
-        return self.cache.get(name, self.bot.get_channel(name))
+        return self.cache.get(name, self.bot.get_channel(int(name)))
