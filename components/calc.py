@@ -10,7 +10,7 @@ import math
 # ----------------------------------------------------------------------------------------------------------------
 
 class Calc():
-    FUNCS = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg']
+    FUNCS = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg'] # supported functions
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -22,7 +22,7 @@ class Calc():
         pass
 
     """reset()
-    Reset the calculator state
+    Reinitialize the calculator state
     """
     def reset(self) -> None:
         self.expression = ""
@@ -49,15 +49,23 @@ class Calc():
     float or int: Result
     """
     def evaluate(self, expression : str = "", vars : dict = {}) -> Union[int, float]:
+        # start by resetting calculator
         self.reset()
+        # prepare expression
         self.expression = expression.replace(' ', '').replace('\t', '').replace('\n', '').replace('\r', '')
+        # store variables
         self.vars = {**self.vars, **vars}
-        for func in self.FUNCS:
+        for func in self.FUNCS: # check variable names for dupes with function names
             if func in self.vars: raise Exception("Variable name '{}' can't be used".format(func))
+        # parse expression and get the result
         value = float(self.parse())
-        if self.isNotDone(): raise Exception("Unexpected character '{}' found at index {}".format(self.peek(), self.index))
+        # interruption check
+        if self.isNotDone():
+            raise Exception("Unexpected character '{}' found at index {}".format(self.peek(), self.index))
+        # adjust float if needed and convert to int
         epsilon = 0.0000000001
-        if int(value) == value: return int(value)
+        if int(value) == value:
+            return int(value)
         elif int(value + epsilon) != int(value):
             return int(value + epsilon)
         elif int(value - epsilon) != int(value):
@@ -92,16 +100,16 @@ class Calc():
     float or int: Result
     """
     def parse(self) -> Union[int, float]:
-        values = [self.multiply()]
+        values = [self.multiply()] # start by calling multiply
         while True:
-            c = self.peek()
-            if c in ['+', '-']:
+            c = self.peek() # get next character
+            if c in ['+', '-']: # as long as it's a + or - operator
                 self.index += 1
-                if c == '-': values.append(- self.multiply())
-                else: values.append(self.multiply())
+                if c == '-': values.append(- self.multiply()) # if -, minus multiply
+                else: values.append(self.multiply()) # else just multiply
             else:
                 break
-        return sum(values)
+        return sum(values) # addition all values
 
     """multiply()
     Multiply the next elements
@@ -111,31 +119,31 @@ class Calc():
     float or int: Result
     """
     def multiply(self) -> Union[int, float]:
-        values = [self.parenthesis()]
+        values = [self.parenthesis()] # call parenthesis first
         while True:
-            c = self.peek()
-            if c in ['*', 'x']:
+            c = self.peek() # check operator
+            if c in ['*', 'x']: # multiply
                 self.index += 1
                 values.append(self.parenthesis())
-            elif c == '/':
+            elif c == '/': # divie
                 div_index = self.index
                 self.index += 1
                 denominator = self.parenthesis()
                 if denominator == 0:
                     raise Exception("Division by 0 occured at index {}".format(div_index))
                 values.append(1.0 / denominator)
-            elif c == '%':
+            elif c == '%': # modulo
                 mod_index = self.index
                 self.index += 1
                 denominator = self.parenthesis()
                 if denominator == 0:
                     raise Exception("Modulo by 0 occured at index {}".format(mod_index))
                 values[-1] = values[-1] % denominator
-            elif c == '^':
+            elif c == '^': # exponent
                 self.index += 1
                 exponent = self.parenthesis()
                 values[-1] = values[-1] ** exponent
-            elif c == '!':
+            elif c == '!': # factorial
                 self.index += 1
                 values[-1] = math.factorial(values[-1])
             else:
@@ -156,14 +164,15 @@ class Calc():
     float or int: Result
     """
     def parenthesis(self) -> Union[int, float]:
-        if self.peek() == '(':
+        if self.peek() == '(': # check if next character is an open parenthesis
             self.index += 1
-            value = self.parse()
-            if self.peek() != ')': raise Exception("No closing parenthesis foundat position {}".format(self.index))
+            value = self.parse() # then parse inside that parenthesis
+            if self.peek() != ')': # we expect the parenthesis to be closed after
+                raise Exception("No closing parenthesis foundat position {}".format(self.index))
             self.index += 1
-            return value
+            return value # return result
         else:
-            return self.negative()
+            return self.negative() # call negative, will return the next value
 
     """negative()
     Get the negative of the value
@@ -173,10 +182,10 @@ class Calc():
     float or int: Result
     """
     def negative(self) -> Union[int, float]:
-        if self.peek() == '-':
+        if self.peek() == '-': # if minus, multiply next value with -1
             self.index += 1
             return -1 * self.parenthesis()
-        else:
+        else: # else return next value
             return self.value()
 
     """value()
@@ -187,9 +196,9 @@ class Calc():
     float or int: Result
     """
     def value(self) -> Union[int, float]:
-        if self.peek() in '0123456789.':
+        if self.peek() in '0123456789.': # check if digit or dot
             return self.number()
-        else:
+        else: # else expect variable or function
             return self.variable_or_function()
 
     """variable_or_function()
@@ -205,7 +214,7 @@ class Calc():
     """
     def variable_or_function(self) -> Union[int, float]:
         var = ''
-        while self.isNotDone():
+        while self.isNotDone(): # retrieve var/func name
             c = self.peek()
             if c.lower() in '_abcdefghijklmnopqrstuvwxyz0123456789':
                 var += c
@@ -213,12 +222,15 @@ class Calc():
             else:
                 break
         
-        value = self.vars.get(var, None)
-        if value == None:
-            if var not in self.FUNCS: raise Exception("Unrecognized variable '{}'".format(var))
+        value = self.vars.get(var, None) # check if variable
+        if value == None: # it's not
+            # check if function
+            if var not in self.FUNCS:
+                raise Exception("Unrecognized variable '{}'".format(var))
             else:
+                # parse func parameter
                 param = self.parenthesis()
-                match var:
+                match var: # call function for that parameter
                     case 'cos': value = math.cos(param)
                     case 'sin': value = math.sin(param)
                     case 'tan': value = math.tan(param)
@@ -250,6 +262,7 @@ class Calc():
                     case 'rad': value = math.radians(param)
                     case 'deg': value = math.degrees(param)
                     case _: raise Exception("Unrecognized function '{}'".format(var))
+        # return result
         return float(value)
 
     """number()
@@ -267,7 +280,7 @@ class Calc():
         strValue = []
         decimal_found = False
         c = ''
-        
+        # read number
         while self.isNotDone():
             c = self.peek()
             if c == '.':
@@ -280,7 +293,7 @@ class Calc():
             else:
                 break
             self.index += 1
-        
+        # error check
         if len(strValue) == 0:
             if c == '': raise Exception("Unexpected end found\nDid you perhaps forget a bracket?\nExample: `log(20)` not `log 20`")
             else: raise Exception("Unexpected end found\nA value was expectedat position {}".format(self.index))

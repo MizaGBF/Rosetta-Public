@@ -808,7 +808,7 @@ class Admin(commands.Cog):
         """Download GW.sql (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # force download GW databases
-        vers = await self.bot.ranking.GWDB(force_download = True)
+        vers = await self.bot.ranking.getGWDB(force_download = True)
         # make a message showing each DB state
         msgs = []
         for i in [0, 1]:

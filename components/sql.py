@@ -15,38 +15,41 @@ import sqlite3
 class Database():
     def __init__(self, filename : str) -> None:
         self.filename = filename
-        self.conn = None
-        self.cursor = None
+        self.conn = None # connection
+        self.cursor = None # cursor
         self.lock = asyncio.Lock()
 
-    async def __aenter__(self) -> Optional[sqlite3.Cursor]:
+    async def __aenter__(self) -> Optional[sqlite3.Cursor]: # opening
         try:
-            await self.lock.acquire()
+            await self.lock.acquire() # lock
+            # open handles
             self.conn = sqlite3.connect(self.filename)
             self.cursor = self.conn.cursor()
             self.cursor.execute("PRAGMA locking_mode = exclusive")
             self.cursor.execute("PRAGMA synchronous = normal")
             self.cursor.execute("PRAGMA journal_mode = OFF")
+            # return cursor
             return self.cursor
         except:
-            self.lock.release()
+            self.lock.release() # error, unlock
             return None
     
-    async def __aexit__(self, exc_type : Optional[Type[BaseException]], exc_val : Optional[BaseException], exc_tb : Optional[traceback]) -> Optional[bool]:
+    async def __aexit__(self, exc_type : Optional[Type[BaseException]], exc_val : Optional[BaseException], exc_tb : Optional[traceback]) -> Optional[bool]: # closing
+        # close the handles
         try: self.cursor.close()
         except: pass
         try: self.conn.close()
         except: pass
         self.conn = None
         self.cursor = None
+        # unlock
         self.lock.release()
 
 class SQL():
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
-        self.file = None
-        self.db = {}
-        self.lock = asyncio.Lock()
+        self.db = {} # sql files
+        self.lock = asyncio.Lock() # global lock
 
     def init(self) -> None:
         pass
@@ -60,7 +63,7 @@ class SQL():
     """
     async def remove(self, filename : str) -> None:
         async with self.lock:
-            if filename in self.db:
+            if filename in self.db: # remove file if in memory
                 db = self.db[filename]
                 async with db.lock:
                     self.db.pop(filename)
@@ -74,7 +77,7 @@ class SQL():
     """
     async def remove_list(self, filenames : list) -> None:
         async with self.lock:
-            for f in filenames:
+            for f in filenames: # remove all given files if they are in memory
                 if f in self.db:
                     db = self.db[f]
                     async with db.lock:
@@ -94,7 +97,7 @@ class SQL():
     """
     async def add(self, filename : str) -> Optional[Database]:
         async with self.lock:
-            if self.bot.file.exist(filename):
+            if self.bot.file.exist(filename): # create Database instance in memory if file exists
                     self.db[filename] = Database(filename)
                     return self.db[filename]
             else:
@@ -112,5 +115,5 @@ class SQL():
     Database: The Database object. None if it doesn't exist
     """
     async def get(self, filename : str) -> Optional[Database]:
-        async with self.lock:
+        async with self.lock: # return Database instance if it exists
             return self.db.get(filename, None)
