@@ -40,6 +40,11 @@ class Data():
         'announcement': {},
         'log': []
     }
+    BASE_CONFIG = [
+        'tokens',
+        'ids',
+        'games'
+    ]
     
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -63,20 +68,20 @@ class Data():
     def loadConfig(self) -> bool:
         try:
             with open('config.json', mode="r", encoding="utf-8") as f:
-                data = json.load(f) # deserializer here
+                data = json.load(f)
                 self.config = data
                 # basic validity check
-                for check in ['tokens', 'ids', 'games']:
+                for check in self.BASE_CONFIG:
                     if check not in self.config:
                         raise Exception("'{}' section not found in 'config.json'".format(check))
-            if self.debug:
+            if self.debug: # we load AND merge config_test.json to config.json in memory
                 with open('config_test.json', mode="r", encoding="utf-8") as f:
-                    data = json.load(f) # deserializer here
-                    self.config = self.config | data
+                    data = json.load(f)
+                    self.config = self.config | data # merge
                     # basic validity check
-                    for check in ['tokens', 'ids', 'games']:
+                    for check in self.BASE_CONFIG:
                         if check not in self.config:
-                            raise Exception("'{}' section not found in neither 'config.json' and 'config_test.json'".format(check))
+                            raise Exception("'{}' section not found in 'config_test.json'".format(check))
             return True
         except Exception as e:
             self.bot.logger.pushError("[BOOT] An error occured while loading the configuration file:", e)
@@ -93,15 +98,16 @@ class Data():
     def loadData(self) -> bool:
         try:
             with open('save.json', mode="r", encoding="utf-8") as f:
-                data = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # deserializer here
-                if any(data):
+                data = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # add deserializer here
+                if any(data): # check if it contains something
                     ver = data.get('version', None)
                 else: # fresh save file
                     ver = self.SAVEVERSION
+                # Version check and retrocompatibility
                 if ver is None:
                     raise Exception("This save file isn't compatible")
-                elif ver < self.SAVEVERSION:
-                    if ver == 0:
+                elif ver < self.SAVEVERSION: # Old save
+                    if ver == 0: # We do conversions for every past versions up to our
                         if 'newserver' in data:
                             newserver = data.pop('newserver', None)
                             if 'guilds' not in data:
@@ -214,9 +220,11 @@ class Data():
                         if 'dread' in data:
                             data['dread'] = data['dread']
                             data.pop("valiant")
+                    # Update the version
                     data['version'] = self.SAVEVERSION
-                elif ver > self.SAVEVERSION:
+                elif ver > self.SAVEVERSION: # Version is more recent??
                     raise Exception("Save file version higher than the expected version")
+                # Do an extra conversions in checkData
                 self.save = self.checkData(data)
                 self.pending = False
                 return True
@@ -232,13 +240,15 @@ class Data():
     bool: True on success, False on failure
     """
     def saveData(self) -> bool: # saving (lock isn't used, use it outside!)
-        if self.debug:
+        if self.debug: # don't save in debug mode
             return True
         try:
-            with open('save.json', mode='w', encoding="utf-8") as outfile:
-                json.dump(self.save, outfile, separators=(',', ':'), default=self.bot.util.json_serial) # locally first
+            with open('save.json', mode='w', encoding="utf-8") as outfile: # save to json locally first
+                json.dump(self.save, outfile, separators=(',', ':'), default=self.bot.util.json_serial)
         except Exception as e:
             self.bot.logger.pushError("[DATA] An error occured with the local save data:", e)
+            return False # return to not upload a corrupt file
+        # Now save remotely
         try:
             if self.bot.drive.save(json.dumps(self.save, separators=(',', ':'), default=self.bot.util.json_serial)) is not True: # sending to the google drive
                 raise Exception("Couldn't save to google drive")
@@ -260,10 +270,10 @@ class Data():
     dict: Updated data (not a copy)
     """
     def checkData(self, data : dict) -> dict: # used to initialize missing data or remove useless data from the save file
-        for k in list(data.keys()): # remove useless
+        for k in list(data.keys()): # remove useless keys not present in BASE_SAVE
             if k not in self.BASE_SAVE:
                 data.pop(k)
-        for k in self.BASE_SAVE: # add missing
+        for k in self.BASE_SAVE: # add missing keys
             if k not in data:
                 data[k] = self.BASE_SAVE[k]
         return data
@@ -277,19 +287,20 @@ class Data():
     discordDump: If True, save.json will be sent to discord even on success
     """
     async def autosave(self, discordDump : bool = False) -> None:
-        if self.autosaving or self.debug: return
-        self.autosaving = True
+        if self.autosaving or self.debug: # no save in debug mode or if we're already autosaving
+            return
+        self.autosaving = True # raise flag
         result = False
-        for i in range(0, 3): # try a few times
+        for i in range(0, 3): # try a few times to save the data
             if self.saveData():
-                self.pending = False
-                result = True
+                self.pending = False # unraise pending flag
+                result = True # success
                 break
             await asyncio.sleep(0)
-        if not result:
+        if not result: # no success
             await self.bot.send('debug', embed=self.bot.embed(title="Failed Save", timestamp=self.bot.util.UTC()))
             discordDump = True
-        if discordDump:
+        if discordDump: # if this is raised, we send a copy of the save file to discord, in the debug channel
             try:
                 with BytesIO(json.dumps(self.save, separators=(',', ':'), default=self.bot.util.json_serial).encode('utf-8')) as infile:
                     with self.bot.file.discord(infile, filename="save.json") as df:
@@ -398,24 +409,26 @@ class Data():
     """
     async def update_schedule(self) -> None:
         try:
+            # request the event cargo table of the wiki
             data = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
             if data is not None:
                 new_events = {}
                 modified = False
                 c = self.bot.util.UTC()
+                # go over  events
                 for ev in data:
-                    if 'utc start' in ev and 'enname' in ev:
+                    if 'utc start' in ev and 'enname' in ev: # check the ones with start dates and names
                         event_times = [ev['utc start']]
-                        if 'utc end' in ev:
-                            if c < datetime.utcfromtimestamp(ev['utc end']):
-                                event_times.append(ev['utc end'])
+                        if 'utc end' in ev: # if it has an end date
+                            if c < datetime.utcfromtimestamp(ev['utc end']): # and it hasn't ended
+                                event_times.append(ev['utc end']) # add it
                             else:
                                 continue # event over
                         else:
-                            if c >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1):
+                            if c >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1): # if we have passed it by one day
                                 continue # event over
                         new_events[html.unescape(ev['enname'])] = event_times
-                # NOTE: wiki timestamps are in UTC
+                # NOTE: Wiki timestamps are in UTC
                 if len(new_events) > 0:
                     # add manual entry starting with specific keywords
                     for ev in self.save['schedule']:
@@ -470,10 +483,11 @@ class Data():
         count = 0
         c = self.bot.util.UTC()
         keys = list(self.save['spark'].keys())
+        # go over entries
         for rid in keys:
             d = c - self.save['spark'][rid][4]
-            if d.days >= 30:
-                del self.save['spark'][rid]
+            if d.days >= 30: # older than 30 days
+                del self.save['spark'][rid] # we remove
                 self.pending = True
                 count += 1
         if count > 0:
@@ -486,15 +500,16 @@ class Data():
         await asyncio.sleep(0)
         count = 0
         keys = list(self.save['gbfids'].keys())
+        # go over registered profiles
         for uid in keys:
             found = False
-            for g in self.bot.guilds:
+            for g in self.bot.guilds: # check if the user is in any guild the bot is present in
                  if await g.get_or_fetch_member(int(uid)) is not None:
                     found = True
                     break
-            if not found:
+            if not found: # if the user hasn't been found
                 count += 1
-                self.save['gbfids'].pop(uid)
+                self.save['gbfids'].pop(uid) # remove
                 self.pending = True
         if count > 0:
             self.bot.logger.push("[DATA] clean_profile:\nCleaned {} unused profiles".format(count))
@@ -505,58 +520,54 @@ class Data():
     async def clean_general(self) -> None:
         guild_ids = [str(g.id) for g in self.bot.guilds]
         count = 0
+        # Autocleanup cleaning
         for gid in list(self.save['permitted'].keys()):
-            if gid not in guild_ids or len(self.save['permitted'][gid]) == 0:
+            if gid not in guild_ids or len(self.save['permitted'][gid]) == 0: # remove data if empty or the bot left the guild
                 self.save['permitted'].pop(gid)
                 count += 1
             else:
                 i = 0
-                while i < len(self.save['permitted'][gid]):
+                while i < len(self.save['permitted'][gid]): # remove deleted channels from data
                     if self.bot.get_channel(self.save['permitted'][gid][i]) is None:
                         self.save['permitted'][gid].pop(i)
                         count += 1
                     else:
                         i += 1
         await asyncio.sleep(1)
+        # Pinbaord cleaning
         for gid in list(self.save['pinboard'].keys()):
-            if gid not in guild_ids:
+            if gid not in guild_ids: # the bot left the guild
                 self.save['pinboard'].pop(gid)
                 count += 1
             else:
                 i = 0
-                while i < len(self.save['pinboard'][gid]['tracked']):
+                while i < len(self.save['pinboard'][gid]['tracked']): # remove deleted channels from data
                     if self.bot.get_channel(self.save['pinboard'][gid]['tracked'][i]) is None:
                         self.save['pinboard'][gid]['tracked'].pop(i)
                         count += 1
                     else:
                         i += 1
-                if self.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.save['pinboard'][gid]['output']) is None:
+                if self.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.save['pinboard'][gid]['output']) is None: # remove data if empty
                     self.save['pinboard'][gid]['output'] = None
                     count += 1
         await asyncio.sleep(1)
-        for gid in list(self.save['vxtwitter'].keys()):
-            if gid not in guild_ids:
-                self.save['vxtwitter'].pop(gid)
-                count += 1
-        await asyncio.sleep(1)
+        # Announcement cleaning
         for gid in list(self.save['announcement'].keys()):
-            if gid not in guild_ids or self.bot.get_channel(self.save['announcement'][gid][0]) is None:
+            if gid not in guild_ids or self.bot.get_channel(self.save['announcement'][gid][0]) is None: # remove data if empty or the bot left the guild
                 self.save['announcement'].pop(gid)
                 count += 1
+        self.bot.channel.update_announcement_channels() # update announcement channels
         await asyncio.sleep(1)
-        for gid in list(self.save['assignablerole'].keys()):
+        # Self Assignable Roles
+        for gid in list(self.save['assignablerole'].keys()): # the bot left the guild
             if gid not in guild_ids:
                 self.save['assignablerole'].pop(gid)
                 count += 1
         await asyncio.sleep(1)
-        if count > 0:
-            self.bot.channel.update_announcement_channels()
-            self.pending = True
-        await asyncio.sleep(1)
-        if 'extra' in self.save:
+        if 'extra' in self.save: # clean extra data (usually used for development, debug or temp events)
             c = self.bot.util.JST()
             to_pop = set()
-            for k, v in self.save['extra'].items():
+            for k, v in self.save['extra'].items(): # check if it got an expire value and check if the date passed
                 if isinstance(v, dict) and 'expire' in v:
                     if c >= v['expire']:
                         to_pop.add(k)
@@ -566,4 +577,5 @@ class Data():
                     self.save['extra'].pop(k)
                 self.pending = True
         if count > 0:
+            self.pending = True
             self.bot.logger.push("[DATA] clean_general:\nCleaned up {} elements".format(count))
