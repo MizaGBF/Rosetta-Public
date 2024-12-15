@@ -547,6 +547,7 @@ class GachaSimulator():
         "https://mizagbf.github.io/assets/rosetta-remote-resources/2_s.png",
         "https://mizagbf.github.io/assets/rosetta-remote-resources/3_s.png"
     ]
+    ROULETTE = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
     # Others
     RPS = ['rock', 'paper', 'scissor']
     ROULETTE_DELAY = 4
@@ -1106,7 +1107,7 @@ class GachaSimulator():
         # and spin the wheel!
         roulette.spin_the_wheel()
         # Default message
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message(), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message(), color=self.color, footer=roulette.get_footer(), thumbnail=self.ROULETTE))
         
         # Main loop
         while roulette.running:
@@ -1131,8 +1132,6 @@ class GachaSimulator():
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message() + ("" if not roulette.running else "**...**"), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
 
 class Roulette():
-    # Asset
-    ROULETTE = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
     # Wheel zones
     MAX_ROLL = 0
     GACHAPIN = 1
@@ -1196,7 +1195,6 @@ class Roulette():
         self.current_time = current_time
         self.msgs = [] # message strings container
         self.footers = [] # footer strings container
-        self.thumbnail = self.ROULETTE # start with the roulette image
         self.dice = 0
         self.rolls = 0
         self.legfest = -1
