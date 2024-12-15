@@ -547,7 +547,6 @@ class GachaSimulator():
         "https://mizagbf.github.io/assets/rosetta-remote-resources/2_s.png",
         "https://mizagbf.github.io/assets/rosetta-remote-resources/3_s.png"
     ]
-    ROULETTE = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
     # Others
     RPS = ['rock', 'paper', 'scissor']
     ROULETTE_DELAY = 4
@@ -1090,6 +1089,140 @@ class GachaSimulator():
                 rolls[r[1]] = rolls.get(r[1], 0) + 1
         return rolls
 
+    """roulette()
+    Simulate a roulette and output the result
+    
+    Parameters
+    --------
+    inter: Interaction to use. Must have been deferred beforehand
+    legfest: Integer, -1 for auto mod, 0 to force 3%, 1 to force 6%
+    realist: Bool, True to force 20 and 30 rolls
+    """
+    async def roulette(self, inter : disnake.Interaction, legfest : int = -1, realist : bool = False) -> None:
+        prev_best = None
+        current_time = self.bot.util.JST()
+        # initialize roulette
+        roulette = Roulette(self.bot, self, current_time, legfest, realist)
+        # and spin the wheel!
+        roulette.spin_the_wheel()
+        # Default message
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message(), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
+        
+        # Main loop
+        while roulette.running:
+            # error occured, abort
+            if self.exception is not None:
+                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
+                self.bot.logger.pushError("[GACHA] 'simulator roulette' error:", self.exception)
+                return
+            start_time = time.time() # current time
+            await asyncio.sleep(0) # to not risk blocking
+            # update the roulette state
+            await roulette.update()
+            # update thumbnail if it changed
+            if prev_best is None or str(self.best) != prev_best:
+                prev_best = str(self.best)
+                await self.updateThumbnail()
+            # wait next roulette update, for the remainer of self.ROULETTE_DELAY
+            diff = self.ROULETTE_DELAY - (time.time() - start_time)
+            if diff > 0:
+                await asyncio.sleep(diff)
+            # send message
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message() + ("" if not roulette.running else "**...**"), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
+
+class Roulette():
+    # Asset
+    ROULETTE = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
+    # Wheel zones
+    MAX_ROLL = 0
+    GACHAPIN = 1
+    BIRTHDAY = 2
+    ROLL_10 = 10
+    ROLL_20 = 20
+    ROLL_30 = 30
+    NORMAL_ROLLS = [MAX_ROLL, ROLL_10, ROLL_20, ROLL_30]
+    # States
+    STATE_JANKEN = 0
+    STATE_NORMAL = 1
+    STATE_GACHAPIN = 2
+    STATE_MUKKU = 3
+    STATE_SUPER_MUKKU = 4
+    STATE_BIRTHDAY_ZONE = 5
+    
+    """__init__()
+    Constructor.
+    
+    Parameters
+    --------
+    bot: DiscordBot, Rosetta instance
+    sim: GachaSimulator instance which created this Roulette object
+    current_time: datetime, Time at which the roulette was invoked
+    legfest: Integer, Legfest rate setting
+    realist: Boolean, realist roulette setting
+    """
+    def __init__(self, bot : 'DiscordBot', sim : GachaSimulator, current_time : datetime, legfest : int, realist : bool) -> None:
+        self.bot = bot
+        self.sim = sim
+        # get settings
+        settings = self.bot.data.save['gbfdata'].get('roulette', {})
+        # copy them here
+        # Fixed roll period
+        self.fixed_start = current_time.replace(year=2000+settings.get('year', 24), month=settings.get('month', 1), day=settings.get('day', 1), hour=5, minute=0, second=0, microsecond=0) # beginning of fixed rolls
+        self.fixed_end = self.fixed_start  + timedelta(days=1, seconds=0) # end of fixed rolls (one day later)
+        # move start 36000s or 10h early
+        self.fixed_start -= timedelta(seconds=36000)
+        # Fixed period forced 3 percent
+        self.forced_3_percent = settings.get('forced3%', True)
+        # Fixed period roll count
+        self.forced_rolls = settings.get('forcedroll', 100)
+        # Fixed period forced Super Mukku
+        self.forced_super_mukku = settings.get('forcedsuper', True)
+        # Enable 200 rolls as the max
+        self.enable_200_rolls = settings.get('enable200', False)
+        # Enable the Rock Paper Scissor
+        self.enable_janken = settings.get('enablejanken', False)
+        # Maximum number of Rock Paper Scissor in a row
+        self.max_janken = settings.get('enablejanken', False)
+        # Enable double Mukku
+        self.double_mukku = settings.get('doublemukku', False)
+        # Use realist mode (if allowed)
+        self.realist = realist and settings.get('realist', False)
+        # Add Birthday Zone on the wheel
+        self.birthday_zone = settings.get('birthday', False)
+        
+        # variables and flags
+        self.running = True
+        self.state = self.STATE_NORMAL
+        self.current_time = current_time
+        self.msgs = [] # message strings container
+        self.footers = [] # footer strings container
+        self.thumbnail = self.ROULETTE # start with the roulette image
+        self.dice = 0
+        self.rolls = 0
+        self.legfest = -1
+        self.super_mukku = False
+        self.janken_threshold = 0
+
+    """get_message()
+    Return an usable embed description
+    
+    Returns
+    --------
+    str: The message
+    """
+    def get_message(self) -> str:
+        return "".join(self.msgs)
+
+    """get_footer()
+    Return an usable embed footer
+    
+    Returns
+    --------
+    str: The footer
+    """
+    def get_footer(self) -> str:
+        return "".join(self.footers)
+
     """SSRList2StrList()
     Convert a SSR list to a list of string to be used by roulette()
     
@@ -1101,9 +1234,9 @@ class GachaSimulator():
     --------
     list: List of string (to be combined with join())
     """
-    def SSRList2StrList(self, ssrs : list) -> str:
+    def SSRList2StrList(self, ssrs : list) -> list:
         if len(ssrs) > 0:
-            tmp = ["\n", str(self.bot.emote.get('SSR')), " "]
+            tmp = [str(self.bot.emote.get('SSR')), " "]
             for item in ssrs: # make a list of SSR only
                 tmp.append(item)
                 if ssrs[item] > 1:
@@ -1113,229 +1246,268 @@ class GachaSimulator():
         else:
             return []
 
-    """roulette()
-    Simulate a roulette and output the result
+    """generated_fixed_rolls()
+    Set the settings for the fixed roll period.
+    """
+    def generated_fixed_rolls(self) -> None:
+        self.msgs = ["{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.forced_rolls//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
+        self.stats = self.STATE_NORMAL
+        self.rolls = self.forced_rolls
+        self.enable_janken = False
+        if self.forced_super_mukku:
+            self.super_mukku = True
+        if self.legfest == 1 and self.forced_3_percent:
+            self.legfest = -1
+
+    """spin_the_wheel()
+    Determine the region of the wheel the user landed on.
+    Note: If the current_time is set in the fixed roll period, generated_fixed_rolls() will be invoked.
+    """
+    def spin_the_wheel(self) -> None:
+        # Check fixed period
+        if self.fixed_start <= self.current_time < self.fixed_end:
+            self.generated_fixed_rolls()
+            return
+        # Add possible wheel results depending on settings
+        wheel = []
+        wheel.append((self.GACHAPIN, 800)) # gachapin 8%
+        if self.birthday_zone:
+            wheel.append((self.BIRTHDAY, 500)) # birthday 5%
+        if self.realist:
+            wheel.append((self.ROLL_30, 2000)) # 30 rolls 20%
+            wheel.append((self.ROLL_20, None))
+        else:
+            wheel.append((self.MAX_ROLL, 200)) # hundred 2%
+            wheel.append((self.ROLL_30, 2000)) # 30 rolls 20%
+            wheel.append((self.ROLL_20, 3500)) # 20 rolls 35%
+            wheel.append((self.ROLL_10, None))
+        # Calculate minimum value to get janken
+        for zone in wheel:
+            if zone[0] in self.NORMAL_ROLLS:
+                break # stop at "normal" rolls
+            self.janken_threshold += zone[1]
+        # Now spin the wheel
+        self.dice = random.randint(1, 10000) # roulette roll
+        threshold = 0
+        # Look for what result we got in variable d
+        for zone in wheel:
+            if zone[1] is not None and self.dice > threshold + zone[1]: # over threshold
+                threshold += zone[1] # remove and iterate
+                continue
+            match zone[0]:
+                case self.MAX_ROLL:
+                    if self.enable_200_rolls: # forced 200 rolls
+                        self.msgs = ["{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
+                        self.rolls = 200
+                    else: # forced 100 rolls
+                        self.msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
+                        self.rolls = 100
+                case self.GACHAPIN:
+                    self.msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
+                    self.rolls = -1
+                    self.state = self.STATE_GACHAPIN
+                case self.BIRTHDAY: # Birthday zone
+                    self.msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
+                    self.rolls = -1
+                    self.state = self.STATE_BIRTHDAY_ZONE
+                case self.ROLL_30:
+                    self.msgs = ["**30** rolls! :clap:\n"]
+                    self.rolls = 30
+                case self.ROLL_20:
+                    self.msgs = ["**20** rolls :open_mouth:\n"]
+                    self.rolls = 20
+                case self.ROLL_10:
+                    self.msgs = ["**10** rolls :pensive:\n"]
+                    self.rolls = 10
+            break
+        # to disable janken if needed
+        if not self.enable_janken and self.state == self.STATE_JANKEN:
+            self.state = self.STATE_NORMAL
+
+    """janken_event()
+    Simulate the Rock Paper Scissor event (if enabled).
+    Called by update().
+    """
+    async def janken_event(self) -> None:
+        if self.enable_janken and self.dice >= self.janken_threshold and random.randint(0, 2) > 0: # only if enabled and we rolled above the threshold and we got lucky (33% chance)
+            # simulate basic rock paper scisor
+            while True:
+                a = random.randint(0, 2)
+                b = random.randint(0, 2)
+                if a != b:
+                    break
+            # Add result
+            self.msgs.append("You got **{}**, Gachapin got **{}**".format(self.RPS[a], self.RPS[b]))
+            # Check the win condition
+            if (a == 1 and b == 0) or (a == 2 and b == 1) or (a == 0 and b == 2):
+                self.msgs.append(" :thumbsup:\nYou **won** rock paper scissor, your rolls are **doubled** :confetti_ball:\n")
+                self.rolls = self.rolls * 2 # double roll
+                roll_cap = (200 if self.enable_200_rolls else 100) # maximum roulette rolls
+                if self.rolls > roll_cap: # cap roll
+                    self.rolls = roll_cap
+                    self.max_janken = 0 # cancel other jankens
+                else:
+                    self.max_janken -= 1
+                if self.max_janken == 0:
+                    self.state = self.STATE_NORMAL # go to normal roll
+            else:
+                self.msgs.append(" :pensive:\n")
+                self.state = self.STATE_NORMAL # go to normal roll
+        else:
+            self.state = self.STATE_NORMAL # go to normal roll
+
+    """normal_event()
+    Simulate standard rolls.
+    Called by update().
+    """
+    async def normal_event(self) -> None:
+        # Generate rolls
+        await self.sim.generate(self.rolls, self.legfest)
+        # Number of SSR
+        count = len(self.sim.result['list'])
+        # Result SSR rate
+        rate = (100*self.sim.result['detail'][2]/count)
+        # Get ssr list
+        tmp = self.SSRList2StrList(self.sim.getSSRList())
+        # Update the footer
+        self.footers = self.sim.bannerIDtoFooter(["{}% SSR rate".format(self.sim.result['rate'])])
+        # Rarity counter line
+        for rarity in range(self.sim.SSR, self.sim.R-1, -1):
+            self.msgs.append(str(self.sim.result['detail'][rarity]))
+            self.msgs.append(" ")
+            self.msgs.append(str(self.bot.emote.get({self.sim.SSR:'SSR', self.sim.SR:'SR', self.sim.R:'R'}.get(rarity, rarity))))
+            if rarity > self.sim.R:
+                self.msgs.append(" ▫️ ")
+        self.msgs.append("\n")
+        # SSR List
+        if len(tmp) > 0:
+            self.msgs.extend(tmp)
+            self.msgs.append("\n")
+        # SSR Rate line
+        self.msgs.append("**{:.2f}%** SSR rate\n\n".format(rate))
+        # Next step
+        if self.super_mukku:
+            self.state = self.STATE_SUPER_MUKKU # go to Super Mukku
+        else:
+            self.running = False # Over
+
+    """gachapin_mukku_event()
+    Simulate Gachapin/Mukku/Super Mukku rolls.
+    Called by update().
+    
     
     Parameters
     --------
-    inter: Interaction to use. Must have been deferred beforehand
-    legfest: Integer, -1 for auto mod, 0 to force 3%, 1 to force 6%
-    realist: Bool, True to force 20 and 30 rolls
+    sim_mode: String, The simulator mode to use. It must corresponds to the state. The behavior is undefined if there is a mismatch (example, self.state == self.STATE_GACHAPIN but sim_mode = "mukku")
     """
-    async def roulette(self, inter : disnake.Interaction, legfest : int = -1, realist : bool = False) -> None:
-        footer = []
-        roll = 0
-        ct = self.bot.util.JST()
-        # apply settings
-        settings = self.bot.data.save['gbfdata'].get('roulette', {})
-        fixedS = ct.replace(year=2000+settings.get('year', 24), month=settings.get('month', 1), day=settings.get('day', 1), hour=5, minute=0, second=0, microsecond=0) # beginning of fixed rolls
-        fixedE = fixedS + timedelta(days=1, seconds=0) # end of fixed rolls
-        fixedS -= timedelta(seconds=36000) # move start 10h early
-        forced3pc = settings.get('forced3%', True) # force 3%
-        forcedRollCount = settings.get('forcedroll', 100) # number of rolls during fixed rolls
-        forcedSuperMukku = settings.get('forcedsuper', True)
-        enable200 = settings.get('enable200', False) # add 200 on wheel
-        enableJanken = settings.get('enablejanken', False)
-        maxJanken = settings.get('maxjanken', 1)
-        doubleMukku = settings.get('doublemukku', False)
-        realist = realist and settings.get('realist', False)
-        birthdayMode = settings.get('birthday', False) # add birthday on wheel
-        # settings end
-        self.thumbnail = self.ROULETTE
-        prev_best = None
-        state = 0 # 0 = Janken, 1 = roll, 2 = gachapin, 3 = mukku, 4 = supermukku, 5 = birthday
-        superFlag = False
-        jankenThreshold = 0
-        # Check guaranted roll period
-        if ct >= fixedS and ct < fixedE:
-            msgs = ["{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), forcedRollCount//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
-            roll = forcedRollCount
-            # set flags
-            enableJanken = False
-            if forcedSuperMukku:
-                superFlag = True
-            if legfest == 1 and forced3pc:
-                legfest = -1
-            d = 0
-            state = 1
-        else:
-            d = random.randint(1, 10000) # roulette roll
-            # Add possible results depending on settings
-            results = []
-            results.append((1, 800)) # gachapin 8%
-            if birthdayMode:
-                results.append((2, 500)) # birthday 5%
-            if realist:
-                results.append((30, 2000)) # 30 rolls 20%
-                results.append((20, None))
-            else:
-                results.append((0, 200)) # hundred 2%
-                results.append((30, 2000)) # 30 rolls 20%
-                results.append((20, 3500)) # 20 rolls 35%
-                results.append((10, None))
-            # Calculate minimum value to get janken
-            for r in results:
-                if r[0] == 30 or r[0] == 0: break # stop at "normal" rolls
-                jankenThreshold += r[1]
-            threshold = 0
-            # Look for what result we got in variable d
-            for r in results:
-                if r[1] is not None and d > threshold + r[1]: # over threshold
-                    threshold += r[1] # remove and iterate
-                    continue
-                match r[0]:
-                    case 0:
-                        if enable200: # forced 200 rolls
-                            msgs = ["{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
-                            roll = 200
-                        else: # forced 100 rolls
-                            msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
-                            roll = 100
-                    case 1: # Gachapin
-                        msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
-                        roll = -1
-                        state = 2
-                    case 2: # Birthday zone
-                        msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
-                        roll = -1
-                        state = 5
-                    case 30:
-                        msgs = ["**30** rolls! :clap:\n"]
-                        roll = 30
-                    case 20:
-                        msgs = ["**20** rolls :open_mouth:\n"]
-                        roll = 20
-                    case 10:
-                        msgs = ["**10** rolls :pensive:\n"]
-                        roll = 10
-                break
-        # Default message
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is spinning the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))
-        if not enableJanken and state < 2:
-            state = 1 # set state to 1 if we got normal rolls and janken is disabled
-        running = True
-        # Main loop
-        while running:
-            if self.exception is not None: # error occured, abort
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
-                self.bot.logger.pushError("[GACHA] 'simulator roulette' error:", self.exception)
-                return
-            start_time = time.time()
-            await asyncio.sleep(0) # to not risk blocking
-            match state:
-                case 0: # RPS/Janken
-                    if enableJanken and d >= jankenThreshold and random.randint(0, 2) > 0: # only if enabled and we rolled above the threshold and we got lucky (33% chance)
-                        # simulate basic rock paper scisor
-                        a = 0
-                        b = 0
-                        while a == b:
-                            a = random.randint(0, 2)
-                            b = random.randint(0, 2)
-                        # show result
-                        msgs.append("You got **{}**, Gachapin got **{}**".format(self.RPS[a], self.RPS[b]))
-                        if (a == 1 and b == 0) or (a == 2 and b == 1) or (a == 0 and b == 2): # check win condition
-                            msgs.append(" :thumbsup:\nYou **won** rock paper scissor, your rolls are **doubled** :confetti_ball:\n")
-                            roll = roll * 2 # double roll
-                            if roll > (200 if enable200 else 100): # cap roll
-                                roll = (200 if enable200 else 100)
-                                maxJanken = 0
-                            else:
-                                maxJanken -= 1
-                            if maxJanken == 0:
-                                state = 1 # go to normal roll
-                        else:
-                            msgs.append(" :pensive:\n")
-                            state = 1 # go to normal roll
+    async def gachapin_mukku_event(self, sim_mode : str) -> None:
+        # Generate rolls
+        self.sim.changeMode(sim_mode)
+        await self.sim.generate(300, self.legfest)
+        # Number of SSR
+        count = len(self.sim.result['list'])
+        # Result SSR rate
+        rate = (100*self.sim.result['detail'][2]/count)
+        # Get ssr list
+        tmp = self.SSRList2StrList(self.sim.getSSRList())
+        # Update the footer (if gachapin)
+        if self.state == self.STATE_GACHAPIN:
+            self.footers = self.sim.bannerIDtoFooter(["{}% SSR rate".format(self.sim.result['rate'])])
+        # Roll line
+        match self.state:
+            case self.STATE_GACHAPIN:
+                self.msgs.append("Gachapin ▫️ **")
+            case self.STATE_MUKKU:
+                self.msgs.append(":confetti_ball: Mukku ▫️ **")
+            case self.STATE_SUPER_MUKKU:
+                self.msgs.append(":confetti_ball: **Super Mukku** ▫️ **")
+        self.msgs.append(str(count))
+        self.msgs.append("** rolls\n")
+        # Rarity counter line
+        for rarity in range(self.sim.SSR, self.sim.R-1, -1):
+            self.msgs.append(str(self.sim.result['detail'][rarity]))
+            self.msgs.append(" ")
+            self.msgs.append(str(self.bot.emote.get({self.sim.SSR:'SSR', self.sim.SR:'SR', self.sim.R:'R'}.get(rarity, rarity))))
+            if rarity > self.sim.R:
+                self.msgs.append(" ▫️ ")
+        self.msgs.append("\n")
+        # SSR List
+        if len(tmp) > 0:
+            self.msgs.extend(tmp)
+            self.msgs.append("\n")
+        # SSR Rate line
+        self.msgs.append("**{:.2f}%** SSR rate\n\n".format(rate))
+        # Check next step
+        match self.state:
+            case self.STATE_GACHAPIN:
+                # depending on how many rolls we got, and some rng, we decide on the next step
+                if count == 10 and random.randint(1, 100) <= 99:
+                    self.state = self.STATE_MUKKU
+                elif count == 20 and random.randint(1, 100) <= 60:
+                    self.state = self.STATE_MUKKU
+                elif count == 30 and random.randint(1, 100) <= 30:
+                    self.state = self.STATE_MUKKU
+                elif random.randint(1, 100) <= 3:
+                    self.state = self.STATE_MUKKU
+                else:
+                    self.running = False # Over
+            case self.STATE_MUKKU:
+                if self.double_mukku: # Double mukku enabled
+                    if random.randint(1, 100) < 25: # roll a dice
+                        self.double_mukku = False # disable double mukku and wait to go to mukku again
+                        # Note: stay on this state
                     else:
-                        state = 1
-                case 1: # normal rolls
-                    await self.generate(roll, legfest)
-                    count = len(self.result['list'])
-                    rate = (100*self.result['detail'][2]/count)
-                    tmp = self.SSRList2StrList(self.getSSRList())
-                    footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
-                    msgs.append("{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                    if superFlag:
-                        state = 4 # go to Super Mukku
-                    else:
-                        running = False # Over
-                case 2: # gachapin
-                    self.changeMode('gachapin')
-                    await self.generate(300, legfest)
-                    count = len(self.result['list'])
-                    rate = (100*self.result['detail'][2]/count)
-                    tmp = self.SSRList2StrList(self.getSSRList())
-                    footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
-                    msgs.append("Gachapin ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), tmp, rate))
-                    # Check if we go to Mukku by rolling some dice (based on how many rolls we got
-                    if count == 10 and random.randint(1, 100) <= 99:
-                        state = 3
-                    elif count == 20 and random.randint(1, 100) <= 60:
-                        state = 3
-                    elif count == 30 and random.randint(1, 100) <= 30:
-                        state = 3
-                    elif random.randint(1, 100) <= 3:
-                        state = 3
-                    else:
-                        running = False # Over
-                case 3:
-                    self.changeMode('mukku')
-                    await self.generate(300, legfest)
-                    count = len(self.result['list'])
-                    rate = (100*self.result['detail'][2]/count)
-                    tmp = self.SSRList2StrList(self.getSSRList())
-                    msgs.append(":confetti_ball: Mukku ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                    if doubleMukku: # Double mukku enabled
-                        if random.randint(1, 100) < 25: # roll a dice
-                            doubleMukku = False # disable double mukku and wait to go to mukku again
-                        else:
-                            running = False # Over
-                    else:
-                        running = False # Over
-                case 4:
-                    self.changeMode('supermukku')
-                    await self.generate(300, legfest)
-                    count = len(self.result['list'])
-                    rate = (100*self.result['detail'][2]/count)
-                    tmp = self.SSRList2StrList(self.getSSRList())
-                    msgs.append(":confetti_ball: **Super Mukku** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                    running = False
-                case 5: # birthday zone roulette
-                    d = random.randint(1, 10000) # roll another dice
-                    running = False
-                    # see how many rolls we get
-                    if d <= 2000: roll = 100
-                    elif d <= 3400: roll = 50
-                    elif d <= 4800: roll = 60
-                    elif d <= 6200: roll = 70
-                    elif d <= 7600: roll = 80
-                    elif d <= 9000:
-                        state = 2 # gachapin state
-                        msgs.append(":confetti_ball: You got the **Gachapin**!!\n")
-                        running = True
-                    else:
-                        self.changeMode('all')
-                        roll = 10
-                    if state == 5: # in case of gachapin, this part won't execute
-                        # generate our birthday rolls
-                        await self.generate(roll, legfest)
-                        count = len(self.result['list'])
-                        rate = (100*self.result['detail'][2]/count)
-                        tmp = self.SSRList2StrList(self.getSSRList())
-                        if d > 9000: # guaranted ssr
-                            msgs.append(":confetti_ball: :confetti_ball: **Guaranted SSR** ▫️ **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp)))
-                        else:
-                            msgs.append(":confetti_ball: **{}** rolls\n{:} {:} ▫️ {:} {:} ▫️ {:} {:}{:}\n**{:.2f}%** SSR rate\n\n".format(count, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), "".join(tmp), rate))
-                        footer = self.bannerIDtoFooter(["{}% SSR rate".format(self.result['rate'])])
+                        self.running = False # Over
+                else:
+                    self.running = False # Over
+            case self.STATE_SUPER_MUKKU:
+                self.running = False # Over
+
+    """birthday_event()
+    Simulate the Birthday Zone of the March 2024 Anniversary Roulette
+    Called by update().
+    """
+    async def birthday_event(self) -> None:
+        d = random.randint(1, 10000) # roll another dice
+        self.running = False # we'll stop here
+        # Decide on event
+        if d <= 2000: self.rolls = 100
+        elif d <= 3400: self.rolls = 50
+        elif d <= 4800: self.rolls = 60
+        elif d <= 6200: self.rolls = 70
+        elif d <= 7600: self.rolls = 80
+        elif d <= 9000: # gachapin
+            self.msgs.append(":confetti_ball: You got the **Gachapin**!!\n")
+            await self.gachapin_mukku_event('gachapin') # call directly to keep running flag to False
+            return
+        else: # 10 ssr mode
+            self.sim.changeMode('all')
+            self.rolls = 10
+            self.msgs.append(":confetti_ball: :confetti_ball: **Guaranted SSR** ▫️ **")
+        if self.rolls > 10:
+            self.msgs.append(":confetti_ball: **")
+        self.msgs.append(str(self.rolls))
+        self.msgs.append("** rolls\n")
+        await self.normal_event() # call directly to keep running flag to False
+
+    """update()
+    Process the Roulette state and trigger the corresponding event.
+    """
+    async def update(self) -> None:
+        if self.running:
+            match self.state:
+                case self.STATE_JANKEN:
+                    await self.janken_event()
+                case self.STATE_NORMAL: # normal rolls
+                    await self.normal_event()
+                case self.STATE_GACHAPIN: # gachapin
+                    await self.gachapin_mukku_event('gachapin')
+                case self.STATE_MUKKU:
+                    await self.gachapin_mukku_event('mukku')
+                case self.STATE_SUPER_MUKKU:
+                    await self.gachapin_mukku_event('supermukku')
+                case self.STATE_BIRTHDAY_ZONE:
+                    await self.birthday_event()
             # tweak footer
-            if realist:
-                footer.append(" ▫️ Realist")
-            # update thumbnail if it changed
-            if prev_best is None or str(self.best) != prev_best:
-                prev_best = str(self.best)
-                await self.updateThumbnail()
-            # wait next roulette update
-            diff = self.ROULETTE_DELAY - (time.time() - start_time)
-            if diff > 0: await asyncio.sleep(diff)
-            # send message
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs) + ("" if not running else "**...**"), color=self.color, footer="".join(footer), thumbnail=self.thumbnail))
+            if self.realist:
+                self.footers.append(" ▫️ Realist")
