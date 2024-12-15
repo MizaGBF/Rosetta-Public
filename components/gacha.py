@@ -535,8 +535,11 @@ class GachaSimulator():
     RATE_MUKKU = 9
     RATE_GALA = 6
     RATE_NORMAL = 3
-    # Total rate
-    RATE_ALL = 100
+    RATE_ALL = 100 # guaranted ssr
+    # Rarity
+    SSR = 2
+    SR = 1
+    R = 0
     # Assets
     CRYSTALS = [
         "https://mizagbf.github.io/assets/rosetta-remote-resources/0_s.png",
@@ -584,11 +587,11 @@ class GachaSimulator():
         self.mode = {'single':self.MODE_SINGLE, 'srssr':self.MODE_SRSSR, 'memerollA':self.MODE_MEMEA, 'memerollB':self.MODE_MEMEB, 'ten':self.MODE_TEN, 'gachapin':self.MODE_GACHAPIN, 'mukku':self.MODE_MUKKU, 'supermukku':self.MODE_SUPER, 'scam':self.MODE_SCAM, 'all':self.MODE_ALL}[simtype]
 
     """check_rate()
-    check and calculate modifiers to get the exact rates we want
+    Check and calculate modifiers needed to modify real rates to the ones we desire.
     
     Parameters
     --------
-    ssrrate: Integer, wanted SSR rate in percent
+    ssrrate: Integer, wanted SSR rate, in percent
     
     Returns
     --------
@@ -605,23 +608,150 @@ class GachaSimulator():
             for rate in r['list']:
                 proba[-1] += float(rate) * len(r['list'][rate]) # sum of rates x items
         if ssrrate != self.data[2]['rate']: # if wanted ssr rate different from advertised one
-            mods[2] = ssrrate / proba[2] # calculate mod
-            tmp = proba[2] * mods[2] # get new proba
-            diff = proba[2] - tmp # get diff between old and new
+            mods[self.SSR] = ssrrate / proba[self.SSR] # calculate mod
+            tmp = proba[self.SSR] * mods[self.SSR] # get new proba
+            diff = proba[self.SSR] - tmp # get diff between old and new
             if ssrrate == self.RATE_ALL:
-                proba[0] = 0
-                proba[1] = 0
-                mods[0] = 0
-                mods[1] = 0
+                proba[self.R] = 0
+                proba[self.SR] = 0
+                mods[self.R] = 0
+                mods[self.SR] = 0
             else:
-                proba[0] = max(0, proba[0] + diff) # lower R proba
-                try: mods[0] = (proba[0] + diff) / proba[0] # calculate lowered R rate modifer
-                except: mods[0] = 1
-            proba[2] = tmp # store SSR proba
+                proba[self.R] = max(0, proba[self.R] + diff) # lower R proba
+                try:
+                    mods[self.R] = (proba[self.R] + diff) / proba[self.R] # calculate lowered R rate modifer
+                except:
+                    mods[self.R] = 1
+            proba[self.SSR] = tmp # store SSR proba
         return mods, proba
 
+    """get_generation_rate_and_modifiers()
+    Get SSR rates and modifiers
+    
+    Parameters
+    --------
+    legfest: Integer, value to pass to isLegfest() if needed
+    
+    Returns
+    --------
+    tuple: Contains the SSR rate, in %, and the output of check_rate() (mods and probas)
+    """
+    def get_generation_rate_and_modifiers(self, legfest : int) -> tuple:
+        match self.mode:
+            case self.MODE_ALL: ssrrate = self.RATE_ALL
+            case self.MODE_SUPER: ssrrate = self.RATE_SUPER
+            case self.MODE_MUKKU: ssrrate = self.RATE_MUKKU
+            case _: ssrrate = self.RATE_GALA if self.bot.gacha.isLegfest(self.ssrrate, legfest) else self.RATE_NORMAL
+        return ssrrate, *self.check_rate(ssrrate)
+
+    """retrieve_single_roll_item()
+    Use the generated roll to retrieve an item.
+    Called by generate_single_roll.
+    If no real gacha data exists in memory, we create a dummy item.
+    
+    Parameters
+    --------
+    result: Dict, temporary output container
+    rarity: Integer, item rarity
+    dice: Float, rolled value
+    
+    Returns
+    --------
+    bool: Stop boolean, True if we must stop generating items, False if not
+    """
+    def retrieve_single_roll_item(self, result: dict, rarity : int, dice : float) -> bool:
+        if self.complete: # if we have a real gacha in memory
+            roll = None # will contain our rolled item
+            # find which item we rolled
+            for rate in self.data[rarity]['list']: # go over each rate category
+                floatrate = float(rate)
+                for item in self.data[rarity]['list'][rate]: # and each item
+                    rateupitem = False 
+                    if rarity == self.SSR and rate in self.rateups: # if this is a rate up SSR
+                        rateupitem = True # raise the flag
+                    # if our dice value is under the item rate
+                    if dice <= floatrate: # this is the one
+                        roll = [rarity, item, rateupitem]
+                        break
+                    # else substract the item rate
+                    dice -= floatrate
+                if roll is not None: # we stop the loop if we got a roll
+                    break
+            # fallback if the roll is still empty, we put the last item encountered
+            if roll is None:
+                roll = [rarity, item, rateupitem]
+            # add item to list
+            if roll[2]: # bold if rate up
+                result['list'].append([roll[0], "**" + self.bot.gacha.formatGachaItem(roll[1]) + "**"])
+            else:
+                result['list'].append([roll[0], self.bot.gacha.formatGachaItem(roll[1])])
+            # increase rarity counter by 1
+            result['detail'][rarity] += 1
+            # update best item obtained so far
+            if rate in self.rateups and rarity + 1 > self.best[0]: # rate up SSR
+                self.best = roll.copy()
+                self.best[0] += 1 # set rate up ssr to SSR+1 to ensure they aren't superseeded by normal SSR
+            elif rarity > self.best[0]:
+                self.best = roll.copy()
+            # final check
+            if rarity == self.SSR:
+                # the loop must stop if we fulfilled the memeroll types
+                if self.mode == self.MODE_MEMEA:
+                    return True # memeroll mode A
+                elif self.mode == self.MODE_MEMEB and result['list'][-1][1].startswith("**"):
+                    return True # memeroll mode B
+        else: # using dummy gacha
+            result['list'].append([rarity, '']) # '' because no item names
+            result['detail'][rarity] += 1
+            if rarity == self.SSR:
+                if self.mode == self.MODE_MEMEA or self.mode == self.MODE_MEMEB:
+                    return True  # memeroll mode A and B
+        return False
+
+    """generate_single_roll()
+    Generate a single roll.
+    Used by generate()
+    
+    Parameters
+    --------
+    result: Dict, temporary output container
+    index: Integer, current roll in a 10 rolls series (Goes from 0 to 9)
+    tenrollsr: Flag indicating we got a SR in the current ten roll
+    mods: List, of 3 elements (rate modifiers for each rarity)
+    proba: List, of 3 elements (% rates of each rarity)
+    
+    Returns
+    --------
+    tuple: Containes updated tenrollsr boolean and stop boolean
+    """
+    def generate_single_roll(self, result: dict, index : int, tenrollsr : bool, mods : list, proba : list) -> tuple:
+        # our "dice" roll
+        dice = random.randint(1, int(sum(proba) * 1000)) / 1000
+        # Check if we must force a SR
+        if self.mode == self.MODE_SRSSR or (self.mode >= self.MODE_TEN and index == 9 and not tenrollsr): # if SRSSR mode OR (we're doing a ten draw type of roll and we're on the 10th roll without SR/SSR)
+            sr_mode = True
+        else:
+            sr_mode = False
+        # determine what rarity we got
+        if dice <= proba[self.SSR]: # SSR CASE
+            rarity = self.SSR
+            tenrollsr = True # raise got sr flag
+            dice /= mods[self.SSR] # apply modifier
+        elif (not sr_mode and dice <= proba[1] + proba[2]) or sr_mode: # SR CASE
+            rarity = self.SR
+            dice -= proba[self.SSR]
+            while dice >= proba[self.SR]: # in case we forced a SR and we're above the rate
+                dice -= proba[self.SR]
+            tenrollsr = True # raise got sr flag
+            dice /= mods[self.SR] # apply modifier
+        else: # R CASE
+            rarity = self.R
+            dice -= proba[self.SSR] + proba[self.SR]
+            dice /= mods[self.R] # apply modifier
+        return tenrollsr, self.retrieve_single_roll_item(result, rarity, dice)
+
     """generate()
-    generate X amount of rolls and update self.result
+    Generate X amount of rolls and update self.result
     
     Parameters
     --------
@@ -630,78 +760,25 @@ class GachaSimulator():
     """
     async def generate(self, count : int, legfest : int = -1) -> None:
         try:
-            # prep work
-            legfest = self.bot.gacha.isLegfest(self.ssrrate, legfest)
-            match self.mode:
-                case self.MODE_ALL: ssrrate = self.RATE_ALL
-                case self.MODE_SUPER: ssrrate = self.RATE_SUPER
-                case self.MODE_MUKKU: ssrrate = self.RATE_MUKKU
-                case _: ssrrate = self.RATE_GALA if legfest else self.RATE_NORMAL
-            self.result = {} # empty output, used for error check
-            result = {'list':[], 'detail':[0, 0, 0], 'rate':ssrrate}
-            await asyncio.sleep(0)
-            mods, proba = self.check_rate(ssrrate)
+            ssrrate, mods, proba = self.get_generation_rate_and_modifiers(legfest) # get ssr rate
+            self.result = {} # reset the output
+            result = {'list':[], 'detail':[0, 0, 0], 'rate':ssrrate} # temp output
             tenrollsr = False # flag for guaranted SR in ten rolls 
             if self.mode == self.MODE_MEMEB and len(self.rateups) == 0:
                 self.mode = self.MODE_MEMEA # revert memerollB to A if no rate ups
             # rolling loop
             for i in range(0, count):
-                await asyncio.sleep(0)
-                d = random.randint(1, int(sum(proba) * 1000)) / 1000 # our roll
-                if self.mode == self.MODE_SRSSR or (self.mode >= self.MODE_TEN and (i % 10 == 9) and not tenrollsr): sr_mode = True # force sr in srssr self.mode OR when 10th roll of ten roll)
-                else: sr_mode = False # else doesn't set
-                if d <= proba[2]: # SSR CASE
-                    r = 2
-                    tenrollsr = True
-                    d /= mods[2]
-                elif (not sr_mode and d <= proba[1] + proba[2]) or sr_mode: # SR CASE
-                    r = 1
-                    d -= proba[2]
-                    while d >= proba[1]: # for forced sr
-                        d -= proba[1]
-                    d /= mods[1]
-                    tenrollsr = True
-                else: # R CASE
-                    r = 0
-                    d -= proba[2] + proba[1]
-                    d /= mods[0]
-                if i % 10 == 9: tenrollsr = False # unset flag if we did 10 rolls
-                if self.complete: # if we have a real gacha
-                    roll = None
-                    for rate in self.data[r]['list']: # find which item we rolled
-                        fr = float(rate)
-                        for item in self.data[r]['list'][rate]:
-                            rateupitem = False 
-                            if r == 2 and rate in self.rateups: rateupitem = True
-                            if d <= fr:
-                                roll = [r, item, rateupitem]
-                                break
-                            d -= fr
-                        if roll is not None:
-                            break
-                    if roll is None:
-                        roll = [r, item, rateupitem]
-                    if roll[2]: result['list'].append([roll[0], "**" + self.bot.gacha.formatGachaItem(roll[1]) + "**"])
-                    else: result['list'].append([roll[0], self.bot.gacha.formatGachaItem(roll[1])])
-                    result['detail'][r] += 1
-                    if rate in self.rateups and r + 1 > self.best[0]:
-                        self.best = roll.copy()
-                        self.best[0] += 1
-                    elif r > self.best[0]:
-                        self.best = roll.copy()
-                    if r == 2:
-                        # check memeroll must stop
-                        if self.mode == self.MODE_MEMEA: break # memeroll mode A
-                        elif self.mode == self.MODE_MEMEB and result['list'][-1][1].startswith("**"): break # memeroll mode B
-                else: # using dummy gacha
-                    result['list'].append([r, '']) # '' because no item names
-                    result['detail'][r] += 1
-                    if r == 2:
-                        if self.mode == self.MODE_MEMEA or self.mode == self.MODE_MEMEB: break  # memeroll mode A and B
-                # end of a serie of 10 rolls, check for gachapin/mukku/etc...
-                if i % 10 == 9:
-                    if (self.mode == self.MODE_GACHAPIN or self.mode == self.MODE_MUKKU) and result['detail'][2] >= 1: break # gachapin and mukku mode
-                    elif self.mode == self.MODE_SUPER and result['detail'][2] >= 5: break # super mukku mode
+                modulo_i = i % 10 # get index in current ten roll
+                tenrollsr, stop = self.generate_single_roll(result, modulo_i, tenrollsr, mods, proba)
+                if stop:
+                    break
+                # end of a series of 10 rolls, check for gachapin/mukku/etc...
+                if modulo_i == 9:
+                    tenrollsr = False # unset SR flag if we did 10 rolls
+                    if (self.mode == self.MODE_GACHAPIN or self.mode == self.MODE_MUKKU) and result['detail'][2] >= 1:
+                        break # gachapin and mukku mode, we end here
+                    elif self.mode == self.MODE_SUPER and result['detail'][2] >= 5:
+                        break # super mukku mode, we end here
             self.result = result # store result
         except Exception as e:
             self.exception = e
@@ -755,7 +832,6 @@ class GachaSimulator():
         self.best = [99, random.choice(data[2]['list'][list(data[2]['list'].keys())[0]]), True] # force ssr in self.best
         return self.best[1], loot
 
-
     """bannerIDtoFooter()
     Appends extra text to an embed footer depending on the banner type
     
@@ -775,25 +851,37 @@ class GachaSimulator():
                 footer.append(" ▫️ Collaboration")
         return footer
 
-    """output()
-    Output the result via a disnake Interaction
+    """render_errors()
+    Check for errors and display them in the interaction message.
+    Called by render().
     
     Parameters
     --------
-    inter: Interaction to use. Must have been deferred beforehand
-    display_mode: Integer. 0=single roll, 1=ten roll, 2=memeroll, 3=ssr list
-    titles: Tuple of 2 strings. First and Second embed titles to display
+    inter: render() interaction
+    
+    Returns
+    --------
+    bool: True if an error occured, False otherwise
     """
-    async def output(self, inter: disnake.Interaction, display_mode : int, titles : tuple=("{}", "{}")) -> None:
-        if 'list' not in self.result or self.exception is not None: # error check
+    async def render_errors(self, inter: disnake.Interaction) -> bool:
+        if 'list' not in self.result or self.exception is not None: # an error occured
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
             self.bot.logger.pushError("[GACHA] 'simulator output' error:", self.exception)
-            return
-        elif self.mode == self.MODE_SCAM and (self.scamdata is None or not self.scamdata[3]): # scam error check
+            return True
+        elif self.mode == self.MODE_SCAM and (self.scamdata is None or not self.scamdata[3]): # scam error occured
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Star Premium Gachas available at selected index", color=self.color))
-            return
-        # set embed footer
-        footer = ["{}% SSR rate".format(self.result['rate'])]
+            return True
+        return False
+
+    """generate_render_footer()
+    Return the string to be used as an Embed footer in render()
+    
+    Returns
+    --------
+    str: The footer
+    """
+    def generate_render_footer(self) -> str:
+        footer = ["{}% SSR rate".format(self.result['rate'])] # banner rate
         match self.mode:
             case self.MODE_MEMEB:
                 footer.append(" ▫️ until rate up")
@@ -801,109 +889,192 @@ class GachaSimulator():
                 footer.append(" ▫️ Selected Scam #{}".format(self.scamdata[5]+1))
             case _:
                 pass
-        footer = "".join(self.bannerIDtoFooter(footer))
-        # get scam roll
+        return "".join(self.bannerIDtoFooter(footer))
+
+    """generate_render_crystal()
+    Return the image url to be used as the crystal image, for the Tap prompt.
+    Called by render().
+    
+    Returns
+    --------
+    str: An url
+    """
+    def generate_render_crystal(self) -> str:
+        # select crystal image
+        if (100 * self.result['detail'][self.SSR] / len(self.result['list'])) >= self.result['rate']: # SSR
+            return random.choice([self.CRYSTALS[2], self.CRYSTALS[3]])
+        elif (100 * self.result['detail'][self.SR] / len(self.result['list'])) >= self.result['rate']: # SR
+            return self.CRYSTALS[2]
+        else:
+            return random.choice([self.CRYSTALS[0], self.CRYSTALS[1]]) # R
+
+    """render_single_roll()
+    Display the result of a single draw in the given interaction.
+    Called by render().
+    
+    Parameters
+    --------
+    inter: render() interaction
+    titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
+    footer: String, embed footer
+    """
+    async def render_single_roll(self, inter: disnake.Interaction, titles : tuple, footer : str) -> None:
+        item = self.result['list'][0] # get the first (and likely only) item
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(item[0])), item[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+
+    """render_ten_roll()
+    Display the result of a ten draw in the given interaction.
+    Called by render().
+    
+    Parameters
+    --------
+    inter: render() interaction
+    titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
+    footer: String, embed footer
+    scamroll: Optional tuple, result of scamRoll()
+    """
+    async def render_ten_roll(self, inter: disnake.Interaction, titles : tuple, footer : str, scamroll : Optional[tuple]) -> None:
+        scam_position = -1
+        for i in range(0, 11): # 1 by 1 + the final displaying all ten, so 11
+            msgs = []
+            for j in range(0, i): # display revealed items
+                if j >= 10: break
+                # write
+                msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
+                if j & 1 == 1:
+                    msgs.append("\n")
+            for j in range(i, 10): # display hidden items
+                msgs.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
+                if j & 1 == 1:
+                    msgs.append("\n")
+            if self.scamdata is not None: # add unreleaved scam icons if data exists
+                scam_position = len(msgs) - 1
+                msgs.append(str(self.bot.emote.get('SSR')))
+                msgs.append(str(self.bot.emote.get('crystal2')))
+                msgs.append("\n")
+                msgs.append(str(self.bot.emote.get('red')))
+            await asyncio.sleep(0.7)
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
+        # display scam result (if it exists)
         if self.scamdata is not None:
-            sroll = self.scamRoll()
+            msgs = msgs[:scam_position]
+            msgs.append("\n")
+            msgs.append(str(self.bot.emote.get('SSR')))
+            msgs.append("**")
+            msgs.append(self.bot.gacha.formatGachaItem(scamroll[0]))
+            msgs.append("**\n")
+            msgs.append(str(self.bot.emote.get('red')))
+            msgs.append("**")
+            msgs.append(scamroll[1])
+            msgs.append("**")
+            await asyncio.sleep(1)
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+
+    """render_meme_roll()
+    Display the result of a "memerolling" in the given interaction.
+    Called by render().
+    Note: "Memerolling" refers to the fact of using single tickets until obtaining a SSR.
+    
+    Parameters
+    --------
+    inter: render() interaction
+    titles: Tuple of Strings. First (during rolling) and Second element (after the end) are used in the embed author name.
+    footer: String, embed footer
+    """
+    async def render_meme_roll(self, inter: disnake.Interaction, titles : tuple, footer : str) -> None:
+        counter = [0, 0, 0]
+        msgs = []
+        # speed selection
+        if self.mode == self.MODE_MEMEB:
+            item_count = 5 # by 5 items
+        else:
+            item_count = 3 # by 3items
+        # iterate over rolled items
+        for i, v in enumerate(self.result['list']):
+            if i > 0 and i % item_count == 0:
+                # display once we reached item_count
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
+                await asyncio.sleep(1)
+                msgs = []
+            # add result
+            msgs.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
+            counter[v[0]] += 1
+        # update title
+        title = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+
+    """render_spark_roll()
+    Display the result of a spark in the given interaction.
+    Called by render().
+    
+    Parameters
+    --------
+    inter: render() interaction
+    titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
+    footer: String, embed footer
+    """
+    async def render_spark_roll(self, inter: disnake.Interaction, titles : tuple, footer : str) -> None:
+        count = len(self.result['list'])
+        rate = (100*self.result['detail'][2]/count)
+        msgs = []
+        best = [-1, ""]
+        rolls = self.getSSRList()
+        for r in rolls: # check for best rolls
+            if best[0] < 3 and '**' in r:
+                best = [3, r.replace('**', '')]
+            elif best[0] < 2:
+                best = [2, r]
+        if len(rolls) > 0 and self.complete:
+            msgs.append("{} ".format(self.bot.emote.get('SSR')))
+            for item in rolls: # for each ssr
+                msgs.append(item)
+                if rolls[item] > 1: # add occurence
+                    msgs.append(" x{}".format(rolls[item]))
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer), view=None)
+                await asyncio.sleep(0.75)
+                msgs.append(" ")
+        # add extra messages for other modes
+        if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
+        elif self.mode == self.MODE_MUKKU: amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
+        elif self.mode == self.MODE_SUPER: amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
+        else: amsg = ""
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description="{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msgs), rate), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+
+    """render()
+    Output the result in a message, via a given disnake Interaction.
+    
+    Parameters
+    --------
+    inter: Interaction to use. Must have been deferred beforehand
+    display_mode: Integer. 0=single roll, 1=ten roll, 2=memeroll, 3=ssr list
+    titles: Tuple of 2 strings. First and Second embed titles to display
+    """
+    async def render(self, inter: disnake.Interaction, display_mode : int, titles : tuple = ("{}", "{}")) -> None:
+        # check errors in result
+        if await self.render_errors(inter):
+            return
+        # retrieve footer
+        footer = self.generate_render_footer()
+        # get scam roll
+        scamroll = None
+        if self.scamdata is not None:
+            scamroll = self.scamRoll()
         # update thumbnail
         await self.updateThumbnail()
-        # select crystal image
-        if (100 * self.result['detail'][2] / len(self.result['list'])) >= self.result['rate']: crystal = random.choice([self.CRYSTALS[2], self.CRYSTALS[3]])
-        elif (100 * self.result['detail'][1] / len(self.result['list'])) >= self.result['rate']: crystal = self.CRYSTALS[2]
-        else: crystal = random.choice([self.CRYSTALS[0], self.CRYSTALS[1]])
-        # startup msg
+        # start and tap button
         view = Tap(self.bot, owner_id=inter.author.id)
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, image=crystal, color=self.color, footer=footer), view=view)
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, image=self.generate_render_crystal(), color=self.color, footer=footer), view=view)
         await view.wait()
-
+        # Display roll result
         match display_mode:
-            case 0: # single roll display
-                r = self.result['list'][0]
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(r[0])), r[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
-            case 1: # ten roll display
-                scam_position = -1
-                for i in range(0, 11): # 1 by 1 + the final display all ten, so 11
-                    msgs = []
-                    for j in range(0, i): # display revealed items
-                        if j >= 10: break
-                        # write
-                        msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
-                        if j & 1 == 1:
-                            msgs.append("\n")
-                    for j in range(i, 10): # display hidden items
-                        msgs.append('{}'.format(self.bot.emote.get('crystal{}'.format(self.result['list'][j][0]))))
-                        if j & 1 == 1:
-                            msgs.append("\n")
-                    if self.scamdata is not None: # display scam data
-                        scam_position = len(msgs) - 1
-                        msgs.append(str(self.bot.emote.get('SSR')))
-                        msgs.append(str(self.bot.emote.get('crystal2')))
-                        msgs.append("\n")
-                        msgs.append(str(self.bot.emote.get('red')))
-                    await asyncio.sleep(0.7)
-                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=(self.thumbnail if (i == 10 and self.scamdata is None) else None)), view=None)
-                # display scam result
-                if self.scamdata is not None:
-                    msgs = msgs[:scam_position]
-                    msgs.append("\n")
-                    msgs.append(str(self.bot.emote.get('SSR')))
-                    msgs.append("**")
-                    msgs.append(self.bot.gacha.formatGachaItem(sroll[0]))
-                    msgs.append("**\n")
-                    msgs.append(str(self.bot.emote.get('red')))
-                    msgs.append("**")
-                    msgs.append(sroll[1])
-                    msgs.append("**")
-                    await asyncio.sleep(1)
-                    await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
-            case 2: # meme roll display
-                counter = [0, 0, 0]
-                msgs = []
-                best = [-1, ""]
-                # speed selection
-                if self.mode == self.MODE_MEMEB:
-                    item_count = 5 # by 5
-                else:
-                    item_count = 3 # by 3
-                # iterate over rolled items
-                for i, v in enumerate(self.result['list']):
-                    if i > 0 and i % item_count == 0:
-                        # display once we reached item_count
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
-                        await asyncio.sleep(1)
-                        msgs = []
-                    # add result
-                    msgs.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
-                    counter[v[0]] += 1
-                # update title
-                title = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
-            case 3: # spark display
-                count = len(self.result['list'])
-                rate = (100*self.result['detail'][2]/count)
-                msgs = []
-                best = [-1, ""]
-                rolls = self.getSSRList()
-                for r in rolls: # check for best rolls
-                    if best[0] < 3 and '**' in r:
-                        best = [3, r.replace('**', '')]
-                    elif best[0] < 2:
-                        best = [2, r]
-                if len(rolls) > 0 and self.complete:
-                    msgs.append("{} ".format(self.bot.emote.get('SSR')))
-                    for item in rolls: # for each ssr
-                        msgs.append(item)
-                        if rolls[item] > 1: # add occurence
-                            msgs.append(" x{}".format(rolls[item]))
-                        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description=''.join(msgs), color=self.color, footer=footer), view=None)
-                        await asyncio.sleep(0.75)
-                        msgs.append(" ")
-                # add extra messages for other modes
-                if self.mode == self.MODE_GACHAPIN: amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
-                elif self.mode == self.MODE_MUKKU: amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
-                elif self.mode == self.MODE_SUPER: amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
-                else: amsg = ""
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description="{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msgs), rate), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+            case 0:
+                await self.render_single_roll(inter, titles, footer)
+            case 1:
+                await self.render_ten_roll(inter, titles, footer, scamroll)
+            case 2:
+                await self.render_meme_roll(inter, titles, footer)
+            case 3:
+                await self.render_spark_roll(inter, titles, footer)
 
     """getSSRList()
     Extract the SSR from a full gacha list generated by gachaRoll()

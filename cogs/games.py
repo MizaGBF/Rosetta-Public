@@ -68,7 +68,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("single", banner, self.COLOR)
         await sim.generate(1, legfest)
-        await sim.output(inter, 0, ("{} did a single roll...", "{} did a single roll"))
+        await sim.render(inter, 0, ("{} did a single roll...", "{} did a single roll"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -77,7 +77,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(10, legfest)
-        await sim.output(inter, 1, ("{} did ten rolls...", "{} did ten rolls"))
+        await sim.render(inter, 1, ("{} did ten rolls...", "{} did ten rolls"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command(name="scam")
@@ -86,7 +86,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("scam", "scam", self.COLOR, scamindex=scam_index)
         await sim.generate(10, legfest)
-        await sim.output(inter, 1, ("{} is getting Scammed...", "{} got Scammed"))
+        await sim.render(inter, 1, ("{} is getting Scammed...", "{} got Scammed"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -95,7 +95,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(300, legfest)
-        await sim.output(inter, 3, ("{} is sparking...", "{} sparked"))
+        await sim.render(inter, 3, ("{} is sparking...", "{} sparked"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -104,7 +104,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(num, legfest)
-        await sim.output(inter, 3, ("{}" + " is rolling {} times...".format(num), "{} " + "rolled {} times".format(num)))
+        await sim.render(inter, 3, ("{}" + " is rolling {} times...".format(num), "{} " + "rolled {} times".format(num)))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -113,7 +113,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("gachapin", banner, self.COLOR)
         await sim.generate(300, legfest)
-        await sim.output(inter, 3, ("{} is rolling the Gachapin...", "{} rolled the Gachapin"))
+        await sim.render(inter, 3, ("{} is rolling the Gachapin...", "{} rolled the Gachapin"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -122,7 +122,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("mukku", banner, self.COLOR)
         await sim.generate(300)
-        await sim.output(inter, 3, ("{} is rolling the Mukku...", "{} rolled the Mukku"))
+        await sim.render(inter, 3, ("{} is rolling the Mukku...", "{} rolled the Mukku"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -131,7 +131,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("supermukku", banner, self.COLOR)
         await sim.generate(300)
-        await sim.output(inter, 3, ("{} is rolling the Supper Mukku...", "{} rolled the Super Mukku"))
+        await sim.render(inter, 3, ("{} is rolling the Supper Mukku...", "{} rolled the Super Mukku"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
@@ -140,7 +140,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("memerollB" if rateup != "" else "memerollA", banner, self.COLOR)
         await sim.generate(300, legfest)
-        await sim.output(inter, 2, ("{} is memerolling...", "{} memerolled {} times"))
+        await sim.render(inter, 2, ("{} is memerolling...", "{} memerolled {} times"))
         await self.bot.util.clean(inter, 40)
 
     @roll.sub_command()
