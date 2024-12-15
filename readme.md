@@ -268,7 +268,10 @@ Same principle, but shorter:
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.  
+  
+> [!IMPORTANT]
+> In Debug mode, the bot is unable to write to your Google Drive.  
+> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
   
 ## Updating  
   
