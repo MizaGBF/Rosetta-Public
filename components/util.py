@@ -683,6 +683,23 @@ class Util():
         # see below for the custom modal class
         await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
 
+    """createGameCard()
+    Create a GameCard to use for a game
+    
+    Parameters
+    ----------
+    value: Integer, 1 (ace) to 14 (high ace)
+    suit: 0 to 3
+    
+    Returns
+    ----------
+    GameCard: The generated card
+    """
+    def createGameCard(self, value : int, suit : int) -> 'GameCard':
+        if value < 1 or value > 14: raise Exception("Invalid GameCard value")
+        elif suit < 0 or suit > 3: raise Exception("Invalid GameCard suit")
+        return GameCard(value, suit)
+
 """CustomModal
 A Modal class where you can set your own callback
 """
@@ -699,3 +716,54 @@ class CustomModal(disnake.ui.Modal):
 
     async def callback(self, inter: disnake.ModalInteraction) -> None:
         await self.custom_callback(self, inter) # trigger the callback
+
+"""GameCard
+Standard card representation for card games
+"""
+class GameCard():
+    # card game strings
+    ACE = "A"
+    JACK = "J"
+    QUEEN = "Q"
+    KING = "K"
+    DIAMOND = "\♦️"
+    SPADE = "\♦️"
+    HEART = "\♥️"
+    CLUB = "\♣️"
+    def __init__(self, value : int, suit : int) -> None:
+        self.value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
+        self.suit = suit # suit ranges from 0 to 3
+        self.strings = [None, None, None] # value, suit, complete
+        # set strings
+        # value
+        match value:
+            case 1|14: self.strings[0] = self.ACE
+            case 11: self.strings[0] = self.JACK
+            case 12: self.strings[0] = self.QUEEN
+            case 13: self.strings[0] = self.KING
+            case _: self.strings[0] = str(value)
+        # suit
+        match suit:
+            case 0: self.strings[1] = self.DIAMOND
+            case 1: self.strings[1] = self.SPADE
+            case 2: self.strings[1] = self.HEART
+            case 3: self.strings[1] = self.CLUB
+        self.strings[2] = "".join(self.strings[:2])
+
+    def __repr__(self) -> str: 
+        return self.strings[2]
+
+    def __str__(self) -> str:
+        return self.strings[2]
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __lt__(self, other : 'GameCard') -> bool:
+         return self.value < other.value
+
+    def getStringValue(self) -> str:
+        return self.strings[0]
+
+    def getStringSuit(self) -> str:
+        return self.strings[1]

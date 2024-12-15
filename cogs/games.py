@@ -451,11 +451,12 @@ class Games(commands.Cog):
         """Deal a random poker hand"""
         await inter.response.defer()
         # generate cards
-        hand = []
+        hand = {}
         while len(hand) < 5:
-            card = str(random.randint(2, 14)) + random.choice(["D", "S", "H", "C"])
-            if card not in hand:
-                hand.append(card)
+            card = self.bot.util.createGameCard(random.randint(2, 14), random.randint(0, 3))
+            if str(card) not in hand:
+                hand[str(card)] = card
+        hand = list(hand.values())
         # default message
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="🎴, 🎴, 🎴, 🎴, 🎴", color=self.COLOR))
         # reveal cards one by one (Use Poker view for parsing)
@@ -464,13 +465,17 @@ class Games(commands.Cog):
             # check result
             msgs = []
             for i in range(len(hand)):
-                if i > x: msgs.append("🎴")
-                else: msgs.append(Poker.valueNsuit2head(hand[i]))
-                if i < 4: msgs.append(", ")
-                else: msgs.append("\n")
+                if i > x:
+                    msgs.append("🎴")
+                else:
+                    msgs.append(str(hand[i]))
+                if i < 4:
+                    msgs.append(", ")
+                else:
+                    msgs.append("\n")
             if x == 4:
                 await asyncio.sleep(2)
-                msgs.append((await Poker.checkPokerHand(hand))[1])
+                msgs.append(Poker.checkPokerHand(hand)[1])
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
         await self.bot.util.clean(inter, 45)
 
@@ -502,7 +507,7 @@ class Games(commands.Cog):
                 view = Poker(self.bot, players, embed, (0 if max_round == 1 else (max_round - i)))
                 await view.update(inter, init=True)
                 await view.wait()
-                await view.final()
+                await view.playRound()
                 for p in view.winners: # get the winner and increase their counts
                     win_tracker[p.id][1] += 1
                 await asyncio.sleep(10)

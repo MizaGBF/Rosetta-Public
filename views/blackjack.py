@@ -11,22 +11,12 @@ import random
 # ----------------------------------------------------------------------------------------------------------------
 
 class Blackjack(BaseView):
-    # strings
-    ACE = "A"
-    JACK = "J"
-    QUEEN = "Q"
-    KING = "K"
-    DIAMOND = "\♦️"
-    SPADE = "\♦️"
-    HEART = "\♥️"
-    CLUB = "\♣️"
     # player states
     PLAYING = 0
     STOPPED = 1
     BLACKJACK = 2
     TWENTYONE = 3
     LOST = 4
-    
 
     """__init__()
     Constructor
@@ -50,7 +40,7 @@ class Blackjack(BaseView):
         # the view embed
         self.embed = embed
         # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
-        self.deck = [((i % 13) + 1, i // 13) for i in range(51)]
+        self.deck = [self.bot.util.createGameCard((i % 13) + 1, i // 13) for i in range(51)]
         # shuffle the deck
         random.shuffle(self.deck)
         # make hands and give one card to each player
@@ -62,7 +52,7 @@ class Blackjack(BaseView):
         # Then the player in slot 0 will play
         self.notification = "Turn of **{}**".format(self.players[self.state].display_name)
 
-    """formatHand()
+    """renderHand()
     Generate a Hand string for the given hand
     
     Parameters
@@ -74,37 +64,11 @@ class Blackjack(BaseView):
     ----------
     list: resulting list of strings to add to a message list
     """
-    def formatHand(self, hand : list, playing : bool) -> str:
+    def renderHand(self, hand : list, playing : bool) -> str:
         msgs = []
-        score = 0
-        for card in hand[1]: # read each card
-            # display strength and add to score
-            match card[0]:
-                case 1:
-                    msgs.append(self.ACE)
-                    score += 11 if score < 11 else 1 # add 11 to score for an ace if our score is below 11, else 1
-                case 11:
-                    msgs.append(self.JACK)
-                    score += 10
-                case 12:
-                    msgs.append(self.QUEEN)
-                    score += 10
-                case 13:
-                    msgs.append(self.KING)
-                    score += 10
-                case _: # other cards
-                    msgs.append(str(card[0]))
-                    score += card[0]
-            # display suit
-            match card[1]: # suit
-                case 0:
-                    msgs.append(self.DIAMOND)
-                case 1:
-                    msgs.append(self.SPADE)
-                case 2:
-                    msgs.append(self.HEART)
-                case 3:
-                    msgs.append(self.CLUB)
+        score = self.computeScore(hand[1])
+        for card in hand[1]: # display each card
+            msgs.append(str(card))
             msgs.append(", ")
         if playing: # if the player is playing
             msgs.append("🎴") # add hidden card
@@ -172,7 +136,7 @@ class Blackjack(BaseView):
             desc.append(" ")
             desc.append(p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...")
             desc.append(" ▫️ ")
-            desc.extend(self.formatHand(self.hands[i], (i == self.state)))
+            desc.extend(self.renderHand(self.hands[i], (i == self.state)))
             desc.append("\n")
         # add notification line
         desc.append(self.notification)
@@ -200,12 +164,12 @@ class Blackjack(BaseView):
     def computeScore(self, cards : list) -> int:
         score = 0
         for card in cards:
-            if card[0] == 1 and score < 11: # ace
+            if card.value == 1 and score < 11: # ace
                 score += 11
-            elif card[0] >= 10: # head
+            elif card.value >= 10: # head
                 score += 10
             else:
-                score += card[0]
+                score += card.value
         return score
 
     """playai()
