@@ -62,7 +62,7 @@ class Channel():
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
-            self.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+            self.bot.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
         except Exception as e:
             self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using key '{}'".format(name, id_key), e)
 
@@ -82,7 +82,7 @@ class Channel():
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
-            self.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+            self.bot.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
         except Exception as e:
             self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using ID '{}'".format(name, cid), e)
 
@@ -127,4 +127,4 @@ class Channel():
     discord.Channel: Discord Channel, None if error
     """
     def get(self, name : str) -> disnake.abc.Messageable:
-        return self.cache.get(name, self.bot.get_channel(int(name)))
+        return self.cache.get(name, self.bot.get_channel(name))
