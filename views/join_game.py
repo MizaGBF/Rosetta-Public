@@ -26,9 +26,14 @@ class JoinGame(BaseView):
     def __init__(self, bot : 'DiscordBot', players : list, limit : int, min_p : int, callback = None) -> None:
         super().__init__(bot)
         self.players = players
-        self.limit = limit
-        self.min_p = 1 if bot.debug_mode else min_p
+        self.limit = limit # player limit
+        self.min_p = min_p # minimum player requirement
+        if bot.debug_mode and len(self.players) > 0: # in debug mode, the author can play against itself
+            while len(self.players) < self.min_p:
+                self.players.append(self.players[0])
+        # callback
         self.callback = (self.default_callback if callback is None else callback)
+        # timer tracker
         self.timer = None
 
     """updateTimer()
@@ -42,15 +47,18 @@ class JoinGame(BaseView):
     limit: time limit in seconds
     """
     async def updateTimer(self, msg : disnake.Message, embed : disnake.Embed, desc : str, limit : int) -> None:
-        self.timer = self.bot.util.JST() + timedelta(seconds=limit)
+        self.timer = self.bot.util.JST() + timedelta(seconds=limit) # initialize the timer to now + the timer duration
         while True:
-            await asyncio.sleep(1)
-            c = self.bot.util.JST()
-            if c >= self.timer or len(self.players) >= self.limit:
-                break
+            await asyncio.sleep(1) # wait a second
+            c = self.bot.util.JST() # get current time
+            if c >= self.timer or len(self.players) >= self.limit: # check if we reached the timer OR if the player limit is reached
+                break # if so, exit the loop
+            # update timer and player cout message
             embed.description = desc.format((self.timer - c).seconds, len(self.players))
             await msg.edit(embed=embed)
+        # remove the view
         await msg.edit(view=None)
+        # and stop everything
         self.stopall()
 
     """isParticipating()
@@ -66,7 +74,7 @@ class JoinGame(BaseView):
     """
     def isParticipating(self, pid : int) -> bool:
         for p in self.players:
-            if p.id == pid:
+            if p.id == pid: # ids match
                 return True
         return False
 
@@ -90,12 +98,12 @@ class JoinGame(BaseView):
     """
     @disnake.ui.button(label='Join', style=disnake.ButtonStyle.blurple)
     async def joinbutton(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if not button.disabled and not self.isParticipating(interaction.user.id):
-            self.players.append(interaction.user)
-            await self.callback(interaction)
-            if len(self.players) >= self.limit:
+        if not button.disabled and not self.isParticipating(interaction.user.id): # check if the button is enabled and the user isn't already in the player list
+            self.players.append(interaction.user) # add the user
+            if len(self.players) >= self.limit: # disable everything if the player limit is full
                 self.stopall()
                 button.disabled = True
+            await self.callback(interaction) # call the callback
         else:
             await interaction.response.send_message("You are already participating OR the game started", ephemeral=True)
 
@@ -109,9 +117,9 @@ class JoinGame(BaseView):
     """
     @disnake.ui.button(label='Start', style=disnake.ButtonStyle.blurple)
     async def startbutton(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if not button.disabled and self.players[0].id == interaction.user.id:
-            if len(self.players) >= self.min_p:
-                self.timer = self.bot.util.JST()
+        if not button.disabled and self.players[0].id == interaction.user.id: # check if the button is enabled and the user if the game initiator
+            if len(self.players) >= self.min_p: # if minimum requirement is met
+                self.timer = self.bot.util.JST() # set timer to now to stop the wait
                 await interaction.response.send_message("Starting the game...", ephemeral=True)
             else:
                 await interaction.response.send_message("Not enough players entered the game yet", ephemeral=True)
