@@ -20,6 +20,7 @@ class UrlButton(BaseView):
     """
     def __init__(self, bot : 'DiscordBot', urls : list) -> None:
         super().__init__(bot)
-        if len(urls) == 0: raise Exception("Empty url list")
-        for u in urls:
+        if len(urls) == 0:
+            raise Exception("Empty url list")
+        for u in urls: # add link buttons for each url
             self.add_item(disnake.ui.Button(style=disnake.ButtonStyle.link, label=u[0], url=u[1]))

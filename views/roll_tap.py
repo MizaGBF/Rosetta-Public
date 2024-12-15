@@ -7,7 +7,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # Tap View
 # ----------------------------------------------------------------------------------------------------------------
 # View class used by gacha simulations
-# It merely adds a "TAP" button
+# It merely adds a "TAP" button which blocks execution until its clicked by the author
 # ----------------------------------------------------------------------------------------------------------------
 
 class Tap(BaseView):
@@ -34,8 +34,8 @@ class Tap(BaseView):
     """
     @disnake.ui.button(label='TAP', style=disnake.ButtonStyle.blurple)
     async def tap(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if not button.disabled and self.ownership_check(interaction):
-            self.stopall()
+        if not button.disabled and self.ownership_check(interaction): # if not disabled and owner
+            self.stopall() # disable itself
             button.disabled = True
         else:
             await interaction.response.send_message("You can't press this button", ephemeral=True)
