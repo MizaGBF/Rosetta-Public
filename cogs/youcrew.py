@@ -289,7 +289,7 @@ class YouCrew(commands.Cog):
     day: Integer, current day number
     """
     async def updateTracker(self, t : datetime, day : int) -> None:
-        you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None) # our id
+        you_id = self.bot.ranking.gbfgcrews.get('you', None) # our id
         if you_id is None: return
         
         # check tracker state
@@ -377,9 +377,8 @@ class YouCrew(commands.Cog):
         await inter.response.defer()
         if opponent != "" and self.bot.isMod(inter): # opponent set mode (MUST BE A MODERATOR)
             # lookup the opponent id
-            crew_id_list = self.bot.data.config['granblue'].get('gbfgcrew', {}) | self.bot.data.config['granblue'].get('othercrew', {})
-            if opponent.lower() in crew_id_list:
-                oid = crew_id_list[opponent.lower()]
+            if opponent.lower() in self.bot.ranking.allconfigcrews:
+                oid = self.bot.ranking.allconfigcrews[opponent.lower()]
             else:
                 try: oid = int(opponent)
                 except:
@@ -402,7 +401,7 @@ class YouCrew(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Unavailable, either wait the next ranking update or add the opponent id after the command to initialize it", color=self.COLOR))
             else: # it is
                 ct = self.bot.util.JST() # get current time
-                you_id = self.bot.data.config['granblue']['gbfgcrew'].get('you', None) # our id
+                you_id = self.bot.ranking.gbfgcrews.get('you', None) # our id
                 d = ct - self.bot.data.save['matchtracker']['last'] # time elapsed since last update
                 msgs = ["Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))]
                 if d.seconds >= 1200 and d.seconds <= 1800: msgs.append(" ▫ *updating*") # add updating message if a next update is imminent
@@ -492,13 +491,11 @@ class YouCrew(commands.Cog):
     async def honor(self, inter: disnake.GuildCommandInteraction) -> None:
         """Retrieve (You) members's honor ((You) Server Only)"""
         await inter.response.defer(ephemeral=True)
-        crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
-        crews.sort()
-        cid = self.bot.data.config['granblue'].get('gbfgcrew', {}).get("(you)", None) # retrieve (You) id
+        cid = self.bot.ranking.gbfgcrews.get("(you)", None) # retrieve (You) id
         if cid is None: # id not found
             await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="Crew not found", color=self.COLOR))
         else:
-            data = await self.bot.get_cog('GuildWar').updateGBFGData(crews) # get gbfg data
+            data = await self.bot.get_cog('GuildWar').updateGBFGData() # get gbfg data
             if data is None or cid not in data or len(data[cid][-1]) == 0:
                 await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="No player data found", color=self.COLOR))
             else: # list honor per players, not sorted

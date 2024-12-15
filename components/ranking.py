@@ -84,6 +84,20 @@ class Ranking():
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
+        # crew from config.json
+        self.gbfgcrews = self.bot.data.config.get('granblue', {}).get('gbfgcrew', {})
+        self.othercrews = self.bot.data.config.get('granblue', {}).get('othercrew', {})
+        self.allconfigcrews = self.gbfgcrews | self.othercrews
+        self.gbfgcrews_id = list(set(self.gbfgcrews.values()))
+        self.othercrews_id = list(set(self.othercrews.values()))
+        i = 0 # remove dupes
+        while i < len(self.othercrews_id):
+            if self.othercrews_id[i] in self.gbfgcrews_id:
+                self.othercrews_id.pop(i)
+            else:
+                i += 1
+        self.gbfgcrews_id.sort()
+        self.othercrews_id.sort()
         # stuff related to retrieving the ranking
         self.getrank_mode = False
         self.getrank_count = 0

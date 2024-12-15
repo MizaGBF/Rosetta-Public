@@ -826,11 +826,8 @@ class Admin(commands.Cog):
     async def forceupdategbfg(self, inter: disnake.GuildCommandInteraction) -> None:
         """Force an update of the GW /gbfg/ Data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        # make a list of crews found in config.json
-        crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
-        crews.sort()
         # send to update
-        await (self.bot.get_cog('GuildWar').updateGBFGData(crews, True))
+        await (self.bot.get_cog('GuildWar').updateGBFGData(True))
         await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ update finished", color=self.COLOR))
 
     @gw.sub_command(name="disable")

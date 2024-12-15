@@ -462,7 +462,7 @@ class GuildWar(commands.Cog):
     async def getCrewData(self, target : str, mode : int = 0) -> Optional[dict]:
         if not await self.bot.net.gbf_available(): # check for maintenance
             return {'error':'Game is in maintenance'}
-        tid = self.bot.util.gbfgstr2crewid(target)
+        tid = self.bot.ranking.allconfigcrews.get(target, target) # check if known id
         gwdata = None
         # check id validityy
         try:
@@ -764,12 +764,11 @@ class GuildWar(commands.Cog):
         lead_speed_flag = True
         lead = None
         lead_speed = None
-        crew_id_list = self.bot.data.config['granblue'].get('gbfgcrew', {}) | self.bot.data.config['granblue'].get('othercrew', {})
         
         desc = []
         for sid in [id_crew_1, id_crew_2]:
-            if sid.lower() in crew_id_list:
-                cid = crew_id_list[sid.lower()]
+            if sid.lower() in self.bot.ranking.allconfigcrews:
+                cid = self.bot.ranking.allconfigcrews[sid.lower()]
             else:
                 try: cid = int(sid)
                 except:
@@ -831,14 +830,13 @@ class GuildWar(commands.Cog):
     
     Parameters
     ------
-    crews: List of /gbfg/ crew IDs
     force_update: If True, update all crews
     
     Returns
     ----------
     dict: Content of self.bot.data.save['gw']['gbfgdata']
     """
-    async def updateGBFGData(self, crews : list, force_update : bool = False) -> dict:
+    async def updateGBFGData(self, force_update : bool = False) -> dict:
         if not self.isGWRunning():
             return None
     
@@ -846,9 +844,9 @@ class GuildWar(commands.Cog):
             self.bot.data.save['gw']['gbfgdata'] = {}
             self.bot.data.pending = True
 
-        if force_update or len(crews) != len(self.bot.data.save['gw']['gbfgdata']):
+        if force_update or len(self.bot.ranking.gbfgcrews_id) != len(self.bot.data.save['gw']['gbfgdata']):
             cdata = {}
-            for c in crews:
+            for c in self.bot.ranking.gbfgcrews_id:
                 if str(c) in self.bot.data.save['gw']['gbfgdata']:
                     cdata[str(c)] = self.bot.data.save['gw']['gbfgdata'][str(c)]
                     if not force_update:
@@ -1349,12 +1347,9 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ recruiting crews".format(self.bot.emote.get('crew')), description="Unavailable", color=self.COLOR))
             await self.bot.util.clean(inter, 40)
         else:
-            # list gbfg crews
-            crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
-            crews.sort()
-            # sort crews by average rank and availability
+            # sort gbfg crews by average rank and availability
             sortedcrew = []
-            for c in crews:
+            for c in self.bot.ranking.gbfgcrews_id:
                 data = await self.getCrewData(c, 2)
                 if 'error' not in data and data['count'] != 30:
                     if len(sortedcrew) == 0: sortedcrew.append(data)
@@ -1366,7 +1361,6 @@ class GuildWar(commands.Cog):
                                 inserted = True
                                 break
                         if not inserted: sortedcrew.append(data)
-            crews = None
             # output result
             fields = []
             # column size
@@ -1499,9 +1493,7 @@ class GuildWar(commands.Cog):
     async def players(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the /gbfg/ Top 30 (players or captains) per contribution"""
         await inter.response.defer()
-        crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
-        crews.sort()
-        gbfgdata = await self.updateGBFGData(crews) # get gbfdgata using config.json list
+        gbfgdata = await self.updateGBFGData() # get up to date data
         if gbfgdata is None:
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ Ranking".format(self.bot.emote.get('gw')), description="This command is only available during Guild War", color=self.COLOR))
             await self.bot.util.clean(inter, 40)
@@ -1528,10 +1520,8 @@ class GuildWar(commands.Cog):
     async def _gbfgranking(self) -> tuple:
         try:
             # build crew list using config.json list
-            crews = list(set(self.bot.data.config['granblue'].get('gbfgcrew', {}).values()))
-            crews.sort()
             # query
-            cdata = await self.bot.ranking.searchGWDB("("+",".join(crews)+")", 14)
+            cdata = await self.bot.ranking.searchGWDB("("+",".join(self.bot.ranking.gbfgcrews_id)+")", 14)
             if cdata is None or cdata[1] is None:
                 return [], []
             await asyncio.sleep(0)
@@ -1592,7 +1582,7 @@ class GuildWar(commands.Cog):
                         if sort_mode > 0: fields[-1]['value'].append("/min**\n")
                         else: fields[-1]['value'].append("**\n")
                 # unranked crew message
-                notranked = len(crews) - len(cdata[1])
+                notranked = len(self.bot.ranking.gbfgcrews_id) - len(cdata[1])
                 if notranked > 0:
                     fields[-1]['value'].append("**{}** unranked crew{}".format(notranked, 's' if notranked > 1 else ''))
                 # join field values
