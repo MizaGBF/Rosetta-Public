@@ -315,3 +315,51 @@ If you want a GW.sql file for the ranking commands, you can go grab the most rec
   
 The `cogs/youcrew.py` Command Cog contains commands for my own crew. If you don't need them, you can simply delete the file.  
   
+### Develop your own cog  
+  
+The following is a template to make your own command cog:  
+```python
+import disnake
+from disnake.ext import commands
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from ..bot import DiscordBot
+
+class Example(commands.Cog):
+    """The cog description"""
+    COLOR = 0xffffff
+
+    def __init__(self, bot : 'DiscordBot') -> None:
+        self.bot = bot
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def helloworld(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True) # good practice to always defer first. Ephemeral flag is if you want your command to only show to the user
+        #
+        # Do stuff...
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the hello world command!", description="Hello world!", color=self.COLOR)
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def group(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Command Group"""
+        pass
+
+    @group.sub_command()
+    async def subcommand(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True)
+        #
+        #
+        #
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the sub command!", description="You called me using `/group subcommand`!", color=self.COLOR)
+```  
+It's important to keep the same syntax, if you want to use `tools/generate_help.py`.  
+If you don't, only the cog definition is important (`class Example(commands.Cog):`).  
+The Cog loader (`cogs/__init__.py`) looks for this part of the file to decide what to load as a cog.  
+This also means you shouldn't put more than one cog per python file.  
+Adding other general purpose classes is fine, however.  
+  
