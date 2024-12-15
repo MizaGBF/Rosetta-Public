@@ -14,7 +14,7 @@ class General(commands.Cog):
     """Rosetta commands."""
     COLOR = 0xd9d927
 
-    def __init__(self, bot : 'DiscordBot'):
+    def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
 
     """bug_report_callback()

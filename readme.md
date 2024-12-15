@@ -363,3 +363,5 @@ The Cog loader (`cogs/__init__.py`) looks for this part of the file to decide wh
 This also means you shouldn't put more than one cog per python file.  
 Adding other general purpose classes is fine, however.  
   
+> [!TIP]  
+> Check existing cogs if you need examples of more advanced behaviors.  
