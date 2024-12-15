@@ -11,6 +11,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 class BaseView(disnake.ui.View):
     """__init__()
     Constructor
+    Base class used for our Bot views.
     
     Parameters
     ----------
@@ -21,10 +22,10 @@ class BaseView(disnake.ui.View):
     """
     def __init__(self, bot : 'DiscordBot', owner_id : Optional[int] = None, timeout : float = 60.0, enable_timeout_cleanup : bool = True) -> None:
         super().__init__(timeout=timeout)
-        self.bot = bot
-        self.owner_id = owner_id
-        self.message = None
-        self.enable_timeout_cleanup = enable_timeout_cleanup
+        self.bot = bot # reference to the bot
+        self.owner_id = owner_id # id of whoever was the cause of this View creation
+        self.message = None # used to store messages to display
+        self.enable_timeout_cleanup = enable_timeout_cleanup # flag for the timeout auto cleanup
 
     """ownership_check()
     Check if the interaction user id matches the owner_id set in the constructor
@@ -45,15 +46,15 @@ class BaseView(disnake.ui.View):
     Called when the view times out
     """
     async def on_timeout(self) -> None:
-        self.stopall()
-        if self.enable_timeout_cleanup:
-            if not self.bot.isAuthorized(self.message):
+        self.stopall() # disable all children
+        if self.enable_timeout_cleanup: # if auto cleanup is enabled
+            if not self.bot.isAuthorized(self.message): # replace message by Lyria emote if authorized to
                 try: await self.message.edit(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
                 except: pass
-            else:
+            else: # else just remove the view
                 try: await self.message.edit(view=None)
                 except: pass
-        else:
+        else: # else simply update the view, to show it as disabled
             try: await self.message.edit(view=self)
             except: pass
 
@@ -61,10 +62,10 @@ class BaseView(disnake.ui.View):
     Override disnake.ui.View.stopall()
     """
     def stopall(self) -> None:
-        for c in self.children:
-            try: c.disabled = True
+        for c in self.children: # iterate over view children
+            try: c.disabled = True # and disable them
             except: pass
-        self.stop()
+        self.stop() # then disable this view
 
     """on_error()
     Coroutine callback
