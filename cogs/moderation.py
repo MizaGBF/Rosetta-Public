@@ -62,12 +62,19 @@ class Moderation(commands.Cog):
             rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
             if len(cleanup_settings[1]) > 0:
                 rosetta.append(", {} channels are excluded".format(len(cleanup_settings[1])))
+            rosetta.append("\n")
         elif is_mod:
             rosetta.append(":warning: **Auto cleanup** disabled\n")
         if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
         elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
-        if gid in self.bot.data.save['announcement']: rosetta.append(":new: **Announcements** enabled\n")
-        elif is_mod: rosetta.append(":warning: **Announcements** disabled\n")
+        announcement_settings =self.bot.channel.get_announcement_settings(gid)
+        if announcement_settings[0] > 0:
+            rosetta.append(":new: **Announcements** enabled")
+            if announcement_settings[1]:
+                rosetta.append(", along with *auto-publish*")
+            rosetta.append("\n")
+        elif is_mod:
+            rosetta.append(":warning: **Announcements** disabled\n")
         if gid in self.bot.data.save['assignablerole']: rosetta.append(":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys())))
         # append rosetta setting messages if any
         if len(rosetta) > 0:
@@ -142,63 +149,28 @@ class Moderation(commands.Cog):
     async def announcement(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
 
-    """_announcement_see()
-    Output the server cleanup settings
-    
-    Parameters
-    --------
-    inter: A command interaction. Must have been deferred beforehand.
-    msg: String, message to display
-    settings: current setting
-    """
-    async def _announcement_see(self, inter: disnake.GuildCommandInteraction, msg : str, settings : list) -> None:
-        c = self.bot.get_channel(settings[0])
-        await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description=msg, fields=[{'name':'Channel', 'value':'[{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id), 'inline':True}, {'name':'Auto Publish to followers', 'value':('Enabled' if settings[1] else "Disabled"), 'inline':True}], footer=inter.guild.name + " ▫️ " + str(inter.guild.id), inline=True, color=self.COLOR))
-
-    @announcement.sub_command()
-    async def toggle_channel(self, inter: disnake.GuildCommandInteraction) -> None:
+    @announcement.sub_command(name="channel")
+    async def announcementchannel(self, inter: disnake.GuildCommandInteraction) -> None:
         """Enable/Disable game announcements in the specified channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         if not isinstance(inter.channel, disnake.TextChannel) and not isinstance(inter.channel, disnake.NewsChannel) and not isinstance(inter.channel, disnake.threads.Thread) and not isinstance(inter.channel, disnake.ForumChannel): # check channel type
             await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="This command is only usable in text channels or equivalents", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-            return
-        cid = inter.channel.id
-        gid = str(inter.guild.id)
-        b = True
-        if self.bot.data.save['announcement'].get(gid, [-1, False])[0] == cid: # index 0 is the channel id.
-            b = False
-            self.bot.data.save['announcement'].pop(gid) # simply remove to disable
         else:
-            self.bot.data.save['announcement'][gid] = [cid, True] # else we enable by initializing new data
-        self.bot.channel.update_announcement_channels() # update bot announcement channel list
-        self.bot.data.pending = True
-        if b:
-            await self._announcement_see(inter, "Announcement enabled and channel updated", self.bot.data.save['announcement'][gid])
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description="Announcements have been disabled", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+            self.bot.channel.toggle_announcement(str(inter.guild.id), inter.channel.id)
+            await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
-    @announcement.sub_command()
-    async def auto_publish(self, inter: disnake.GuildCommandInteraction, value : int = commands.Param(description="0 to disable, 1 to enable", ge=0, le=1)) -> None:
+    @announcement.sub_command(name="publish")
+    async def announcementautopublish(self, inter: disnake.GuildCommandInteraction, value : int = commands.Param(description="0 to disable, 1 to enable", ge=0, le=1)) -> None:
         """Enable/Disable auto publishing for Announcement channels (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
-        if gid not in self.bot.data.save['announcement']:
-            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="Announcements aren't enabled on this server.\nCheck out {}".format(self.bot.util.command2mention('mod announcement toggle_channel')), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-        else:
-            self.bot.data.save['announcement'][gid][1] = (value != 0) # index 1 is the publish flag. We simply flip it.
-            self.bot.data.pending = True
-            self.bot.channel.update_announcement_channels()
-            await self._announcement_see(inter, "Auto Publish setting updated", self.bot.data.save['announcement'][gid])
+        self.bot.channel.toggle_announcement_publish(str(inter.guild.id))
+        await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @announcement.sub_command()
     async def see(self, inter: disnake.GuildCommandInteraction) -> None:
         """Display the announcement settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
-        try:
-            await self._announcement_see(inter, "", self.bot.data.save['announcement'][gid])
-        except:
-            await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting", description="Announcements aren't enabled on this server.\nCheck out {}".format(self.bot.util.command2mention('mod announcement toggle_channel')), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+        await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @mod.sub_command_group()
     async def pinboard(self, inter: disnake.GuildCommandInteraction) -> None:

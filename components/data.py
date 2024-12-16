@@ -223,6 +223,10 @@ class Data():
                         if 'permitted' in data:
                             data['cleanup'] = {k: [True, v] for k, v in data['permitted'].items()}
                             data.pop("permitted")
+                        if 'announcement' in data: # size fix
+                            for k, v in data['announcement'].items():
+                                if len(v) > 2:
+                                    data['announcement'][k] = v[:2]
                     # Update the version
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION: # Version is more recent??
@@ -396,7 +400,7 @@ class Data():
                 # various clean up
                 await self.clean_stream() # clean stream data
                 await self.clean_spark() # clean up spark data
-                await self.bot.channel.clean_cleanup_data() # clean auto cleanup settings
+                await self.bot.channel.clean_data() # clean auto cleanup and announcement settings
                 if ct.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
                 await self.clean_general() # clean up everything else
@@ -541,13 +545,6 @@ class Data():
                 if self.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.save['pinboard'][gid]['output']) is None: # remove data if empty
                     self.save['pinboard'][gid]['output'] = None
                     count += 1
-        await asyncio.sleep(1)
-        # Announcement cleaning
-        for gid in list(self.save['announcement'].keys()):
-            if gid not in guild_ids or self.bot.get_channel(self.save['announcement'][gid][0]) is None: # remove data if empty or the bot left the guild
-                self.save['announcement'].pop(gid)
-                count += 1
-        self.bot.channel.update_announcement_channels() # update announcement channels
         await asyncio.sleep(1)
         # Self Assignable Roles
         for gid in list(self.save['assignablerole'].keys()): # the bot left the guild

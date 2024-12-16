@@ -151,9 +151,9 @@ def generate_html(command_list): # main function to generate the html
 		Keep in mind <b>anyone with the "manage message" permission is considered a moderator by the bot</b>. You can restrict those commands via the Server Integration Permissions if needed.</p>
 		
 		<h2>Notifications</h2>
-		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement toggle_channel</b>.<br>
+		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement channel</b>.<br>
 		You can see your settings with <b>/mod announcement see</b>.<br>
-		Do note, if the channel is an Announcement Channel and you enabled the Auto Publish setting, it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>,.<br>
+		Do note, if the channel is a News Channel and you enabled the Auto Publish setting (with <b>/mod announcement publish</b>), it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>.<br>
 		</p>
 		
 		<h2>Pinboard</h2>

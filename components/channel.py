@@ -7,6 +7,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # Channel Component
 # ----------------------------------------------------------------------------------------------------------------
 # This component lets you register channels with a keyword to be later used by the send() function of the bot
+# It also manages settings related to channels (auto message cleanup, announcement channel...)
 # ----------------------------------------------------------------------------------------------------------------
 
 class Channel():
@@ -29,9 +30,10 @@ class Channel():
         self.auto_publish = []
         # loop over settings
         for v in self.bot.data.save.get('announcement', {}).values():
-            self.announcements.append(v[0]) # add channel to announcements
-            if v[1]: # auto publish flag is up
-                self.auto_publish.append(v[0]) # so add to auto_publish too
+            if v[0] > 0: # valid id
+                self.announcements.append(v[0]) # add channel to announcements
+                if v[1]: # auto publish flag is up
+                    self.auto_publish.append(v[0]) # so add to auto_publish too
 
     """can_publish()
     Check if the channel id is in auto_publish
@@ -129,6 +131,25 @@ class Channel():
     """
     def get(self, name : str) -> disnake.abc.Messageable:
         return self.cache.get(name, self.bot.get_channel(name))
+
+    """clean_data()
+    Clean unused cleanup and announcement settings
+    """
+    def clean_data(self) -> None:
+        guild_ids = set([str(g.id) for g in self.bot.guilds])
+        # Note: data is removed if the bot left the guild or if the data is empty
+        # cleanup
+        for gid in list(self.bot.data.save['cleanup'].keys()):
+            if gid not in guild_ids or (not self.bot.data.save['cleanup'][gid][0] and len(self.bot.data.save['cleanup'][gid][1]) == 0):
+                self.bot.data.save['cleanup'].pop(gid)
+                self.bot.data.pending = True
+        # announcement
+        for gid in list(self.save['announcement'].keys()):
+            if gid not in guild_ids or self.bot.get_channel(self.save['announcement'][gid][0]) is None:
+                self.save['announcement'].pop(gid)
+                self.bot.data.pending = True
+        # update announcement channels
+        self.bot.channel.update_announcement_channels()
 
     """clean()
     Delete a bot command message after X amount of time depending on the
@@ -229,16 +250,6 @@ class Channel():
                 else:
                     i += 1
 
-    """clean_cleanup_data()
-    Clean unused cleanup settings
-    """
-    def clean_cleanup_data(self) -> None:
-        guild_ids = set([str(g.id) for g in self.bot.guilds])
-        for gid in list(self.bot.data.save['cleanup'].keys()):
-            if gid not in guild_ids or (not self.bot.data.save['cleanup'][gid][0] and len(self.bot.data.save['cleanup'][gid][1]) == 0):
-                self.bot.data.save['cleanup'].pop(gid)
-                self.bot.data.pending = True
-
     """get_cleanup_settings()
     Return the server cleanup settings
     
@@ -259,6 +270,7 @@ class Channel():
     Parameters
     --------
     inter: A command interaction. Must have been deferred beforehand.
+    color: Integer, embed color to use.
     """
     async def render_cleanup_settings(self, inter : disnake.GuildCommandInteraction, color : int) -> None:
         gid = str(inter.guild.id)
@@ -282,3 +294,81 @@ class Channel():
         descs.append(self.bot.util.command2mention('mod cleanup channel'))
         descs.append(" in the channel.")
         await inter.edit_original_message(embed=self.bot.embed(title="{} Auto Cleanup settings".format(self.bot.emote.get('lyria')), description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
+
+    """get_announcement_settings()
+    Return the server announcement settings
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    
+    Returns
+    ----------
+    list: Containing the announcement channel id (int) and the auto publish flag (bool)
+    """
+    def get_announcement_settings(self, gid : str) -> list:
+        return self.bot.data.save['announcement'].get(gid, [-1, False])
+
+    """toggle_announcement()
+    Toggle this server announcement setting for the given channel
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    cid: Integer, channel id
+    """
+    def toggle_announcement(self, gid : str, cid : int) -> None:
+        if gid not in self.bot.data.save['announcement']:
+            self.bot.data.save['announcement'][gid] = [cid, False]
+            self.bot.data.pending = True
+        elif cid != self.bot.data.save['announcement'][gid][0]:
+            self.bot.data.save['cleanup'][gid][0] = cid
+            self.bot.data.pending = True
+        else:
+            self.bot.data.save['cleanup'][gid][0] = -1
+            self.bot.data.pending = True
+        # update announcement channels
+        self.update_announcement_channels()
+
+    """toggle_announcement_publish()
+    Toggle this server announcement auto-publish setting
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    """
+    def toggle_announcement_publish(self, gid : str) -> None:
+        if gid not in self.bot.data.save['announcement']:
+            self.bot.data.save['announcement'][gid] = [-1, True]
+            self.bot.data.pending = True
+        else:
+            self.bot.data.save['announcement'][gid][1] = not self.bot.data.save['announcement'][gid][1]
+            self.bot.data.pending = True
+        # update announcement channels
+        self.update_announcement_channels()
+
+    """render_announcement_settings()
+    Output the server announcement settings
+    
+    Parameters
+    --------
+    inter: A command interaction. Must have been deferred beforehand.
+    color: Integer, embed color to use.
+    """
+    async def render_announcement_settings(self, inter: disnake.GuildCommandInteraction, color : int) -> None:
+        gid = str(inter.guild.id)
+        settings = self.get_announcement_settings(gid)
+        c = self.bot.get_channel(settings[0])
+        descs = ["- Status ▫️ "]
+        descs.append("**Enabled**" if c is not None else "**Disabled**")
+        if c is None:
+            descs.append("\nTo enable, use in the desired channel: ")
+        else:
+            descs.append("\n- Announcements are sent to [#{}](https://discord.com/channels/{}/{})\nTo set another or disable this one: ".format(c.name, inter.guild.id, c.id))
+        descs.append(self.bot.util.command2mention("mod announcement channel"))
+        descs.append("\n- Auto-Publish ▫️ ")
+        descs.append("**Enabled**" if settings[1] else "**Disabled**")
+        descs.append("\nTo enable, use: ")
+        descs.append(self.bot.util.command2mention("mod announcement publish"))
+        descs.append("\n*the channel must be a News channel for it to take effect*")
+        await inter.edit_original_message(embed=self.bot.embed(title="Announcement settings", description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
