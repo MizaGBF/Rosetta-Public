@@ -145,7 +145,7 @@ class Channel():
                 self.bot.data.pending = True
         # announcement
         for gid in list(self.save['announcement'].keys()):
-            if gid not in guild_ids or self.bot.get_channel(self.save['announcement'][gid][0]) is None:
+            if gid not in guild_ids or (self.bot.get_channel(self.save['announcement'][gid][0]) is None and not self.save['announcement'][gid][1]):
                 self.save['announcement'].pop(gid)
                 self.bot.data.pending = True
         # update announcement channels
@@ -317,15 +317,15 @@ class Channel():
     gid: String, guild id
     cid: Integer, channel id
     """
-    def toggle_announcement(self, gid : str, cid : int) -> None:
+    def toggle_announcement_channel(self, gid : str, cid : int) -> None:
         if gid not in self.bot.data.save['announcement']:
             self.bot.data.save['announcement'][gid] = [cid, False]
             self.bot.data.pending = True
         elif cid != self.bot.data.save['announcement'][gid][0]:
-            self.bot.data.save['cleanup'][gid][0] = cid
+            self.bot.data.save['announcement'][gid][0] = cid
             self.bot.data.pending = True
         else:
-            self.bot.data.save['cleanup'][gid][0] = -1
+            self.bot.data.save['announcement'][gid][0] = -1
             self.bot.data.pending = True
         # update announcement channels
         self.update_announcement_channels()
@@ -370,5 +370,5 @@ class Channel():
         descs.append("**Enabled**" if settings[1] else "**Disabled**")
         descs.append("\nTo enable, use: ")
         descs.append(self.bot.util.command2mention("mod announcement publish"))
-        descs.append("\n*the channel must be a News channel for it to take effect*")
+        descs.append("\n*The channel must be a News channel for it to take effect*")
         await inter.edit_original_message(embed=self.bot.embed(title="Announcement settings", description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))

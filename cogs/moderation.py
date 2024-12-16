@@ -156,12 +156,12 @@ class Moderation(commands.Cog):
         if not isinstance(inter.channel, disnake.TextChannel) and not isinstance(inter.channel, disnake.NewsChannel) and not isinstance(inter.channel, disnake.threads.Thread) and not isinstance(inter.channel, disnake.ForumChannel): # check channel type
             await inter.edit_original_message(embed=self.bot.embed(title="Announcement Setting Error", description="This command is only usable in text channels or equivalents", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
         else:
-            self.bot.channel.toggle_announcement(str(inter.guild.id), inter.channel.id)
+            self.bot.channel.toggle_announcement_channel(str(inter.guild.id), inter.channel.id)
             await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @announcement.sub_command(name="publish")
-    async def announcementautopublish(self, inter: disnake.GuildCommandInteraction, value : int = commands.Param(description="0 to disable, 1 to enable", ge=0, le=1)) -> None:
-        """Enable/Disable auto publishing for Announcement channels (Mod Only)"""
+    async def announcementautopublish(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Toggle auto publishing for Announcement channels (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.channel.toggle_announcement_publish(str(inter.guild.id))
         await self.bot.channel.render_announcement_settings(inter, self.COLOR)
