@@ -217,8 +217,8 @@ class Data():
                             if len(data['gbfaccounts']) > 1:
                                 self.bot.logger.push("[DATA] Only the first GBF account was kept during the save data conversion to **v19**.")
                             data.pop("gbfaccounts")
-                        if 'dread' in data:
-                            data['dread'] = data['dread']
+                        if 'valiant' in data:
+                            data['dread'] = data['valiant']
                             data.pop("valiant")
                     # Update the version
                     data['version'] = self.SAVEVERSION
