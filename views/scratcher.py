@@ -41,7 +41,7 @@ class ScratcherButton(disnake.ui.Button):
             if self.view.check_status(self.item):
                 self.view.stopall()
                 await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} scratched".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, description="You won **{}**".format(self.item[0]), thumbnail='https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/' + self.item[1], footer=self.view.footer, color=self.view.color), view=self.view)
-                await self.view.bot.util.clean(interaction, 70)
+                await self.view.bot.channel.clean(interaction, 70)
             else:
                 await interaction.response.edit_message(view=self.view)
         else:

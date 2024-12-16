@@ -139,7 +139,7 @@ def generate_html(command_list): # main function to generate the html
 	<div id="Guides" class="tabcontent">
 		<h1>Guides</h1>
 		<h2>Good practices and recommendations</h2>
-		<p>1) Make a channel dedicated to the bot and use the command <b>/mod cleanup toggle</b>.<br>
+		<p>1) Make a channel dedicated to the bot and use the commands <b>/mod cleanup toggle</b> and <b>/mod cleanup channel</b> in that channel.<br>
 		<br>
 		2) Remove the <b>"send message"</b> permission in the channel where you don't want it to be usable. (<b>Note:</b> Commands will still appear in said channel unless disabled in your Server Integration Permissions.)<br>
 		<br>

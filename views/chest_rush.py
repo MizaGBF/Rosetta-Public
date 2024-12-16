@@ -47,7 +47,7 @@ class ChestRushButton(disnake.ui.Button):
             if self.view.check_status(): # if game is over
                 self.view.stopall()
                 await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} opened the chests".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, description="Here's the collected loot.", color=self.view.color), view=self.view)
-                await self.view.bot.util.clean(interaction, 70)
+                await self.view.bot.channel.clean(interaction, 70)
             else: # game continues
                 await interaction.response.edit_message(view=self.view)
         else:

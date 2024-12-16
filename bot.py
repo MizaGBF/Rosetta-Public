@@ -16,7 +16,7 @@ import cogs
 
 import disnake
 from disnake.ext import commands
-from typing import Any, Optional, Union, Callable
+from typing import Optional, Union, Callable
 import asyncio
 import time
 import signal
@@ -269,26 +269,6 @@ class DiscordBot(commands.InteractionBot):
                 count += 1
         self.logger.push("[EXIT] Exited gracefully", send_to_discord=False)
         os._exit(0)
-
-    """isAuthorized()
-    Check if the channel is set as Authorized by the auto clean up system.
-    
-    Parameters
-    ----------
-    inter: Command context, message or interaction
-    
-    Returns
-    --------
-    bool: True if authorized, False if not
-    """
-    def isAuthorized(self, inter : Any) -> bool:
-        if inter is None: return False
-        gid = str(inter.guild.id)
-        if gid in self.data.save['permitted']: # if id is found, it means the check is enabled
-            if inter.channel.id in self.data.save['permitted'][gid]:
-                return True # permitted
-            return False # not permitted
-        return True # default
 
     """isServer()
     Check if the interaction is matching the given config.json ID identifier (server identifier must be set in config.json beforehand)

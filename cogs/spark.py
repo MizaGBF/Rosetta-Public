@@ -319,7 +319,7 @@ class Sparking(commands.Cog):
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Sorry, something went wrong :bow:", footer=str(e), color=self.COLOR))
             self.bot.logger.pushError("[SPARK] In 'spark ranking' command:", e)
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @commands.user_command(name="GBF Spark")
     @commands.default_member_permissions(send_messages=True, read_messages=True)

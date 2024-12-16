@@ -30,7 +30,7 @@ class Data():
         'gw': {'state':False},
         'dread': {'state':False},
         'reminders': {},
-        'permitted': {},
+        'cleanup': {},
         'extra': {},
         'gbfids': {},
         'assignablerole': {},
@@ -220,6 +220,9 @@ class Data():
                         if 'valiant' in data:
                             data['dread'] = data['valiant']
                             data.pop("valiant")
+                        if 'permitted' in data:
+                            data['cleanup'] = {k: [True, v] for k, v in data['permitted'].items()}
+                            data.pop("permitted")
                     # Update the version
                     data['version'] = self.SAVEVERSION
                 elif ver > self.SAVEVERSION: # Version is more recent??
@@ -393,6 +396,7 @@ class Data():
                 # various clean up
                 await self.clean_stream() # clean stream data
                 await self.clean_spark() # clean up spark data
+                await self.bot.channel.clean_cleanup_data() # clean auto cleanup settings
                 if ct.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
                 await self.clean_general() # clean up everything else
@@ -518,21 +522,8 @@ class Data():
     Coroutine to clean the save data
     """
     async def clean_general(self) -> None:
-        guild_ids = [str(g.id) for g in self.bot.guilds]
+        guild_ids = set([str(g.id) for g in self.bot.guilds])
         count = 0
-        # Autocleanup cleaning
-        for gid in list(self.save['permitted'].keys()):
-            if gid not in guild_ids or len(self.save['permitted'][gid]) == 0: # remove data if empty or the bot left the guild
-                self.save['permitted'].pop(gid)
-                count += 1
-            else:
-                i = 0
-                while i < len(self.save['permitted'][gid]): # remove deleted channels from data
-                    if self.bot.get_channel(self.save['permitted'][gid][i]) is None:
-                        self.save['permitted'][gid].pop(i)
-                        count += 1
-                    else:
-                        i += 1
         await asyncio.sleep(1)
         # Pinbaord cleaning
         for gid in list(self.save['pinboard'].keys()):

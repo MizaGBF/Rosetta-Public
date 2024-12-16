@@ -262,7 +262,7 @@ class GuildWar(commands.Cog):
                     self.bot.data.save['youtracker'] = None
                     self.bot.data.pending = True
                     await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Not available", color=self.COLOR))
-                    await self.bot.util.clean(inter, 40)
+                    await self.bot.channel.clean(inter, 40)
                     return
                 # add additional infos
                 try:
@@ -281,7 +281,7 @@ class GuildWar(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Not available", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
 
     @gw.sub_command(name="ranking")
     async def gwranking(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -709,11 +709,11 @@ class GuildWar(commands.Cog):
         await inter.response.defer()
         try:
             if await self._crew_sub(inter, crew_id, mode):
-                await self.bot.util.clean(inter, 60)
+                await self.bot.channel.clean(inter, 60)
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A critical error occured, wait for a fix if the error persists", color=self.COLOR))
             self.bot.logger.pushError("[GW] In 'gw crew' command:", e)
-            await self.bot.util.clean(inter, 60)
+            await self.bot.channel.clean(inter, 60)
 
 
     """requestCrew()
@@ -1162,7 +1162,7 @@ class GuildWar(commands.Cog):
                 # add line with url and HP target equivalent for NM90 and NM95
                 msgs.append("{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM95: **{:.1f}%** ▫️ NM90: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM95']['hp']) / boss[el][1]), 100 * ((boss[el][1] - self.FIGHTS['NM90']['hp']) / boss[el][1])))
         await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM95 and NM90 Simulation".format(self.bot.emote.get('gw')), description="".join(msgs), color=self.COLOR))
-        await self.bot.util.clean(inter, 90)
+        await self.bot.channel.clean(inter, 90)
 
     @nm.sub_command()
     async def hp100(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1185,7 +1185,7 @@ class GuildWar(commands.Cog):
                 # add line with url and HP target equivalent for NM90 and NM95
                 msgs.append("{:} [{:}](http://game.granbluefantasy.jp/#quest/supporter/{:}) ▫️ NM100: **{:.1f}%** HP remaining.\n".format(self.bot.emote.get(el), boss[el][0], boss[el][2], 100 * ((boss[el][1] - self.FIGHTS['NM100']['hp']) / boss[el][1])))
         await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War ▫️ NM100 Simulation".format(self.bot.emote.get('gw')), description="".join(msgs), color=self.COLOR))
-        await self.bot.util.clean(inter, 90)
+        await self.bot.channel.clean(inter, 90)
 
     @gw.sub_command_group()
     async def find(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1345,7 +1345,7 @@ class GuildWar(commands.Cog):
         await inter.response.defer()
         if not await self.bot.net.gbf_available():
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ recruiting crews".format(self.bot.emote.get('crew')), description="Unavailable", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
         else:
             # sort gbfg crews by average rank and availability
             sortedcrew = []
@@ -1496,12 +1496,12 @@ class GuildWar(commands.Cog):
         gbfgdata = await self.updateGBFGData() # get up to date data
         if gbfgdata is None:
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ Ranking".format(self.bot.emote.get('gw')), description="This command is only available during Guild War", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
             return
         embeds, final_results = await self._players(gbfgdata)
         if len(embeds) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ Ranking".format(self.bot.emote.get('gw')), description="No players in the ranking", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
         else:
             view = PageRanking(self.bot, owner_id=inter.author.id, embeds=embeds, search_results=final_results, color=self.COLOR, stype=False, timeout=100, enable_timeout_cleanup=True)
             await inter.edit_original_message(embed=embeds[0], view=view)
@@ -1610,7 +1610,7 @@ class GuildWar(commands.Cog):
         embeds, final_results = await self._gbfgranking() # see above
         if len(embeds) == 0:
             await inter.edit_original_message(embed=self.bot.embed(title="{} /gbfg/ Ranking".format(self.bot.emote.get('gw')), description="Unavailable", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
         else:
             view = PageRanking(self.bot, owner_id=inter.author.id, embeds=embeds, search_results=final_results, color=self.COLOR, stype=True, timeout=100, enable_timeout_cleanup=True)
             await inter.edit_original_message(embed=embeds[0], view=view)

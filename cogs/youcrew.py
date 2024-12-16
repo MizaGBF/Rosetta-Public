@@ -365,11 +365,11 @@ class YouCrew(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description=d, color=self.COLOR))
             else:
                 await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description="Only available when Guild War is on going", color=self.COLOR))
-                await self.bot.util.clean(inter, 40)
+                await self.bot.channel.clean(inter, 40)
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
             self.bot.logger.pushError("[YOU] In 'you buff' command:", e)
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
 
     @you.sub_command()
     async def lead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
@@ -485,7 +485,7 @@ class YouCrew(commands.Cog):
                             pass
                 # send message
                 await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War {} ▫️ Day {}**".format(self.bot.emote.get('gw'), self.bot.data.save['matchtracker']['gwid'], self.bot.data.save['matchtracker']['day']), description="".join(msgs), timestamp=self.bot.util.UTC(), thumbnail=self.bot.data.save['matchtracker'].get('chart', None), color=self.COLOR))
-                await self.bot.util.clean(inter, 90)
+                await self.bot.channel.clean(inter, 90)
 
     @you.sub_command()
     async def honor(self, inter: disnake.GuildCommandInteraction) -> None:

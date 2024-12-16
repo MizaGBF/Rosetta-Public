@@ -492,7 +492,7 @@ class GranblueFantasy(commands.Cog):
         r = await self.bot.net.requestWiki("api.php", params={"action":"query", "format":"json", "list":"search", "srsearch":terms, "redirects":"return"})
         if r is None or len(r['query']['search']) == 0: # no result, let user search themselves
             await inter.edit_original_message(embed=self.bot.embed(title="Not Found, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
         else:
             try:
                 # retrieve first result
@@ -581,11 +581,11 @@ class GranblueFantasy(commands.Cog):
                     output["desc"] = "".join(output["desc"])
                 # send result
                 await inter.edit_original_message(embed=self.bot.embed(title=output["title"], description=output.get("desc", None), image=output.get("image", None), url=output.get("url", None), footer=output.get("footer", None), color=self.COLOR))
-                await self.bot.util.clean(inter, 80)
+                await self.bot.channel.clean(inter, 80)
             except Exception as ex:
                 self.bot.logger.pushError("[GBF] In 'gbf wiki' command:", ex)
                 await inter.edit_original_message(embed=self.bot.embed(title="An error occured, click here to refine", url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), color=self.COLOR))
-                await self.bot.util.clean(inter, 40)
+                await self.bot.channel.clean(inter, 40)
 
     @gbf.sub_command()
     async def info(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1000,12 +1000,12 @@ class GranblueFantasy(commands.Cog):
             case "Maintenance":
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Game is in maintenance", color=color), view=view)
                 if clean:
-                    await self.bot.util.clean(inter, 45)
+                    await self.bot.channel.clean(inter, 45)
                 return
             case None:
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Profile not found or Service Unavailable", color=color), view=view)
                 if clean:
-                    await self.bot.util.clean(inter, 45)
+                    await self.bot.channel.clean(inter, 45)
                 return
         # parse page
         soup = BeautifulSoup(data, 'html.parser')
@@ -1017,7 +1017,7 @@ class GranblueFantasy(commands.Cog):
             title, description, thumbnail = await self.processProfile(pid, soup)
             await inter.edit_original_message(embed=self.bot.embed(title=title, description=description, url="https://game.granbluefantasy.jp/#profile/{}".format(pid), thumbnail=thumbnail, inline=True, color=color), view=view)
         if clean:
-            await self.bot.util.clean(inter, 45)
+            await self.bot.channel.clean(inter, 45)
 
     @profile.sub_command()
     async def see(self, inter: disnake.GuildCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
@@ -1032,7 +1032,7 @@ class GranblueFantasy(commands.Cog):
         except Exception as e:
             self.bot.logger.pushError("[GBF] In 'gbf profile see' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @commands.user_command(name="GBF Profile")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -1050,7 +1050,7 @@ class GranblueFantasy(commands.Cog):
         except Exception as e:
             self.bot.logger.pushError("[GBF] In 'GBF Profile' user command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @gbf.sub_command_group(name="utility")
     async def _utility(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1069,7 +1069,7 @@ class GranblueFantasy(commands.Cog):
         view = UrlButton(self.bot, urls)
         await inter.edit_original_message('\u200b', view=view)
         view.stopall()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @_utility.sub_command()
     async def spreadsheet(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -1078,7 +1078,7 @@ class GranblueFantasy(commands.Cog):
         view = UrlButton(self.bot, [('SpreadSheet Folder', 'https://drive.google.com/drive/folders/1p7rWQLJjVsoujQqYsJ0zVGUERMsQWmKn')])
         await inter.edit_original_message('\u200b', view=view)
         view.stopall()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @_utility.sub_command()
     async def xp(self, inter: disnake.GuildCommandInteraction, start_level : int = commands.Param(description="Starting Point of the calcul", ge=1, le=149, default=1), end_level : int = commands.Param(description="Final Point of the calcul", ge=1, le=150, default=1)) -> None:
@@ -1264,7 +1264,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="".join(msgs), footer="Source: http://gbf.wiki/", color=self.COLOR))
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @check.sub_command()
     async def coop(self, inter: disnake.GuildCommandInteraction) -> None:

@@ -69,7 +69,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("single", banner, self.COLOR)
         await sim.generate(1, legfest)
         await sim.render(inter, 0, ("{} did a single roll...", "{} did a single roll"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def ten(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -78,7 +78,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(10, legfest)
         await sim.render(inter, 1, ("{} did ten rolls...", "{} did ten rolls"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command(name="scam")
     async def scam_(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), scam_index : int = commands.Param(description='Which Scam gacha to use (Default: 1 for the first one)', default=1, ge=1)) -> None:
@@ -87,7 +87,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("scam", "scam", self.COLOR, scamindex=scam_index)
         await sim.generate(10, legfest)
         await sim.render(inter, 1, ("{} is getting Scammed...", "{} got Scammed"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def spark(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -96,7 +96,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.render(inter, 3, ("{} is sparking...", "{} sparked"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def count(self, inter: disnake.GuildCommandInteraction, num : int = commands.Param(description='Number of rolls (2 ~ 600)', ge=2, le=600), legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -105,7 +105,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.generate(num, legfest)
         await sim.render(inter, 3, ("{}" + " is rolling {} times...".format(num), "{} " + "rolled {} times".format(num)))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def gachapin(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -114,7 +114,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("gachapin", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.render(inter, 3, ("{} is rolling the Gachapin...", "{} rolled the Gachapin"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def mukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -123,7 +123,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("mukku", banner, self.COLOR)
         await sim.generate(300)
         await sim.render(inter, 3, ("{} is rolling the Mukku...", "{} rolled the Mukku"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def supermukku(self, inter: disnake.GuildCommandInteraction, banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -132,7 +132,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("supermukku", banner, self.COLOR)
         await sim.generate(300)
         await sim.render(inter, 3, ("{} is rolling the Supper Mukku...", "{} rolled the Super Mukku"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def memeroll(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), rateup : str = commands.Param(description='Input anything to roll until a rate up SSR', default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
@@ -141,7 +141,7 @@ class Games(commands.Cog):
         sim = await self.bot.gacha.simulate("memerollB" if rateup != "" else "memerollA", banner, self.COLOR)
         await sim.generate(300, legfest)
         await sim.render(inter, 2, ("{} is memerolling...", "{} memerolled {} times"))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     @roll.sub_command()
     async def roulette(self, inter: disnake.GuildCommandInteraction, legfest : int = commands.Param(description='0 to force 3%, 1 to force 6%, leave blank for default', default=-1, ge=-1, le=1), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0), realist : int = commands.Param(description='1 to set Realist Mode (if allowed by owner)', default=0, ge=0, le=1)) -> None:
@@ -149,7 +149,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         sim = await self.bot.gacha.simulate("ten", banner, self.COLOR)
         await sim.roulette(inter, legfest, (realist==1))
-        await self.bot.util.clean(inter, 50)
+        await self.bot.channel.clean(inter, 50)
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -243,7 +243,7 @@ class Games(commands.Cog):
             await asyncio.sleep(0)
         # call the game view
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} is scratching...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Click to play the game", footer=footer, color=self.COLOR), view=Scratcher(self.bot, inter.author.id, grid, self.COLOR, footer))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @game.sub_command()
     async def chestrush(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -275,7 +275,7 @@ class Games(commands.Cog):
         results.reverse()
         # call the game view
         await inter.edit_original_message(embed=self.bot.embed(author={'name':'{} is opening chests...'.format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, color=self.COLOR), view=ChestRush(self.bot, inter.author.id, results, self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     """genLoto()
     Generate cards and winning numbers for the summer fortune minigame
@@ -444,7 +444,7 @@ class Games(commands.Cog):
             desc, thumb = await self.printLoto(cards[:i+1], winning, prize, (i == len(cards)-1))
             await asyncio.sleep(0.5)
             await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description=desc, thumbnail=thumb, color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @game.sub_command()
     async def deal(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -477,7 +477,7 @@ class Games(commands.Cog):
                 await asyncio.sleep(2)
                 msgs.append(Poker.checkPokerHand(hand)[1])
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @game.sub_command()
     async def poker(self, inter: disnake.GuildCommandInteraction, max_round : int = commands.Param(description="Number of rounds to play", ge=1, le=5, default=1)) -> None:
@@ -495,7 +495,7 @@ class Games(commands.Cog):
         await view.wait()
         if len(players) == 1:
             await inter.edit_original_message(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️", description="Error, at least two Players are required", color=self.COLOR))
-            await self.bot.util.clean(inter, 60)
+            await self.bot.channel.clean(inter, 60)
         else:
             await msg.delete()
             random.shuffle(players) # randomize the player order
@@ -518,7 +518,7 @@ class Games(commands.Cog):
                 for id, s in win_tracker.items(): # make a string
                     msgs.append("**{}** ▫️ **{}** win(s)\n".format(s[0], s[1]))
                 await view.message.edit(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️ ▫️ Results", description="".join(msgs), color=self.COLOR)) # post it
-            await self.bot.util.clean((inter, view.message), 60)
+            await self.bot.channel.clean((inter, view.message), 60)
 
     @game.sub_command()
     async def blackjack(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -538,7 +538,7 @@ class Games(commands.Cog):
         view = Blackjack(self.bot, players, embed)
         await view.update(inter, init=True)
         await view.wait()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @game.sub_command()
     async def tictactoe(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -562,7 +562,7 @@ class Games(commands.Cog):
             view = TicTacToe(self.bot, players, embed)
             await inter.edit_original_message(embed=embed, view=view)
             await view.wait()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @game.sub_command()
     async def connectfour(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -586,7 +586,7 @@ class Games(commands.Cog):
             view = ConnectFour(self.bot, players, embed)
             await view.update(inter, init=True)
             await view.wait()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @game.sub_command()
     async def battleship(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -610,7 +610,7 @@ class Games(commands.Cog):
             view = BattleShip(self.bot, players, embed)
             await view.update(inter, init=True)
             await view.wait()
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @game.sub_command()
     async def rockpaperscissor(self, inter: disnake.GuildCommandInteraction, bestof : int = commands.Param(description="How many rounds to win", ge=1, le=10, default=1)) -> None:
@@ -638,7 +638,7 @@ class Games(commands.Cog):
                 await view.timeoutCheck(inter)
                 if scores[0] >= bestof or scores[1] >= bestof: break
                 await asyncio.sleep(10)
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @commands.slash_command(name="random")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -676,7 +676,7 @@ class Games(commands.Cog):
                 await asyncio.sleep(1)
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid string `{}`\nFormat must be `NdN` (minimum is `1d6`, maximum is `10d100`)".format(dice_string), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @_random.sub_command()
     async def coin(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -684,7 +684,7 @@ class Games(commands.Cog):
         await inter.response.defer()
         coin = random.randint(0, 1) # roll 0 or 1
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} flipped a coin...".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=(":coin: It landed on **Head**" if (coin == 0) else ":coin: It landed on **Tail**"), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @_random.sub_command()
     async def quota(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -707,7 +707,7 @@ class Games(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="{} {}'s daily quota".format(self.bot.emote.get('gw'), inter.author.display_name), description="You got a **Relief Ace Pass** 😈\nPrepare to relieve carries of their 'stress' after the day!!!", footer="wuv wuv", thumbnail=inter.author.display_avatar, color=self.COLOR))
             else:
                 await inter.edit_original_message(embed=self.bot.embed(title="{} {}'s daily quota".format(self.bot.emote.get('gw'), inter.author.display_name), description="You got a **Free Leech Pass** 👍\nCongratulations!!!", thumbnail=inter.author.display_avatar, color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
             return
         elif c == 4: # below are extra random multipliers
             h = h * random.randint(50, 80)
@@ -731,7 +731,7 @@ class Games(commands.Cog):
         m = m * 10 # x10
 
         await inter.edit_original_message(embed=self.bot.embed(title="{} {}'s daily quota".format(self.bot.emote.get('gw'), inter.author.display_name), description="**Honor:** {:,}\n**Meat:** {:,}".format(h, m), thumbnail=inter.author.display_avatar, color=self.COLOR))
-        await self.bot.util.clean(inter, 40)
+        await self.bot.channel.clean(inter, 40)
 
     """randint()
     Generate a simple pseudo random number based on a seed value.
@@ -774,7 +774,7 @@ class Games(commands.Cog):
         msgs.append("**Rating** ▫️ {:.1f}".format(rarity_mod + (seed % 31) / 10))
 
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s daily character".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="".join(msgs), color=self.COLOR))
-        await self.bot.util.clean(inter, 30)
+        await self.bot.channel.clean(inter, 30)
 
     @_random.sub_command()
     async def xil(self, inter: disnake.GuildCommandInteraction) -> None:
@@ -786,7 +786,7 @@ class Games(commands.Cog):
         e = g.choice(elems)
 
         await inter.edit_original_message(embed=self.bot.embed(title="Today, Xil's main element is", description="### {} **{}**".format(self.bot.emote.get(e), e.capitalize()), color=self.COLOR))
-        await self.bot.util.clean(inter, 30)
+        await self.bot.channel.clean(inter, 30)
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -810,14 +810,14 @@ class Games(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s choice".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="Possible choices: `{}`\n### I pick: `{}`".format('` `'.join(possible), random.choice(possible)), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Give me a list of something to choose from, separated by `;`", color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @ask.sub_command()
     async def question(self, inter: disnake.GuildCommandInteraction, question : str = commands.Param()) -> None:
         """Ask me a question"""
         await inter.response.defer()
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} asked".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="`{}`\n### {}".format(question, random.choice(["It is Certain.","It is decidedly so.","Without a doubt.","Yes definitely.","You may rely on it.","As I see it, yes.","Most likely.","Outlook good.","Yes.","Signs point to yes.","Reply hazy, try again.","Ask again later.","Better not tell you now.","Cannot predict now.","Concentrate and ask again.","Don't count on it.","My reply is no.","My sources say no.","Outlook not so good.","Very doubtful."])), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @ask.sub_command()
     async def when(self, inter: disnake.GuildCommandInteraction, question : str = commands.Param()) -> None:
@@ -825,14 +825,14 @@ class Games(commands.Cog):
         await inter.response.defer()
         if question.lower().startswith("when ") and len(question) > 5: question = question[5:]
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} asked".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="`When {}`\n### {}".format(question, random.choice(["Never", "Soon:tm:", "Ask again tomorrow", "Can't compute", "42", "One day, my friend", "Next year", "It's a secret to everybody", "Soon enough", "When it's ready", "Five minutes", "This week, surely", "My sources say next month", "NOW!", "I'm not so sure", "In three days"])), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @ask.sub_command()
     async def element(self, inter: disnake.GuildCommandInteraction, question : str = commands.Param()) -> None:
         """Ask for a random gbf element"""
         await inter.response.defer()
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} asked".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="`{}`\n# {}".format(question, self.bot.emote.get(random.choice(["fire", "water", "earth", "wind", "light", "dark"]))), color=self.COLOR))
-        await self.bot.util.clean(inter, 45)
+        await self.bot.channel.clean(inter, 45)
 
     @commands.message_command(name="UwU")
     @commands.default_member_permissions(send_messages=True, read_messages=True)

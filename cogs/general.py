@@ -173,7 +173,7 @@ class General(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Calculator", description="".join(msgs), color=self.COLOR))
         except Exception as e:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Error\n{}".format(e), color=self.COLOR))
-        await self.bot.util.clean(inter, 60)
+        await self.bot.channel.clean(inter, 60)
 
     @utility.sub_command()
     async def jst(self, inter: disnake.GuildCommandInteraction) -> None:

@@ -48,7 +48,7 @@ class BaseView(disnake.ui.View):
     async def on_timeout(self) -> None:
         self.stopall() # disable all children
         if self.enable_timeout_cleanup: # if auto cleanup is enabled
-            if not self.bot.isAuthorized(self.message): # replace message by Lyria emote if authorized to
+            if self.bot.channel.interaction_must_be_cleaned(self.message): # replace message by Lyria emote if authorized to
                 try: await self.message.edit(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
                 except: pass
             else: # else just remove the view

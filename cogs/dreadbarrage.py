@@ -133,7 +133,7 @@ class DreadBarrage(commands.Cog):
                     self.bot.data.save['dread']['state'] = False
                     self.bot.data.save['dread']['dates'] = {}
                     self.bot.data.pending = True
-                    await self.bot.util.clean(inter, 40)
+                    await self.bot.channel.clean(inter, 40)
                     return
                 try:
                     description.append(self.getBarrageState())
@@ -144,10 +144,10 @@ class DreadBarrage(commands.Cog):
             except Exception as e:
                 self.bot.logger.pushError("[DREAD] In 'db time' command:", e)
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
-                await self.bot.util.clean(inter, 40)
+                await self.bot.channel.clean(inter, 40)
         else:
             await inter.edit_original_message(embed=self.bot.embed(title="{} **Dread Barrage**".format(self.bot.emote.get('crew')), description="Not available", color=self.COLOR))
-            await self.bot.util.clean(inter, 40)
+            await self.bot.channel.clean(inter, 40)
 
     @db.sub_command()
     async def token(self, inter: disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:

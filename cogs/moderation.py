@@ -57,8 +57,13 @@ class Moderation(commands.Cog):
         rosetta = []
         gid = str(guild.id)
         if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
-        if len(self.bot.data.save['permitted'].get(gid, [])) > 0: rosetta.append("{} **Auto cleanup** enabled\n".format(self.bot.emote.get('lyria')))
-        elif is_mod: rosetta.append(":warning: **Auto cleanup** disabled\n")
+        cleanup_settings = self.bot.channel.get_cleanup_settings(gid)
+        if cleanup_settings[0]:
+            rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
+            if len(cleanup_settings[1]) > 0:
+                rosetta.append(", {} channels are excluded".format(len(cleanup_settings[1])))
+        elif is_mod:
+            rosetta.append(":warning: **Auto cleanup** disabled\n")
         if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
         elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
         if gid in self.bot.data.save['announcement']: rosetta.append(":new: **Announcements** enabled\n")
@@ -100,66 +105,38 @@ class Moderation(commands.Cog):
     async def cleanup(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
 
-    """_seeCleanupSetting()
-    Output the server cleanup settings
-    
-    Parameters
-    --------
-    inter: A command interaction. Must have been deferred beforehand.
-    """
-    async def _seeCleanupSetting(self, inter: disnake.GuildCommandInteraction) -> None:
-        gid = str(inter.guild.id)
-        if gid in self.bot.data.save['permitted'] and len(self.bot.data.save['permitted'][gid]) > 0: # check if guild has autocleanup setup for any channel
-            msgs = []
-            for c in inter.guild.channels: # for each channel
-                if c.id in self.bot.data.save['permitted'][gid]: # add to list
-                    try:
-                        msgs.append(c.name)
-                    except:
-                        pass
-            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is enable in all channels but the following ones:", description="\n".join(msgs), footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is disabled in all channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-
     @cleanup.sub_command(name="toggle")
     async def toggleautocleanup(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Toggle the auto-cleanup in this channel (Mod Only)"""
+        """Toggle the auto-cleanup on this server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
         if not isinstance(inter.channel, disnake.TextChannel): # only valid for text channels
             await inter.edit_original_message(embed=self.bot.embed(title="This command is only usable in text channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
             return
-        cid = inter.channel.id # get id
-        if gid not in self.bot.data.save['permitted']:
-            self.bot.data.save['permitted'][gid] = []
-        for i, v in enumerate(self.bot.data.save['permitted'][gid]):
-            if v == cid: # if channel id already present
-                self.bot.data.save['permitted'][gid].pop(i) # we remove (disable)
-                self.bot.data.pending = True
-                await self._seeCleanupSetting(inter)
-                return
-        # if channel id hasn't been found
-        self.bot.data.save['permitted'][gid].append(cid) # we add (enable)
-        self.bot.data.pending = True
-        await self._seeCleanupSetting(inter)
+        self.bot.channel.toggle_cleanup(str(inter.guild.id))
+        await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
+
+    @cleanup.sub_command(name="channel")
+    async def toggleautocleanupchannel(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Toggle the auto-cleanup exclusion of this channel (Mod Only)"""
+        await inter.response.defer(ephemeral=True)
+        if not isinstance(inter.channel, disnake.TextChannel): # only valid for text channels
+            await inter.edit_original_message(embed=self.bot.embed(title="This command is only usable in text channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+            return
+        self.bot.channel.toggle_cleanup_channel(str(inter.guild.id), inter.channel.id)
+        await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @cleanup.sub_command(name="reset")
     async def resetautocleanup(self, inter: disnake.GuildCommandInteraction) -> None:
         """Reset the auto-cleanup settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        gid = str(inter.guild.id)
-        if gid in self.bot.data.save['permitted']: # simply clear guild autocleanup data
-            self.bot.data.save['permitted'].pop(gid)
-            self.bot.data.pending = True
-            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is disabled in all channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
-        else:
-            await inter.edit_original_message(embed=self.bot.embed(title="Auto Cleanup is already disabled in all channels", footer=inter.guild.name + " ▫️ " + str(inter.guild.id), color=self.COLOR))
+        self.bot.channel.reset_cleanup(str(inter.guild.id))
+        await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @cleanup.sub_command(name="see")
     async def seecleanupsetting(self, inter: disnake.GuildCommandInteraction) -> None:
         """See all channels where no clean up is performed (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        await self._seeCleanupSetting(inter)
+        await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @mod.sub_command_group()
     async def announcement(self, inter: disnake.GuildCommandInteraction) -> None:

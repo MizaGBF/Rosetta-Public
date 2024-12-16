@@ -328,40 +328,6 @@ class Util():
                 self.bot.logger.pushError("[UTIL] 'unreact' error:", e)
             return False
 
-    """clean()
-    Delete a bot command message after X amount of time.
-    A white check mark is added in reaction to the original command after deletion
-    
-    Parameters
-    ----------
-    target: Tuple of a Disnake Context and Message OR a Disnake Interaction
-    delay: Time in second before deletion
-    all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
-    """
-    async def clean(self, target : Union[tuple, disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[Union[int, float]] = None, all : bool = False) -> None:
-        try:
-            match target:
-                case tuple(): # unused, legacy of old version
-                    if all or not self.bot.isAuthorized(target[0]): # cleanup check
-                        await target[1].delete(delay=delay) # delete message after delay
-                        # add reaction
-                        try: await self.react(target[0].message, '✅') # white check mark
-                        except: pass
-                case disnake.ApplicationCommandInteraction()|disnake.ModalInteraction(): # interactions
-                    if all or not self.bot.isAuthorized(target): # cleanup check
-                        if delay is not None: await asyncio.sleep(delay) # delete message after delay
-                        # edit message with lyria emote
-                        await target.edit_original_message(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
-                case disnake.Message(): # message
-                    if all or not self.bot.isAuthorized(target): # cleanup check
-                        if delay is not None: await asyncio.sleep(delay) # delete message after delay
-                        # edit message with lyria emote
-                        await target.edit(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
-        except Exception as e:
-            if "Unknown Message" not in str(e):
-                self.bot.logger.pushError("[UTIL] 'clean' error:", e)
-            return False
-
     """formatName()
     Shorten and fix player or crew names if they use long or some special characters.
     

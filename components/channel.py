@@ -1,5 +1,6 @@
 import disnake
-from typing import TYPE_CHECKING
+import asyncio
+from typing import Union, Optional, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -128,3 +129,156 @@ class Channel():
     """
     def get(self, name : str) -> disnake.abc.Messageable:
         return self.cache.get(name, self.bot.get_channel(name))
+
+    """clean()
+    Delete a bot command message after X amount of time depending on the
+    The lyria emote will be used to replace the message.
+    
+    Parameters
+    ----------
+    target: A Disnake Context and Message OR a Disnake Interaction
+    delay: Time in second before deletion
+    all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
+    """
+    async def clean(self, target : Union[disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[Union[int, float]] = None, all : bool = False) -> None:
+        try:
+            match target:
+                case disnake.ApplicationCommandInteraction()|disnake.ModalInteraction(): # interactions
+                    if all or self.interaction_must_be_cleaned(target): # cleanup check
+                        if delay is not None:
+                            await asyncio.sleep(delay) # delete message after delay
+                        # edit message with lyria emote
+                        await target.edit_original_message(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+                case disnake.Message(): # message
+                    if all or not self.interaction_must_be_cleaned(target): # cleanup check
+                        if delay is not None:
+                            await asyncio.sleep(delay) # delete message after delay
+                        # edit message with lyria emote
+                        await target.edit(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+        except Exception as e:
+            if "Unknown Message" not in str(e):
+                self.bot.logger.pushError("[UTIL] 'clean' error:", e)
+            return False
+
+    """interaction_must_be_cleaned()
+    Take an interaction (or similar) and determine if cleanup must be invoked based on server settings
+    
+    Parameters
+    ----------
+    inter: Interaction or also Command context, message...
+    
+    Returns
+    --------
+    bool: True if if must be cleaned up, False if not
+    """
+    def interaction_must_be_cleaned(self, inter : Any) -> bool:
+        if inter is None:
+            return False
+        settings = self.get_cleanup_settings(str(inter.guild.id))
+        if settings[0] and inter.channel.id not in settings[1]:
+            return True
+        return False
+
+    """toggle_cleanup()
+    Toggle the server cleanup settings
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    """
+    def toggle_cleanup(self, gid : str) -> None:
+        if gid not in self.bot.data.save['cleanup']:
+            self.bot.data.save['cleanup'][gid] = [False, []]
+        else:
+            self.bot.data.save['cleanup'][gid][0] = not self.bot.data.save['cleanup'][gid][0]
+        self.bot.data.pending = True
+
+    """reset_cleanup()
+    Reset the server cleanup settings
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    """
+    def reset_cleanup(self, gid : str) -> None:
+        if gid in self.bot.data.save['cleanup']:
+            self.bot.data.save['cleanup'].pop(gid)
+            self.bot.data.pending = True
+
+    """toggle_cleanup_channel()
+    Toggle this server channel exception for the auto cleanup
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    cid: Integer, channel id
+    """
+    def toggle_cleanup_channel(self, gid : str, cid : int) -> None:
+        if gid not in self.bot.data.save['cleanup']:
+            self.bot.data.save['cleanup'][gid] = [True, [cid]]
+            self.bot.data.pending = True
+        elif cid not in self.bot.data.save['cleanup'][gid][1]:
+            self.bot.data.save['cleanup'][gid][1].append(cid)
+            self.bot.data.pending = True
+        else:
+            i = 0
+            while i < len(self.bot.data.save['cleanup'][gid][1]):
+                if self.bot.data.save['cleanup'][gid][1][i] == cid:
+                    self.bot.data.save['cleanup'][gid][1].pop(i)
+                    self.bot.data.pending = True
+                else:
+                    i += 1
+
+    """clean_cleanup_data()
+    Clean unused cleanup settings
+    """
+    def clean_cleanup_data(self) -> None:
+        guild_ids = set([str(g.id) for g in self.bot.guilds])
+        for gid in list(self.bot.data.save['cleanup'].keys()):
+            if gid not in guild_ids or (not self.bot.data.save['cleanup'][gid][0] and len(self.bot.data.save['cleanup'][gid][1]) == 0):
+                self.bot.data.save['cleanup'].pop(gid)
+                self.bot.data.pending = True
+
+    """get_cleanup_settings()
+    Return the server cleanup settings
+    
+    Parameters
+    ----------
+    gid: String, guild id
+    
+    Returns
+    ----------
+    list: Containing Enable flag (bool) and the list of excluded channels (list[int])
+    """
+    def get_cleanup_settings(self, gid : str) -> list:
+        return self.bot.data.save['cleanup'].get(gid, [False, []])
+
+    """render_cleanup_settings()
+    Output the server cleanup settings
+    
+    Parameters
+    --------
+    inter: A command interaction. Must have been deferred beforehand.
+    """
+    async def render_cleanup_settings(self, inter : disnake.GuildCommandInteraction, color : int) -> None:
+        gid = str(inter.guild.id)
+        settings = self.get_cleanup_settings(gid)
+        descs = ["- Status ▫️ "]
+        descs.append("**Enabled**" if settings[0] else "**Disabled**")
+        descs.append("\nTo toggle this setting: ")
+        descs.append(self.bot.util.command2mention('mod cleanup toggle'))
+        if len(settings[1]) > 0:
+            descs.append("\n- Excluded channels:\n")
+            i = 0
+            while i < len(settings[1]):
+                ch = inter.guild.get_channel(settings[1][i])
+                if ch is None: # deleted channel?
+                    settings[1].pop(i)
+                    self.bot.data.pending = True
+                else:
+                    descs.append("[#{}](https://discord.com/channels/{}/{}) ".format(ch.name, inter.guild.id, ch.id))
+                    i += 1
+        descs.append("\nTo toggle a channel exception: ")
+        descs.append(self.bot.util.command2mention('mod cleanup channel'))
+        descs.append(" in the channel.")
+        await inter.edit_original_message(embed=self.bot.embed(title="{} Auto Cleanup settings".format(self.bot.emote.get('lyria')), description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
