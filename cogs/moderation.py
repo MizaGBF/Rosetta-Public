@@ -61,7 +61,7 @@ class Moderation(commands.Cog):
         if cleanup_settings[0]:
             rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
             if len(cleanup_settings[1]) > 0:
-                rosetta.append(", {} channels are excluded".format(len(cleanup_settings[1])))
+                rosetta.append(", {} channel(s) are excluded".format(len(cleanup_settings[1])))
             rosetta.append("\n")
         elif is_mod:
             rosetta.append(":warning: **Auto cleanup** disabled\n")

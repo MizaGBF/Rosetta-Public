@@ -368,7 +368,7 @@ class Channel():
         descs.append(self.bot.util.command2mention("mod announcement channel"))
         descs.append("\n- Auto-Publish ▫️ ")
         descs.append("**Enabled**" if settings[1] else "**Disabled**")
-        descs.append("\nTo enable, use: ")
+        descs.append("\nTo toggle, use: ")
         descs.append(self.bot.util.command2mention("mod announcement publish"))
         descs.append("\n*The channel must be a News channel for it to take effect*")
         await inter.edit_original_message(embed=self.bot.embed(title="Announcement settings", description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
