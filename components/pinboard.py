@@ -1,5 +1,5 @@
 import disnake
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from views.url_button import UrlButton
 
@@ -207,31 +207,28 @@ class Pinboard():
     def is_enabled(self, server_id : str) -> bool:
         return server_id in self.bot.data.save['pinboard'] and 'disabled' not in self.bot.data.save['pinboard'][server_id]
 
-    """enable()
-    Enable the system for a guild, if it exists
+    """toggle()
+    Toggle the system for a guild, if it exists
     
     Parameters
     ----------
-    server_id: Guild ID, in string format
+    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    color: Integer, embed color to use.
     """
-    def enable(self, server_id : str) -> None:
-        if server_id in self.bot.data.save['pinboard']:
-            if 'disabled' in self.bot.data.save['pinboard'][server_id]:
-                self.bot.data.save['pinboard'][server_id].pop('disabled')
+    async def toggle(self, inter : disnake.GuildCommandInteraction, color : int) -> None:
+        server_id = str(inter.guild.id)
+        # Check pinboard state
+        if self.initialize(server_id):
+            msg = "The pinboard is enabled"
+        elif 'disabled' in self.bot.data.save['pinboard'][server_id]:
+            self.bot.data.save['pinboard'][server_id].pop('disabled')
             self.bot.data.pending = True
-
-    """disable()
-    Disable the system for a guild, if it exists
-    
-    Parameters
-    ----------
-    server_id: Guild ID, in string format
-    """
-    def disable(self, server_id : str) -> None:
-        if server_id in self.bot.data.save['pinboard']:
-            if 'disabled' not in self.bot.data.save['pinboard'][server_id]:
-                self.bot.data.save['pinboard'][server_id]['disabled'] = None
+            msg = "The pinboard is enabled"
+        else:
+            self.bot.data.save['pinboard'][server_id]['disabled'] = None
             self.bot.data.pending = True
+            msg = "The pinboard is disabled"
+        await self.render(inter, color, msg)
 
     """get()
     Retrieve the settings for a guild
@@ -253,59 +250,107 @@ class Pinboard():
     Parameters
     ----------
     server_id: Guild ID, in string format
+    
+    Returns
+    ----------
+    bool: True if data has been initialized, False otherwise
     """
-    def initialize(self, server_id : str) -> None:
+    def initialize(self, server_id : str) -> bool:
         if server_id not in self.bot.data.save['pinboard']:
             self.bot.data.save['pinboard'][server_id] = {'tracked' : [], 'emoji': '⭐', 'mod_bypass':False, 'threshold':3, 'output': None}
             self.bot.data.pending = True
+            return True
+        return False
 
     """set()
     Set updated settings for a guild, if it exists
     
     Parameters
     ----------
-    server_id: Guild ID, in string format
+    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    color: Integer, embed color to use.
     options: dict, settings to update
     """
-    def set(self, server_id : str, **options : dict) -> None:
-        if server_id in self.bot.data.save['pinboard']:
-            self.bot.data.save['pinboard'][server_id]['tracked'] = options.get('tracked', self.bot.data.save['pinboard'][server_id]['tracked'])
-            self.bot.data.save['pinboard'][server_id]['emoji'] = options.get('emoji', self.bot.data.save['pinboard'][server_id]['emoji'])
-            self.bot.data.save['pinboard'][server_id]['mod_bypass'] = options.get('mod_bypass', self.bot.data.save['pinboard'][server_id]['mod_bypass'])
-            self.bot.data.save['pinboard'][server_id]['threshold'] = options.get('threshold', self.bot.data.save['pinboard'][server_id]['threshold'])
-            self.bot.data.save['pinboard'][server_id]['output'] = options.get('output', self.bot.data.save['pinboard'][server_id]['output'])
+    async def set(self, inter : disnake.GuildCommandInteraction, color : int, options : dict) -> None:
+        server_id = str(inter.guild.id)
+        msgs = []
+        error = ""
+        # Initialize data
+        self.initialize(server_id)
+        # Update values
+        if 'tracked' in options:
+            self.bot.data.save['pinboard'][server_id]['tracked'] = options['tracked']
+            msgs.append("Tracked Channels")
+        if 'emoji' in options:
+            self.bot.data.save['pinboard'][server_id]['emoji'] = options['emoji']
+            msgs.append("Emoji")
+        if 'mod_bypass' in options:
+            self.bot.data.save['pinboard'][server_id]['mod_bypass'] = options['mod_bypass']
+            msgs.append("Mod Bypass")
+        if 'threshold' in options:
+            self.bot.data.save['pinboard'][server_id]['threshold'] = options['threshold']
+            msgs.append("Threshold")
+        if options.get('set_output', False):
+            if isinstance(inter.channel, disnake.TextChannel):
+                self.bot.data.save['pinboard'][server_id]['output'] = inter.channel.id
+                msgs.append("Output Channel")
+            else:
+                error = ":warning: The output channel can only be set to a Text channel"
+        if len(msgs) > 0:
+            msgs = ["**Modified:** ", ", ".join(msgs)]
             self.bot.data.pending = True
+        if error != "":
+            if len(msgs) > 0:
+                msgs.append("\n")
+            msgs.append(error)
+        await self.render(inter, color, "".join(msgs))
 
     """track_toggle()
     Toggle given channel tracking for a guild
     
     Parameters
     ----------
-    server_id: Guild ID, in string format
-    channel_id: Channel ID, as an integer
-    
-    Returns
-    ----------
-    value: None if nothing changed, False if removed, True if added
+    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    color: Integer, embed color to use.
     """
-    def track_toggle(self, server_id : str, channel_id : int) -> Optional[bool]:
-        found = None
-        if server_id in self.bot.data.save['pinboard']:
-            found = False
-            i = 0
-            while i < len(self.bot.data.save['pinboard'][server_id]['tracked']):
-                if self.bot.data.save['pinboard'][server_id]['tracked'][i] == channel_id: # channel is set as to be tracked
-                    found = True
-                    self.bot.data.save['pinboard'][server_id]['tracked'].pop(i) # untrack
-                    self.bot.data.pending = True
-                else:
-                    i += 1
-            if not found:
-                self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id) # channel isn't set, so we track
+    async def track_toggle(self, inter : disnake.GuildCommandInteraction, color : int):
+        server_id = str(inter.guild.id)
+        channel_id = inter.channel.id
+        msg = "An unexpected error occured, nothing changed"
+        # Initialize data
+        self.initialize(server_id)
+        # Search for channel
+        found = False
+        i = 0
+        while i < len(self.bot.data.save['pinboard'][server_id]['tracked']):
+            if self.bot.data.save['pinboard'][server_id]['tracked'][i] == channel_id: # channel is set as to be tracked
+                found = True
+                self.bot.data.save['pinboard'][server_id]['tracked'].pop(i) # untrack
                 self.bot.data.pending = True
-        return not found
+                msg = "This channel isn't tracked anymore"
+            else:
+                i += 1 # keep iterating in case multiple copies of the same channel id is in the list
+        if not found:
+            # channel isn't set, so we attempt to track
+            # check the channel type
+            if isinstance(inter.channel, disnake.TextChannel):
+                self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id) 
+                self.bot.data.pending = True
+                msg = "This channel is now tracked"
+            elif isinstance(inter.channel, disnake.Thread): # only allow tracking threads from forums
+                try:
+                    if not isinstance(inter.channel.parent, disnake.ForumChannel):
+                        raise Exception()
+                    self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id) 
+                    self.bot.data.pending = True
+                    msg = "This channel is now tracked"
+                except:
+                    msg = "This type of channel **can't** be tracked"
+            else:
+                msg = "This type of channel **can't** be tracked"
+        await self.render(inter, color, msg)
 
-    """display()
+    """render()
     Output settings to an interaction
     
     Parameters
@@ -314,7 +359,7 @@ class Pinboard():
     color: Embed color value
     msg: Optional message to add in the description
     """
-    async def display(self, inter : disnake.Interaction, color : int, msg : str = None) -> None:
+    async def render(self, inter : disnake.Interaction, color : int, msg : str = None) -> None:
         fields = []
         settings = self.bot.pinboard.get(str(inter.guild.id))
         if settings is None:
@@ -346,7 +391,8 @@ class Pinboard():
                             'inline': True
                         })
             if len(updated_tracked) != settings['tracked']:
-                self.bot.pinboard.set(str(inter.guild.id), tracked=updated_tracked)
+                settings['tracked'] = updated_tracked
+                self.bot.data.pending = True
             if fields[-1]['value'] == '':
                 if len(fields) > 1:
                     fields.pop()
@@ -379,14 +425,15 @@ class Pinboard():
             if settings['output'] is not None:
                 c = inter.guild.get_channel(int(settings['output']))
                 if c is None:
-                    self.bot.pinboard.set(str(inter.guild.id), output=None)
+                    settings['output'] = None
+                    self.bot.data.pending = True
                 else:
                     fields[-1]['value'] = '[#{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id)
             #disabled
             if 'disabled' in settings:
                 fields.append({
                     'name':'Warning',
-                    'value': '**Pinboard is currently disabled on this server**',
+                    'value': '**Pinboard is currently disabled**',
                     'inline': True
                 })
         try: icon = inter.guild.icon.url

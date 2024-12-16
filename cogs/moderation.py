@@ -176,82 +176,43 @@ class Moderation(commands.Cog):
     async def pinboard(self, inter: disnake.GuildCommandInteraction) -> None:
         pass
 
-    @pinboard.sub_command(name="enable")
-    async def enablepinboard(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Enable the pinboard on your server (Mod Only)"""
+    @pinboard.sub_command(name="toggle")
+    async def togglepinboard(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Toggle the pinboard on your server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        if self.bot.pinboard.get(str(inter.guild.id)) is None:
-            self.bot.pinboard.initialize(str(inter.guild.id))
-        else:
-            self.bot.pinboard.enable(str(inter.guild.id))
-        await self.bot.pinboard.display(inter, self.COLOR, "Pinboard is enabled on this server")
-
-    @pinboard.sub_command(name="disable")
-    async def disablepinboard(self, inter: disnake.GuildCommandInteraction) -> None:
-        """Disable the pinboard on your server (Mod Only)"""
-        await inter.response.defer(ephemeral=True)
-        if self.bot.pinboard.get(str(inter.guild.id)) is None:
-            pass
-        else:
-            self.bot.pinboard.disable(str(inter.guild.id))
-        await self.bot.pinboard.display(inter, self.COLOR, "Pinboard is disabled on this server")
+        await self.bot.pinboard.toggle(inter, self.COLOR)
 
     @pinboard.sub_command()
     async def track(self, inter: disnake.GuildCommandInteraction) -> None:
         """Toggle pinboard tracking for the current text or forum channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.pinboard.initialize(str(inter.guild.id))
-        # check for different channel types (some aren't supported)
-        if isinstance(inter.channel, disnake.TextChannel):
-            r = self.bot.pinboard.track_toggle(str(inter.guild.id), int(inter.channel.id))
-            await self.bot.pinboard.display(inter, self.COLOR, "This channel is now tracked" if r is True else "This channel isn't tracked anymore")
-        elif isinstance(inter.channel, disnake.Thread):
-            try:
-                c = inter.channel.parent
-                if not isinstance(c, disnake.ForumChannel): raise Exception()
-                r = self.bot.pinboard.track_toggle(str(inter.guild.id), int(c.id))
-                await self.bot.pinboard.display(inter, self.COLOR, "This channel is now tracked" if r is True else "This channel isn't tracked anymore")
-            except:
-                await self.bot.pinboard.display(inter, self.COLOR, "This command can only be used in a text or forum channel")
-        else:
-            await self.bot.pinboard.display(inter, self.COLOR, "This command can only be used in a text or forum channel")
+        await self.bot.pinboard.track_toggle(inter, self.COLOR)
 
     @pinboard.sub_command()
-    async def output_here(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def output(self, inter: disnake.GuildCommandInteraction) -> None:
         """Set the current channel as the output channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        if isinstance(inter.channel, disnake.TextChannel):
-            self.bot.pinboard.initialize(str(inter.guild.id))
-            self.bot.pinboard.set(str(inter.guild.id), output=int(inter.channel.id))
-            await self.bot.pinboard.display(inter, self.COLOR, "This channel is where future pinned messages will appear")
-        else:
-            await self.bot.pinboard.display(inter, self.COLOR, "This command can only be used in a text channel")
+        await self.bot.pinboard.set(inter, self.COLOR, {"set_output":True})
 
     @pinboard.sub_command()
     async def settings(self, inter: disnake.GuildCommandInteraction, emoji : str = commands.Param(description="The emoji used as a pin trigger", default=""), threshold : int = commands.Param(description="Number of reactions needed to trigger the pin", default=0, ge=0), mod_bypass : int = commands.Param(description="If 1, a moderator can force the pin with a single reaction", ge=-1, le=1, default=-1)) -> None:
         """See or Change pinboard settings for this server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.pinboard.initialize(str(inter.guild.id))
-        updated = False
-        emoji = emoji.strip()
-        # process parameters and set accordingly
+        options = {}
         if self.bot.emote.isValid(emoji):
-            self.bot.pinboard.set(str(inter.guild.id), emoji=emoji)
-            updated = True
+            options["emoji"] = emoji
         if threshold > 0:
-            self.bot.pinboard.set(str(inter.guild.id), threshold=threshold)
-            updated = True
+            options["threshold"] = threshold
         if mod_bypass != -1:
-            self.bot.pinboard.set(str(inter.guild.id), mod_bypass=(mod_bypass != 0))
-            updated = True
-        await self.bot.pinboard.display(inter, self.COLOR, "Settings have been updated" if updated else "")
+            options["mod_bypass"] = mod_bypass != 0
+        await self.bot.pinboard.set(inter, self.COLOR, options)
 
     @pinboard.sub_command()
-    async def reset_tracked(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def reset(self, inter: disnake.GuildCommandInteraction) -> None:
         """Reset the tracked channel list of this server pinboard settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.pinboard.set(str(inter.guild.id), tracked=[])
-        await self.bot.pinboard.display(inter, self.COLOR, "Settings have been updated")
+        self.bot.pinboard.set(str(inter.guild.id), {"tracked":[]})
+        await self.bot.pinboard.render(inter, self.COLOR, "Settings have been updated")
 
     @mod.sub_command_group()
     async def server(self, inter: disnake.GuildCommandInteraction) -> None:
