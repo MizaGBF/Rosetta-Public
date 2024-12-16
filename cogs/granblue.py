@@ -121,6 +121,132 @@ class GranblueFantasy(commands.Cog):
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'granblue:watcher (checkGameNews)' Task Error:", e)
 
+    """fix_news_thumbnail()
+    Fix a thumbnail url used by checkGameNews()
+    
+    Parameters
+    ----------
+    thumbnail: String, an url
+    
+    Returns
+    --------
+    str: The thumbnail url
+    """
+    def fix_news_thumbnail(self, thumbnail : Optional[str]) -> Optional[str]:
+        if thumbnail is not None and "granbluefantasy" not in thumbnail:
+            if thumbnail == "":
+                thumbnail = None
+            elif not thumbnail.startswith("https://"):
+                if thumbnail[0] == "/":
+                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net" + thumbnail
+                else:
+                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net/" + thumbnail
+        return thumbnail
+
+    """fix_news_link()
+    Fix a news url used by checkGameNews()
+    
+    Parameters
+    ----------
+    link: String, a news url
+    
+    Returns
+    --------
+    str: The news url
+    """
+    def fix_news_link(self, link : Optional[str]) -> Optional[str]:
+        if link is not None and not link.startswith("https://"):
+            if link == "":
+                link = None
+            elif link[0] == "/":
+                link = "https://granbluefantasy.jp" + link
+            else:
+                link = "https://granbluefantasy.jp/" + link
+        return link
+
+    """compute_news_description_character_limit()
+    Return the character limit used by checkGameNews(), given a specific news title
+    
+    Parameters
+    ----------
+    title: String, the news title
+    
+    Returns
+    --------
+    int: The character limit
+    """
+    def compute_news_description_character_limit(self, title : str) -> int:
+        if title.startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in title or 'Star Premium Draw Set On Sale' in title:
+            limit = 0
+        elif title.endswith(" Concluded"):
+            limit = 40
+        elif title.endswith(" Premium Draw Update"):
+            limit = 100
+        elif title.endswith(" Maintenance Completed"):
+            limit = 50
+        elif title.endswith(" Added to Side Stories"):
+            limit = 30
+        elif title.endswith(" Underway!"):
+            limit = 30
+        else:
+            limit = 250
+        return limit
+
+    """parse_maintenance_from_news()
+    Read a news title and description and, if it's a Maintenance news, attempt to set the bot maintenance state to the date found in the news body.
+    
+    Parameters
+    ----------
+    title: String, the news title
+    description: String, the news description
+    """
+    def parse_maintenance_from_news(self, title : str, description : str) -> None:
+        # we check for specific titles
+        if title.endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
+            try:
+                # extract the dates and parse
+                try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
+                except: description = description.split('. ', 1)[0][len("Server maintenance and game updates are scheduled for "):].split(',')
+                # time
+                t = description[0].split(",", 1)[0]
+                u = t.split('–')
+                for e in range(len(u)):
+                    if 'noon' in u[e]: u[e] = '12 p.m.'
+                    elif 'midnight' in u[e]: u[e] = '0'
+                    u[e] = u[e].split(' ')
+                hour_start = int(u[0][0]) % 12
+                if len(u[0]) > 1 and u[0][1] == 'p.m.':
+                    hour_start += 12
+                hour_end = int(u[1][0]) % 12
+                if len(u[1]) > 1 and u[1][1] == 'p.m.':
+                    hour_end += 12
+                t = description[1].strip().split(" ")
+                # date
+                day = int(t[1])
+                match t[0].lower():
+                    case 'jan': month = 1
+                    case 'feb': month = 2
+                    case 'mar': month = 3
+                    case 'apr': month = 4
+                    case 'may': month = 5
+                    case 'jun': month = 6
+                    case 'jul': month = 7
+                    case 'aug': month = 8
+                    case 'sep': month = 9
+                    case 'oct': month = 10
+                    case 'nov': month = 11
+                    case 'dec': month = 12
+                    case _: raise Exception("Month Error")
+                t = description[2].strip().split(" ")
+                year = int(t[0])
+                # set in memory
+                self.bot.data.save['maintenance']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour_start, minute=0, second=0, microsecond=0)
+                self.bot.data.save['maintenance']['duration'] = hour_end-hour_start
+                self.bot.data.save['maintenance']['state'] = True
+                self.bot.data.pending = True
+            except Exception as se:
+                self.bot.logger.pushError("[PRIVATE] 'checkGameNews (Maintenance)' Error:", se)
+
     """checkGameNews()
     Coroutine checking for new in-game news, to post them in announcement channels
     """
@@ -159,14 +285,10 @@ class GranblueFantasy(commands.Cog):
                 try:
                     news.append(ii) # append id to news list
                     if not silent: # if not silent, we process the content
-                        # filter out some pots, determine the limit of others
-                        if data[0]['title'].startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in data[0]['title'] or 'Star Premium Draw Set On Sale' in data[0]['title']: continue
-                        elif data[0]['title'].endswith(" Concluded"): limit = 40
-                        elif data[0]['title'].endswith(" Premium Draw Update"): limit = 100
-                        elif data[0]['title'].endswith(" Maintenance Completed"): limit = 50
-                        elif data[0]['title'].endswith(" Added to Side Stories"): limit = 30
-                        elif data[0]['title'].endswith(" Underway!"): limit = 30
-                        else: limit = 250
+                        # determine the character limit
+                        limit = self.compute_news_description_character_limit(data[0]['title'])
+                        if limit == 0: # Null, skip
+                            continue
                         # Breakdown the html
                         content = self.bot.util.breakdownHTML(data[0]['contents'])
                         elements = []
@@ -191,22 +313,9 @@ class GranblueFantasy(commands.Cog):
                                 else:
                                     elements.append(content[i])
                         # Adjust thumbnail url
-                        if thumbnail is not None and "granbluefantasy" not in thumbnail:
-                            if thumbnail == "":
-                                thumbnail = None
-                            elif not thumbnail.startswith("https://"):
-                                if thumbnail[0] == "/":
-                                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net" + thumbnail
-                                else:
-                                    thumbnail = "https://prd-game-a-granbluefantasy.akamaized.net/" + thumbnail
+                        thumbnail = self.fix_news_thumbnail(thumbnail)
                         # Adjust link url
-                        if link is not None and not link.startswith("https://"):
-                            if link == "":
-                                link = None
-                            elif link[0] == "/":
-                                link = "https://granbluefantasy.jp" + link
-                            else:
-                                link = "https://granbluefantasy.jp/" + link
+                        link = self.fix_news_link(link)
                         # build description
                         description = []
                         length = 0
@@ -221,52 +330,8 @@ class GranblueFantasy(commands.Cog):
                         description = "\n".join(description)
                         # send news
                         await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'].replace('<br>', ' '), description=description, url=link, image=thumbnail, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
-                        # detect maintenance to automatically sets the date
-                        # we check for specific titles
-                        if data[0]['title'].endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
-                            try:
-                                # extract the dates and parse
-                                try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
-                                except: description = description.split('. ', 1)[0][len("Server maintenance and game updates are scheduled for "):].split(',')
-                                # time
-                                t = description[0].split(",", 1)[0]
-                                u = t.split('–')
-                                for e in range(len(u)):
-                                    if 'noon' in u[e]: u[e] = '12 p.m.'
-                                    elif 'midnight' in u[e]: u[e] = '0'
-                                    u[e] = u[e].split(' ')
-                                hour_start = int(u[0][0]) % 12
-                                if len(u[0]) > 1 and u[0][1] == 'p.m.':
-                                    hour_start += 12
-                                hour_end = int(u[1][0]) % 12
-                                if len(u[1]) > 1 and u[1][1] == 'p.m.':
-                                    hour_end += 12
-                                t = description[1].strip().split(" ")
-                                # date
-                                day = int(t[1])
-                                match t[0].lower():
-                                    case 'jan': month = 1
-                                    case 'feb': month = 2
-                                    case 'mar': month = 3
-                                    case 'apr': month = 4
-                                    case 'may': month = 5
-                                    case 'jun': month = 6
-                                    case 'jul': month = 7
-                                    case 'aug': month = 8
-                                    case 'sep': month = 9
-                                    case 'oct': month = 10
-                                    case 'nov': month = 11
-                                    case 'dec': month = 12
-                                    case _: raise Exception("Month Error")
-                                t = description[2].strip().split(" ")
-                                year = int(t[0])
-                                # set in memory
-                                self.bot.data.save['maintenance']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour_start, minute=0, second=0, microsecond=0)
-                                self.bot.data.save['maintenance']['duration'] = hour_end-hour_start
-                                self.bot.data.save['maintenance']['state'] = True
-                                self.bot.data.pending = True
-                            except Exception as se:
-                                self.bot.logger.pushError("[PRIVATE] 'checkGameNews (Maintenance)' Error:", se)
+                        # detect maintenance to automatically set the date
+                        self.parse_maintenance_from_news(data[0]['title'], description)
                 except Exception as e:
                     self.bot.logger.pushError("[PRIVATE] 'checkGameNews' Error:", e)
                     return
@@ -301,7 +366,7 @@ class GranblueFantasy(commands.Cog):
                     section = inner.findChildren("section", class_="content", recursive=False)[0]
                     h1 = section.findChildren("h1", recursive=False)[0]
                     url = h1.findChildren("a", class_="change_news_trigger", recursive=False)[0]
-                    # retrieve news image
+                    # retrieve news image (if any)
                     try:
                         mb25 = section.findChildren("div", class_="mb25", recursive=False)[0]
                         href = mb25.findChildren("a", class_="change_news_trigger", recursive=False)[0]
