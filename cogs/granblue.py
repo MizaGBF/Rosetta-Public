@@ -176,17 +176,17 @@ class GranblueFantasy(commands.Cog):
     int: The character limit
     """
     def compute_news_description_character_limit(self, title : str) -> int:
-        if title.startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in title or 'Star Premium Draw Set On Sale' in title:
-            limit = 0
-        elif title.endswith(" Concluded"):
+        if title.startswith('Grand Blues #') or 'Surprise Special Draw Set On Sale' in title or 'Star Premium Draw Set On Sale' in title: # grand blues, suptix and scam news
+            limit = 0 # 0 = we'll ignore those news
+        elif title.endswith(" Concluded"): # event end
             limit = 40
-        elif title.endswith(" Premium Draw Update"):
+        elif title.endswith(" Premium Draw Update"): # gacha update
             limit = 100
-        elif title.endswith(" Maintenance Completed"):
+        elif title.endswith(" Maintenance Completed"): # maintenance end
             limit = 50
-        elif title.endswith(" Added to Side Stories"):
+        elif title.endswith(" Added to Side Stories"): # new side story
             limit = 30
-        elif title.endswith(" Underway!"):
+        elif title.endswith(" Underway!"): # event start
             limit = 30
         else:
             limit = 250
