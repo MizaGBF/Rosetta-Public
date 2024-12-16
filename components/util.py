@@ -12,7 +12,7 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 # Utility Component
 # ----------------------------------------------------------------------------------------------------------------
-# Feature a lot of utility functions
+# Feature a lot of utility functions and classes
 # ----------------------------------------------------------------------------------------------------------------
 
 class Util():
@@ -254,10 +254,10 @@ class Util():
     """
     def status(self) -> dict:
         return {
-            "Version": self.bot.VERSION,
-            "Python": "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
-            "OS": platform.platform(),
             "Uptime": self.uptime(),
+            "Version": self.bot.VERSION,
+            "Python": "{}, v{}.{}.{}".format(platform.python_implementation(), sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
+            "OS": platform.platform(),
             "CPU": "{:.2f}%".format(self.process.cpu_percent()),
             "Memory": "{:.1f}MB ({:.2f}%)".format(self.process.memory_full_info().uss / 1048576, self.process.memory_percent()).replace(".0M", "M").replace(".00%", "%").replace("0%", "%"),
             "Save": ("**Pending**" if self.bot.data.pending else "Ok"),
