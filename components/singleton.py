@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 class Singleton():
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def init(self) -> None:
         pass
@@ -67,7 +67,7 @@ A Modal class where you can set your own callback
 class CustomModal(disnake.ui.Modal):
     def __init__(self, bot : 'DiscordBot', title : str, custom_id : str, components : list, callback : Callable, extra : str = None) -> None:
         super().__init__(title=title, custom_id=custom_id, components=components)
-        self.bot = bot # bot reference
+        self.bot : 'DiscordBot' = bot # bot reference
         self.custom_callback = callback # our callback
         self.extra = extra # any extra info we can pass here. will be accessible from the interaction in the callback
 

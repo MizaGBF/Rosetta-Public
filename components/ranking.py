@@ -108,7 +108,7 @@ class Ranking():
     DB_VERSION = 5
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         # crew from config.json
         self.gbfgcrews = {}
         self.othercrews = {}

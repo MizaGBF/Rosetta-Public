@@ -1,3 +1,4 @@
+import types
 from typing import Any, Generator, Optional, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from contextlib import asynccontextmanager
@@ -11,6 +12,9 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 # This component is the interface with Granblue Fantasy (account wise) and other websites
 # ----------------------------------------------------------------------------------------------------------------
+
+# Type Aliases
+RequestResult : types.GenericAlias = dict|list|bytes|bool|None
 
 class Network():
     VERSION_REGEX = [ # possible regex to detect the GBF game version
@@ -31,7 +35,7 @@ class Network():
     DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION # default user agent, we add Rosetta name and version for websites which might have bot exceptions for it
         self.translator = GoogleTranslator(source='auto', target='en') # translator instance
         self.client = None
@@ -115,7 +119,7 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> dict|list|bytes|bool|None:
+    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> RequestResult:
         try:
             headers['Connection'] = 'keep-alive'
             # Add user agent
@@ -165,7 +169,7 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> dict|list|bytes|bool|None:
+    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> RequestResult:
         try:
             silent = True
             # don't proceed if the game is down
@@ -260,7 +264,7 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object
     """
-    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> dict|list|bytes|None:
+    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> RequestResult:
         try:
             # build the URL
             if path[:1] != "/": url = "https://gbf.wiki/" + path

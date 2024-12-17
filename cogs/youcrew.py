@@ -24,7 +24,7 @@ class YouCrew(commands.Cog):
     COLOR = 0xffce47
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def startTasks(self) -> None:
         self.bot.runTask('you:buff', self.checkGWBuff)

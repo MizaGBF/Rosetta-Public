@@ -13,7 +13,7 @@ import os
 
 class Emote():
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.app_emojis = {}
         self.unicode_emoji = {}
 

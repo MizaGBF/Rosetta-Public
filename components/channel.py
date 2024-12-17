@@ -12,7 +12,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 
 class Channel():
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.cache = {}
         self.announcements = [] # channels to send announcement to
         self.auto_publish = [] # channels to auto publish
@@ -161,7 +161,7 @@ class Channel():
     delay: Time in second before deletion
     all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
     """
-    async def clean(self, target : Union[disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[Union[int, float]] = None, all : bool = False) -> None:
+    async def clean(self, target : Union[disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[int|float] = None, all : bool = False) -> None:
         try:
             match target:
                 case disnake.ApplicationCommandInteraction()|disnake.ModalInteraction(): # interactions

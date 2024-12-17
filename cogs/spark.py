@@ -26,7 +26,7 @@ class Sparking(commands.Cog):
     MONTHLY_DAY = [31.0, 28.25, 31.0, 30.0, 31.0, 30.0, 31.0, 31.0, 30.0, 31.0, 30.0, 31.0]
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

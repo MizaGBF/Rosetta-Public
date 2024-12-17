@@ -15,7 +15,7 @@ class Ban():
     USE_BOT = 0b10000000
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def init(self) -> None:
         pass

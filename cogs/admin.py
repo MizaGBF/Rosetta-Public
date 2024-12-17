@@ -5,6 +5,7 @@ from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from ..components.ranking import GWDB
+    from ..components.network import RequestResult
 from cogs import DEBUG_SERVER_ID
 from datetime import datetime, timedelta
 import random
@@ -253,7 +254,7 @@ class Admin(commands.Cog):
         if count >= 30 or step <= 10: # if we passed 30 calls or our last step was under 10
             return current
         # request ID equals to current + step
-        data : dict|list|bytes|bool|None = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
+        data : 'RequestResult' = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
         match data:
             case "Maintenance": # game is down, quit
                 return None
@@ -702,7 +703,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="No accounts set", color=self.COLOR))
         else:
             # make a request to check the validity (if GBF is available)
-            r : dict|list|bytes|bool|None
+            r : 'RequestResult'
             if await self.bot.net.gbf_available():
                 r = await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
             else:

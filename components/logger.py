@@ -27,7 +27,7 @@ class Logger():
         DEBUG : 0xc7e046
     }
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         debug = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
         logging.basicConfig(level=logging.INFO)
         self.logger = None # logging object

@@ -1,11 +1,16 @@
 ﻿import disnake
 from disnake.ext import commands
 import asyncio
+import types
 from typing import Optional, Union, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from ..components.network import RequestResult
+    from ..components.gacha import CurrentGacha
 from datetime import datetime, timedelta
 import re
 from bs4 import BeautifulSoup
+from bs4 import element as bs4element
 from urllib.parse import quote, unquote
 import html
 import math
@@ -17,18 +22,22 @@ from views.url_button import UrlButton
 # All other Granblue Fantasy-related commands
 # ----------------------------------------------------------------------------------------------------------------
 
+# Type Aliases
+NewsResult : types.GenericAlias = list[str]
+ExtraDropData : types.GenericAlias = list[None|str]
+
 class GranblueFantasy(commands.Cog):
     """Granblue Fantasy Utility."""
-    COLOR = 0x34aeeb
-    COLOR_NEWS = 0x00b07b
+    COLOR : int = 0x34aeeb
+    COLOR_NEWS : int = 0x00b07b
     # Constants
-    SUMMON_ELEMENTS = ['fire','water','earth','wind','light','dark','misc']
-    DEFAULT_NEWS=8335
-    EXTRA_DROPS_TABLE = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'} # quest : element
-    XP_TABLE = [None, 30, 70, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7800, 8100, 8400, 8700, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 50000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 500000, 1000000, 1000000, 1200000, 1200000, 1200000, 1200000, 1200000, 1250000, 1250000, 1250000, 1250000, 1250000, 1300000, 1300000, 1300000, 1300000, 1300000, 1350000, 1350000, 1350000, 1350000, 1350000, 1400000, 1400000, 1400000, 1400000, 1400000, 1450000, 1450000, 1450000, 1450000, 1450000, 1500000, 1500000, 1500000, 1500000, 1500000, 1550000, 1550000, 1550000, 1550000, 1550000, 1600000, 1600000, 1600000, 1600000, 1600000, 1650000, 1650000, 1650000, 1650000, 0]
+    SUMMON_ELEMENTS : list[str] = ['fire','water','earth','wind','light','dark','misc']
+    DEFAULT_NEWS : int = 8335
+    EXTRA_DROPS_TABLE : dict[str, str] = {'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water', 'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'} # quest : element
+    XP_TABLE : list[None|str] = [None, 30, 70, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5250, 5500, 5750, 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7800, 8100, 8400, 8700, 9000, 9500, 10000, 10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000, 15500, 16000, 50000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 100000, 150000, 200000, 250000, 300000, 350000, 400000, 450000, 500000, 500000, 1000000, 1000000, 1200000, 1200000, 1200000, 1200000, 1200000, 1250000, 1250000, 1250000, 1250000, 1250000, 1300000, 1300000, 1300000, 1300000, 1300000, 1350000, 1350000, 1350000, 1350000, 1350000, 1400000, 1400000, 1400000, 1400000, 1400000, 1450000, 1450000, 1450000, 1450000, 1450000, 1500000, 1500000, 1500000, 1500000, 1500000, 1550000, 1550000, 1550000, 1550000, 1550000, 1600000, 1600000, 1600000, 1600000, 1600000, 1650000, 1650000, 1650000, 1650000, 0]
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def startTasks(self) -> None:
         self.bot.runTask('granblue:watcher', self.granblue_watcher)
@@ -37,16 +46,17 @@ class GranblueFantasy(commands.Cog):
     Bot Task checking for new content related to GBF
     """
     async def granblue_watcher(self) -> None:
-        acc_check = False
-        maint_check = False # False = no maintenance on going, True = maintenance on going
-        v = None
+        acc_check : bool = False
+        maint_check : bool = False # False = no maintenance on going, True = maintenance on going
+        v : int|None = None
         await asyncio.sleep(30)
         while True:
             # we only check every 5 minutes
             try:
-                t = int(self.bot.util.UTC().timestamp()) % 300
+                t : int = int(self.bot.util.UTC().timestamp()) % 300
                 await asyncio.sleep(355 - t)
-                if not self.bot.running: return
+                if not self.bot.running:
+                    return
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
                 return
@@ -351,26 +361,27 @@ class GranblueFantasy(commands.Cog):
     list: List of new news
     """
     async def checkNews(self) -> list:
-        res = [] # news list
-        ret = [] # new news articles to return
+        res : list[NewsResult] = [] # news list
+        ret : list[NewsResult] = [] # new news articles to return
         # retrieve news page
-        data = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
+        data : 'RequestResult' = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
         if data is not None:
-            soup = BeautifulSoup(data, 'html.parser')
+            soup : BeautifulSoup = BeautifulSoup(data, 'html.parser')
             # extract articles
-            at = soup.find_all("article", class_="scroll_show_box")
+            at : bs4element.ResultSet = soup.find_all("article", class_="scroll_show_box")
             try:
+                a : bs4element.Tag
                 for a in at:
                     # get content and url
-                    inner = a.findChildren("div", class_="inner", recursive=False)[0]
-                    section = inner.findChildren("section", class_="content", recursive=False)[0]
-                    h1 = section.findChildren("h1", recursive=False)[0]
-                    url = h1.findChildren("a", class_="change_news_trigger", recursive=False)[0]
+                    inner : bs4element.Tag = a.findChildren("div", class_="inner", recursive=False)[0]
+                    section : bs4element.Tag = inner.findChildren("section", class_="content", recursive=False)[0]
+                    h1 : bs4element.Tag = section.findChildren("h1", recursive=False)[0]
+                    url : bs4element.Tag = h1.findChildren("a", class_="change_news_trigger", recursive=False)[0]
                     # retrieve news image (if any)
                     try:
-                        mb25 = section.findChildren("div", class_="mb25", recursive=False)[0]
-                        href = mb25.findChildren("a", class_="change_news_trigger", recursive=False)[0]
-                        img = href.findChildren("img", recursive=False)[0].attrs['src']
+                        mb25 : bs4element.Tag = section.findChildren("div", class_="mb25", recursive=False)[0]
+                        href : bs4element.Tag = mb25.findChildren("a", class_="change_news_trigger", recursive=False)[0]
+                        img : str = href.findChildren("img", recursive=False)[0].attrs['src']
                         if not img.startswith('http'):
                             if img.startswith('/'): img = 'https://granbluefantasy.jp' + img
                             else: img = 'https://granbluefantasy.jp/' + img
@@ -380,9 +391,11 @@ class GranblueFantasy(commands.Cog):
                     res.append([url.attrs['href'], url.text, img])
 
                 if 'news_url' in self.bot.data.save['gbfdata']: # if data exists in memory
-                    foundNew = False
+                    foundNew : bool = False
+                    i : int
+                    j : int
                     for i in range(0, len(res)): # process detected news
-                        found = False
+                        found : bool = False
                         for j in range(0, len(self.bot.data.save['gbfdata']['news_url'])): # check if it exists
                             if res[i][0] == self.bot.data.save['gbfdata']['news_url'][j][0]:
                                 found = True
@@ -405,17 +418,18 @@ class GranblueFantasy(commands.Cog):
     """
     async def check4koma(self) -> None:
         # retrieve gran blues page
-        data = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
-        if data is None: return
+        data : 'RequestResult' = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
+        if data is None:
+            return
         # get last one
-        last = data['list'][0]
+        last : int = data['list'][0]
         if '4koma' in self.bot.data.save['gbfdata']: # check the one in memory
             if last is not None and int(last['id']) > int(self.bot.data.save['gbfdata']['4koma']): # last one is newer
                 self.bot.data.save['gbfdata']['4koma'] = last['id'] # we update
                 self.bot.data.pending = True
                 # and post it
-                title = last['title_en']
-                mtl = False
+                title : str|None = last['title_en']
+                mtl : bool = False
                 if title == "": # translate title if no english title
                     try:
                         title = self.bot.net.translate(last['title'])
@@ -434,27 +448,31 @@ class GranblueFantasy(commands.Cog):
     --------
     list: List of ending time and element. Element is None if no extra drops is on going
     """
-    async def checkExtraDrops(self) -> Optional[list]:
+    async def checkExtraDrops(self) -> ExtraDropData|None:
         try:
-            c = self.bot.util.JST()
+            c : datetime = self.bot.util.JST()
             # retrieve data (if it exists)
-            extra = self.bot.data.save['gbfdata'].get('extradrop', None)
+            extra : ExtraDropData|None = self.bot.data.save['gbfdata'].get('extradrop', None)
             if extra is None or c > extra[0]: # outdated/not valid
                 # call endpoint
-                r = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
+                r : 'RequestResult' = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
                 if r is None: # no extra
                     self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to None to make it NOT VALID
                     self.bot.data.pending = True
                     return None
                 else:
-                    data = [None, None]
+                    data : ExtraDropData = [None, None]
                     data[0] =  datetime.strptime(r['message_info']['ended_at'].replace(' (JST)', '').replace('a.m.', 'AM').replace('p.m.', 'PM'), '%I:%M %p, %b %d, %Y') # store end time
+                    e : dict[str, str]
                     for e in r['quest_list']: # check quest name for element match
-                        cs = e['quest_name'].split(' ')
+                        cs : list[str] = e['quest_name'].split(' ')
+                        s : str
                         for s in cs:
-                            data[1] = self.EXTRA_DROPS_TABLE.get(s, None)
-                            if data[1] is not None: break
-                        if data[1] is not None: break
+                            data[1] : str|None = self.EXTRA_DROPS_TABLE.get(s, None)
+                            if data[1] is not None:
+                                break
+                        if data[1] is not None:
+                            break
                     # set in memory
                     self.bot.data.save['gbfdata']['extradrop'] = data
                     self.bot.data.pending = True
@@ -479,10 +497,10 @@ class GranblueFantasy(commands.Cog):
     str: Resulting string. Intended to be appended to an embed description.
     """
     async def getGBFInfoTimers(self, inter: disnake.GuildCommandInteraction, current_time : datetime) -> str:
-        output = [] # will container strings before .join()
+        output : list[str] = [] # will container strings before .join()
         # in this function, we simply call various info functions from various cog and component and compile the result in one big string
         try:
-            buf = (await self.bot.net.gbf_maintenance_status())[0]
+            buf : str = (await self.bot.net.gbf_maintenance_status())[0]
             if len(buf) > 0:
                 output.append(buf)
                 output.append('\n')
@@ -490,11 +508,11 @@ class GranblueFantasy(commands.Cog):
             pass
 
         try:
-            buf = await self.bot.gacha.get()
+            gdata : CurrentGacha = await self.bot.gacha.get()
             if len(buf) > 0:
-                output.append("{} Current {} ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.command2mention('gbf gacha'), self.bot.util.delta2str(buf[1]['time'] - buf[0], 2)))
-                if buf[1]['time'] != buf[1]['timesub']:
-                    output.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(buf[1]['timesub'] - buf[0], 2)))
+                output.append("{} Current {} ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.command2mention('gbf gacha'), self.bot.util.delta2str(gdata[1]['time'] - gdata[0], 2)))
+                if gdata[1]['time'] != gdata[1]['timesub']:
+                    output.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(gdata[1]['timesub'] - gdata[0], 2)))
                 output.append('\n')
         except:
             pass
@@ -528,9 +546,9 @@ class GranblueFantasy(commands.Cog):
             pass
 
         try:
-            buf = await self.checkExtraDrops()
-            if buf[1] is not None:
-                output.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(buf[1]), self.bot.util.delta2str(buf[0] - current_time, 2)))
+            exdata : ExtraDropData|None = await self.checkExtraDrops()
+            if exdata[1] is not None:
+                output.append("{} Extra Drops end in **{}**\n".format(self.bot.emote.get(exdata[1]), self.bot.util.delta2str(exdata[0] - current_time, 2)))
         except:
             pass
 

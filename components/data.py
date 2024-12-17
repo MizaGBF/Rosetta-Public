@@ -47,7 +47,7 @@ class Data():
     ]
     
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.bot.drive = None
         self.debug = bot.debug_mode or bot.test_mode
         self.config = {}

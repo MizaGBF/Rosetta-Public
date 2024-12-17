@@ -1,7 +1,9 @@
 ﻿import disnake
 from disnake.ext import commands
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from ..components.util import BotCommandSearch
 import math
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -15,7 +17,7 @@ class General(commands.Cog):
     COLOR : int = 0xd9d927
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     """bug_report_callback()
     CustomModal callback
@@ -76,7 +78,7 @@ class General(commands.Cog):
                 if command.name.lower() == "owner" or (command.name.lower() == "mod" and not is_mod):
                     continue
                 # retrieve command name, description...
-                rs : list[list[None|int|str]] = self.bot.util.process_command(command)
+                rs : list['BotCommandSearch'] = self.bot.util.process_command(command)
                 # Search user terms inside these strings
                 s : str
                 r : list[None|int|str]
@@ -118,12 +120,13 @@ class General(commands.Cog):
     async def changelog(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post the bot changelog"""
         await inter.response.defer(ephemeral=True)
-        msgs = []
+        msgs : list[str] = []
         # loop over changelog
+        c : str
         for c in self.bot.CHANGELOG:
             # add command mentions
             # ` is the character used as delimiter
-            e = c.split('`')
+            e : list[str] = c.split('`')
             for i in range(1, len(e), 2):
                 e[i] = self.bot.util.command2mention(e[i])
                 if not e[i].startswith('<'): e[i] = '`' + e[i] + '`'
@@ -162,15 +165,16 @@ class General(commands.Cog):
         """Process a mathematical expression. Support variables (Example: cos(a + b) / c, a = 1, b=2,c = 3)."""
         try:
             await inter.response.defer()
-            m = expression.split(",") # split to separate variable definitions
-            d = {} # variable container
+            m : list[str] = expression.split(",") # split to separate variable definitions
+            d : dict[str, float] = {} # variable container
             for i in range(1, len(m)): # process the variables if any
                 x = m[i].replace(" ", "").split("=") # remove spaces and split around the equal
                 if len(x) == 2: d[x[0]] = float(x[1])
                 else: raise Exception('')
-            msgs = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))] # expression and result (using Calc module)
+            msgs : list[str] = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))] # expression and result (using Calc module)
             if len(d) > 0: # add variables
                 msgs.append("\nwith:\n")
+                k : str
                 for k in d:
                     msgs.append("{}".format(k))
                     msgs.append(" = ")
@@ -193,7 +197,7 @@ class General(commands.Cog):
         try:
             if count == '': # retrieve user roll count if they didn't pass a number
                 if str(inter.author.id) in self.bot.data.save['spark']:
-                    s = self.bot.data.save['spark'][str(inter.author.id)]
+                    s : list[int] = self.bot.data.save['spark'][str(inter.author.id)]
                     count = (s[0] // 300) + s[1] + s[2] * 10
                 else:
                     raise Exception("Please specify a valid number of rolls")
@@ -201,11 +205,14 @@ class General(commands.Cog):
                 raise Exception("Please specify a valid number of rolls")
             else:
                 count = int(count)
-            msgs = []
+            msgs : list[str] = []
+            ssrrate : float
+            rateups : list[float]
             ssrrate, rateups = self.bot.gacha.allRates(banner) # retrieve rates
             if ssrrate is None:
                 raise Exception("An error occured or no GBF gacha data is available.\nConsider using {} instead in the meantime.".format(self.bot.util.command2mention('utility dropchance')))
             # for each rate, we do a simple binomial calcul to determine the chance
+            r : float
             for r in rateups:
                 msgs.append("{:} **{:.3f}%** ▫️ {:.3f}%\n".format(self.bot.emote.get('SSR'), r, 100*(1-math.pow(1-r*0.01, count))))
             if len(msgs) > 0:
@@ -221,6 +228,7 @@ class General(commands.Cog):
         """Calculate your chance of dropping an item."""
         await inter.response.defer(ephemeral=True)
         try:
+            chance : float
             # parse chance (we support either 10% or 0.1 for example)
             if chance.endswith('%'):
                 chance = float(chance[:-1]) / 100
@@ -238,12 +246,13 @@ class General(commands.Cog):
     async def fortunechance(self, inter: disnake.MessageCommandInteraction, cards : str = commands.Param(description="Your list of cards, separated by spaces")) -> None:
         """Calculate your chance at the GBF summer fortune game from Summer 2021"""
         await inter.response.defer(ephemeral=True)
-        cards = cards.split(" ")
-        tier3 = []
-        tier2 = []
-        tier1 = []
+        card_list : list[str] = cards.split(" ")
+        tier3 : list[str] = []
+        tier2 : list[str] = []
+        tier1 : list[str] = []
         # we don't check tier 4 as at least 2 were guaranted
-        for c in cards:
+        c : str
+        for c in card_list:
             try:
                 if c == "": continue
                 if len(c) > 3 or int(c) < 0 or not c.isdigit(): raise Exception()
@@ -251,7 +260,7 @@ class General(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid card number `{}`".format(c), color=self.COLOR))
                 return
             # convert card number to string
-            sc = c.zfill(3)
+            sc : str = c.zfill(3)
             # retrieve relevant part of the card number for each tier
             if sc[:2] not in tier3: tier3.append(sc[:2])
             if sc[1:] not in tier2: tier2.append(sc[1:])
@@ -264,10 +273,11 @@ class General(commands.Cog):
         await inter.response.defer(ephemeral=True)
         try:
             # retrieve currency details
-            data = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml")).decode('utf-8').split('<Cube time="')
+            data : str = (await self.bot.net.request("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml")).decode('utf-8').split('<Cube time="')
             # calcul yen, euro and dollar rates
-            rates = ([None, None], [None, None])
-            date = data[1].split('">', 1)[0]
+            rates : tuple[list[None|float], list[None|float]] = ([None, None], [None, None])
+            date : str = data[1].split('">', 1)[0]
+            i : int
             for i in range(0, 2):
                 rates[0][i] = float(data[i+1].split('<Cube currency="JPY" rate="', 1)[1].split('"/>', 1)[0])
                 rates[1][i] = rates[0][i] / float(data[i+1].split('<Cube currency="USD" rate="', 1)[1].split('"/>', 1)[0])
@@ -311,6 +321,7 @@ class General(commands.Cog):
         try:
             await inter.response.defer()
             # read message
+            msg : str
             if len(message.embeds) > 0 and 'description' in message.embeds[0].to_dict():
                 msg = message.embeds[0].description # read embed description if it got one
             elif len(message.content) > 0:
@@ -320,7 +331,7 @@ class General(commands.Cog):
             if len(msg) > 3500:
                 raise Exception('Message too long')
             # translate
-            t = self.bot.net.translate(msg)
+            t : str = self.bot.net.translate(msg)
             if len(t) > 3800:
                 raise Exception('Message too long')
             await inter.edit_original_message(embed=self.bot.embed(title="Google Translate", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, t), color=self.COLOR))

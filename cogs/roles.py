@@ -15,7 +15,7 @@ class Roles(commands.Cog):
     COLOR = 0x17e37a
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

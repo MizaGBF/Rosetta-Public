@@ -1,5 +1,6 @@
 ﻿import disnake
 import asyncio
+import types
 from typing import Union, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
@@ -15,12 +16,16 @@ import html
 # Feature a lot of utility functions and classes
 # ----------------------------------------------------------------------------------------------------------------
 
+# Type Aliases
+BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
+BotCommandSearch : types.GenericAlias = list[None|int|str]
+
 class Util():
     JSTDIFF = 32400 # JST <-> UTC difference in seconds
     MULTIPLIER_1000 = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.starttime = self.UTC() # used to check the bot uptime
         # bot process
         self.process = psutil.Process(os.getpid())
@@ -175,7 +180,7 @@ class Util():
     --------
     timedelta: Bot uptime
     """
-    def uptime(self, as_string : bool = True) -> Union[str, timedelta]: # get the uptime
+    def uptime(self, as_string : bool = True) -> str|timedelta: # get the uptime
         # get elapsed time between now and the start
         delta = self.UTC() - self.starttime
         if as_string:
@@ -254,7 +259,7 @@ class Util():
     --------
     dict: Dict of string
     """
-    def status(self) -> dict:
+    def status(self) -> dict[str, str]:
         return {
             "Uptime": self.uptime(),
             "Version": self.bot.VERSION,
@@ -473,7 +478,7 @@ class Util():
     --------
     str: Converted string
     """
-    def valToStr(self, s : Union[int, float], p : int = 1) -> str:
+    def valToStr(self, s : int|float, p : int = 1) -> str:
         if s is None: # value is None
             return "n/a"
         if isinstance(s, int): # convert int to float
@@ -558,9 +563,9 @@ class Util():
     ----------
     list: Contains [full name, id, description]
     """
-    def process_command(self, cmd : disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand) -> list[list[None|int|str]]:
+    def process_command(self, cmd : BotCommand) -> list[BotCommandSearch]:
         has_sub : bool = False
-        results : list[list[None|int|str]] = []
+        results : list[BotCommandSearch] = []
         opt : disnake.app_commands.Option
         # check if command has sub command(s)
         try:
@@ -574,7 +579,7 @@ class Util():
         if has_sub:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
-                    rs : list[list[None|int|str]] = self.process_command(opt) # recursive call for that child
+                    rs : list[BotCommandSearch] = self.process_command(opt) # recursive call for that child
                     for r in rs: # process result
                         r[0] = cmd.name + " " + r[0]
                         try:
@@ -627,7 +632,7 @@ class Util():
     ----------
     str: Timestamp string
     """
-    def version2str(self, version_number : Union[str, int]) -> str: # convert gbf version number to its timestamp
+    def version2str(self, version_number : str|int) -> str: # convert gbf version number to its timestamp
         try:
             return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # add JST
         except:

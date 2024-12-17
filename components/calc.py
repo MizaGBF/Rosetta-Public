@@ -1,4 +1,4 @@
-from typing import  Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import math
 
@@ -10,13 +10,13 @@ import math
 # ----------------------------------------------------------------------------------------------------------------
 
 class Calc():
-    FUNCS = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg'] # supported functions
+    FUNCS : list[str] = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg'] # supported functions
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
-        self.expression = ""
-        self.index = 0
-        self.vars = {}
+        self.bot : 'DiscordBot' = bot
+        self.expression : str = ""
+        self.index : int = 0
+        self.vars : dict[str, float] = {}
 
     def init(self) -> None:
         pass
@@ -48,7 +48,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def evaluate(self, expression : str = "", vars : dict = {}) -> Union[int, float]:
+    def evaluate(self, expression : str = "", vars : dict = {}) -> int|float:
         # start by resetting calculator
         self.reset()
         # prepare expression
@@ -58,12 +58,12 @@ class Calc():
         for func in self.FUNCS: # check variable names for dupes with function names
             if func in self.vars: raise Exception("Variable name '{}' can't be used".format(func))
         # parse expression and get the result
-        value = float(self.parse())
+        value : float = float(self.parse())
         # interruption check
         if self.isNotDone():
             raise Exception("Unexpected character '{}' found at index {}".format(self.peek(), self.index))
         # adjust float if needed and convert to int
-        epsilon = 0.0000000001
+        epsilon : float = 0.0000000001
         if int(value) == value:
             return int(value)
         elif int(value + epsilon) != int(value):
@@ -99,10 +99,10 @@ class Calc():
     --------
     float or int: Result
     """
-    def parse(self) -> Union[int, float]:
-        values = [self.multiply()] # start by calling multiply
+    def parse(self) -> int|float:
+        values : list[float] = [self.multiply()] # start by calling multiply
         while True:
-            c = self.peek() # get next character
+            c : str = self.peek() # get next character
             if c in ['+', '-']: # as long as it's a + or - operator
                 self.index += 1
                 if c == '-': values.append(- self.multiply()) # if -, minus multiply
@@ -118,10 +118,10 @@ class Calc():
     --------
     float or int: Result
     """
-    def multiply(self) -> Union[int, float]:
-        values = [self.parenthesis()] # call parenthesis first
+    def multiply(self) -> int|float:
+        values : list[float] = [self.parenthesis()] # call parenthesis first
         while True:
-            c = self.peek() # check operator
+            c : str = self.peek() # check operator
             if c in ['*', 'x']: # multiply
                 self.index += 1
                 values.append(self.parenthesis())
@@ -148,8 +148,10 @@ class Calc():
                 values[-1] = math.factorial(values[-1])
             else:
                 break
-        value = 1.0
-        for factor in values: value *= factor
+        value : float = 1.0
+        factor : float
+        for factor in values:
+            value *= factor
         return value
 
     """parenthesis()
@@ -163,10 +165,10 @@ class Calc():
     --------
     float or int: Result
     """
-    def parenthesis(self) -> Union[int, float]:
+    def parenthesis(self) -> int|float:
         if self.peek() == '(': # check if next character is an open parenthesis
             self.index += 1
-            value = self.parse() # then parse inside that parenthesis
+            value : int|float = self.parse() # then parse inside that parenthesis
             if self.peek() != ')': # we expect the parenthesis to be closed after
                 raise Exception("No closing parenthesis foundat position {}".format(self.index))
             self.index += 1
@@ -181,7 +183,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def negative(self) -> Union[int, float]:
+    def negative(self) -> int|float:
         if self.peek() == '-': # if minus, multiply next value with -1
             self.index += 1
             return -1 * self.parenthesis()
@@ -195,7 +197,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def value(self) -> Union[int, float]:
+    def value(self) -> int|float:
         if self.peek() in '0123456789.': # check if digit or dot
             return self.number()
         else: # else expect variable or function
@@ -212,17 +214,17 @@ class Calc():
     --------
     float or int: Result
     """
-    def variable_or_function(self) -> Union[int, float]:
-        var = ''
+    def variable_or_function(self) -> int|float:
+        var : str = ''
         while self.isNotDone(): # retrieve var/func name
-            c = self.peek()
+            c : str = self.peek()
             if c.lower() in '_abcdefghijklmnopqrstuvwxyz0123456789':
                 var += c
                 self.index += 1
             else:
                 break
         
-        value = self.vars.get(var, None) # check if variable
+        value : float|None = self.vars.get(var, None) # check if variable
         if value == None: # it's not
             # check if function
             if var not in self.FUNCS:
@@ -276,10 +278,10 @@ class Calc():
     --------
     float or int: Result
     """
-    def number(self) -> Union[int, float]:
-        strValue = []
-        decimal_found = False
-        c = ''
+    def number(self) -> int|float:
+        strValue : list[str] = []
+        decimal_found : bool = False
+        c : str = ''
         # read number
         while self.isNotDone():
             c = self.peek()

@@ -1,6 +1,7 @@
 ﻿import disnake
 from disnake.ext import commands
 import asyncio
+import types
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
@@ -24,11 +25,23 @@ from views.rockpaperscissor import RPS
 # Fun commands
 # ----------------------------------------------------------------------------------------------------------------
 
+# Type Aliases
+ScratcherItem : types.GenericAlias = tuple[str, str]
+ScratcherTierList : types.GenericAlias = list[ScratcherItem]
+ScratcherLootTable : types.GenericAlias = dict[int, ScratcherTierList]
+FortuneCardList : types.GenericAlias = list[str]
+FortuneWinningNumberList : types.GenericAlias = list[str]
+FortuneWinningNumberPerTier : types.GenericAlias = tuple[FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList]
+FortuneWinningPattern : types.GenericAlias = tuple[int, int]
+FortuneWinningPatternPerTier : types.GenericAlias = tuple[FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern]
+RandomCharacterStrings : types.GenericAlias = tuple[str, str, str]
+RandomCharacterContainer : types.GenericAlias = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
+
 class Games(commands.Cog):
     """Granblue-themed (or not) Games and more."""
     COLOR : int = 0xeb6b34
     # Scratcher constants
-    SCRATCHER_LOOT : dict[int, list[tuple[str, str]]] = {
+    SCRATCHER_LOOT : ScratcherLootTable = {
         100 : [('Siero Ticket', 'item/article/s/30041.jpg')],
         1000 : [('Sunlight Stone', 'item/evolution/s/20014.jpg'), ('Gold Brick', 'item/evolution/s/20004.jpg'), ('Damascus Ingot', 'item/evolution/s/20005.jpg')],
         24000 : [('Murgleis', 'weapon/s/1040004600.jpg'), ('Benedia', 'weapon/s/1040502500.jpg'), ('Gambanteinn', 'weapon/s/1040404300.jpg'), ('Love Eternal', 'weapon/s/1040105400.jpg'), ('AK-4A', 'weapon/s/1040004600.jpg'), ('Reunion', 'weapon/s/1040108200.jpg'), ('Ichigo-Hitofuri', 'weapon/s/1040910000.jpg'), ('Taisai Spirit Bow', 'weapon/s/1040708700.jpg'), ('Unheil', 'weapon/s/1040809100.jpg'), ('Sky Ace', 'weapon/s/1040911500.jpg'), ('Ivory Ark', 'weapon/s/1040112500.jpg'), ('Blutgang', 'weapon/s/1040008700.jpg'), ('Eden', 'weapon/s/1040207000.jpg'), ('Parazonium', 'weapon/s/1040108700.jpg'), ('Ixaba', 'weapon/s/1040906400.jpg'), ('Blue Sphere', 'weapon/s/1040410000.jpg'), ('Certificus', 'weapon/s/1040309000.jpg'), ('Fallen Sword', 'weapon/s/1040014300.jpg'), ('Mirror-Blade Shard', 'weapon/s/1040110600.jpg'), ('Galilei\'s Insight', 'weapon/s/1040211600.jpg'), ('Purifying Thunderbolt', 'weapon/s/1040709000.jpg'), ('Vortex of the Void', 'weapon/s/1040212700.jpg'), ('Sacred Standard', 'weapon/s/1040213400.jpg'), ('Bab-el-Mandeb', 'weapon/s/1040004600.jpg'), ('Cute Ribbon', 'weapon/s/1040605900.jpg'), ('Kerak', 'weapon/s/1040812000.jpg'), ('Sunya', 'weapon/s/1040811800.jpg'), ('Fist of Destruction', 'weapon/s/1040612700.jpg'), ('Yahata\'s Naginata', 'weapon/s/1040312900.jpg'), ('Cerastes', 'weapon/s/1040215300.jpg'), ('World Ender', 'weapon/s/1040020900.jpg'), ('Ouroboros Prime', 'weapon/s/1040418600.jpg'), ('Evanescence', 'weapon/s/1040022000.jpg'), ('Knight of Ice', 'weapon/s/1040115600.jpg'), ('Atlantis', 'weapon/s/1040115600.jpg'), ('Skeletal Eclipse', 'weapon/s/1040216900.jpg'), ('Pain and Suffering', 'weapon/s/1040314300.jpg'), ('Radiant Rinne', 'weapon/s/1040813700.jpg'), ('Lord of Flames', 'weapon/s/1040023700.jpg'), ('Claíomh Solais Díon', 'weapon/s/1040024200.jpg'), ('Firestorm Scythe', 'weapon/s/1040314900.jpg'), ('Calamitous Aquashade', 'weapon/s/1040315500.jpg'), ('Crimson Scale', 'weapon/s/1040315900.jpg'), ('Landslide Scepter', 'weapon/s/1040420500.jpg'), ('Harmonia', 'weapon/s/1040814500.jpg'), ('Eternal Signature', 'weapon/s/1040116600.jpg'), ('Piercing Galewing', 'weapon/s/1040116800.jpg'), ('Kaguya\'s Folding Fan', 'weapon/s/1040117200.jpg'), ('Gospel Of Water And Sky', 'weapon/s/1040117800.jpg'), ('Overrider', 'weapon/s/1040218900.jpg'), ('Imperious Fury', 'weapon/s/1040617300.jpg'), ('Pillardriver', 'weapon/s/1040618200.jpg'), ('Diaitesia', 'weapon/s/1040815700.jpg'), ('Efes', 'weapon/s/1040025900.jpg'), ('Swan', 'weapon/s/1040318400.jpg'), ('Phoenix\'s Torch', 'weapon/s/1040422700.jpg'), ('Causality Driver', 'weapon/s/1040916700.jpg'), ('Bloodwrought Coral', 'weapon/s/1040916800.jpg'), ('Agni', 'summon/s/2040094000.jpg'), ('Varuna', 'summon/s/2040100000.jpg'), ('Titan', 'summon/s/2040084000.jpg'), ('Zephyrus', 'summon/s/2040098000.jpg'), ('Zeus', 'summon/s/2040080000.jpg'), ('Hades', 'summon/s/2040090000.jpg'), ('Shiva', 'summon/s/2040185000.jpg'), ('Europa', 'summon/s/2040225000.jpg'), ('Godsworn Alexiel', 'summon/s/2040205000.jpg'), ('Grimnir', 'summon/s/2040261000.jpg'), ('Lucifer', 'summon/s/2040056000.jpg'), ('Bahamut', 'summon/s/2040030000.jpg'), ('Michael', 'summon/s/2040306000.jpg'), ('Gabriel', 'summon/s/2040311000.jpg'), ('Uriel', 'summon/s/2040203000.jpg'), ('Raphael', 'summon/s/2040202000.jpg'), ('Metatron', 'summon/s/2040330000.jpg'), ('Sariel', 'summon/s/2040327000.jpg'), ('Belial', 'summon/s/2040347000.jpg'), ('Beelzebub', 'summon/s/2040408000.jpg'), ('Yatima', 'summon/s/2040417000.jpg'), ('Triple Zero', 'summon/s/2040425000.jpg')],
@@ -56,7 +69,7 @@ class Games(commands.Cog):
     }
     
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
@@ -187,7 +200,7 @@ class Games(commands.Cog):
         selected : dict[tuple[str, str], int] = {}
         nloot : int = random.randint(4, 5) # number of different items (4 or 5)
         n : int
-        item : tuple[str, str]
+        item : ScratcherItem
         while len(selected) < nloot:
             # dice roll
             if betterScratcher:
@@ -222,8 +235,8 @@ class Games(commands.Cog):
             selected[item] = 0
         
         # build the scratch grid
-        grid : list[tuple[str, str]] = []
-        keys : list[tuple[str, str]] = list(selected.keys())
+        grid : list[ScratcherItem] = []
+        keys : list[ScratcherItem] = list(selected.keys())
         for item in keys: # add all our loots once
             grid.append(item)
             selected[item] = 1
@@ -297,9 +310,9 @@ class Games(commands.Cog):
         - List of cards
         - List of tier winning digits
     """
-    async def genLoto(self) -> tuple[list[str], tuple[list[str], ...]]:
+    async def genLoto(self) -> tuple[FortuneCardList, FortuneWinningNumberPerTier]:
         # generate 13 cards
-        cards : list[str] = []
+        cards : FortuneCardList = []
         while len(cards) < 13:
             if len(cards) < 10:
                 c : str = str(10 * random.randint(0, 99) + len(cards) % 10).zfill(3) # generate unique last digit
@@ -311,8 +324,8 @@ class Games(commands.Cog):
                     random.shuffle(cards)
             await asyncio.sleep(0)
         # generate winning numbers for each tiers
-        winning : tuple[list[str], ...] = ([], [], [], []) # tier 1 to 4
-        patterns : tuple[tuple[int, int], ...] = ((3, 2), (2, 2), (2, 3), (1, 2)) # (number of digits, number of winning numbers)
+        winning : FortuneWinningNumberPerTier = ([], [], [], []) # tier 1 to 4
+        patterns : FortuneWinningPatternPerTier = ((3, 2), (2, 2), (2, 3), (1, 2)) # (number of digits, number of winning numbers)
         tier : int
         pattern : tuple[int, int]
         for tier, pattern in enumerate(patterns):
@@ -347,7 +360,7 @@ class Games(commands.Cog):
         - Description string
         - Thumbnail url
     """
-    async def printLoto(self, revealedCards : list[str], revealedWinning : tuple[list[str], ...], prize : list[int], total : bool = False) -> tuple[str, str|None]:
+    async def printLoto(self, revealedCards : FortuneCardList, revealedWinning : FortuneWinningNumberPerTier, prize : list[int], total : bool = False) -> tuple[str, str|None]:
         desc : list[str] = []
         thumb : str|None = None
         i : int
@@ -413,16 +426,16 @@ class Games(commands.Cog):
     --------
     int: Prize tier (0 = lost)
     """
-    def checkLotoWin(self, card : str, winning : tuple[list[str], ...]) -> int:
-        i : int
-        for i in range(0, 4): # tier (0=t1, 1=t2, etc...)
-            match i:
+    def checkLotoWin(self, card : str, winning : FortuneWinningNumberPerTier) -> int:
+        tier : int
+        for tier in range(0, 4): # tier (0=t1, 1=t2, etc...)
+            match tier:
                 case 0: x = card
                 case 1: x = card[1:]
                 case 2: x = card[:2]
                 case 3: x = card[2]
-            if x in winning[i]:
-                return i + 1
+            if x in winning[tier]:
+                return tier + 1
         return 0
 
     @game.sub_command()
@@ -787,7 +800,7 @@ class Games(commands.Cog):
         """Generate a random GBF character"""
         await inter.response.defer()
         seed : int = (inter.author.id + int(self.bot.util.UTC().timestamp()) // 86400) # create seed based on user id + day
-        values : dict[str, tuple[tuple[str, str, str], int, bool, int|None]] = {
+        values : RandomCharacterContainer = {
             'Rarity' : (('SSR', 'SR', 'R'), 3, True, None), # random strings, modulo to use, bool to use emote.get, seed needed to enable
             'Race' : (('Human', 'Erune', 'Draph', 'Harvin', 'Primal', 'Other'), 6, False, None),
             'Element' : (('fire', 'water', 'earth', 'wind', 'light', 'dark'), 6, True, None),

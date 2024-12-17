@@ -14,7 +14,7 @@ class Moderation(commands.Cog):
     COLOR = 0x2eced1
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     @commands.user_command(name="Profile Picture")
     @commands.default_member_permissions(send_messages=True, read_messages=True)

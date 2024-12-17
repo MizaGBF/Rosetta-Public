@@ -31,7 +31,7 @@ class DreadBarrage(commands.Cog):
     ]
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def startTasks(self) -> None:
         pass

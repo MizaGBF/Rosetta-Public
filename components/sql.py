@@ -47,7 +47,7 @@ class Database():
 
 class SQL():
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.db = {} # sql files
         self.lock = asyncio.Lock() # global lock
 

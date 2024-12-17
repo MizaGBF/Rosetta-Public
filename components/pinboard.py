@@ -12,7 +12,7 @@ from views.url_button import UrlButton
 class Pinboard():
     COLOR = 0xf20252
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.bot.reaction_hooks['pinboard'] = self.pin # hook pin function
         self.cache = [] # store pinned messages until reboot
 

@@ -1,5 +1,6 @@
 ﻿import disnake
 import asyncio
+import types
 from typing import Union, Optional, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import random
@@ -14,6 +15,10 @@ from views.roll_tap import Tap
 # Also provide a simulator for games
 # ----------------------------------------------------------------------------------------------------------------
 
+# Type Aliases
+GachaData : types.GenericAlias = dict # TBD
+CurrentGacha : types.GenericAlias = list[timedelta|GachaData]
+
 class Gacha():
     ZODIAC_WPN = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius'] # for the twelve generals detection, gotta update it yearly
     CLASSIC_COUNT = 2 # number of classic banners
@@ -22,7 +27,7 @@ class Gacha():
     SUMMON_KIND = "S"
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def init(self) -> None:
         pass
@@ -36,8 +41,8 @@ class Gacha():
         - timedelta: Remaining time
         - dict: Gacha data
     """
-    async def get(self) -> list:
-        c = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=70) # current time, a bit in the past to ensure it's updated later
+    async def get(self) -> CurrentGacha:
+        c : datetime = self.bot.util.JST().replace(microsecond=0) - timedelta(seconds=70) # current time, a bit in the past to ensure it's updated later
         # we check:
         # - if gacha data doesn't exist
         # - if gacha data is outdated
@@ -441,7 +446,7 @@ class Gacha():
         float: ssr rate, return None if error
         list: Rate list, return None if error
     """
-    def allRates(self, index : int) -> tuple:
+    def allRates(self, index : int) -> tuple[float, list[float]]:
         try:
             r = []
             for rate in list(self.bot.data.save['gbfdata']['gacha']['banners'][index]['list'][-1]['list'].keys()): # SSR list
@@ -564,7 +569,7 @@ class GachaSimulator():
     color: Embed color
     """
     def __init__(self, bot : 'DiscordBot', gachadata : tuple, simtype : str, scamdata : Optional[tuple], bannerid : int, color : int) -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.data, self.rateups, self.ssrrate, self.complete = gachadata # unpack the data
         self.scamdata = scamdata # no need to unpack the scam gacha one (assume it might be None too)
         self.bannerid = bannerid
@@ -1160,7 +1165,7 @@ class Roulette():
     realist: Boolean, realist roulette setting
     """
     def __init__(self, bot : 'DiscordBot', sim : GachaSimulator, current_time : datetime, legfest : int, realist : bool) -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.sim = sim
         # get settings
         settings = self.bot.data.save['gbfdata'].get('roulette', {})

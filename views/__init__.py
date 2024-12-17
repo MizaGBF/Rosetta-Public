@@ -22,7 +22,7 @@ class BaseView(disnake.ui.View):
     """
     def __init__(self, bot : 'DiscordBot', owner_id : Optional[int] = None, timeout : float = 60.0, enable_timeout_cleanup : bool = True) -> None:
         super().__init__(timeout=timeout)
-        self.bot = bot # reference to the bot
+        self.bot : 'DiscordBot' = bot # reference to the bot
         self.owner_id = owner_id # id of whoever was the cause of this View creation
         self.message = None # used to store messages to display
         self.enable_timeout_cleanup = enable_timeout_cleanup # flag for the timeout auto cleanup

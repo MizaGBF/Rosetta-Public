@@ -19,7 +19,7 @@ class Drive():
     ZIP_CHUNK = 8192
     
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.debug = bot.debug_mode or bot.test_mode
         self.gauth = None
         self.gdrive = None

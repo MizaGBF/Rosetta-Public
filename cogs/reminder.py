@@ -17,7 +17,7 @@ class Reminder(commands.Cog):
     REMINDER_LIMIT = 8
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def startTasks(self) -> None:
         self.bot.runTask('reminder:task', self.remindertask)

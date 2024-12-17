@@ -44,7 +44,7 @@ class GuildWar(commands.Cog):
     ]
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
         self.crewcache = {}
 
     def startTasks(self) -> None:
