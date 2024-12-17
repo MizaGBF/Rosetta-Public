@@ -3,7 +3,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 from contextlib import asynccontextmanager
 import aiohttp
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 from deep_translator import GoogleTranslator
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ class Network():
     ----------
     dict: Account data
     """
-    def get_account(self) -> dict:
+    def get_account(self) -> dict[str, str|int|None|datetime]:
         return self.bot.data.save['gbfaccount']
 
     """set_account()
