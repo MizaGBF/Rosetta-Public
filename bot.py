@@ -17,7 +17,7 @@ import cogs
 
 import disnake
 from disnake.ext import commands
-from typing import Union, Callable, Any
+from typing import Callable, Any
 import asyncio
 import time
 import signal
@@ -38,7 +38,8 @@ class DiscordBot(commands.InteractionBot):
         "**v11.10.7** - Reworked `/gbf profile see` to support an unlimited amount of support summon slots.",
         "**v11.11.2** - Reworked `/gbf schedule`. Added command mentions to it and to `/gbf info`.",
         "**v12.0.0** - Removed: Unused commands/cogs, the vxtwitter feature.",
-        "**v12.0.0** - Updated: New items in `/game scratch`. Command list changed for `/mod cleanup`,  `/mod announcement`,  `/mod pinboard`",
+        "**v12.0.0** - Updated: New items in `/game scratch`.",
+        "**v12.0.0** - Reworked: `/gbf wiki`, `/mod cleanup`, `/mod announcement`, `/mod pinboard`.",
     ]
     
     def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
@@ -490,7 +491,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     unknown: The string, else the exception parameter if an error occured
     """
-    def pexc(self, exception : Exception) -> Union[str, Exception]: # format an exception
+    def pexc(self, exception : Exception) -> str|Exception: # format an exception
         try:
             return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         except:

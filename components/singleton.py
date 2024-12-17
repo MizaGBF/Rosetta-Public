@@ -2,6 +2,7 @@
 from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from dataclasses import dataclass
+from datetime import datetime
 
 # ----------------------------------------------------------------------------------------------------------------
 # Singleton Component
@@ -57,6 +58,38 @@ class Singleton():
             self.gamecard_cache[index] = GameCard.make_card(value, suit)
         return self.gamecard_cache[index]
 
+    """make_Score()
+    Initialize and return a Score instance
+    
+    Parameters
+    ----------
+    type: Integer, 0 (crew) or 1 (player)
+    ver: Integer, Database version used
+    gw: Integer, GW id
+    
+    Returns
+    ----------
+    Score: The generated card
+    """
+    def make_Score(self, type : int|None, ver : int|None, gw : int|None) -> 'Score':
+        return Score(type, ver, gw)
+
+    """make_GWDB()
+    Initialize and return a GWDB instance
+    
+    Parameters
+    ----------
+    type: Integer, 0 (crew) or 1 (player)
+    ver: Integer, Database version used
+    gw: Integer, GW id
+    
+    Returns
+    ----------
+    Score: The generated card
+    """
+    def make_GWDB(self, data : list|None) -> 'GWDB':
+        return GWDB.make_GWDB(data)
+
 # ----------------------------------------------------------------------------------------------------------------
 # Below are the singletons
 # ----------------------------------------------------------------------------------------------------------------
@@ -88,7 +121,7 @@ class GameCard():
     strings : list[str]
 
     @classmethod
-    def make_card(cls, value: int, suit: int):
+    def make_card(cls, value: int, suit: int) -> 'GameCard':
         value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
         suit = suit # suit ranges from 0 to 3
         strings = [None, None, None] # value, suit, complete
@@ -126,3 +159,100 @@ class GameCard():
 
     def getStringSuit(self) -> str:
         return self.strings[1]
+
+"""Score
+Store a score for a Guild War participant/crew
+"""
+@dataclass(slots=True)
+class Score(): # GW Score structure
+    type : int
+    ver : int # database version
+    gw : int # gw id
+    ranking : int # ranking
+    id : int # crew/player id
+    name : str
+    # scores
+    current : int # will match preliminaries or total1-4
+    current_day : int # current day. 0 : int = prelims, 1-4 : int = day 1-4
+    day : int
+    preliminaries : int
+    day1 : int
+    total1 : int
+    day2 : int
+    total2 : int
+    day3 : int
+    total3 : int
+    day4 : int
+    total4 : int
+    # speed
+    top_speed : int
+    current_speed : int
+    
+    def __init__(self, type : int|None = None, ver : int|None = None, gw : int|None = None):
+        self.type = type # crew or player
+        self.ver = ver # database version
+        self.gw = gw # gw id
+        self.ranking = None # ranking
+        self.id = None # crew/player id
+        self.name = None
+        # scores
+        self.current = None # will match preliminaries or total1-4
+        self.current_day = None # current day. 0 = prelims, 1-4 = day 1-4
+        self.day = None
+        self.preliminaries = None
+        self.day1 = None
+        self.total1 = None
+        self.day2 = None
+        self.total2 = None
+        self.day3 = None
+        self.total3 = None
+        self.day4 = None
+        self.total4 = None
+        # speed
+        self.top_speed = None
+        self.current_speed = None
+
+    def __repr__(self) -> str: # used for debug
+        return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)
+
+    def __str__(self) -> str: # used for debug
+        return "GW{}, v{}, {}, {}, {}".format(self.gw, self.ver, 'crew' if self.type else 'player', self.name, self.current)
+
+"""GWDB
+Handle a Guild War Database
+Contain a database general infos, such which GW is it for, its version, etc...
+"""
+@dataclass(frozen=True, slots=True)
+class GWDB():
+    gw : int|None
+    ver : int
+    timestamp : datetime|None
+
+    @classmethod
+    def make_GWDB(cls, data : list|None = None) -> 'GWDB':
+        # data is the content of info table of our database
+        gw : int|None
+        ver : int
+        timestamp : datetime|None
+        try:
+            gw = int(data[0])
+        except:
+            gw = None
+            ver = 0
+            timestamp = None
+            return cls(gw, ver, timestamp)
+        try:
+            ver = int(data[1])
+        except: 
+            ver = 1
+        try:
+            timestamp = datetime.utcfromtimestamp(data[2])
+        except: 
+            timestamp = None
+        return cls(gw, ver, timestamp)
+
+    def __repr__(self) -> str: # used for debug
+        return str(self)
+
+    def __str__(self) -> str: # used for debug
+        return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)

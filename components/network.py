@@ -14,7 +14,7 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 
 # Type Aliases
-RequestResult : types.GenericAlias = dict|list|bytes|bool|None
+RequestResult : types.GenericAlias = dict|list|str|int|float|bool|bytes|None # cover None, JSON types, bytes
 
 class Network():
     VERSION_REGEX = [ # possible regex to detect the GBF game version

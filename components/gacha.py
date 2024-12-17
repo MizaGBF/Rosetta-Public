@@ -336,7 +336,7 @@ class Gacha():
         - str: Description
         - str: url of thumbnail
     """
-    async def summary(self) -> tuple:
+    async def summary(self) -> None|tuple[str, str]:
         try:
             content = await self.get()
             if len(content) > 0:
@@ -346,7 +346,7 @@ class Gacha():
                     description.append("{} **Collaboration**\n".format(self.bot.emote.get('crystal'))) # add extra line
                     description.extend(self.summary_subroutine(data, self.CLASSIC_COUNT+1, data['collaboration'], None, remaining)) # and its summary
                 return "".join(description), "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}".format(data['image']) # return message and the image url
-            return None, None
+            return None
         except Exception as e:
             raise e
 

@@ -1,8 +1,10 @@
 import asyncio
+import types
 from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from components.singleton import Score, GWDB
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 from datetime import timedelta, datetime
-from dataclasses import dataclass
 from collections import deque
 from bs4 import BeautifulSoup
 import sqlite3
@@ -11,89 +13,12 @@ import sqlite3
 # Ranking Component
 # ----------------------------------------------------------------------------------------------------------------
 # Manage the Unite and Fight rankings (access, DB update, etc...)
-# Provide Score instances when searching the ranking
 # ----------------------------------------------------------------------------------------------------------------
 
-@dataclass(slots=True)
-class Score(): # GW Score structure
-    type : int
-    ver : int # database version
-    gw : int # gw id
-    ranking : int # ranking
-    id : int # crew/player id
-    name : str
-    # scores
-    current : int # will match preliminaries or total1-4
-    current_day : int # current day. 0 : int = prelims, 1-4 : int = day 1-4
-    day : int
-    preliminaries : int
-    day1 : int
-    total1 : int
-    day2 : int
-    total2 : int
-    day3 : int
-    total3 : int
-    day4 : int
-    total4 : int
-    # speed
-    top_speed : int
-    current_speed : int
-    
-    def __init__(self, type : Optional[int] = None, ver : Optional[int] = None, gw : Optional[int] = None):
-        self.type = type # crew or player
-        self.ver = ver # database version
-        self.gw = gw # gw id
-        self.ranking = None # ranking
-        self.id = None # crew/player id
-        self.name = None
-        # scores
-        self.current = None # will match preliminaries or total1-4
-        self.current_day = None # current day. 0 = prelims, 1-4 = day 1-4
-        self.day = None
-        self.preliminaries = None
-        self.day1 = None
-        self.total1 = None
-        self.day2 = None
-        self.total2 = None
-        self.day3 = None
-        self.total3 = None
-        self.day4 = None
-        self.total4 = None
-        # speed
-        self.top_speed = None
-        self.current_speed = None
-
-    def __repr__(self) -> str: # used for debug
-        return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)
-
-    def __str__(self) -> str: # used for debug
-        return "GW{}, v{}, {}, {}, {}".format(self.gw, self.ver, 'crew' if self.type else 'player', self.name, self.current)
-
-class GWDB(): # GW Database structure
-    # Contain a database general infos, such which GW is it for, its version, etc...
-    def __init__(self, data : Optional[list] = None):
-        # data is the content of info table of our database
-        try:
-            self.gw = int(data[0])
-        except:
-            self.gw = None
-            self.ver = 0
-            self.timestamp = None
-            return
-        try:
-            self.ver = int(data[1])
-        except: 
-            self.ver = 1
-        try:
-            self.timestamp = datetime.utcfromtimestamp(data[2])
-        except: 
-            self.timestamp = None
-
-    def __repr__(self) -> str: # used for debug
-        return str(self)
-
-    def __str__(self) -> str: # used for debug
-        return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)
+# Type Aliases
+GWDBList : types.GenericAlias = list[Score]
+GWDBInfo : types.GenericAlias = list[GWDB|None]
+GWDBSearchResult : types.GenericAlias = list[None|GWDBList, None|GWDBList, GWDBInfo]
 
 class Ranking():
     # The Ranking component
@@ -438,7 +363,7 @@ class Ranking():
         getrankout = await self.gwgetrank(update_time, force)
         # check the result message
         if getrankout == "": # no news, good news
-            data = await self.getGWDB() # retrieve current databases
+            data : GWDBInfo = await self.getGWDB() # retrieve current databases
             async with self.dblock:
                 if data is not None and data[1] is not None:
                     # compare if current gw is the same gw as we just retrieved
@@ -746,7 +671,7 @@ class Ranking():
                 return "Invalid day"
             if day > 0: day -= 1 # interlude is put into prelims
             self.bot.logger.push("[RANKING] Updating Database (mode={}, day={})...".format(skip_mode, day), send_to_discord=False)
-            n = await self.getGWDB()
+            n : GWDBInfo = await self.getGWDB()
             await asyncio.sleep(0)
             if n[1] is None or n[1].gw != self.bot.data.save['gw']['id'] or n[1].ver != self.DB_VERSION:
                 self.bot.logger.push("[RANKING] Invalid 'GW.sql'. A new 'GW.sql' file will be created", send_to_discord=False)
@@ -818,9 +743,9 @@ class Ranking():
     --------
     list: First element is for the old database, second is for the current one
     """
-    async def getGWDB(self, force_download : bool = False) -> list[GWDB|None]:
+    async def getGWDB(self, force_download : bool = False) -> GWDBInfo:
         fs = ["GW_old.sql", "GW.sql"] # file names
-        res = [None, None] # will contain final GWDB() objects
+        res : GWDBInfo = [None, None] # will contain final GWDB() objects
         if force_download:
             self.dbstate = [True, True] # force dbstate to True (file exists)
         for i in range(2):
@@ -864,15 +789,15 @@ class Ranking():
                     c.execute("SELECT * FROM info")
                     x = c.fetchone()
                     if len(x) < 1: raise Exception()
-                    res[i] = GWDB(x)
+                    res[i] = self.bot.singleton.make_GWDB(x)
                 except: # old versions
                     try:
                         c.execute("SELECT * FROM GW")
                         x = c.fetchone()
                         if len(x) < 1: raise Exception()
-                        res[i] = GWDB(x)
+                        res[i] = self.bot.singleton.make_GWDB(x)
                     except:
-                        res[i] = GWDB()
+                        res[i] = self.bot.singleton.make_GWDB()
                 await asyncio.sleep(0)
         return res
 
@@ -887,15 +812,15 @@ class Ranking():
     
     Returns
     --------
-    dict: Containing:
+    list: Containing:
         - list: Matches in the past GW
         - list: Matches in the latest GW
         - list: GW DB info data
     """
-    async def searchGWDB(self, terms : str, mode : int) -> dict:
-        v = await self.getGWDB() # load and get the version of the database files
+    async def searchGWDB(self, terms : str, mode : int) -> None|GWDBSearchResult:
+        v : GWDBInfo = await self.getGWDB() # load and get the version of the database files
         async with self.dblock:
-            data = [None, None, v]
+            data : GWDBSearchResult = [None, None, v]
             dbs = [await self.bot.sql.get("GW_old.sql"), await self.bot.sql.get("GW.sql")] # get access
             st = 1 if mode >= 10 else 0 # search type (crew or player)
             for n in [0, 1]: # for both database
@@ -903,7 +828,7 @@ class Ranking():
                 async with dbs[n] as c:
                     if c is not None and v[n] is not None: # if the data is loaded and alright
                         try:
-                            data[n] = []
+                            data[n] : GWDBList = []
                             # search according to the mode
                             match mode:
                                 case 10: # crew name search
@@ -930,7 +855,7 @@ class Ranking():
                             await asyncio.sleep(0)
                             
                             for r in results:
-                                s = Score(type=st, ver=v[n].ver, gw=v[n].gw) # make a Score object
+                                s : Score = self.bot.singleton.make_Score(st, v[n].ver, v[n].gw) # make a Score object
                                 if st == 0: # player
                                     s.ranking = r[0]
                                     s.id = r[1]

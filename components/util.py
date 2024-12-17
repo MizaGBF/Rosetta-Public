@@ -406,7 +406,7 @@ class Util():
     --------
     int or str: The GBF ID or an error string if an error happened
     """
-    async def str2gbfid(self, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> Union[int, str]:
+    async def str2gbfid(self, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> int|str:
         if memberTarget is not None: # memberTarget is valid
             if str(memberTarget.id) not in self.bot.data.save['gbfids']: # check if their id is linked
                 return "`{}` didn't set its GBF profile ID.".format(memberTarget.display_name)
