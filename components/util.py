@@ -3,6 +3,7 @@ import asyncio
 from typing import Optional, Union, Callable, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
 import psutil
 import platform
 import os
@@ -25,6 +26,8 @@ class Util():
         # bot process
         self.process = psutil.Process(os.getpid())
         self.process.cpu_percent() # called once to initialize
+        # others
+        self.gamecard_cache = {}
 
     def init(self) -> None:
         pass
@@ -662,9 +665,14 @@ class Util():
     GameCard: The generated card
     """
     def createGameCard(self, value : int, suit : int) -> 'GameCard':
-        if value < 1 or value > 14: raise Exception("Invalid GameCard value")
-        elif suit < 0 or suit > 3: raise Exception("Invalid GameCard suit")
-        return GameCard(value, suit)
+        if value < 1 or value > 14:
+            raise Exception("Invalid GameCard value")
+        elif suit < 0 or suit > 3:
+            raise Exception("Invalid GameCard suit")
+        index = value << 8 + suit # calculate index
+        if index not in self.gamecard_cache: # add card in cache if it doesn't exist
+            self.gamecard_cache[index] = GameCard.make_card(value, suit)
+        return self.gamecard_cache[index]
 
 """CustomModal
 A Modal class where you can set your own callback
@@ -686,35 +694,33 @@ class CustomModal(disnake.ui.Modal):
 """GameCard
 Standard card representation for card games
 """
+@dataclass(frozen=True, slots=True)
 class GameCard():
-    # card game strings
-    ACE = "A"
-    JACK = "J"
-    QUEEN = "Q"
-    KING = "K"
-    DIAMOND = "\♦️"
-    SPADE = "\♦️"
-    HEART = "\♥️"
-    CLUB = "\♣️"
-    def __init__(self, value : int, suit : int) -> None:
-        self.value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
-        self.suit = suit # suit ranges from 0 to 3
-        self.strings = [None, None, None] # value, suit, complete
+    value : int
+    suit : int
+    strings : list[str]
+
+    @classmethod
+    def make_card(cls, value: int, suit: int):
+        value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
+        suit = suit # suit ranges from 0 to 3
+        strings = [None, None, None] # value, suit, complete
         # set strings
         # value
         match value:
-            case 1|14: self.strings[0] = self.ACE
-            case 11: self.strings[0] = self.JACK
-            case 12: self.strings[0] = self.QUEEN
-            case 13: self.strings[0] = self.KING
-            case _: self.strings[0] = str(value)
+            case 1|14: strings[0] = "A"
+            case 11: strings[0] = "J"
+            case 12: strings[0] = "Q"
+            case 13: strings[0] = "K"
+            case _: strings[0] = str(value)
         # suit
         match suit:
-            case 0: self.strings[1] = self.DIAMOND
-            case 1: self.strings[1] = self.SPADE
-            case 2: self.strings[1] = self.HEART
-            case 3: self.strings[1] = self.CLUB
-        self.strings[2] = "".join(self.strings[:2])
+            case 0: strings[1] = "\♦️"
+            case 1: strings[1] = "\♦️"
+            case 2: strings[1] = "\♥️"
+            case 3: strings[1] = "\♣️"
+        strings[2] = "".join(strings[:2])
+        return cls(value, suit, strings)
 
     def __repr__(self) -> str: 
         return self.strings[2]
