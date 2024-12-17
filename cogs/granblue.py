@@ -1028,7 +1028,7 @@ class GranblueFantasy(commands.Cog):
     color: To change the embed color
     view: Optional view
     """
-    async def _profile(self, inter, pid, *, clean : bool = True, color : int|None = None, view : disnake.View|None = None) -> None:
+    async def _profile(self, inter, pid, *, clean : bool = True, color : int|None = None, view : disnake.ui.View|None = None) -> None:
         if color is None:
             color = self.COLOR # use cog color
         # retrieve profile data
