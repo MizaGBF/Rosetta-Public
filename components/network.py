@@ -22,7 +22,6 @@ class Network():
     GET = 0
     POST = 1
     HEAD = 2
-    CONDITIONAL_GET = 4
     # Account status
     ACC_STATUS_UNSET = -1
     ACC_STATUS_UNDEF = 0
@@ -74,13 +73,11 @@ class Network():
             self.client_req[self.GET] = self.client.get
             self.client_req[self.POST] = self.client.post
             self.client_req[self.HEAD] = self.client.head
-            self.client_req[self.CONDITIONAL_GET] = self.client.get
             # set gbf client and methods
             self.gbf_client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.gbf_client_req[self.GET] = self.gbf_client.get
             self.gbf_client_req[self.POST] = self.gbf_client.post
             self.gbf_client_req[self.HEAD] = self.gbf_client.head
-            self.gbf_client_req[self.CONDITIONAL_GET] = self.gbf_client.get
             # update the default user agent
             await self.update_user_agent()
             yield (self.client, self.gbf_client)
@@ -106,7 +103,7 @@ class Network():
     Parameters
     ----------
     url: Url to request from.
-    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
+    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD defined in this class.
     headers: Dict, request headers set by the user. Prefer using add_user_agent instead of setting the user agent yourself.
     params: Dict, set to None to ignore.
     payload: Dict (Default is None), POST request payload. Set to None to do another request type.
@@ -116,9 +113,9 @@ class Network():
     
     Returns
     ----------
-    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for PARTIAL-GET
+    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> Any:
+    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> dict|list|bytes|bool|None:
         try:
             headers['Connection'] = 'keep-alive'
             # Add user agent
@@ -129,8 +126,6 @@ class Network():
             else: # the request is always POST if we have a payload
                 rtype = self.POST
                 response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
-            if rtype == self.CONDITIONAL_GET: # CONDITIONAL_GET simply returns the response as it is
-                return response
             async with response:
                 if response.status >= 400 or response.status < 200: # raise Exception if our HTTP code isn't in the 200-399 range
                     raise Exception()
@@ -156,7 +151,7 @@ class Network():
     Parameters
     ----------
     path: Url path.
-    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD, CONDITIONAL-GET defined in this class.
+    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD defined in this class.
     params: Dict. Automatically set when requesting GBF.
     payload: Dict (Default is None), POST request payload. Set to None to do another request type. Additionaly, the 'user_id' value can be automatically set if it's equal to the following:
         - "ID": The GBF Profile ID
@@ -168,9 +163,9 @@ class Network():
     
     Returns
     ----------
-    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD, response for CONDITIONAL-GET
+    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> Any:
+    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> dict|list|bytes|bool|None:
         try:
             silent = True
             # don't proceed if the game is down
@@ -218,8 +213,6 @@ class Network():
                 response = await self.gbf_client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
             # response handling
             async with response:
-                if rtype == self.CONDITIONAL_GET: # CONDITIONAL_GET simply returns the response as it is
-                    return response
                 if response.status >= 400 or response.status < 200: # error if our HTTP code isn't in the 200-399 range
                     if not _updated_: # if _updated_ isn't raised, it MIGHT be due to an invalid version (in case an update happened)
                         x = await self.gbf_version() # in that case, we check for an update
@@ -267,7 +260,7 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object
     """
-    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> Any:
+    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> dict|list|bytes|None:
         try:
             # build the URL
             if path[:1] != "/": url = "https://gbf.wiki/" + path
