@@ -3,6 +3,7 @@ from disnake.ext import commands
 import asyncio
 import types
 from typing import TYPE_CHECKING
+from views import BaseView
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from ..components.network import RequestResult
@@ -1028,7 +1029,7 @@ class GranblueFantasy(commands.Cog):
     color: To change the embed color
     view: Optional view
     """
-    async def _profile(self, inter, pid, *, clean : bool = True, color : int|None = None, view : disnake.ui.View|None = None) -> None:
+    async def _profile(self, inter, pid, *, clean : bool = True, color : int|None = None, view : BaseView|None = None) -> None:
         if color is None:
             color = self.COLOR # use cog color
         # retrieve profile data
