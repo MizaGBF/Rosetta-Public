@@ -110,6 +110,22 @@ class Ranking():
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
         # crew from config.json
+        self.gbfgcrews = {}
+        self.othercrews = {}
+        self.allconfigcrews = {}
+        self.gbfgcrews_id = []
+        self.othercrews_id = []
+        # stuff related to retrieving the ranking
+        self.getrank_mode = False
+        self.getrank_count = 0
+        self.getrank_update_time = None
+        self.rankingtempdata = []
+        self.stoprankupdate = False
+        # gw databases
+        self.dbstate = [True, True] # indicate if dbs are available on the drive, True by default
+        self.dblock = asyncio.Lock()
+
+    def init(self) -> None:
         self.gbfgcrews = self.bot.data.config.get('granblue', {}).get('gbfgcrew', {})
         self.othercrews = self.bot.data.config.get('granblue', {}).get('othercrew', {})
         self.allconfigcrews = self.gbfgcrews | self.othercrews
@@ -123,18 +139,6 @@ class Ranking():
                 i += 1
         self.gbfgcrews_id.sort()
         self.othercrews_id.sort()
-        # stuff related to retrieving the ranking
-        self.getrank_mode = False
-        self.getrank_count = 0
-        self.getrank_update_time = None
-        self.rankingtempdata = []
-        self.stoprankupdate = False
-        # gw databases
-        self.dbstate = [True, True] # indicate if dbs are available on the drive, True by default
-        self.dblock = asyncio.Lock()
-
-    def init(self) -> None:
-        pass
 
     """requestRanking()
     Request a page from the GW ranking
