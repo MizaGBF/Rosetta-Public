@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import timedelta, datetime
+from dataclasses import dataclass
 from collections import deque
 from bs4 import BeautifulSoup
 import sqlite3
@@ -13,7 +14,31 @@ import sqlite3
 # Provide Score instances when searching the ranking
 # ----------------------------------------------------------------------------------------------------------------
 
+@dataclass(slots=True)
 class Score(): # GW Score structure
+    type : int
+    ver : int # database version
+    gw : int # gw id
+    ranking : int # ranking
+    id : int # crew/player id
+    name : str
+    # scores
+    current : int # will match preliminaries or total1-4
+    current_day : int # current day. 0 : int = prelims, 1-4 : int = day 1-4
+    day : int
+    preliminaries : int
+    day1 : int
+    total1 : int
+    day2 : int
+    total2 : int
+    day3 : int
+    total3 : int
+    day4 : int
+    total4 : int
+    # speed
+    top_speed : int
+    current_speed : int
+    
     def __init__(self, type : Optional[int] = None, ver : Optional[int] = None, gw : Optional[int] = None):
         self.type = type # crew or player
         self.ver = ver # database version
