@@ -800,7 +800,7 @@ class GranblueFantasy(commands.Cog):
     --------
     str: matching discord ID as a string, None if error
     """
-    def searchprofile(self, gbf_id : int) -> Optional[str]:
+    def searchprofile(self, gbf_id : int) -> str|None:
         try:
             return next(uid for uid, gid in self.bot.data.save['gbfids'].items() if gid == gbf_id)
         except:

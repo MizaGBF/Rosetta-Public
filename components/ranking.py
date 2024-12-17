@@ -818,7 +818,7 @@ class Ranking():
     --------
     list: First element is for the old database, second is for the current one
     """
-    async def getGWDB(self, force_download : bool = False) -> list:
+    async def getGWDB(self, force_download : bool = False) -> list[GWDB|None]:
         fs = ["GW_old.sql", "GW.sql"] # file names
         res = [None, None] # will contain final GWDB() objects
         if force_download:

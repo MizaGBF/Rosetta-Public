@@ -127,7 +127,7 @@ class Poker(BaseView):
         self.players = players # player list
         self.embed = embed # embed to updae
         # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
-        self.deck = [self.bot.util.createGameCard((i % 13) + 2, i // 13) for i in range(51)]
+        self.deck = [self.bot.singleton.get_GameCard((i % 13) + 2, i // 13) for i in range(51)]
         # shuffle the deck
         random.shuffle(self.deck)
         # draw 3 cards for the dealer

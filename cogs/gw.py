@@ -1092,7 +1092,7 @@ class GuildWar(commands.Cog):
         """Compare multiple GW Nightmare fights based on your speed"""
         
         # Note: We're limited to 5 inputs
-        await self.bot.util.send_modal(inter, "gw_speed-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "GW Speed Comparator", self.speed_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "gw_speed-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "GW Speed Comparator", self.speed_callback, [
                 disnake.ui.TextInput(
                     label="NM90",
                     placeholder="NM90 Kill Time (In seconds)",

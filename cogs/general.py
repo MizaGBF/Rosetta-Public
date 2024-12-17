@@ -12,7 +12,7 @@ import math
 
 class General(commands.Cog):
     """Rosetta commands."""
-    COLOR = 0xd9d927
+    COLOR : int = 0xd9d927
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot = bot
@@ -31,7 +31,7 @@ class General(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def bug_report(self, inter: disnake.GuildCommandInteraction) -> None:
         """Send a bug report or feedback to the developer"""
-        await self.bot.util.send_modal(inter, "bug_report-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Send a Bug / Feedback Report", self.bug_report_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "bug_report-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Send a Bug / Feedback Report", self.bug_report_callback, [
             disnake.ui.TextInput(
                 label="Subject",
                 placeholder="Title of your issue",
@@ -55,26 +55,31 @@ class General(commands.Cog):
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def help(self, inter: disnake.GuildCommandInteraction, search : str = commands.Param(description="What are you searching for?", default="")) -> None:
+    async def help(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="What are you searching for?", default="")) -> None:
         """Get the bot help or search global commands."""
         await inter.response.defer(ephemeral=True)
-        if len(search) == 0: # empty user input
+        msgs : list[str]
+        if len(terms) == 0: # empty user input
             msgs = ["Online Help [here](https://mizagbf.github.io/discordbot.html)"]
         else:
             # geet bot slash command list
-            global_slash_commands = self.bot.global_slash_commands
+            global_slash_commands : list[disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand] = self.bot.global_slash_commands
             # breakdown user input
-            search = search.split(' ')
+            search : list[str] = terms.split(' ')
             results = []
             # check if user is a mod (to show mod commands or not)
-            is_mod = self.bot.isMod(inter)
+            is_mod : bool = self.bot.isMod(inter)
             # loop over commands
+            command : disnake.APISlashCommand
             for command in global_slash_commands:
                 # if /owner command or /mod command and user isn't mod, go to next command
-                if command.name.lower() == "owner" or (command.name.lower() == "mod" and not is_mod): continue
+                if command.name.lower() == "owner" or (command.name.lower() == "mod" and not is_mod):
+                    continue
                 # retrieve command name, description...
-                rs = self.bot.util.process_command(command)
+                rs : list[list[None|int|str]] = self.bot.util.process_command(command)
                 # Search user terms inside these strings
+                s : str
+                r : list[None|int|str]
                 for s in search:
                     for r in rs:
                         if (s in r[0] or s in r[2]) and r[2] != "Command Group": # ignore Command Groups
@@ -83,8 +88,8 @@ class General(commands.Cog):
                 msgs = ["No results found for `{}`\n**For more help:**\nOnline Help [here](https://mizagbf.github.io/discordbot.html)".format(' '.join(search))]
             else:
                 msgs = []
-                length = 0
-                count = len(results)
+                length : int = 0
+                count : int = len(results)
                 # print matching commands
                 for r in results:
                     msgs.append("</{}:{}> ▫️ *{}*\n".format(r[0], r[1], r[2]))
@@ -285,7 +290,7 @@ class General(commands.Cog):
     @utility.sub_command()
     async def translate(self, inter: disnake.MessageCommandInteraction) -> None:
         """Translate a text to english"""
-        await self.bot.util.send_modal(inter, "translate-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Translate Text", self.translate_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "translate-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Translate Text", self.translate_callback, [
                 disnake.ui.TextInput(
                     label="Text",
                     placeholder="Text to translate",

@@ -2,7 +2,9 @@
 from disnake.ext import commands
 import asyncio
 from typing import Callable, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from ..components.ranking import GWDB
 from cogs import DEBUG_SERVER_ID
 from datetime import datetime, timedelta
 import random
@@ -20,12 +22,15 @@ import time
 
 class Admin(commands.Cog):
     """Owner only."""
-    if DEBUG_SERVER_ID is None: guild_ids = []
-    else: guild_ids = [DEBUG_SERVER_ID]
-    COLOR = 0x7a1472
+    guild_ids : list[int]
+    if DEBUG_SERVER_ID is None:
+        guild_ids = []
+    else:
+        guild_ids = [DEBUG_SERVER_ID]
+    COLOR : int = 0x7a1472
 
     def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+        self.bot : 'DiscordBot' = bot
 
     def startTasks(self) -> None:
         self.bot.runTask('owner:status', self.status)
@@ -36,7 +41,7 @@ class Admin(commands.Cog):
     """
     async def status(self) -> None: # background task changing the bot status and calling autosave()
         await self.bot.change_presence(status=disnake.Status.online, activity=disnake.activity.Game(name="I rebooted in the last 30 minutes"))
-        num = 0
+        num : int = 0
         while True:
             try:
                 await asyncio.sleep(1800) # 30 min sleep
@@ -62,7 +67,7 @@ class Admin(commands.Cog):
         # force save first
         if self.bot.data.pending:
             self.bot.data.autosaving = False
-            count = 0
+            count : int = 0
             while count < 3:
                 if self.bot.data.saveData():
                     self.bot.logger.push("[EXIT] Auto-saving successful", send_to_discord=False)
@@ -97,9 +102,10 @@ class Admin(commands.Cog):
     Output the server list of the bot in the debug channel
     """
     async def guildList(self) -> None: # list all guilds the bot is in and send it in the debug channel
-        msgs = []
-        length = 0
+        msgs : list[str] = []
+        length : int = 0
         # iterate over guilds
+        s : disnake.Guild
         for s in self.bot.guilds:
             # add to output message
             msgs.append("**{}** `{}`owned by `{}`\n".format(s.name, s.id, s.owner_id))
@@ -114,7 +120,7 @@ class Admin(commands.Cog):
             await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description="".join(msgs), thumbnail=self.bot.user.display_avatar, color=self.COLOR))
         # send banned guild list
         if len(self.bot.data.save['banned_guilds']) > 0:
-            msg = "Banned Guilds are `" + "` `".join(str(x) for x in self.bot.data.save['banned_guilds']) + "`\n"
+            msg : str = "Banned Guilds are `" + "` `".join(str(x) for x in self.bot.data.save['banned_guilds']) + "`\n"
             await self.bot.send('debug', embed=self.bot.embed(title=self.bot.user.name, description=msg, thumbnail=self.bot.user.display_avatar, color=self.COLOR))
 
     @commands.slash_command(name="owner", guild_ids=guild_ids)
@@ -135,7 +141,7 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer()
             # redirect stdout to get the result in discord
-            f = StringIO()
+            f : StringIO = StringIO()
             with redirect_stdout(f):
                 exec(inter.text_values['code']) # exec the code
             # send result to discord
@@ -146,7 +152,7 @@ class Admin(commands.Cog):
     @utility.sub_command()
     async def exec(self, inter: disnake.GuildCommandInteraction) -> None:
         """Execute code at run time (Owner Only)"""
-        await self.bot.util.send_modal(inter, "exec-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Execute Code", self.exec_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "exec-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Execute Code", self.exec_callback, [
                 disnake.ui.TextInput(
                     label="Code",
                     placeholder="Code",
@@ -166,7 +172,7 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             # fetch targeted user to respond to
-            target = await self.bot.get_or_fetch_user(int(inter.text_values['user']))
+            target : disnake.User = await self.bot.get_or_fetch_user(int(inter.text_values['user']))
             # send them a dm
             await target.send(embed=self.bot.embed(title="Answer to your Bug Report ▫️ " + inter.text_values['title'], description=inter.text_values['description'], image=inter.text_values['image'], color=self.COLOR))
             await inter.edit_original_message(embed=self.bot.embed(title="Information", description='Answer sent with success', color=self.COLOR))
@@ -176,7 +182,7 @@ class Admin(commands.Cog):
     @utility.sub_command()
     async def answer(self, inter: disnake.GuildCommandInteraction) -> None:
         """Answer a bug report (Owner Only)"""
-        await self.bot.util.send_modal(inter, "bug_answer-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Answer a Bug Report", self.answer_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "bug_answer-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Answer a Bug Report", self.answer_callback, [
             disnake.ui.TextInput(
                 label="User ID",
                 placeholder="Bug Report author ID",
@@ -220,7 +226,7 @@ class Admin(commands.Cog):
         """Make the bot leave a server (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            toleave = self.bot.get_guild(int(gid)) # retrieve guild
+            toleave : disnake.Guild = self.bot.get_guild(int(gid)) # retrieve guild
             await toleave.leave() # and leave
             await inter.edit_original_message(embed=self.bot.embed(title="Server left", color=self.COLOR))
             await self.guildList() # print guild list
@@ -243,11 +249,11 @@ class Admin(commands.Cog):
     --------
     integer: Best ID found, or None
     """
-    async def approximate_account(self, step : int, current : int, count : int = 0) -> int:
+    async def approximate_account(self, step : int, current : int, count : int = 0) -> int|None:
         if count >= 30 or step <= 10: # if we passed 30 calls or our last step was under 10
             return current
         # request ID equals to current + step
-        data = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
+        data : dict|list|bytes|bool|None = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
         match data:
             case "Maintenance": # game is down, quit
                 return None
@@ -264,9 +270,9 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
         else:
             if 'totalplayer' not in self.bot.data.save['gbfdata']: # init data at 38900000 players
-                self.bot.data.save['gbfdata'].get('totalplayer', 38900000)
+                self.bot.data.save['gbfdata']['totalplayer'] = 38900000
             # call approximate_account and wait the result
-            result = await self.approximate_account(100000, self.bot.data.save['gbfdata'].get('totalplayer', 38900000))
+            result : int|None = await self.approximate_account(100000, self.bot.data.save['gbfdata'].get('totalplayer', 38900000))
             if result is None: # If None, game is down
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
             else:
@@ -284,9 +290,9 @@ class Admin(commands.Cog):
         """Command to leave and ban a server (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            gid = int(guild_id)
+            gid : str = int(guild_id)
             try: # get and leave server (if it hasn't yet)
-                toleave = self.bot.get_guild(gid)
+                toleave : disnake.Guild = self.bot.get_guild(gid)
                 await toleave.leave()
             except:
                 pass
@@ -305,6 +311,7 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             self.bot.ban.set(guild_id, self.bot.ban.OWNER) # set ban flag to owner
+            g : disnake.Guild
             for g in self.bot.guilds: # check all guilds
                 try:
                     if str(g.owner.id) == guild_id: # leave if the owner matches
@@ -321,12 +328,13 @@ class Admin(commands.Cog):
     async def checkid(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID Based Check if an user has a ban registered in the bot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        msgs = []
+        msgs : list[str] = []
         if self.bot.ban.check(user_id, self.bot.ban.OWNER): msgs.append("Banned from having the bot in its own servers\n")
         if self.bot.ban.check(user_id, self.bot.ban.SPARK): msgs.append("Banned from appearing in {}\n".format(self.bot.util.command2mention('spark ranking')))
         if self.bot.ban.check(user_id, self.bot.ban.PROFILE): msgs.append("Banned from using {}\n".format(self.bot.util.command2mention('gbf profile set')))
         if self.bot.ban.check(user_id, self.bot.ban.USE_BOT): msgs.append("Banned from using the bot\n")
-        if len(msgs) == 0: msgs = ["No Bans set for this user"]
+        if len(msgs) == 0:
+            msgs = ["No Bans set for this user"]
         await inter.edit_original_message(embed=self.bot.embed(title="User {}".format(user_id), description="".join(msgs), color=self.COLOR))
 
     @ban.sub_command()
@@ -418,11 +426,13 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             # build/format the message to send
-            msg = inter.text_values['message'].split('`')
-            for i in range(1, len(msg), 2):
-                msg[i] = self.bot.util.command2mention(msg[i])
-                if not msg[i].startswith('<'): msg[i] = '`' + msg[i] + '`'
-            msg = ''.join(msg).replace('\\n', '\n')
+            msgs : list[str] = inter.text_values['message'].split('`')
+            i : int
+            for i in range(1, len(msgs), 2):
+                msgs[i] = self.bot.util.command2mention(msgs[i])
+                if not msgs[i].startswith('<'):
+                    msgs[i] = '`' + msgs[i] + '`'
+            msg : str = ''.join(msgs).replace('\\n', '\n')
             # send to all channels
             await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Rosetta Notification", description=msg, image=inter.text_values['image'], color=self.COLOR))
             await inter.edit_original_message(embed=self.bot.embed(title="The message has been sent", color=self.COLOR))
@@ -432,7 +442,7 @@ class Admin(commands.Cog):
     @_bot.sub_command()
     async def notify(self, inter: disnake.GuildCommandInteraction) -> None:
         """Send a message to all announcement channels (Owner Only)"""
-        await self.bot.util.send_modal(inter, "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Notify Users", self.notify_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Notify Users", self.notify_callback, [
                 disnake.ui.TextInput(
                     label="Message",
                     placeholder="Message",
@@ -502,12 +512,12 @@ class Admin(commands.Cog):
         """Unlink a GBF id from an user ID (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # retrieve the user
-        user_id = self.bot.get_cog('GranblueFantasy').searchprofile(gbf_id)
+        user_id : str|None = self.bot.get_cog('GranblueFantasy').searchprofile(gbf_id)
         if user_id is None: # not found
             await inter.edit_original_message(embed=self.bot.embed(title="Clear Profile Error", description="ID not found", color=self.COLOR))
         else:
             try:
-                del self.bot.data.save['gbfids'][user_id] # unlock the accounts
+                del self.bot.data.save['gbfids'][user_id] # unlink the accounts
                 self.bot.data.pending = True
             except:
                 pass
@@ -562,7 +572,7 @@ class Admin(commands.Cog):
             data = {'title':' ', 'content':' ', 'time':None}
         else:
             data = {'title':self.bot.data.save['stream']['title'], 'content':self.bot.data.save['stream']['content'], 'time':self.bot.data.save['stream']['time']}
-        await self.bot.util.send_modal(inter, "set_stream-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set a GBF Stream", self.streamset_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "set_stream-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set a GBF Stream", self.streamset_callback, [
             disnake.ui.TextInput(
                 label="Title",
                 placeholder="Event / Stream title",
@@ -619,15 +629,21 @@ class Admin(commands.Cog):
         await inter.response.defer(ephemeral=True)
         try:
             # the data must be a valid json object
-            data = json.loads(inter.text_values['schedule'])
-            if not isinstance(data, dict): raise Exception("Schedule data isn't a dictionnary")
+            data : dict[str, list[int]] = json.loads(inter.text_values['schedule'])
+            if not isinstance(data, dict):
+                raise Exception("Schedule data isn't a dictionnary")
             # go over the pairs
-            for k, v in data.items():
-                if not isinstance(v, list): raise Exception("Value of '{}' isn't a list".format(k))
-                elif len(v) not in [1, 2]: raise Exception("Value of '{}' has an invalid length".format(k))
+            evname : str
+            times : list[int]
+            for evname, times in data.items():
+                if not isinstance(times, list):
+                    raise Exception("Value of '{}' isn't a list".format(evname))
+                elif len(times) not in [1, 2]:
+                    raise Exception("Value of '{}' has an invalid length".format(evname))
                 else:
-                    for e in v:
-                        if not isinstance(e, int): raise Exception("One value of '{}' isn't an integer".format(k))
+                    ts : int
+                    for ts in times:
+                        if not isinstance(ts, int): raise Exception("One value of '{}' isn't an integer".format(evname))
             # ok, set the data
             self.bot.data.save['schedule'] = data
             self.bot.data.pending = True
@@ -638,7 +654,7 @@ class Admin(commands.Cog):
     @schedule.sub_command(name="set")
     async def scheduleset(self, inter: disnake.GuildCommandInteraction) -> None:
         """Set the GBF schedule (Owner Only)"""
-        await self.bot.util.send_modal(inter, "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set the GBF Schedule", self.scheduleset_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set the GBF Schedule", self.scheduleset_callback, [
             disnake.ui.TextInput(
                 label="Schedule String",
                 placeholder="{}",
@@ -664,10 +680,11 @@ class Admin(commands.Cog):
         await inter.response.defer(ephemeral=True)
         try:
             # timestamps contains the start timestamp and (optionally) the end timestamp
-            timestamps = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=start_hour, minute=0, second=0).timestamp())]
+            timestamps : list[int] = [int(datetime.strptime(start, '%d/%m/%y').replace(hour=start_hour, minute=0, second=0).timestamp())]
             if end != "":
                 timestamps.append(int(datetime.strptime(end, '%d/%m/%y').replace(hour=end_hour, minute=0, second=0).timestamp()))
-                if timestamps[1] <= timestamps[0]: raise Exception("Event Ending timestamp is lesser than the Starting timestamp")
+                if timestamps[1] <= timestamps[0]:
+                    raise Exception("Event Ending timestamp is lesser than the Starting timestamp")
             self.bot.data.save['schedule'][name] = timestamps
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Entry added", color=self.COLOR))
         except Exception as e:
@@ -685,12 +702,13 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="No accounts set", color=self.COLOR))
         else:
             # make a request to check the validity (if GBF is available)
+            r : dict|list|bytes|bool|None
             if await self.bot.net.gbf_available():
                 r = await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
             else:
                 r = {}
             # retrieve data
-            acc = self.bot.net.get_account()
+            acc : dict[str, str|int|None|datetime] = self.bot.net.get_account()
             if r is None or not self.bot.net.is_account_valid():
                 await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account is down or GBF is unavailable\nUser ID: `{}`\nCookie: `{}`\nUser-Agent: `{}`".format(acc['id'], acc['ck'], acc['ua']) , color=self.COLOR))
             else:
@@ -734,7 +752,7 @@ class Admin(commands.Cog):
             elif not self.bot.net.edit_account(uid=uid, ck=ck, ua=ua):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A parameter is invalid.", color=self.COLOR))
             else:
-                acc = self.bot.net.get_account()
+                acc : dict[str, str|int|None|datetime] = self.bot.net.get_account()
                 await inter.edit_original_message(embed=self.bot.embed(title="Account Updated", description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc['id'], acc['ck'], acc['ua']), color=self.COLOR))
 
     @_owner.sub_command_group()
@@ -761,7 +779,8 @@ class Admin(commands.Cog):
             self.bot.data.save['dread']['dates']["Day 5"] = self.bot.data.save['dread']['dates']["Day 4"] + timedelta(days=1)
             self.bot.data.save['dread']['dates']["NM175"] = self.bot.data.save['dread']['dates']["Day 5"]
             self.bot.data.save['dread']['dates']["Day 6"] = self.bot.data.save['dread']['dates']["Day 5"] + timedelta(days=1)
-            last = 6
+            last : int = 6
+            i : int
             for i in range(0, extra_days):
                 self.bot.data.save['dread']['dates']["Day {}".format(7+i)] = self.bot.data.save['dread']['dates']["Day {}".format(6+i)] + timedelta(days=1)
                 last = 7 + i
@@ -808,9 +827,10 @@ class Admin(commands.Cog):
         """Download GW.sql (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # force download GW databases
-        vers = await self.bot.ranking.getGWDB(force_download = True)
+        vers : list['GWDB'|None] = await self.bot.ranking.getGWDB(force_download = True)
         # make a message showing each DB state
-        msgs = []
+        msgs : list[str] = []
+        i : int
         for i in [0, 1]:
             msgs.append("**{}** ▫️ ".format('GW_old.sql' if (i == 0) else 'GW.sql'))
             if vers[i] is None:
@@ -868,7 +888,7 @@ class Admin(commands.Cog):
         """Force the retrieval of the GW ranking. For debugging (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['gw']['state']:
-            current_time = self.bot.util.JST()
+            current_time : datetime = self.bot.util.JST()
             await self.bot.ranking.retrieve_ranking(current_time.replace(minute=20 * (current_time.minute // 20), second=1, microsecond=0), force=True)
             await inter.edit_original_message(embed=self.bot.embed(title="Done", color=self.COLOR))
         else:
@@ -905,6 +925,7 @@ class Admin(commands.Cog):
             self.bot.data.save['gw']['buffs'].append([self.bot.data.save['gw']['dates']["Preliminaries"]+timedelta(seconds=7200-300), True, True, True, True]) # warning, double
             self.bot.data.save['gw']['buffs'].append([self.bot.data.save['gw']['dates']["Preliminaries"]+timedelta(seconds=7200), True, True, False, True])
             # Usual days
+            date : datetime
             for date in [self.bot.data.save['gw']['dates']["Preliminaries"]+timedelta(seconds=43200), self.bot.data.save['gw']['dates']["Interlude"], self.bot.data.save['gw']['dates']["Day 1"], self.bot.data.save['gw']['dates']["Day 2"], self.bot.data.save['gw']['dates']["Day 3"], self.bot.data.save['gw']['dates']["Day 4"]]:
                 self.bot.data.save['gw']['buffs'].append([date-timedelta(seconds=300), True, False, True, False])
                 self.bot.data.save['gw']['buffs'].append([date, True, False, False, False])
@@ -960,7 +981,8 @@ class Admin(commands.Cog):
         """List the GW buff list for (You). For debugging (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            msgs = []
+            msgs : list[str] = []
+            b : list[datetime|bool]
             for b in self.bot.data.save['gw']['buffs']:
                 msgs.append('{0:%m/%d %H:%M}: '.format(b[0]))
                 if b[1]: msgs.append('[Normal Buffs] ')
@@ -1018,7 +1040,7 @@ class Admin(commands.Cog):
         await inter.response.defer(ephemeral=True)
         if 'roulette' not in self.bot.data.save['gbfdata']: # init data if it doesn't exist
             self.bot.data.save['gbfdata']['roulette'] = {}
-        msgs = []
+        msgs : list[str] = []
         if guaranteddate > 240100: # set the date (if valid)
             try:
                 self.bot.util.JST().replace(year=2000+guaranteddate//10000, month=(guaranteddate//100)%100, day=guaranteddate%100, hour=5, minute=0, second=0, microsecond=0)

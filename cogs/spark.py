@@ -111,7 +111,7 @@ class Sparking(commands.Cog):
     async def set(self, inter: disnake.GuildCommandInteraction) -> None:
         """Set your roll count"""
         data = self.bot.data.save['spark'].get(str(inter.author.id), [0, 0, 0, 0, None])
-        await self.bot.util.send_modal(inter, "spark_set-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set your Spark Data", self.set_callback, [
+        await self.bot.singleton.make_and_send_modal(inter, "spark_set-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set your Spark Data", self.set_callback, [
             disnake.ui.TextInput(
                 label="Crystal",
                 placeholder="Your crystal amount",

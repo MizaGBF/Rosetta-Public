@@ -1,9 +1,8 @@
 ﻿import disnake
 import asyncio
-from typing import Optional, Union, Callable, Any, TYPE_CHECKING
+from typing import Union, Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
-from dataclasses import dataclass
 import psutil
 import platform
 import os
@@ -151,7 +150,7 @@ class Util():
     --------
     str: Formatted time
     """
-    def time(self, to_convert : Optional[datetime] = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
+    def time(self, to_convert : datetime|None = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
         if to_convert is None: # if no datetime isn't passed, we get the current time, as UTC
             to_convert = self.UTC()
         msgs = []
@@ -222,7 +221,7 @@ class Util():
     --------
     timedelta: Resulting timedelta object or None if error
     """
-    def str2delta(self, d : str) -> Optional[timedelta]: # return None if error
+    def str2delta(self, d : str) -> timedelta|None: # return None if error
         flags = {'d':False,'h':False,'m':False,'s':False} # expected string parts
         tmp = 0 # buffer
         sum = 0 # delta in seconds
@@ -530,7 +529,7 @@ class Util():
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self, name : str, category : str, from_gacha : bool = False, element : Optional[str] = None, proficiency : Optional[str] = None) -> Optional[str]:
+    async def search_wiki_for_id(self, name : str, category : str, from_gacha : bool = False, element : str|None = None, proficiency : str|None = None) -> str|None:
         try:
             addition = []
             extra_fields = ""
@@ -557,11 +556,12 @@ class Util():
     
     Returns
     ----------
-    list: [full name, id, description]
+    list: Contains [full name, id, description]
     """
-    def process_command(self, cmd : Union[disnake.APISlashCommand, disnake.APIUserCommand, disnake.APIMessageCommand]) -> list:
-        has_sub = False
-        results = []
+    def process_command(self, cmd : disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand) -> list[list[None|int|str]]:
+        has_sub : bool = False
+        results : list[list[None|int|str]] = []
+        opt : disnake.app_commands.Option
         # check if command has sub command(s)
         try:
             for opt in cmd.options:
@@ -574,7 +574,7 @@ class Util():
         if has_sub:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
-                    rs = self.process_command(opt) # recursive call for that child
+                    rs : list[list[None|int|str]] = self.process_command(opt) # recursive call for that child
                     for r in rs: # process result
                         r[0] = cmd.name + " " + r[0]
                         try:
@@ -632,110 +632,3 @@ class Util():
             return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # add JST
         except:
             return ""
-
-    """send_modal()
-    Create and manage a modal interaction
-    
-    Parameters
-    ----------
-    inter: base interaction
-    custom_id : modal id
-    title: modal title
-    components: list of disnake ui components
-    callback: the function to be called if the modal is submitted
-    
-    Returns
-    ----------
-    disnake.ModalInteraction: The modal, else None if failed/cancelled
-    """
-    async def send_modal(self, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list, extra : str = None) -> disnake.ModalInteraction:
-        # see below for the custom modal class
-        await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
-
-    """createGameCard()
-    Create a GameCard to use for a game
-    
-    Parameters
-    ----------
-    value: Integer, 1 (ace) to 14 (high ace)
-    suit: 0 to 3
-    
-    Returns
-    ----------
-    GameCard: The generated card
-    """
-    def createGameCard(self, value : int, suit : int) -> 'GameCard':
-        if value < 1 or value > 14:
-            raise Exception("Invalid GameCard value")
-        elif suit < 0 or suit > 3:
-            raise Exception("Invalid GameCard suit")
-        index = value << 8 + suit # calculate index
-        if index not in self.gamecard_cache: # add card in cache if it doesn't exist
-            self.gamecard_cache[index] = GameCard.make_card(value, suit)
-        return self.gamecard_cache[index]
-
-"""CustomModal
-A Modal class where you can set your own callback
-"""
-class CustomModal(disnake.ui.Modal):
-    def __init__(self, bot : 'DiscordBot', title : str, custom_id : str, components : list, callback : Callable, extra : str = None) -> None:
-        super().__init__(title=title, custom_id=custom_id, components=components)
-        self.bot = bot # bot reference
-        self.custom_callback = callback # our callback
-        self.extra = extra # any extra info we can pass here. will be accessible from the interaction in the callback
-
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction) -> None:
-        await inter.response.send_message(embed=self.bot.embed(title="Error", description="An unexpected error occured, my owner has been notified"))
-        self.bot.logger.pushError("[MODAL] 'on_error' event:", error)
-
-    async def callback(self, inter: disnake.ModalInteraction) -> None:
-        await self.custom_callback(self, inter) # trigger the callback
-
-"""GameCard
-Standard card representation for card games
-"""
-@dataclass(frozen=True, slots=True)
-class GameCard():
-    value : int
-    suit : int
-    strings : list[str]
-
-    @classmethod
-    def make_card(cls, value: int, suit: int):
-        value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
-        suit = suit # suit ranges from 0 to 3
-        strings = [None, None, None] # value, suit, complete
-        # set strings
-        # value
-        match value:
-            case 1|14: strings[0] = "A"
-            case 11: strings[0] = "J"
-            case 12: strings[0] = "Q"
-            case 13: strings[0] = "K"
-            case _: strings[0] = str(value)
-        # suit
-        match suit:
-            case 0: strings[1] = "\♦️"
-            case 1: strings[1] = "\♦️"
-            case 2: strings[1] = "\♥️"
-            case 3: strings[1] = "\♣️"
-        strings[2] = "".join(strings[:2])
-        return cls(value, suit, strings)
-
-    def __repr__(self) -> str: 
-        return self.strings[2]
-
-    def __str__(self) -> str:
-        return self.strings[2]
-
-    def __int__(self) -> int:
-        return self.value
-
-    def __lt__(self, other : 'GameCard') -> bool:
-         return self.value < other.value
-
-    def getStringValue(self) -> str:
-        return self.strings[0]
-
-    def getStringSuit(self) -> str:
-        return self.strings[1]
