@@ -8,17 +8,17 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # ----------------------------------------------------------------------------------------------------------------
 
 class Ban():
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
-
-    def init(self) -> None:
-        pass
-
     # ban flags (binary number)
     OWNER   = 0b00000001
     SPARK   = 0b00000010
     PROFILE = 0b00000100
     USE_BOT = 0b10000000
+
+    def __init__(self, bot : 'DiscordBot') -> None:
+        self.bot = bot
+
+    def init(self) -> None:
+        pass
 
     """set()
     Ban an user for different bot functions. Also update existing bans
