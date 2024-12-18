@@ -1540,4 +1540,25 @@ class GranblueFantasy(commands.Cog):
     async def defense(self, inter: disnake.GuildCommandInteraction) -> None:
         """Post some known defense values"""
         await inter.response.defer(ephemeral=True)
-        await inter.edit_original_message(embed=self.bot.embed(title="Defense Values", description="**8.5**▫️ Fediel Solo\n**9.5**▫️ Fediel HL\n**10** ▫️ Estimate Calculator / Trial / Story / Event / EX+\n**11** ▫️ PBaha N / UBaha HL / Xeno\n**12** ▫️ M1 HL / Kirin HL / Metatron / Avatar / GO HL / Lindwurm\n**13** ▫️ Normal / Hard / T2 / Primarchs N & HL / UBaha N / M2\n**15** ▫️ T1 HL / Malice / Menace / Akasha / Lucilius / Astaroth / Pride / NM90-100 / Other Dragon Solos\n**18** ▫️ Rose Queen / Other Dragons HL\n**20** ▫️ PBaha HL / Lucilius Hard / Belial\n**22** ▫️ Celeste (Mist)\n**25** ▫️ Beelzebub / NM150-200\n**30** ▫️ Rose Queen (Dark)", footer="20 def = Take half the damage of 10 def", color=self.COLOR, thumbnail="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/ui/icon/status/x64/status_1019.png"))
+        dev_values : dict[str, str] = {
+            "8.5" : "Fediel Solo",
+            "9.5" : "Fediel HL",
+            "10"  : "Estimate / Trial / Story / Event / EX+",
+            "11"  : "PBaha N / UBaha HL / Xeno",
+            "12"  : "M1 HL / Kirin HL / Metatron / Avatar / GO HL / Lindwurm",
+            "13"  : "Normal / Hard / T2 / Primarchs N & HL / UBaha N / M2",
+            "15"  : "T1 HL / Malice / Menace / Akasha / Lucilius / Astaroth / Pride",
+            "18"  : "Rose Queen / 6 Dragons HL / SUbaha",
+            "20"  : "PBaha HL / Lucilius Hard / Belial",
+            "22"  : "Celeste HL (Mist)",
+            "25"  : "Beelzebub / NM150-200",
+            "30"  : "Rose Queen (Dark)"
+        }
+        descs : list[str] = []
+        for val, fights in dev_values.items():
+            descs.append("**")
+            descs.append(val)
+            descs.append("**▫️ ")
+            descs.append(fights)
+            descs.append("\n")
+        await inter.edit_original_message(embed=self.bot.embed(title="Defense Values", description="".join(descs), footer="20 def = Take half the damage of 10 def", color=self.COLOR, thumbnail="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/ui/icon/status/x64/status_1019.png"))

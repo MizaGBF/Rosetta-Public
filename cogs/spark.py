@@ -15,7 +15,7 @@ import re
 
 class Sparking(commands.Cog):
     """Track your Granblue Spark."""
-    COLOR = 0xeba834
+    COLOR : int = 0xeba834
     TOP_LIMIT = 15
     NICKNAME_REGEX = re.compile("(\(\d+\/\d{3}\))")
     # Expected monthly roll gain

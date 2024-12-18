@@ -12,7 +12,7 @@ from views.page import Page
 
 class Roles(commands.Cog):
     """Self assignable roles."""
-    COLOR = 0x17e37a
+    COLOR : int = 0x17e37a
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot : 'DiscordBot' = bot

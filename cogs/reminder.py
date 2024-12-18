@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 class Reminder(commands.Cog):
     """Set Reminders."""
-    COLOR = 0x5e17e3
+    COLOR : int = 0x5e17e3
     REMINDER_LIMIT = 8
 
     def __init__(self, bot : 'DiscordBot') -> None:

@@ -21,7 +21,7 @@ class YouCrew(commands.Cog):
     """Owner only."""
     if CREW_SERVER_ID is None: guild_ids = [] # CREW_SERVER_ID is defined in cogs/init
     else: guild_ids = [CREW_SERVER_ID]
-    COLOR = 0xffce47
+    COLOR : int = 0xffce47
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot : 'DiscordBot' = bot

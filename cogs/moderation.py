@@ -11,7 +11,7 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 
 class Moderation(commands.Cog):
     """Settings for server moderators."""
-    COLOR = 0x2eced1
+    COLOR : int = 0x2eced1
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot : 'DiscordBot' = bot

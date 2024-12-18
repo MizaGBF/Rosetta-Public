@@ -1,6 +1,7 @@
 import disnake
 from disnake.ext import commands
 import asyncio
+import types
 from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
@@ -20,10 +21,14 @@ from views.page import Page, PageRanking
 # Commands related to Unite and Fight and Granblue Fantasy Crews
 # ----------------------------------------------------------------------------------------------------------------
 
+# Type Aliases
+PlayerData : types.GenericAlias = dict[str, str|int|None]
+CrewData : types.GenericAlias = dict[str, str|datetime|bool|list[PlayerData]]
+
 class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
-    COLOR = 0xff0000
-    FIGHTS = {
+    COLOR : int = 0xff0000
+    FIGHTS : dict[str, dict[str, float|int]] = {
         "EX": {"token":56.0, "rally_token":3.84, "AP":30, "clump_drop":0, "meat_cost":0, "clump_cost":0, "honor":64000, "hp":20000000},
         "EX+": {"token":66.0, "rally_token":7.56, "AP":30, "clump_drop":0, "meat_cost":0, "clump_cost":0, "honor":126000, "hp":35000000},
         "NM90": {"token":83.0, "rally_token":18.3, "AP":30, "clump_drop":1.3, "meat_cost":5, "clump_cost":0, "honor":305000, "hp":50000000},
@@ -33,9 +38,9 @@ class GuildWar(commands.Cog):
         "NM200": {"token":338.0, "rally_token":800.98, "AP":50, "clump_drop":2, "meat_cost":20, "clump_cost":0, "honor":13350000, "hp":577500000},
         "NM250": {"token":433.0, "rally_token":2122.6, "AP":50, "clump_drop":0, "meat_cost":0, "clump_cost":20, "honor":49500000, "hp":1530375000}
     }
-    MEAT_PER_BATTLE_AVG = 21 # EX+ meat drop
+    MEAT_PER_BATTLE_AVG : int = 21 # EX+ meat drop
 
-    BOX_COST = [
+    BOX_COST : tuple[int|None, int] = [
         (1, 1600),
         (4, 2400),
         (45, 2000),
@@ -45,7 +50,7 @@ class GuildWar(commands.Cog):
 
     def __init__(self, bot : 'DiscordBot') -> None:
         self.bot : 'DiscordBot' = bot
-        self.crewcache = {}
+        self.crewcache : dict = {}
 
     def startTasks(self) -> None:
         self.bot.runTask('gw:ranking', self.bot.ranking.checkGWRanking)
@@ -479,6 +484,7 @@ class GuildWar(commands.Cog):
         if tid < 0 or tid >= 10000000:
             return {'error':'Out of range ID'}
         # retrieve data
+        crew : dict[str, str|datetime|bool|list[dict[str, str|int|None]]]
         if tid in self.crewcache: # check if cached
             crew = self.crewcache[tid]
         else:
