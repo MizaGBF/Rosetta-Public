@@ -1,9 +1,10 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-    from ..components.util import BotCommandSearch
+from components.util import BotCommandSearch
 import math
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -16,13 +17,13 @@ class General(commands.Cog):
     """Rosetta commands."""
     COLOR : int = 0xd9d927
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : General, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
     """bug_report_callback()
     CustomModal callback
     """
-    async def bug_report_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def bug_report_callback(self : General, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
         # send the user report to the debug channel
         await self.bot.send('debug', embed=self.bot.embed(title="Bug Report ▫️ " + inter.text_values['title'], description=inter.text_values['description'], footer="{} ▫️ User ID: {}".format(inter.author.name, inter.author.id), thumbnail=inter.author.display_avatar, color=self.COLOR))
@@ -31,7 +32,7 @@ class General(commands.Cog):
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def bug_report(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def bug_report(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Send a bug report or feedback to the developer"""
         await self.bot.singleton.make_and_send_modal(inter, "bug_report-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Send a Bug / Feedback Report", self.bug_report_callback, [
             disnake.ui.TextInput(
@@ -57,7 +58,7 @@ class General(commands.Cog):
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def help(self, inter: disnake.GuildCommandInteraction, terms : str = commands.Param(description="What are you searching for?", default="")) -> None:
+    async def help(self : commands.slash_command, inter : disnake.GuildCommandInteraction, terms : str = commands.Param(description="What are you searching for?", default="")) -> None:
         """Get the bot help or search global commands."""
         await inter.response.defer(ephemeral=True)
         msgs : list[str]
@@ -106,18 +107,18 @@ class General(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(3, 10, commands.BucketType.guild)
     @commands.max_concurrency(6, commands.BucketType.default)
-    async def rosetta(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def rosetta(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @rosetta.sub_command()
-    async def status(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def status(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the bot status"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="{} is Ready".format(self.bot.user.display_name), description=self.bot.util.statusString(), thumbnail=self.bot.user.display_avatar, timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @rosetta.sub_command()
-    async def changelog(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def changelog(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the bot changelog"""
         await inter.response.defer(ephemeral=True)
         msgs : list[str] = []
@@ -141,13 +142,13 @@ class General(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Changelog available", color=self.COLOR))
 
     @rosetta.sub_command()
-    async def pinboard(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def pinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the bot pinboard settings for this server"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.display(inter, self.COLOR)
 
     @rosetta.sub_command()
-    async def github(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def github(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the bot public github"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="Rosetta", description="Source code and issue tracker can be found [here](https://github.com/MizaGBF/Rosetta-Public).", color=self.COLOR))
@@ -156,12 +157,12 @@ class General(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(5, 10, commands.BucketType.guild)
     @commands.max_concurrency(8, commands.BucketType.default)
-    async def utility(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def utility(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @utility.sub_command()
-    async def calc(self, inter: disnake.GuildCommandInteraction, expression : str = commands.Param(description='Mathematical Expression')) -> None:
+    async def calc(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, expression : str = commands.Param(description='Mathematical Expression')) -> None:
         """Process a mathematical expression. Support variables (Example: cos(a + b) / c, a = 1, b=2,c = 3)."""
         try:
             await inter.response.defer()
@@ -185,13 +186,13 @@ class General(commands.Cog):
         await self.bot.channel.clean(inter, 60)
 
     @utility.sub_command()
-    async def jst(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def jst(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the current time, JST timezone"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="{} {:%Y/%m/%d %H:%M} JST".format(self.bot.emote.get('clock'), self.bot.util.JST()), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @utility.sub_command()
-    async def rollchance(self, inter: disnake.MessageCommandInteraction, count : str = commands.Param(description="Amount of rolls. Leave empty to use your set spark count", default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
+    async def rollchance(self : commands.SubCommand, inter : disnake.MessageCommandInteraction, count : str = commands.Param(description="Amount of rolls. Leave empty to use your set spark count", default=""), banner : int = commands.Param(description='1~2 for classics, 3  for collab', default=0, ge=0)) -> None:
         """Calculate your chance of rolling the rate up for a given amount of rolls."""
         await inter.response.defer(ephemeral=True)
         try:
@@ -224,7 +225,7 @@ class General(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Roll Chance Calculator Error", description=str(e), color=self.COLOR))
 
     @utility.sub_command()
-    async def dropchance(self, inter: disnake.MessageCommandInteraction, chance : str = commands.Param(description="Drop rate of the item (Format: Either XX% or 0.X)"), tries : int = commands.Param(description="Amount of tries, default is 1", default=1, ge=1, le=10000000)) -> None:
+    async def dropchance(self : commands.SubCommand, inter : disnake.MessageCommandInteraction, chance : str = commands.Param(description="Drop rate of the item (Format: Either XX% or 0.X)"), tries : int = commands.Param(description="Amount of tries, default is 1", default=1, ge=1, le=10000000)) -> None:
         """Calculate your chance of dropping an item."""
         await inter.response.defer(ephemeral=True)
         try:
@@ -243,7 +244,7 @@ class General(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Drop Chance Calculator Error", description=str(e), color=self.COLOR))
 
     @utility.sub_command()
-    async def fortunechance(self, inter: disnake.MessageCommandInteraction, cards : str = commands.Param(description="Your list of cards, separated by spaces")) -> None:
+    async def fortunechance(self : commands.SubCommand, inter : disnake.MessageCommandInteraction, cards : str = commands.Param(description="Your list of cards, separated by spaces")) -> None:
         """Calculate your chance at the GBF summer fortune game from Summer 2021"""
         await inter.response.defer(ephemeral=True)
         card_list : list[str] = cards.split(" ")
@@ -268,7 +269,7 @@ class General(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Summer Fortune Calculator", description="Your chances of winning at least one\n**Tier 3** ▫️ {:.2f}%\n**Tier 2** ▫️ {:.2f}%\n**Tier 1** ▫️ {:.2f}%".format(100*(1-math.pow(1-0.03, len(tier3))), 100*(1-math.pow(1-0.02, len(tier2))), 100*(1-math.pow(1-0.002, len(tier1)))), color=self.COLOR)) # simple binomial calcul for each tier
 
     @utility.sub_command()
-    async def yen(self, inter) -> None:
+    async def yen(self : commands.SubCommand, inter : disnake.MessageCommandInteraction) -> None:
         """Retrieve the current yen conversion rate"""
         await inter.response.defer(ephemeral=True)
         try:
@@ -290,7 +291,7 @@ class General(commands.Cog):
     """translate_callback()
     CustomModal callback
     """
-    async def translate_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def translate_callback(self : General, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         try:
             await inter.response.defer(ephemeral=True)
             await inter.edit_original_message(embed=self.bot.embed(title="Google Translate", description="```\n{}\n```".format(self.bot.net.translate(inter.text_values['text'])), color=self.COLOR))
@@ -298,7 +299,7 @@ class General(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured:\n{}".format(e), color=self.COLOR))
 
     @utility.sub_command()
-    async def translate(self, inter: disnake.MessageCommandInteraction) -> None:
+    async def translate(self : commands.SubCommand, inter : disnake.MessageCommandInteraction) -> None:
         """Translate a text to english"""
         await self.bot.singleton.make_and_send_modal(inter, "translate-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Translate Text", self.translate_callback, [
                 disnake.ui.TextInput(
@@ -316,7 +317,7 @@ class General(commands.Cog):
     @commands.message_command(name="Translate to English")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 15, commands.BucketType.guild)
-    async def translate_(self, inter: disnake.MessageCommandInteraction, message: disnake.Message) -> None:
+    async def translate_(self : commands.SubCommand, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
         """Translate a message embed or content to english"""
         try:
             await inter.response.defer()

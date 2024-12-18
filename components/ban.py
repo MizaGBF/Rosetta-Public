@@ -1,4 +1,5 @@
-from typing import Union, Optional, TYPE_CHECKING
+from __future__ import annotations
+from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -9,15 +10,15 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 
 class Ban():
     # ban flags (binary number)
-    OWNER   = 0b00000001
-    SPARK   = 0b00000010
-    PROFILE = 0b00000100
-    USE_BOT = 0b10000000
+    OWNER   : int = 0b00000001
+    SPARK   : int = 0b00000010
+    PROFILE : int = 0b00000100
+    USE_BOT : int = 0b10000000
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : Ban, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
-    def init(self) -> None:
+    def init(self : Ban) -> None:
         pass
 
     """set()
@@ -28,7 +29,7 @@ class Ban():
     uid: User discord id
     flag: Bit Mask
     """
-    def set(self, uid : Union[int, str], flag : int) -> None:
+    def set(self : Ban, uid : int|str, flag : int) -> None:
         if not self.check(uid, flag): # if not banned for that flag
             # set ban flag
             self.bot.data.save['ban'][str(uid)] = self.bot.data.save['ban'].get(str(uid), 0) ^ flag
@@ -42,7 +43,7 @@ class Ban():
     uid: User discord id
     flag: Bit Mask. Optional (If not present or None, all bans will be lifted)
     """
-    def unset(self, uid : Union[int, str], flag : Optional[int] = None) -> None:
+    def unset(self : Ban, uid : int|str, flag : int|None = None) -> None:
         if str(uid) in self.bot.data.save['ban']: # if user in ban list
             if flag is None: # total unban
                 self.bot.data.save['ban'].pop(str(uid))
@@ -64,7 +65,7 @@ class Ban():
     ----------
     bool: True if banned, False if not
     """
-    def check(self, uid : Union[int, str], mask : int) -> bool:
+    def check(self : Ban, uid : int|str, mask : int) -> bool:
         # apply mask to user flag to check if banned
         return ((self.bot.data.save['ban'].get(str(uid), 0) & mask) == mask)
 
@@ -79,6 +80,6 @@ class Ban():
     ----------
     int: Bitmask
     """
-    def get(self, uid : Union[int, str]) -> int:
+    def get(self : Ban, uid : int|str) -> int:
         # simply return the user ban value
         return self.bot.data.save['ban'].get(str(uid), 0)

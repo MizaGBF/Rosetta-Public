@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import math
@@ -12,19 +13,19 @@ import math
 class Calc():
     FUNCS : list[str] = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg'] # supported functions
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : Calc, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
         self.expression : str = ""
         self.index : int = 0
         self.vars : dict[str, float] = {}
 
-    def init(self) -> None:
+    def init(self : Calc) -> None:
         pass
 
     """reset()
     Reinitialize the calculator state
     """
-    def reset(self) -> None:
+    def reset(self : Calc) -> None:
         self.expression = ""
         self.index = 0
         self.vars = {
@@ -48,13 +49,13 @@ class Calc():
     --------
     float or int: Result
     """
-    def evaluate(self, expression : str = "", vars : dict = {}) -> int|float:
+    def evaluate(self : Calc, expression : str = "", vars : dict = {}) -> int|float:
         # start by resetting calculator
         self.reset()
         # prepare expression
         self.expression = expression.replace(' ', '').replace('\t', '').replace('\n', '').replace('\r', '')
         # store variables
-        self.vars = {**self.vars, **vars}
+        self.vars = self.vars | vars
         for func in self.FUNCS: # check variable names for dupes with function names
             if func in self.vars: raise Exception("Variable name '{}' can't be used".format(func))
         # parse expression and get the result
@@ -79,7 +80,7 @@ class Calc():
     --------
     bool: True if the evaluation isn't finished, False if it is
     """
-    def isNotDone(self) -> bool:
+    def isNotDone(self : Calc) -> bool:
         return self.index < len(self.expression)
 
     """peek()
@@ -89,7 +90,7 @@ class Calc():
     --------
     str: Next element to be parsed
     """
-    def peek(self) -> str:
+    def peek(self : Calc) -> str:
         return self.expression[self.index:self.index + 1]
 
     """parse()
@@ -99,7 +100,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def parse(self) -> int|float:
+    def parse(self : Calc) -> int|float:
         values : list[float] = [self.multiply()] # start by calling multiply
         while True:
             c : str = self.peek() # get next character
@@ -118,8 +119,9 @@ class Calc():
     --------
     float or int: Result
     """
-    def multiply(self) -> int|float:
+    def multiply(self : Calc) -> int|float:
         values : list[float] = [self.parenthesis()] # call parenthesis first
+        denominator : int|float 
         while True:
             c : str = self.peek() # check operator
             if c in ['*', 'x']: # multiply
@@ -141,7 +143,7 @@ class Calc():
                 values[-1] = values[-1] % denominator
             elif c == '^': # exponent
                 self.index += 1
-                exponent = self.parenthesis()
+                exponent : int|float = self.parenthesis()
                 values[-1] = values[-1] ** exponent
             elif c == '!': # factorial
                 self.index += 1
@@ -165,7 +167,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def parenthesis(self) -> int|float:
+    def parenthesis(self : Calc) -> int|float:
         if self.peek() == '(': # check if next character is an open parenthesis
             self.index += 1
             value : int|float = self.parse() # then parse inside that parenthesis
@@ -183,7 +185,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def negative(self) -> int|float:
+    def negative(self : Calc) -> int|float:
         if self.peek() == '-': # if minus, multiply next value with -1
             self.index += 1
             return -1 * self.parenthesis()
@@ -197,7 +199,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def value(self) -> int|float:
+    def value(self : Calc) -> int|float:
         if self.peek() in '0123456789.': # check if digit or dot
             return self.number()
         else: # else expect variable or function
@@ -214,7 +216,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def variable_or_function(self) -> int|float:
+    def variable_or_function(self : Calc) -> int|float:
         var : str = ''
         while self.isNotDone(): # retrieve var/func name
             c : str = self.peek()
@@ -231,7 +233,7 @@ class Calc():
                 raise Exception("Unrecognized variable '{}'".format(var))
             else:
                 # parse func parameter
-                param = self.parenthesis()
+                param : int|float = self.parenthesis()
                 match var: # call function for that parameter
                     case 'cos': value = math.cos(param)
                     case 'sin': value = math.sin(param)
@@ -278,7 +280,7 @@ class Calc():
     --------
     float or int: Result
     """
-    def number(self) -> int|float:
+    def number(self : Calc) -> int|float:
         strValue : list[str] = []
         decimal_found : bool = False
         c : str = ''

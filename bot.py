@@ -1,3 +1,4 @@
+from __future__ import annotations
 from components.data import Data
 from components.drive import Drive
 from components.util import Util
@@ -42,7 +43,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.0.0** - Reworked: `/gbf wiki`, `/mod cleanup`, `/mod announcement`, `/mod pinboard`.",
     ]
     
-    def __init__(self, test_mode : bool = False, debug_mode : bool = False) -> None:
+    def __init__(self : DiscordBot, test_mode : bool = False, debug_mode : bool = False) -> None:
         self.running : bool = True # is False when the bot is shutting down
         self.debug_mode : bool = debug_mode # indicate if we are running the debug version of the bot
         self.test_mode : bool = test_mode # indicate if we are running the test version of the bot
@@ -177,7 +178,7 @@ class DiscordBot(commands.InteractionBot):
     Test function, to verify the cogs are loading properly.
     Called when using -test.
     """
-    def test_bot(self) -> None:
+    def test_bot(self : DiscordBot) -> None:
         failed : int
         self.cogn, failed = cogs.load(self)
         if failed > 0:
@@ -193,7 +194,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     no_cogs: Boolean, set to True to not load the cogs. Used by -remove.
     """
-    def start_bot(self, no_cogs : bool = False) -> None:
+    def start_bot(self : DiscordBot, no_cogs : bool = False) -> None:
         if no_cogs:
             self.cogn = 0
             failed : int = 0
@@ -237,7 +238,7 @@ class DiscordBot(commands.InteractionBot):
     Followup from start_bot().
     Initialize the aiohttp clients and the unicode emoji list.
     """
-    async def run_bot(self) -> None:
+    async def run_bot(self : DiscordBot) -> None:
         async with self.net.init_clients():
             await self.emote.init_request()
             await self.start(self.data.config['tokens']['discord'])
@@ -245,7 +246,7 @@ class DiscordBot(commands.InteractionBot):
     """exit_gracefully()
     Coroutine triggered when SIGTERM or SIGINT is received, to close the bot
     """
-    async def exit_gracefully(self) -> None: # graceful exit (when SIGTERM is received)
+    async def exit_gracefully(self : DiscordBot) -> None: # graceful exit (when SIGTERM is received)
         try:
             while self.running: # we wait until we receive the signal
                 await asyncio.sleep(10000)
@@ -262,7 +263,7 @@ class DiscordBot(commands.InteractionBot):
     signum: Integer (Optional), the signal number
     frame: Frame (Optional), the stack
     """
-    def _exit_gracefully_internal(self, signum : Any = None, frame : Any = None) -> None:
+    def _exit_gracefully_internal(self : DiscordBot, signum : Any = None, frame : Any = None) -> None:
         self.running = False
         if self.data.pending and not self.debug_mode: # save if needed and not in debug mode
             self.data.autosaving = False
@@ -290,7 +291,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if matched, False if not
     """
-    def isServer(self, inter : disnake.ApplicationCommandInteraction, id_string : str) -> bool:
+    def isServer(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, id_string : str) -> bool:
         return inter.guild.id == self.data.config['ids'].get(id_string, -1)
 
     """isChannel()
@@ -305,7 +306,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if matched, False if not
     """
-    def isChannel(self, inter : disnake.ApplicationCommandInteraction, id_string : str) -> bool:
+    def isChannel(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, id_string : str) -> bool:
         return inter.channel.id == self.data.config['ids'].get(id_string, -1)
 
     """isMod()
@@ -319,7 +320,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if it does, False if not
     """
-    def isMod(self, inter : disnake.ApplicationCommandInteraction) -> bool:
+    def isMod(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
         return inter.author.guild_permissions.manage_messages or inter.author.id == self.owner.id
 
     """isOwner()
@@ -333,7 +334,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if it does, False if not
     """
-    def isOwner(self, inter : disnake.ApplicationCommandInteraction) -> bool:
+    def isOwner(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
         return inter.author.id == self.owner.id
 
     """send()
@@ -353,10 +354,10 @@ class DiscordBot(commands.InteractionBot):
     --------
     disnake.Message: The sent message or None if error
     """
-    async def send(self, channel_name : str, msg : str = "", embed : disnake.Embed = None, file : disnake.File = None, view : disnake.ui.View = None, publish : bool = False) -> disnake.Message|None:
+    async def send(self : DiscordBot, channel_name : str, msg : str = "", embed : disnake.Embed = None, file : disnake.File = None, view : disnake.ui.View = None, publish : bool = False) -> disnake.Message|None:
         try:
             c : disnake.Channel = self.channel.get(channel_name) # retrieve channel from component
-            message : disnake.Message = await c.send(msg, embed=embed, file=file, view=view) # send to channel and retrieve resulting message
+            message : disnake.Message|None = await c.send(msg, embed=embed, file=file, view=view) # send to channel and retrieve resulting message
             try:
                 if publish is True and c.is_news() and self.channel.can_publish(c.id): # publish if enabled and possible
                     await message.publish()
@@ -388,7 +389,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     list: A list of the successfully sent messages
     """
-    async def sendMulti(self, channel_names : list[str], msg : str = "", embed : disnake.Embed = None, file : disnake.File = None, publish : bool = False) -> list: # send to multiple registered channel at the same time
+    async def sendMulti(self : DiscordBot, channel_names : list[str], msg : str = "", embed : disnake.Embed = None, file : disnake.File = None, publish : bool = False) -> list: # send to multiple registered channel at the same time
         r : list[disnake.Message] = [] # resulting message
         err : list[str] = [] # errors
         ex : Exception = None # latest exception
@@ -414,7 +415,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if success, False if not
     """
-    async def changeAvatar(self, filename : str) -> bool:
+    async def changeAvatar(self : DiscordBot, filename : str) -> bool:
         try:
             with open("assets/avatars/" + filename, mode="rb") as f: # read file
                 await self.user.edit(avatar=f.read()) # and upload bot user
@@ -426,7 +427,7 @@ class DiscordBot(commands.InteractionBot):
     """on_ready()
     Event. Called on connection
     """
-    async def on_ready(self) -> None: # called when the bot starts
+    async def on_ready(self : DiscordBot) -> None: # called when the bot starts
         if not self.booted: # this flag is used to not show this function content again in case of an untimely disconnection
             self.booted = True
             # Register our used channels for the send function
@@ -460,7 +461,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     disnake.Embed: The created embed
     """
-    def embed(self, **options : dict[str, Any]) -> disnake.Embed:
+    def embed(self : DiscordBot, **options : dict[str, Any]) -> disnake.Embed:
         embed : disnake.Embed = disnake.Embed(title=options.get('title', ""), description=options.pop('description', ""), url=options.pop('url', ""), color=options.pop('color', 16777215))
         fields : list[dict[str, str]] = options.pop('fields', [])
         inline : bool = options.pop('inline', False)
@@ -491,7 +492,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     unknown: The string, else the exception parameter if an error occured
     """
-    def pexc(self, exception : Exception) -> str|Exception: # format an exception
+    def pexc(self : DiscordBot, exception : Exception) -> str|Exception: # format an exception
         try:
             return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         except:
@@ -505,7 +506,7 @@ class DiscordBot(commands.InteractionBot):
     name: Task identifier
     coro: The coroutine to be called
     """
-    def runTask(self, name : str, func : Callable) -> None:
+    def runTask(self : DiscordBot, name : str, func : Callable) -> None:
         self.cancelTask(name)
         self.tasks[name] = self.loop.create_task(func())
         self.logger.push("[MAIN] Task '{}' started".format(name), send_to_discord=False)
@@ -517,7 +518,7 @@ class DiscordBot(commands.InteractionBot):
     ----------
     name: Task identifier
     """
-    def cancelTask(self, name : str) -> None:
+    def cancelTask(self : DiscordBot, name : str) -> None:
         if name in self.tasks:
             try:
                 self.tasks[name].cancel()
@@ -529,7 +530,7 @@ class DiscordBot(commands.InteractionBot):
     Start all tasks from each cogs (if any), along with the logger
     Note: In test mode, only the log is started
     """
-    def startTasks(self) -> None:
+    def startTasks(self : DiscordBot) -> None:
         self.runTask('bot:log', self.logger.process) 
         if not self.debug_mode and not self.test_mode:
             c : commands.Cog
@@ -547,7 +548,7 @@ class DiscordBot(commands.InteractionBot):
     ----------
     guild: Discord Guild
     """
-    async def on_guild_join(self, guild : disnake.Guild) -> None:
+    async def on_guild_join(self : DiscordBot, guild : disnake.Guild) -> None:
         try:
              await self.send('debug', embed=self.embed(title=guild.name + " added me", description="**ID** ▫️ `{}`\n**Owner** ▫️ `{}`\n**Text Channels** ▫️ {}\n**Voice Channels** ▫️ {}\n**Members** ▫️ {}\n**Roles** ▫️ {}\n**Emojis** ▫️ {}\n**Boosted** ▫️ {}\n**Boost Tier** ▫️ {}".format(guild.id, guild.owner_id, len(guild.text_channels), len(guild.voice_channels), guild.member_count, len(guild.roles), len(guild.emojis), guild.premium_subscription_count, guild.premium_tier), thumbnail=guild.icon, timestamp=guild.created_at))
         except Exception as e:
@@ -565,7 +566,7 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if the command can be processed, False if not
     """
-    async def global_check(self, inter : disnake.ApplicationCommandInteraction) -> bool:
+    async def global_check(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
         if not self.running: return False # do nothing if the bot is stopped/stopping
         if inter.guild is None or isinstance(inter.channel, disnake.PartialMessageable): # if none or channel is PartialMessageable, the command has been sent via a direct message
             return False # so we ignore
@@ -591,7 +592,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def application_error_handling(self, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def application_error_handling(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
         try:
             msg : str = str(error)
             embed : disnake.Embed
@@ -645,7 +646,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_slash_command_error(self, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_slash_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_user_command_error()
@@ -656,7 +657,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_user_command_error(self, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_user_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_message_command_error()
@@ -667,7 +668,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_message_command_error(self, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_message_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_raw_reaction_add()
@@ -682,7 +683,7 @@ class DiscordBot(commands.InteractionBot):
     ----------
     payload: Raw payload
     """
-    async def on_raw_reaction_add(self, payload : disnake.RawReactionActionEvent) -> None:
+    async def on_raw_reaction_add(self : DiscordBot, payload : disnake.RawReactionActionEvent) -> None:
         name : str
         coroutine : Callable
         for name, coroutine in self.reaction_hooks.items():

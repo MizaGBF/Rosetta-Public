@@ -1,4 +1,5 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
@@ -30,10 +31,10 @@ class DreadBarrage(commands.Cog):
         (None, 15000)
     ]
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : DreadBarrage, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
-    def startTasks(self) -> None:
+    def startTasks(self : DreadBarrage) -> None:
         pass
 
     """getBarrageState()
@@ -43,7 +44,7 @@ class DreadBarrage(commands.Cog):
     --------
     str: Dread Barrage state
     """
-    def getBarrageState(self) -> str: # return the current state of the valiant in string format (which day is on going, etc...)
+    def getBarrageState(self : DreadBarrage) -> str: # return the current state of the valiant in string format (which day is on going, etc...)
         if self.bot.data.save['dread']['state'] is True: # if enabled
             current_time : datetime = self.bot.util.JST()
             if current_time < self.bot.data.save['dread']['dates']["Day 1"]: # hasn't started
@@ -84,7 +85,7 @@ class DreadBarrage(commands.Cog):
     --------
     bool: True if it's running, False if it's not
     """
-    def isDBRunning(self) -> bool:
+    def isDBRunning(self : DreadBarrage) -> bool:
         if self.bot.data.save['dread']['state'] is True:
             current_time : datetime = self.bot.util.JST()
             if current_time < self.bot.data.save['dread']['dates']["Day 1"]:
@@ -104,12 +105,12 @@ class DreadBarrage(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(8, commands.BucketType.default)
-    async def db(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def db(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @db.sub_command()
-    async def time(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def time(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Post the Dread Barrage schedule"""
         await inter.response.defer()
         if self.bot.data.save['dread']['state'] is True:
@@ -152,7 +153,7 @@ class DreadBarrage(commands.Cog):
             await self.bot.channel.clean(inter, 40)
 
     @db.sub_command()
-    async def token(self, inter: disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
+    async def token(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
         """Convert Dread Barrage token values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -172,14 +173,14 @@ class DreadBarrage(commands.Cog):
             # create message
             msgs : list[str] = ["**{:,}** box(s) and **{:,}** leftover tokens\n\n".format(b, tok)]
             for f, d in self.FIGHTS.items():
-                n : float = math.ceil(t / d["token"]) # number of fights needed
+                n : int = math.ceil(t / d["token"]) # number of fights needed
                 msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75)) # number of fight, fight name, half elixir count
             await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ {} tokens".format(self.bot.emote.get('crew'), t), description="".join(msgs), color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
     @db.sub_command()
-    async def box(self, inter: disnake.GuildCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
+    async def box(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
         """Convert Dread Barrage box values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -202,7 +203,7 @@ class DreadBarrage(commands.Cog):
             # create message
             msgs : list [str] = ["**{:,}** tokens needed{:}{:}\n\n".format(t, ("" if box_done == 0 else " from box **{}**".format(box_done+1)), ("" if with_token_int == 0 else " with **{:,}** tokens".format(with_token_int)))]
             for f, d in self.FIGHTS.items():
-                n : float = math.ceil(t/d["token"]) # number of fights needed
+                n : int = math.ceil(t/d["token"]) # number of fights needed
                 msgs.append("**{:,}** {:} (**{:,}** pots)\n".format(n, f, n*d["AP"]//75))
             await inter.edit_original_message(embed=self.bot.embed(title="{} Dread Barrage Token Calculator ▫️ Box {}".format(self.bot.emote.get('crew'), box), description="".join(msgs), color=self.COLOR))
         except Exception as e:

@@ -1,5 +1,6 @@
+from __future__ import annotations
 import disnake
-from typing import Optional, Generator, TYPE_CHECKING
+from typing import Generator, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 import os
 import io
@@ -13,8 +14,8 @@ from contextlib import contextmanager
 # ----------------------------------------------------------------------------------------------------------------
 
 class File():
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : File, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
     def init(self) -> None:
         pass
@@ -26,7 +27,7 @@ class File():
     ----------
     filename: File path
     """
-    def rm(self, filename : str) -> None:
+    def rm(self : File, filename : str) -> None:
         try: os.remove(filename)
         except: pass
 
@@ -38,7 +39,7 @@ class File():
     src: Source File path
     dst: Destination File path
     """
-    def cpy(self, src : str, dst : str) -> None:
+    def cpy(self : File, src : str, dst : str) -> None:
         try: shutil.copyfile(src, dst)
         except: pass
 
@@ -50,7 +51,7 @@ class File():
     src: Source File path
     dst: Destination File path
     """
-    def mv(self, src : str, dst : str) -> None:
+    def mv(self : File, src : str, dst : str) -> None:
         try:
             if self.exist(src):
                 if self.exist(dst): self.rm(dst) # delete destination beforehand, to be sure
@@ -68,7 +69,7 @@ class File():
     ----------
     bool: True if it exists, False otherwise
     """
-    def exist(self, path : str) -> bool:
+    def exist(self : File, path : str) -> bool:
         try: return os.path.isfile(path)
         except: return False
 
@@ -76,8 +77,8 @@ class File():
     Context Manager for disnake.File objects
     """
     @contextmanager
-    def discord(self, fp : io.BufferedIOBase, filename : Optional[str] = None, spoiler : bool = False, description : Optional[str] = None) -> Generator[disnake.File, None, None]:
-        df = disnake.File(fp=fp, filename=filename, spoiler=spoiler, description=description)
+    def discord(self : File, fp : io.BufferedIOBase, filename : str|None = None, spoiler : bool = False, description : str|None = None) -> Generator[disnake.File, None, None]:
+        df : disnake.File = disnake.File(fp=fp, filename=filename, spoiler=spoiler, description=description)
         try:
             yield df
         finally:

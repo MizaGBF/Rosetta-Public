@@ -1,7 +1,8 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 import asyncio
 import types
-from typing import Union, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
 import psutil
@@ -19,13 +20,14 @@ import html
 # Type Aliases
 BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
 BotCommandSearch : types.GenericAlias = list[None|int|str]
+JSON : types.GenericAlias = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
 
 class Util():
     JSTDIFF = 32400 # JST <-> UTC difference in seconds
     MULTIPLIER_1000 = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : Util, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
         self.starttime = self.UTC() # used to check the bot uptime
         # bot process
         self.process = psutil.Process(os.getpid())

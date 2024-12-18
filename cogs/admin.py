@@ -1,11 +1,12 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from disnake.ext import commands
 import asyncio
 from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-    from ..components.ranking import GWDB
-    from ..components.network import RequestResult
+from components.ranking import GWDB
+from components.network import RequestResult
 from cogs import DEBUG_SERVER_ID
 from datetime import datetime, timedelta
 import random
@@ -30,17 +31,17 @@ class Admin(commands.Cog):
         guild_ids = [DEBUG_SERVER_ID]
     COLOR : int = 0x7a1472
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
-    def startTasks(self) -> None:
+    def startTasks(self : Admin) -> None:
         self.bot.runTask('owner:status', self.status)
         self.bot.runTask('data:maintenance', self.bot.data.maintenance)
 
     """status()
     Bot Task managing the autosave and update of the bot status
     """
-    async def status(self) -> None: # background task changing the bot status and calling autosave()
+    async def status(self : Admin) -> None: # background task changing the bot status and calling autosave()
         await self.bot.change_presence(status=disnake.Status.online, activity=disnake.activity.Game(name="I rebooted in the last 30 minutes"))
         num : int = 0
         while True:
@@ -63,7 +64,7 @@ class Admin(commands.Cog):
     """_shutdown()
     Shutdown the bot
     """
-    def _shutdown(self) -> None:
+    def _shutdown(self : Admin) -> None:
         self.bot.logger.push("[OWNER] Reboot triggered", send_to_discord=False)
         # force save first
         if self.bot.data.pending:
@@ -102,7 +103,7 @@ class Admin(commands.Cog):
     """guildList()
     Output the server list of the bot in the debug channel
     """
-    async def guildList(self) -> None: # list all guilds the bot is in and send it in the debug channel
+    async def guildList(self : Admin) -> None: # list all guilds the bot is in and send it in the debug channel
         msgs : list[str] = []
         length : int = 0
         # iterate over guilds
@@ -127,18 +128,18 @@ class Admin(commands.Cog):
     @commands.slash_command(name="owner", guild_ids=guild_ids)
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @isOwner()
-    async def _owner(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def _owner(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group (Owner Only)"""
         pass
 
     @_owner.sub_command_group()
-    async def utility(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def utility(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     """exec_callback()
     CustomModal callback
     """
-    async def exec_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def exec_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         try:
             await inter.response.defer()
             # redirect stdout to get the result in discord
@@ -151,7 +152,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Exec Error", description="Ran `{}`\nException\n{}".format(inter.text_values['code'], e), color=self.COLOR))
 
     @utility.sub_command()
-    async def exec(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def exec(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Execute code at run time (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(inter, "exec-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Execute Code", self.exec_callback, [
                 disnake.ui.TextInput(
@@ -173,7 +174,7 @@ class Admin(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             # fetch targeted user to respond to
-            target : disnake.User = await self.bot.get_or_fetch_user(int(inter.text_values['user']))
+            target : disnake.User|None = await self.bot.get_or_fetch_user(int(inter.text_values['user']))
             # send them a dm
             await target.send(embed=self.bot.embed(title="Answer to your Bug Report ▫️ " + inter.text_values['title'], description=inter.text_values['description'], image=inter.text_values['image'], color=self.COLOR))
             await inter.edit_original_message(embed=self.bot.embed(title="Information", description='Answer sent with success', color=self.COLOR))
@@ -181,7 +182,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description='The following error occured:\n{}'.format(e), color=self.COLOR))
 
     @utility.sub_command()
-    async def answer(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def answer(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Answer a bug report (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(inter, "bug_answer-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Answer a Bug Report", self.answer_callback, [
             disnake.ui.TextInput(
@@ -223,11 +224,11 @@ class Admin(commands.Cog):
         ])
 
     @utility.sub_command()
-    async def leave(self, inter: disnake.GuildCommandInteraction, gid : str = commands.Param()) -> None:
+    async def leave(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, gid : str = commands.Param()) -> None:
         """Make the bot leave a server (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            toleave : disnake.Guild = self.bot.get_guild(int(gid)) # retrieve guild
+            toleave : disnake.Guild|None = self.bot.get_guild(int(gid)) # retrieve guild
             await toleave.leave() # and leave
             await inter.edit_original_message(embed=self.bot.embed(title="Server left", color=self.COLOR))
             await self.guildList() # print guild list
@@ -264,7 +265,7 @@ class Admin(commands.Cog):
                 return await self.approximate_account(int(step*1.4), current+step, count+1) # increases step by 40%. Use current existing account as next reference point.
 
     @utility.sub_command()
-    async def playerbase(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def playerbase(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Get an approximation of the number of accounts on Granblue Fantasy (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if not await self.bot.net.gbf_available(): # check if the game is up
@@ -283,17 +284,17 @@ class Admin(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="Granblue Fantasy ▫️ Playerbase", description="Total playerbase estimated around **{:,}** accounts *(±10)*".format((result//10)*10), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def ban(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def ban(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @ban.sub_command()
-    async def server(self, inter: disnake.GuildCommandInteraction, guild_id : str = commands.Param()) -> None:
+    async def server(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, guild_id : str = commands.Param()) -> None:
         """Command to leave and ban a server (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
             gid : str = int(guild_id)
             try: # get and leave server (if it hasn't yet)
-                toleave : disnake.Guild = self.bot.get_guild(gid)
+                toleave : disnake.Guild|None = self.bot.get_guild(gid)
                 await toleave.leave()
             except:
                 pass
@@ -307,7 +308,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     @ban.sub_command()
-    async def owner(self, inter: disnake.GuildCommandInteraction, guild_id : str = commands.Param()) -> None:
+    async def owner(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, guild_id : str = commands.Param()) -> None:
         """Command to ban a server owner and leave all its servers (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -326,7 +327,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     @ban.sub_command()
-    async def checkid(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def checkid(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID Based Check if an user has a ban registered in the bot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         msgs : list[str] = []
@@ -339,46 +340,46 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="User {}".format(user_id), description="".join(msgs), color=self.COLOR))
 
     @ban.sub_command()
-    async def all(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def all(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """Ban an user from using the bot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.set(user_id, self.bot.ban.USE_BOT)
         await inter.edit_original_message(embed=self.bot.embed(title="Banned user", color=self.COLOR))
 
     @ban.sub_command()
-    async def profile(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def profile(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID based Ban for /gbf profile (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.set(user_id, self.bot.ban.PROFILE)
         await inter.edit_original_message(embed=self.bot.embed(title="Banned user for profile", color=self.COLOR))
 
     @ban.sub_command()
-    async def rollid(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def rollid(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID based Ban for /spark ranking (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.set(user_id, self.bot.ban.SPARK)
         await inter.edit_original_message(embed=self.bot.embed(title="Banned user for roll ranking", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def unban(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def unban(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @unban.sub_command(name="all")
-    async def _all(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def _all(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """Unban an user from using the bot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.unset(user_id, self.bot.ban.USE_BOT)
         await inter.edit_original_message(embed=self.bot.embed(title="Unbanned user", color=self.COLOR))
 
     @unban.sub_command(name="profile")
-    async def _profile(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def _profile(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID based Unban for /gbf profile (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.unset(user_id, self.bot.ban.PROFILE)
         await inter.edit_original_message(embed=self.bot.embed(title="Unbanned user for profile", color=self.COLOR))
 
     @unban.sub_command()
-    async def roll(self, inter: disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def roll(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """Unban an user from all the roll ranking (Owner Only)
         Ask me for an unban (to avoid abuses)"""
         await inter.response.defer(ephemeral=True)
@@ -386,11 +387,11 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Unbanned user for roll ranking", color=self.COLOR))
 
     @_owner.sub_command_group(name="bot")
-    async def _bot(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def _bot(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @_bot.sub_command()
-    async def invite(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def invite(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Get the invite link (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # return a bot invite link
@@ -398,21 +399,22 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title=inter.guild.me.name, description="[Invite](https://discord.com/api/oauth2/authorize?client_id={}&permissions=1644905889015&scope=bot%20applications.commands)".format(self.bot.user.id), thumbnail=inter.guild.me.display_avatar, timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @_bot.sub_command()
-    async def guilds(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def guilds(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """List all servers (Owner Only)"""
         await inter.response.defer(ephemeral=True)
+        print(type(self))
         await self.guildList()
         await inter.edit_original_message(embed=self.bot.embed(title="Done", color=self.COLOR))
 
     @_bot.sub_command()
-    async def reboot(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def reboot(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Shutdown the bot to make it reboot (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="Rebooting...", color=self.COLOR))
         self._shutdown() # Note: Assume a Watchtower or other similar system is in place. Else, the bot will just shutdown.
 
     @_bot.sub_command()
-    async def avatar(self, inter: disnake.GuildCommandInteraction, filename : str = commands.Param(description="Filename of the asset to use")) -> None:
+    async def avatar(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, filename : str = commands.Param(description="Filename of the asset to use")) -> None:
         """Change Rosetta's profile picture (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if await self.bot.changeAvatar(filename): # the avatar must be in assets/avatars
@@ -423,7 +425,7 @@ class Admin(commands.Cog):
     """notify_callback()
     CustomModal callback
     """
-    async def notify_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def notify_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         try:
             await inter.response.defer(ephemeral=True)
             # build/format the message to send
@@ -441,7 +443,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description='The following error occured:\n{}'.format(e), color=self.COLOR))
 
     @_bot.sub_command()
-    async def notify(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def notify(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Send a message to all announcement channels (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(inter, "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Notify Users", self.notify_callback, [
                 disnake.ui.TextInput(
@@ -466,18 +468,18 @@ class Admin(commands.Cog):
         )
 
     @_owner.sub_command_group()
-    async def data(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def data(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @data.sub_command()
-    async def save(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def save(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Command to make a snapshot of the bot's settings (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.data.autosave(True)
         await inter.edit_original_message(embed=self.bot.embed(title="Saved", color=self.COLOR))
 
     @data.sub_command()
-    async def load(self, inter: disnake.GuildCommandInteraction, drive : int = commands.Param(description="Add 1 to use the file from the drive", default=0)) -> None:
+    async def load(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, drive : int = commands.Param(description="Add 1 to use the file from the drive", default=0)) -> None:
         """Command to reload the bot save data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if drive != 0: # download the save file from the drive.
@@ -495,7 +497,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="The command finished running", color=self.COLOR))
 
     @data.sub_command()
-    async def get(self, inter: disnake.GuildCommandInteraction, filename: str = commands.Param(description="Path to a local file")) -> None:
+    async def get(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, filename: str = commands.Param(description="Path to a local file")) -> None:
         """Retrieve a bot file remotely (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -509,7 +511,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     @data.sub_command()
-    async def clearprofile(self, inter: disnake.GuildCommandInteraction, gbf_id : int = commands.Param(description="A valid GBF Profile ID", ge=0)) -> None:
+    async def clearprofile(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, gbf_id : int = commands.Param(description="A valid GBF Profile ID", ge=0)) -> None:
         """Unlink a GBF id from an user ID (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # retrieve the user
@@ -525,11 +527,11 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Clear Profile", description='User `{}` has been removed'.format(user_id), color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def maintenance(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def maintenance(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @maintenance.sub_command(name="set")
-    async def maintset(self, inter: disnake.GuildCommandInteraction, day : int = commands.Param(ge=1, le=31), month : int = commands.Param(ge=1, le=12), hour : int = commands.Param(ge=0, le=23), duration : int = commands.Param(ge=0)) -> None:
+    async def maintset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, day : int = commands.Param(ge=1, le=31), month : int = commands.Param(ge=1, le=12), hour : int = commands.Param(ge=0, le=23), duration : int = commands.Param(ge=0)) -> None:
         """Set a maintenance date (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -543,7 +545,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     @maintenance.sub_command(name="del")
-    async def maintdel(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def maintdel(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Delete the maintenance date (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.data.save['maintenance'] = {"state" : False, "time" : None, "duration" : 0}
@@ -551,13 +553,13 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Maintenance deleted", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def stream(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def stream(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     """streamset_callback()
     CustomModal callback
     """
-    async def streamset_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def streamset_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['stream'] is None: # init data if not set
             self.bot.data.save['stream'] = {'title':'', 'content':'', 'time':None}
@@ -567,7 +569,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Stream Settings", description="Stream command sets to\n`{}`\n`{}`".format(self.bot.data.save['stream']['title'], self.bot.data.save['stream']['content']), color=self.COLOR))
 
     @stream.sub_command(name="set")
-    async def streamset(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def streamset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Set the stream command text (Owner Only)"""
         if self.bot.data.save['stream'] is None:
             data = {'title':' ', 'content':' ', 'time':None}
@@ -597,7 +599,7 @@ class Admin(commands.Cog):
         ])
 
     @stream.sub_command()
-    async def time(self, inter: disnake.GuildCommandInteraction, day : int = commands.Param(ge=1, le=31), month : int = commands.Param(ge=1, le=12), year : int = commands.Param(ge=2021), hour : int = commands.Param(ge=0, le=23)) -> None:
+    async def time(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, day : int = commands.Param(ge=1, le=31), month : int = commands.Param(ge=1, le=12), year : int = commands.Param(ge=2021), hour : int = commands.Param(ge=0, le=23)) -> None:
         """Set the stream time (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -612,7 +614,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
     @stream.sub_command()
-    async def clear(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def clear(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Clear the stream command text (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.data.save['stream'] = None
@@ -620,13 +622,13 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Stream cleared", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def schedule(self, inter: disnake.GuildCommandInteraction):
+    async def schedule(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction):
         pass
 
     """scheduleset_callback()
     CustomModal callback
     """
-    async def scheduleset_callback(self, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+    async def scheduleset_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
         try:
             # the data must be a valid json object
@@ -653,7 +655,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule error", description="Invalid data\n`{}`\nException: `{}`".format(inter.text_values['schedule'], e), color=self.COLOR))
 
     @schedule.sub_command(name="set")
-    async def scheduleset(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def scheduleset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Set the GBF schedule (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(inter, "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set the GBF Schedule", self.scheduleset_callback, [
             disnake.ui.TextInput(
@@ -669,14 +671,14 @@ class Admin(commands.Cog):
         ])
 
     @schedule.sub_command(name="update")
-    async def scheduleupdate(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def scheduleupdate(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Force an automatic GBF schedule update (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.data.update_schedule()
         await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Process finished", color=self.COLOR))
 
     @schedule.sub_command(name="add")
-    async def scheduleadd(self, inter: disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), start_hour : int = commands.Param(description="Start Hour UTC (Default is 8)", default=17, ge=0, le=23), end : str = commands.Param(description="End date (DD/MM/YY format)", default=""), end_hour : int = commands.Param(description="Ending Hour UTC (Default is 8)", default=17, ge=0, le=23)) -> None:
+    async def scheduleadd(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), start_hour : int = commands.Param(description="Start Hour UTC (Default is 8)", default=17, ge=0, le=23), end : str = commands.Param(description="End date (DD/MM/YY format)", default=""), end_hour : int = commands.Param(description="Ending Hour UTC (Default is 8)", default=17, ge=0, le=23)) -> None:
         """Add or modify an entry (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try:
@@ -692,11 +694,11 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Error, did you set the date in the proper format (DD/MM/YY)?\nException:\n`{}`".format(self.bot.pexc(e)), color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def account(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def account(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @account.sub_command()
-    async def see(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def see(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """List the GBF account details used by Rosetta (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if not self.bot.net.has_account():
@@ -716,7 +718,7 @@ class Admin(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="GBF Account status", description="Account is up\nUser ID: `{}`\nCookie: `{}`\nUser-Agent: `{}`".format(acc['id'], acc['ck'], acc['ua']), color=self.COLOR))
 
     @account.sub_command()
-    async def set(self, inter: disnake.GuildCommandInteraction, uid : int = commands.Param(default=0), ck : str = commands.Param(default=""), ua : str = commands.Param(default="")) -> None:
+    async def set(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, uid : int = commands.Param(default=0), ck : str = commands.Param(default=""), ua : str = commands.Param(default="")) -> None:
         """Set the GBF account used by Rosetta (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if uid < 1:
@@ -732,14 +734,14 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Account set", color=self.COLOR))
 
     @account.sub_command(name="clear")
-    async def accclear(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def accclear(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Clear the GBF account used by Rosetta (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.net.clear_account()
         await inter.edit_original_message(embed=self.bot.embed(title="Account cleared", color=self.COLOR))
 
     @account.sub_command()
-    async def edit(self, inter: disnake.GuildCommandInteraction, uid : int = commands.Param(description="User ID", ge=-1, default=-1), ck : str = commands.Param(description="Cookie", default=""), ua : str = commands.Param(description="User-Agent", default="")) -> None:
+    async def edit(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, uid : int = commands.Param(description="User ID", ge=-1, default=-1), ck : str = commands.Param(description="Cookie", default=""), ua : str = commands.Param(description="User-Agent", default="")) -> None:
         """Edit the GBF account used by Rosetta (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if not self.bot.net.has_account():
@@ -757,11 +759,11 @@ class Admin(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="Account Updated", description="UID: `{}`\nCK: `{}`\nUA: `{}`".format(acc['id'], acc['ck'], acc['ua']), color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def db(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def db(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @db.sub_command(name="set")
-    async def dbset(self, inter: disnake.GuildCommandInteraction, db_id : int = commands.Param(description="Dread Barrage ID", ge=0, le=999), element : str = commands.Param(description="Dread Barrage Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Dread Barrage Start Day", ge=1, le=31), month : int = commands.Param(description="Dread Barrage Start Month", ge=1, le=12), year : int = commands.Param(description="Dread Barrage Start Year", ge=2021), extra_days : int = commands.Param(description="Number of days to increase the event duration (0 - 2)", ge=0, le=2, default=0)) -> None:
+    async def dbset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, db_id : int = commands.Param(description="Dread Barrage ID", ge=0, le=999), element : str = commands.Param(description="Dread Barrage Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Dread Barrage Start Day", ge=1, le=31), month : int = commands.Param(description="Dread Barrage Start Month", ge=1, le=12), year : int = commands.Param(description="Dread Barrage Start Year", ge=2021), extra_days : int = commands.Param(description="Number of days to increase the event duration (0 - 2)", ge=0, le=2, default=0)) -> None:
         """Set the Valiant date (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -799,7 +801,7 @@ class Admin(commands.Cog):
             self.bot.logger.pushError("[OWNER] In 'owner db set' command:", e)
 
     @db.sub_command()
-    async def disable(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def disable(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Disable the Dread Barrage mode, but doesn't delete the settings (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.data.save['dread']['state'] = False
@@ -807,7 +809,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="DB disabled", color=self.COLOR))
 
     @db.sub_command()
-    async def enable(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def enable(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Enable the Dread Barrage mode (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['dread']['state'] is True:
@@ -820,11 +822,11 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Dread Barrage available in my memory", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def gw(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def gw(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @gw.sub_command()
-    async def reloaddb(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def reloaddb(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Download GW.sql (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # force download GW databases
@@ -844,7 +846,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Guild War Databases", description=''.join(msgs), timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @gw.sub_command()
-    async def forceupdategbfg(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def forceupdategbfg(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Force an update of the GW /gbfg/ Data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # send to update
@@ -852,7 +854,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="/gbfg/ update finished", color=self.COLOR))
 
     @gw.sub_command(name="disable")
-    async def disable__(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def disable__(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Disable the GW mode, without deleting settings (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try: self.bot.get_cog('YouCrew').setBuffTask(False)
@@ -862,7 +864,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="GW disabled", color=self.COLOR))
 
     @gw.sub_command(name="enable")
-    async def enable__(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def enable__(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Enable the GW mode. Settings must exist (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['gw']['state'] is True:
@@ -877,7 +879,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Guild War available in my memory", color=self.COLOR))
 
     @gw.sub_command()
-    async def cleartracker(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def cleartracker(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Clear the GW match tracker (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.data.save['youtracker'] = None
@@ -885,7 +887,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Tracker cleared", color=self.COLOR))
 
     @gw.sub_command()
-    async def forceupdateranking(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def forceupdateranking(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Force the retrieval of the GW ranking. For debugging (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['gw']['state']:
@@ -896,7 +898,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="GW isn't running", color=self.COLOR))
 
     @gw.sub_command(name="set")
-    async def gwset(self, inter: disnake.GuildCommandInteraction, gw_id : int = commands.Param(description="Guild War ID", ge=0, le=999), element : str = commands.Param(description="Guild War Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Guild War Start Day", ge=1, le=31), month : int = commands.Param(description="Guild War Start Month", ge=1, le=12), year : int = commands.Param(description="Guild War Start Year", ge=2021)) -> None:
+    async def gwset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, gw_id : int = commands.Param(description="Guild War ID", ge=0, le=999), element : str = commands.Param(description="Guild War Element Advantage", autocomplete=['fire', 'water', 'earth', 'wind', 'light', 'dark']), day : int = commands.Param(description="Guild War Start Day", ge=1, le=31), month : int = commands.Param(description="Guild War Start Month", ge=1, le=12), year : int = commands.Param(description="Guild War Start Year", ge=2021)) -> None:
         """Set the GW date (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -955,7 +957,7 @@ class Admin(commands.Cog):
             self.bot.logger.pushError("[OWNER] In 'owner gw set' command:", e)
 
     @gw.sub_command()
-    async def movepreliminaries(self, inter: disnake.GuildCommandInteraction, delta_prelim_hour : int = commands.Param(description="Number of hours to add to prelims", ge=1, le=999), delta_interlude_hour : int = commands.Param(description="Number of hours to add to interlude", ge=0, le=999, default=0)) -> None:
+    async def movepreliminaries(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, delta_prelim_hour : int = commands.Param(description="Number of hours to add to prelims", ge=1, le=999), delta_interlude_hour : int = commands.Param(description="Number of hours to add to interlude", ge=0, le=999, default=0)) -> None:
         """Move the preliminaries and shorten the interlude (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         # Note: This function is intended in case the schedule was shortened because of a server crash.
@@ -974,11 +976,11 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="GW isn't running", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def buff(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def buff(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @buff.sub_command()
-    async def check(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def check(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """List the GW buff list for (You). For debugging (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -996,7 +998,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error, buffs aren't set.", color=self.COLOR))
 
     @buff.sub_command()
-    async def newtask(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def newtask(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Start a new checkGWBuff() task (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try: self.bot.get_cog('YouCrew').setBuffTask(True)
@@ -1004,7 +1006,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="The Task (re)started", color=self.COLOR))
 
     @buff.sub_command()
-    async def skip(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def skip(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """The bot will skip the next GW buff call (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if not self.bot.data.save['gw']['skip']:
@@ -1015,7 +1017,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="The next set of buffs is already beind skipped", color=self.COLOR))
 
     @buff.sub_command()
-    async def cancel(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def cancel(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Cancel the GW buff call skipping (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['gw']['skip']:
@@ -1024,11 +1026,11 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Skip cancelled", color=self.COLOR))
 
     @_owner.sub_command_group()
-    async def gacha(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def gacha(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @gacha.sub_command(name="clear")
-    async def cleargacha(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def cleargacha(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Clear the current gacha data (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.data.save['gbfdata'].pop('gacha', None) # simply delete the gacha data
@@ -1036,7 +1038,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
 
     @gacha.sub_command()
-    async def roulette(self, inter: disnake.GuildCommandInteraction, guaranteddate : int = commands.Param(description="Date of the guaranted roll day (YYMMDD format)", ge=240101, le=500101, default=240100), forced3pc : int = commands.Param(description="1 to force real rate during guaranted roll day", ge=-1, le=1, default=-1), forcedroll : int = commands.Param(description="Number of guaranted roll", ge=-1, le=300, default=-1), forcedsuper : int = commands.Param(description="1 to add Super Mukku to guaranted roll day", ge=-1, le=1, default=-1), enable200 : int = commands.Param(description="1 to add 200 rolls on the wheel", ge=-1, le=1, default=-1), janken : int = commands.Param(description="1 to enable Janken mode", ge=-1, le=1, default=-1), maxjanken : int = commands.Param(description="Maximum number of janken", ge=0, le=10, default=0), doublemukku : int = commands.Param(description="1 to enable double Mukku", ge=-1, le=1, default=-1), realist : int = commands.Param(description="1 to allow realist mode", ge=-1, le=1, default=-1), birthday : int = commands.Param(description="1 to add the birthday zone on the wheel", ge=-1, le=1, default=-1)) -> None:
+    async def roulette(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, guaranteddate : int = commands.Param(description="Date of the guaranted roll day (YYMMDD format)", ge=240101, le=500101, default=240100), forced3pc : int = commands.Param(description="1 to force real rate during guaranted roll day", ge=-1, le=1, default=-1), forcedroll : int = commands.Param(description="Number of guaranted roll", ge=-1, le=300, default=-1), forcedsuper : int = commands.Param(description="1 to add Super Mukku to guaranted roll day", ge=-1, le=1, default=-1), enable200 : int = commands.Param(description="1 to add 200 rolls on the wheel", ge=-1, le=1, default=-1), janken : int = commands.Param(description="1 to enable Janken mode", ge=-1, le=1, default=-1), maxjanken : int = commands.Param(description="Maximum number of janken", ge=0, le=10, default=0), doublemukku : int = commands.Param(description="1 to enable double Mukku", ge=-1, le=1, default=-1), realist : int = commands.Param(description="1 to allow realist mode", ge=-1, le=1, default=-1), birthday : int = commands.Param(description="1 to add the birthday zone on the wheel", ge=-1, le=1, default=-1)) -> None:
         """Set the roulette settings. Don't pass parameters to see settings. (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         if 'roulette' not in self.bot.data.save['gbfdata']: # init data if it doesn't exist

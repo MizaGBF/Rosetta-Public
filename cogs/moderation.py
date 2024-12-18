@@ -1,7 +1,10 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from disnake.ext import commands
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+from components.channel import CleanupSetting, AnnouncementSetting
 
 # ----------------------------------------------------------------------------------------------------------------
 # Moderation Cog
@@ -13,12 +16,12 @@ class Moderation(commands.Cog):
     """Settings for server moderators."""
     COLOR : int = 0x2eced1
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : Moderation, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
     @commands.user_command(name="Profile Picture")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
-    async def avatar(self, inter: disnake.UserCommandInteraction, user: disnake.User) -> None:
+    async def avatar(self : commands.user_command, inter : disnake.UserCommandInteraction, user: disnake.User) -> None:
         """Retrieve the profile picture of an user"""
         await inter.response.send_message(user.display_avatar.url, ephemeral=True)
 
@@ -29,17 +32,18 @@ class Moderation(commands.Cog):
     
     Parameters
     ----------
-    inter: Disnake Interaction
+    inter : disnake Interaction
     is_mod: Boolean for mod informations
     """
-    async def _serverinfo(self, inter: disnake.UserCommandInteraction, is_mod : bool) -> None:
+    async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
         await inter.response.defer(ephemeral=True)
-        guild = inter.guild
+        guild : disnake.Guild = inter.guild
+        icon : str|None
         try: icon = guild.icon.url
         except: icon = None
-        owner = await self.bot.get_or_fetch_user(guild.owner_id)
+        owner : disnake.User|None = await self.bot.get_or_fetch_user(guild.owner_id)
         # server infos
-        msgs = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
+        msgs : list[str] = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
         if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
         if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
         if len(guild.voice_channels) > 0: msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
@@ -54,10 +58,10 @@ class Moderation(commands.Cog):
         if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
         if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")
         # rosetta settings
-        rosetta = []
-        gid = str(guild.id)
+        rosetta : list[str] = []
+        gid : str = str(guild.id)
         if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
-        cleanup_settings = self.bot.channel.get_cleanup_settings(gid)
+        cleanup_settings : CleanupSetting = self.bot.channel.get_cleanup_settings(gid)
         if cleanup_settings[0]:
             rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
             if len(cleanup_settings[1]) > 0:
@@ -67,7 +71,7 @@ class Moderation(commands.Cog):
             rosetta.append(":warning: **Auto cleanup** disabled\n")
         if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
         elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
-        announcement_settings =self.bot.channel.get_announcement_settings(gid)
+        announcement_settings : AnnouncementSetting =self.bot.channel.get_announcement_settings(gid)
         if announcement_settings[0] > 0:
             rosetta.append(":new: **Announcements** enabled")
             if announcement_settings[1]:
@@ -85,23 +89,23 @@ class Moderation(commands.Cog):
     @commands.message_command(name="Server Info")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def serverinfo(self, inter: disnake.MessageCommandInteraction, message: disnake.Message) -> None:
+    async def serverinfo(self : commands.message_command, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
         """Get informations on the current guild"""
         await self._serverinfo(inter, self.bot.isMod(inter))
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True, manage_messages=True)
     @commands.max_concurrency(10, commands.BucketType.default)
-    async def mod(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def mod(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group (Mod Only)"""
         pass
 
     @mod.sub_command_group()
-    async def ban(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def ban(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @ban.sub_command(name="spark")
-    async def banspark(self, inter: disnake.GuildCommandInteraction, member: disnake.Member) -> None:
+    async def banspark(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, member: disnake.Member) -> None:
         """Ban an user from the spark ranking (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.set(member.id, self.bot.ban.SPARK)
@@ -109,11 +113,11 @@ class Moderation(commands.Cog):
         await self.bot.send('debug', embed=self.bot.embed(title="{} ▫️ {}".format(member.display_name, member.id), description="Banned from all spark rankings by {}\nValues: `{}`".format(inter.author.display_name, self.bot.data.save['spark'].get(str(member.id), 'No Data')), thumbnail=member.display_avatar, color=self.COLOR, footer=inter.guild.name))
 
     @mod.sub_command_group()
-    async def cleanup(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def cleanup(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @cleanup.sub_command(name="toggle")
-    async def toggleautocleanup(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def toggleautocleanup(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle the auto-cleanup on this server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         if not isinstance(inter.channel, disnake.TextChannel): # only valid for text channels
@@ -123,7 +127,7 @@ class Moderation(commands.Cog):
         await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @cleanup.sub_command(name="channel")
-    async def toggleautocleanupchannel(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def toggleautocleanupchannel(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle the auto-cleanup exclusion of this channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         if not isinstance(inter.channel, disnake.TextChannel): # only valid for text channels
@@ -133,24 +137,24 @@ class Moderation(commands.Cog):
         await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @cleanup.sub_command(name="reset")
-    async def resetautocleanup(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def resetautocleanup(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Reset the auto-cleanup settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.channel.reset_cleanup(str(inter.guild.id))
         await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @cleanup.sub_command(name="see")
-    async def seecleanupsetting(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def seecleanupsetting(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """See all channels where no clean up is performed (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.channel.render_cleanup_settings(inter, self.COLOR)
 
     @mod.sub_command_group()
-    async def announcement(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def announcement(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @announcement.sub_command(name="channel")
-    async def announcementchannel(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def announcementchannel(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Enable/Disable game announcements in the specified channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         if not isinstance(inter.channel, disnake.TextChannel) and not isinstance(inter.channel, disnake.NewsChannel) and not isinstance(inter.channel, disnake.threads.Thread) and not isinstance(inter.channel, disnake.ForumChannel): # check channel type
@@ -160,45 +164,45 @@ class Moderation(commands.Cog):
             await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @announcement.sub_command(name="publish")
-    async def announcementautopublish(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def announcementautopublish(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle auto publishing for Announcement channels (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.channel.toggle_announcement_publish(str(inter.guild.id))
         await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @announcement.sub_command()
-    async def see(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def see(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Display the announcement settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.channel.render_announcement_settings(inter, self.COLOR)
 
     @mod.sub_command_group()
-    async def pinboard(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def pinboard(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @pinboard.sub_command(name="toggle")
-    async def togglepinboard(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def togglepinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle the pinboard on your server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.toggle(inter, self.COLOR)
 
     @pinboard.sub_command()
-    async def track(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def track(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle pinboard tracking for the current text or forum channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.track_toggle(inter, self.COLOR)
 
     @pinboard.sub_command()
-    async def output(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def output(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Set the current channel as the output channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.set(inter, self.COLOR, {"set_output":True})
 
     @pinboard.sub_command()
-    async def settings(self, inter: disnake.GuildCommandInteraction, emoji : str = commands.Param(description="The emoji used as a pin trigger", default=""), threshold : int = commands.Param(description="Number of reactions needed to trigger the pin", default=0, ge=0), mod_bypass : int = commands.Param(description="If 1, a moderator can force the pin with a single reaction", ge=-1, le=1, default=-1)) -> None:
+    async def settings(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, emoji : str = commands.Param(description="The emoji used as a pin trigger", default=""), threshold : int = commands.Param(description="Number of reactions needed to trigger the pin", default=0, ge=0), mod_bypass : int = commands.Param(description="If 1, a moderator can force the pin with a single reaction", ge=-1, le=1, default=-1)) -> None:
         """See or Change pinboard settings for this server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        options = {}
+        options : dict[str, str|bool|int] = {}
         if self.bot.emote.isValid(emoji):
             options["emoji"] = emoji
         if threshold > 0:
@@ -208,17 +212,17 @@ class Moderation(commands.Cog):
         await self.bot.pinboard.set(inter, self.COLOR, options)
 
     @pinboard.sub_command()
-    async def reset(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def reset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Reset the tracked channel list of this server pinboard settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.pinboard.set(str(inter.guild.id), {"tracked":[]})
         await self.bot.pinboard.render(inter, self.COLOR, "Settings have been updated")
 
     @mod.sub_command_group()
-    async def server(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def server(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass
 
     @server.sub_command(name="info")
-    async def serverinfo_cmd(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def serverinfo_cmd(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Get informations on the current guild (Mod Only)"""
         await self._serverinfo(inter, True)

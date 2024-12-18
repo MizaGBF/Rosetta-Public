@@ -1,4 +1,5 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 from dataclasses import dataclass
@@ -11,10 +12,10 @@ from datetime import datetime
 # ----------------------------------------------------------------------------------------------------------------
 
 class Singleton():
-    def __init__(self, bot : 'DiscordBot') -> None:
+    def __init__(self : Singleton, bot : 'DiscordBot') -> None:
         self.bot : 'DiscordBot' = bot
 
-    def init(self) -> None:
+    def init(self : Singleton) -> None:
         pass
 
     """make_and_send_modal()
@@ -32,7 +33,7 @@ class Singleton():
     ----------
     disnake.ModalInteraction: The modal, else None if failed/cancelled
     """
-    async def make_and_send_modal(self, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list, extra : str = None) -> disnake.ModalInteraction:
+    async def make_and_send_modal(self : Singleton, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list, extra : str = None) -> CustomModal:
         # see below for the custom modal class
         await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
 
@@ -48,7 +49,7 @@ class Singleton():
     ----------
     GameCard: The generated card
     """
-    def get_GameCard(self, value : int, suit : int) -> 'GameCard':
+    def get_GameCard(self : Singleton, value : int, suit : int) -> GameCard:
         if value < 1 or value > 14:
             raise Exception("Invalid GameCard value")
         elif suit < 0 or suit > 3:
@@ -71,7 +72,7 @@ class Singleton():
     ----------
     Score: The generated card
     """
-    def make_Score(self, type : int|None, ver : int|None, gw : int|None) -> 'Score':
+    def make_Score(self : Singleton, type : int|None, ver : int|None, gw : int|None) -> Score:
         return Score(type, ver, gw)
 
     """make_GWDB()
@@ -87,7 +88,7 @@ class Singleton():
     ----------
     Score: The generated card
     """
-    def make_GWDB(self, data : list|None) -> 'GWDB':
+    def make_GWDB(self : Singleton, data : list|None) -> GWDB:
         return GWDB.make_GWDB(data)
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -104,11 +105,11 @@ class CustomModal(disnake.ui.Modal):
         self.custom_callback = callback # our callback
         self.extra = extra # any extra info we can pass here. will be accessible from the interaction in the callback
 
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction) -> None:
+    async def on_error(self, error: Exception, inter : disnake.ModalInteraction) -> None:
         await inter.response.send_message(embed=self.bot.embed(title="Error", description="An unexpected error occured, my owner has been notified"))
         self.bot.logger.pushError("[MODAL] 'on_error' event:", error)
 
-    async def callback(self, inter: disnake.ModalInteraction) -> None:
+    async def callback(self, inter : disnake.ModalInteraction) -> None:
         await self.custom_callback(self, inter) # trigger the callback
 
 """GameCard
@@ -121,7 +122,7 @@ class GameCard():
     strings : list[str]
 
     @classmethod
-    def make_card(cls, value: int, suit: int) -> 'GameCard':
+    def make_card(cls : GameCard, value: int, suit: int) -> GameCard:
         value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
         suit = suit # suit ranges from 0 to 3
         strings = [None, None, None] # value, suit, complete
@@ -142,22 +143,22 @@ class GameCard():
         strings[2] = "".join(strings[:2])
         return cls(value, suit, strings)
 
-    def __repr__(self) -> str: 
+    def __repr__(self : GameCard) -> str: 
         return self.strings[2]
 
-    def __str__(self) -> str:
+    def __str__(self : GameCard) -> str:
         return self.strings[2]
 
-    def __int__(self) -> int:
+    def __int__(self : GameCard) -> int:
         return self.value
 
-    def __lt__(self, other : 'GameCard') -> bool:
+    def __lt__(self : GameCard, other : GameCard) -> bool:
          return self.value < other.value
 
-    def getStringValue(self) -> str:
+    def getStringValue(self : GameCard) -> str:
         return self.strings[0]
 
-    def getStringSuit(self) -> str:
+    def getStringSuit(self : GameCard) -> str:
         return self.strings[1]
 
 """Score
@@ -188,7 +189,7 @@ class Score(): # GW Score structure
     top_speed : int
     current_speed : int
     
-    def __init__(self, type : int|None = None, ver : int|None = None, gw : int|None = None):
+    def __init__(self : Score, type : int|None = None, ver : int|None = None, gw : int|None = None) -> None:
         self.type = type # crew or player
         self.ver = ver # database version
         self.gw = gw # gw id
@@ -212,10 +213,10 @@ class Score(): # GW Score structure
         self.top_speed = None
         self.current_speed = None
 
-    def __repr__(self) -> str: # used for debug
+    def __repr__(self : Score) -> str: # used for debug
         return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)
 
-    def __str__(self) -> str: # used for debug
+    def __str__(self : Score) -> str: # used for debug
         return "GW{}, v{}, {}, {}, {}".format(self.gw, self.ver, 'crew' if self.type else 'player', self.name, self.current)
 
 """GWDB
@@ -229,7 +230,7 @@ class GWDB():
     timestamp : datetime|None
 
     @classmethod
-    def make_GWDB(cls, data : list|None = None) -> 'GWDB':
+    def make_GWDB(cls : GWDB, data : list|None = None) -> GWDB:
         # data is the content of info table of our database
         gw : int|None
         ver : int
@@ -251,8 +252,8 @@ class GWDB():
             timestamp = None
         return cls(gw, ver, timestamp)
 
-    def __repr__(self) -> str: # used for debug
+    def __repr__(self : GWDB) -> str: # used for debug
         return str(self)
 
-    def __str__(self) -> str: # used for debug
+    def __str__(self : GWDB) -> str: # used for debug
         return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)

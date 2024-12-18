@@ -1,8 +1,13 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 from disnake.ext import commands
 import asyncio
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+from cogs.gw import GBFGData
+from components.data import JSON
+from components.ranking import GWDBSearchResult, Score, CrewDataEntry
 from cogs import CREW_SERVER_ID
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
@@ -19,22 +24,23 @@ from io import BytesIO
 
 class YouCrew(commands.Cog):
     """Owner only."""
+    guild_ids : list[int]
     if CREW_SERVER_ID is None: guild_ids = [] # CREW_SERVER_ID is defined in cogs/init
     else: guild_ids = [CREW_SERVER_ID]
     COLOR : int = 0xffce47
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : YouCrew, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
-    def startTasks(self) -> None:
+    def startTasks(self : YouCrew) -> None:
         self.bot.runTask('you:buff', self.checkGWBuff)
 
     """checkGWBuff()
     Bot Task managing the buff alert of the (You) server
     """
-    async def checkGWBuff(self) -> None:
+    async def checkGWBuff(self : YouCrew) -> None:
         # retrieve cog
-        gwcog = self.bot.get_cog('GuildWar')
+        gwcog : commands.Cog = self.bot.get_cog('GuildWar')
         if gwcog is None:
             # add warning in log, just in case
             self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, the 'GuildWar' Cog is missing.", send_to_discord=False, level=self.logger.WARNING)
@@ -45,12 +51,12 @@ class YouCrew(commands.Cog):
             return # silently cancel if not
         try:
             # check if guild set in config.json
-            guild = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
+            guild : disnake.Guild|None = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
             if guild is None:
                 self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no guild 'you_server' found")
                 return
             # check if channel set in config.json
-            channel = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
+            channel : disnake.Channel|None = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
             if guild is None:
                 self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no channel 'you_announcement' found")
                 return
@@ -59,19 +65,20 @@ class YouCrew(commands.Cog):
                 self.bot.data.save['gw']['skip'] = False
                 self.bot.data.pending = True
             # retrieve roles
-            gl_role = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
-            fo_role = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
-            buff_role = [[guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface']]
+            gl_role : int = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
+            fo_role : int = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
+            buff_role : tuple[int, int] = ([guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface'])
             # task loop (as long as gw is on and buffs are remaining in the queue)
-            msgs = []
+            msgs : list[str] = []
             while self.bot.data.save['gw']['state'] and (len(self.bot.data.save['gw']['buffs']) > 0 or len(msgs) != 0):
                 # check if we passed next buff date
-                current_time = self.bot.util.JST() + timedelta(seconds=32)
+                current_time : datetime = self.bot.util.JST() + timedelta(seconds=32)
                 if len(self.bot.data.save['gw']['buffs']) > 0 and current_time >= self.bot.data.save['gw']['buffs'][0][0]:
                     msgs = []
                     # if recent (in the last 200s)
                     if (current_time - self.bot.data.save['gw']['buffs'][0][0]) < timedelta(seconds=200):
                         if self.bot.data.save['gw']['buffs'][0][1]: # flag 1: ATK and DEF aces
+                            r : disnake.Role|None
                             for r in buff_role:
                                 msgs.append("{} {}\n".format(self.bot.emote.get(r[1]), r[0].mention))
                         if self.bot.data.save['gw']['buffs'][0][2]: # flag 2: First Officers
@@ -99,7 +106,7 @@ class YouCrew(commands.Cog):
                         await channel.send("{} {}\n{}".format(self.bot.emote.get('captain'), gl_role.mention, ''.join(msgs)))
                         msgs = []
                     if len(self.bot.data.save['gw']['buffs']) > 0: # if a buff is remaining, sleep until its time
-                        d = self.bot.data.save['gw']['buffs'][0][0] - current_time
+                        d : timedelta = self.bot.data.save['gw']['buffs'][0][0] - current_time
                         if d.seconds > 1:
                             await asyncio.sleep(d.seconds-1)
             # send message if any is pending
@@ -119,7 +126,7 @@ class YouCrew(commands.Cog):
     ----------
     state: Boolean, True to (re)start the task, False to stop it
     """
-    def setBuffTask(self, state : bool) -> None:
+    def setBuffTask(self : YouCrew, state : bool) -> None:
         if state: # (re)start buff task
             self.bot.runTask('you:buff', self.checkGWBuff)
         else: # stop buff task
@@ -136,15 +143,16 @@ class YouCrew(commands.Cog):
     --------
     str: Time left in a string, empty if error
     """
-    def getNextBuff(self, inter: disnake.GuildCommandInteraction) -> str: 
+    def getNextBuff(self : YouCrew, inter : disnake.GuildCommandInteraction) -> str: 
         if self.bot.data.save['gw']['state'] is True and inter.guild.id == self.bot.data.config['ids'].get('you_server', 0): # check if gw is on going and the server is the right one
-            current_time = self.bot.util.JST() # get current time
+            current_time : datetime = self.bot.util.JST() # get current time
             if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]: # gw hasn't started
                 return "" # return nothing
+            b : list[datetime|bool]
             for b in self.bot.data.save['gw']['buffs']: # iterate until closest buff to current time
                 if not b[3] and current_time < b[0]:
                     # build message
-                    msgs = ["{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))]
+                    msgs : list[str] = ["{} Next buffs in **{}** (".format(self.bot.emote.get('question'), self.bot.util.delta2str(b[0] - current_time, 2))]
                     if b[1]:
                         msgs.append("Attack {}, Defense {}".format(self.bot.emote.get('atkace'), self.bot.emote.get('deface')))
                         if b[2]:
@@ -168,19 +176,21 @@ class YouCrew(commands.Cog):
     --------
     list: Crew informations
     """
-    async def searchScoreForTracker(self, day : int, crews : list) -> list:
-        infos = []
-        conn = sqlite3.connect('temp.sql') # open temp.sql
-        c = conn.cursor()
+    async def searchScoreForTracker(self : YouCrew, day : int, crews : list[int|str]) -> list[tuple[str, int, float]]:
+        infos : list[tuple[str, int, float]] = []
+        conn : sqlite3.Connection = sqlite3.connect('temp.sql') # open temp.sql
+        c : sqlite3.Cursor = conn.cursor()
         c.execute("PRAGMA synchronous = normal")
         c.execute("PRAGMA locking_mode = exclusive")
         c.execute("PRAGMA journal_mode = OFF")
         await asyncio.sleep(0)
-        d = [3, 4, 5, 6, 7] # prelims to day 4 slots
+        d : list[int] = [3, 4, 5, 6, 7] # prelims to day 4 slots
+        sid : int|str
         for sid in crews: # retrieve both crews data
             c.execute("SELECT * FROM crews WHERE id = {}".format(sid)) # get the score
-            data = c.fetchall()
-            if data is None or len(data) == 0: raise Exception("Failed to retrieve data")
+            data : list[CrewDataEntry]|None = c.fetchall()
+            if data is None or len(data) == 0:
+                raise Exception("Failed to retrieve data")
             infos.append([data[0][2], data[0][d[day]]-data[0][d[day]-1], data[0][8]]) # name, score of the day, top speed
             await asyncio.sleep(0)  
         c.close()
@@ -201,15 +211,17 @@ class YouCrew(commands.Cog):
     
     Returns
     ----------
-    str: filename of the image, None if error
+    bytes: image binary d ata, None if error
     """
-    async def drawChart(self, plot : list) -> Optional[str]:
-        if len(plot) == 0: return None # no plot data
+    async def drawChart(self : YouCrew, plot : list) -> bytes|None:
+        if len(plot) == 0:
+            return None # no plot data
+        i : int
         # make a white RGB image, 800x600px
-        img = Image.new("RGB", (800, 600), (255,255,255))
-        d = ImageDraw.Draw(img)
+        img : Image = Image.new("RGB", (800, 600), (255,255,255))
+        d : ImageDraw.Draw = ImageDraw.Draw(img)
         # load our font for texts
-        font = ImageFont.truetype("assets/font.ttf", 14)
+        font : ImageFont = ImageFont.truetype("assets/font.ttf", 14)
         
         # y grid lines
         for i in range(0, 4):
@@ -228,14 +240,16 @@ class YouCrew(commands.Cog):
         await asyncio.sleep(0)
         
         # y axis notes
-        miny = 999
-        maxy = 0
+        miny : int = 999
+        maxy : int = 0
+        p : list[float|int]
         for p in plot:
             miny = math.floor(min(miny, p[1], p[2]))
             maxy = math.ceil(max(maxy, p[1], p[2]))
-        deltay= maxy - miny
-        if deltay <= 0: return None
-        tvar = maxy
+        deltay : int = maxy - miny
+        if deltay <= 0:
+            return None
+        tvar : int = maxy
         for i in range(0, 5):
             d.text((10, 40+125*i),"{:.2f}".format(float(tvar)).replace('.00', '').replace('.10', '.1').replace('.20', '.2').replace('.30', '.3').replace('.40', '.4').replace('.50', '.5').replace('.60', '.6').replace('.70', '.7').replace('.80', '.8').replace('.90', '.9').replace('.0', '').rjust(6),font=font,fill=(0,0,0))
             tvar -= deltay / 4
@@ -243,9 +257,10 @@ class YouCrew(commands.Cog):
         # x axis notes
         minx = plot[0][0]
         maxx = plot[-1][0]
-        deltax = maxx - minx
-        deltax = (deltax.seconds + deltax.days * 86400)
-        if deltax <= 0: return None
+        deltax : int = maxx - minx
+        deltax : int = (deltax.seconds + deltax.days * 86400)
+        if deltax <= 0:
+            return None
         tvar = minx
         for i in range(0, 11):
             d.text((35+70*i, 560),"{:02d}:{:02d}".format(tvar.hour, tvar.minute),font=font,fill=(0,0,0))
@@ -253,7 +268,9 @@ class YouCrew(commands.Cog):
         await asyncio.sleep(0)
 
         # scores curves
-        lines = [[], []]
+        lines : tuple[list[tuple[int|float, int|float]], list[tuple[int|float, int|float]]] = ([], [])
+        x : int|float
+        y : int|float
         for p in plot:
             x = p[0] - minx
             x = (x.seconds + x.days * 86400)
@@ -288,12 +305,14 @@ class YouCrew(commands.Cog):
     t: time of this ranking interval
     day: Integer, current day number
     """
-    async def updateTracker(self, t : datetime, day : int) -> None:
-        you_id = self.bot.ranking.gbfgcrews.get('you', None) # our id
-        if you_id is None: return
+    async def updateTracker(self : YouCrew, t : datetime, day : int) -> None:
+        you_id : str|None = self.bot.ranking.gbfgcrews.get('you', None) # our id
+        if you_id is None:
+            return
         
         # check tracker state
-        if self.bot.data.save['matchtracker'] is None: return # not initialized
+        if self.bot.data.save['matchtracker'] is None:
+            return # not initialized
         if self.bot.data.save['matchtracker']['day'] != day: # new day, reset data
             self.bot.data.save['matchtracker'] = {
                 'day':day,
@@ -304,12 +323,12 @@ class YouCrew(commands.Cog):
             self.bot.data.pending = True
         
         # Retrieve scores
-        infos = await self.searchScoreForTracker(day, [you_id, self.bot.data.save['matchtracker']['id']])
+        infos : list[tuple[str, int, float]] = await self.searchScoreForTracker(day, [you_id, self.bot.data.save['matchtracker']['id']])
         # Make tracker copy, to be safe
-        newtracker = self.bot.data.save['matchtracker'].copy()
+        newtracker : JSON = self.bot.data.save['matchtracker'].copy()
         if newtracker['init']: # it's initialized
-            d = t - newtracker['last'] # time delta
-            minute = d.seconds//60 # elapsed minutes in that delta
+            d : datetime = t - newtracker['last'] # time delta
+            minute : int = d.seconds//60 # elapsed minutes in that delta
             # rounding minute to multiple of 20min
             if minute % 20 > 15:
                 minute += 20 - (minute % 20)
@@ -317,7 +336,7 @@ class YouCrew(commands.Cog):
                 minute -= (minute % 20)
             # calculating speeds
             if minute != 0:
-                speed = [(infos[0][1] - newtracker['scores'][0]) / minute, (infos[1][1] - newtracker['scores'][1]) / minute]
+                speed : list[float] = [(infos[0][1] - newtracker['scores'][0]) / minute, (infos[1][1] - newtracker['scores'][1]) / minute]
                 if speed[0] > newtracker['top_speed'][0]: newtracker['top_speed'][0] = speed[0]
                 if speed[1] > newtracker['top_speed'][1]: newtracker['top_speed'][1] = speed[1]
                 newtracker['speed'] = speed
@@ -337,11 +356,11 @@ class YouCrew(commands.Cog):
             newtracker['plot'].append([t, newtracker['speed'][0] / 1000000, newtracker['speed'][1] / 1000000])
         if len(newtracker['plot']) > 1: # generate a chart
             try:
-                imgdata = await self.drawChart(newtracker['plot'])
+                imgdata : bytes|None = await self.drawChart(newtracker['plot'])
                 with BytesIO(imgdata) as f:
                     if f.getbuffer().nbytes > 0: # send file to discord if valid and retrieve its url
                         with self.bot.file.discord(f, filename="chart.png") as df:
-                            message = await self.bot.send('image', file=df)
+                            message : disnake.Message|None = await self.bot.send('image', file=df)
                             newtracker['chart'] = message.attachments[0].url
             except Exception as e:
                 self.bot.logger.pushError("[RANKING] 'updatetracker (Upload)' error:", e)
@@ -351,16 +370,16 @@ class YouCrew(commands.Cog):
 
     @commands.slash_command(guild_ids=guild_ids)
     @commands.default_member_permissions(send_messages=True, read_messages=True)
-    async def you(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def you(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @you.sub_command()
-    async def buff(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def buff(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Check when is the next GW buff ((You) Server Only)"""
         try:
             await inter.response.defer()
-            d = self.getNextBuff(inter) # retrieve next buff string
+            d : str = self.getNextBuff(inter) # retrieve next buff string
             if d != "":
                 await inter.edit_original_message(embed=self.bot.embed(title="{} Guild War (You) Buff status".format(self.bot.emote.get('gw')), description=d, color=self.COLOR))
             else:
@@ -372,11 +391,12 @@ class YouCrew(commands.Cog):
             await self.bot.channel.clean(inter, 40)
 
     @you.sub_command()
-    async def lead(self, inter: disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
+    async def lead(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, opponent : str = commands.Param(description="Opponent ID to set it (Mod Only)", default="")) -> None:
         """Show the current match of (You) ((You) Server Only)"""
         await inter.response.defer()
         if opponent != "" and self.bot.isMod(inter): # opponent set mode (MUST BE A MODERATOR)
             # lookup the opponent id
+            oid : str|int
             if opponent.lower() in self.bot.ranking.allconfigcrews:
                 oid = self.bot.ranking.allconfigcrews[opponent.lower()]
             else:
@@ -400,18 +420,21 @@ class YouCrew(commands.Cog):
             if self.bot.data.save['matchtracker'] is None or not self.bot.data.save['matchtracker']['init']:
                 await inter.edit_original_message(embed=self.bot.embed(title="{} **Guild War**".format(self.bot.emote.get('gw')), description="Unavailable, either wait the next ranking update or add the opponent id after the command to initialize it", color=self.COLOR))
             else: # it is
-                ct = self.bot.util.JST() # get current time
-                you_id = self.bot.ranking.gbfgcrews.get('you', None) # our id
-                d = ct - self.bot.data.save['matchtracker']['last'] # time elapsed since last update
-                msgs = ["Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))]
-                if d.seconds >= 1200 and d.seconds <= 1800: msgs.append(" ▫ *updating*") # add updating message if a next update is imminent
+                ct : datetime = self.bot.util.JST() # get current time
+                you_id : str|None = self.bot.ranking.gbfgcrews.get('you', None) # our id
+                d : timedelta = ct - self.bot.data.save['matchtracker']['last'] # time elapsed since last update
+                msgs : list[str] = ["Updated: **{}** ago".format(self.bot.util.delta2str(d, 0))]
+                if d.seconds >= 1200 and d.seconds <= 1800:
+                    msgs.append(" ▫ *updating*") # add updating message if a next update is imminent
                 msgs.append("\n")
+                end_time : datetime
                 if self.bot.data.save['matchtracker']['last'].hour < 7: # if match is on going
                     end_time = self.bot.data.save['matchtracker']['last'].replace(hour=0, minute=0, second=0, microsecond=0)
                 else:
                     end_time = self.bot.data.save['matchtracker']['last'].replace(day=self.bot.data.save['matchtracker']['last'].day+1, hour=0, minute=0, second=0, microsecond=0)
-                remaining = end_time - self.bot.data.save['matchtracker']['last'] # calculate remaining time
-                lead_speed = None
+                remaining : timedelta = end_time - self.bot.data.save['matchtracker']['last'] # calculate remaining time
+                lead_speed : float|None = None
+                i : int
                 for i in range(2): # our crew, opponent crew
                     # add crew name, id and score
                     msgs.append("[{:}](https://game.granbluefantasy.jp/#guild/detail/{:}) ▫️ **{:,}**".format(self.bot.data.save['matchtracker']['names'][i], (you_id if i == 0 else self.bot.data.save['matchtracker']['id']), self.bot.data.save['matchtracker']['scores'][i]))
@@ -433,7 +456,7 @@ class YouCrew(commands.Cog):
                     else:
                         msgs.append(" ▫️ Top {}/m".format(self.bot.util.valToStr(self.bot.data.save['matchtracker']['top_speed'][i], 2)))
                     # add the max speed of this crew
-                    max_speed = max(self.bot.data.save['matchtracker']['max_speed'][i], self.bot.data.save['matchtracker']['top_speed'][i])
+                    max_speed : float = max(self.bot.data.save['matchtracker']['max_speed'][i], self.bot.data.save['matchtracker']['top_speed'][i])
                     if self.bot.data.save['matchtracker']['speed'][i] >= max_speed:
                         msgs.append(" ▫️ **Max {}/m** {}".format(self.bot.util.valToStr(max_speed, 2), ":white_check_mark:" if i == 0 else ":warning:"))
                     else:
@@ -441,30 +464,33 @@ class YouCrew(commands.Cog):
                     # if the match hasn't ended, add estimations
                     if end_time > self.bot.data.save['matchtracker']['last']:
                         # estimations do current score and apply the current, top and max speeds to it
-                        current_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['speed'][i] * remaining.seconds//60
-                        max_estimation = self.bot.data.save['matchtracker']['scores'][i] + max_speed * remaining.seconds//60
-                        top_estimation = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['top_speed'][i] * remaining.seconds//60
+                        current_estimation : int|float = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['speed'][i] * remaining.seconds//60
+                        max_estimation : int|float = self.bot.data.save['matchtracker']['scores'][i] + max_speed * remaining.seconds//60
+                        top_estimation : int|float = self.bot.data.save['matchtracker']['scores'][i] + self.bot.data.save['matchtracker']['top_speed'][i] * remaining.seconds//60
                         msgs.append("\n**Estimation** ▫ Now {} ▫️ Top {} ▫️ Max {}".format(self.bot.util.valToStr(current_estimation, 3), self.bot.util.valToStr(top_estimation, 3), self.bot.util.valToStr(max_estimation, 3)))
                     else:
                         lead_speed = None # disable lead check if the match ended
                     msgs.append("\n\n")
                 # calculate lead
-                lead = self.bot.data.save['matchtracker']['scores'][0] - self.bot.data.save['matchtracker']['scores'][1]
+                lead : int = self.bot.data.save['matchtracker']['scores'][0] - self.bot.data.save['matchtracker']['scores'][1]
                 if lead != 0: # check if non null
                     msgs.append("**Difference** ▫️ {:,}".format(abs(lead))) # remove sign
                     # add lead speed if it exists
                     if lead_speed is not None and lead_speed != 0:
                         try:
-                            if lead < 0: lead_speed *= -1 # lead negative, then reverse speed
+                            if lead < 0:
+                                lead_speed *= -1 # lead negative, then reverse speed
                             msgs.append(" ▫️ {}/m".format(self.bot.util.valToStr(lead_speed, 3)))
-                            lead_will_switch = False # this flag will be set to true if the winner is expected to change before the match end
+                            lead_will_switch : bool = False # this flag will be set to true if the winner is expected to change before the match end
                             if lead_speed < 0: # negative lead speed
-                                minute = abs(lead) / abs(lead_speed) # check remaining minutes to exshaut current lead
-                                d = self.bot.data.save['matchtracker']['last'] + timedelta(seconds=minute*60)
-                                e = ct.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                                minute : int = abs(lead) / abs(lead_speed) # check remaining minutes to exshaut current lead
+                                d : datetime = self.bot.data.save['matchtracker']['last'] + timedelta(seconds=minute*60) # switch time
+                                e : datetime = ct.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1) # day end time
                                 if e > d: # the lead WILL switch before the end
-                                    if lead > 0: msgs.append("\n:warning: ")
-                                    else: msgs.append("\n:white_check_mark: ")
+                                    if lead > 0:
+                                        msgs.append("\n:warning: ")
+                                    else:
+                                        msgs.append("\n:white_check_mark: ")
                                     if d >= ct:
                                         msgs.append("The Lead switches in **{}** at current speeds".format(self.bot.util.delta2str(d - ct)))
                                     else:
@@ -488,26 +514,27 @@ class YouCrew(commands.Cog):
                 await self.bot.channel.clean(inter, 90)
 
     @you.sub_command()
-    async def honor(self, inter: disnake.GuildCommandInteraction) -> None:
+    async def honor(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Retrieve (You) members's honor ((You) Server Only)"""
         await inter.response.defer(ephemeral=True)
-        cid = self.bot.ranking.gbfgcrews.get("(you)", None) # retrieve (You) id
+        cid : str|None = self.bot.ranking.gbfgcrews.get("(you)", None) # retrieve (You) id
         if cid is None: # id not found
             await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="Crew not found", color=self.COLOR))
         else:
-            data = await self.bot.get_cog('GuildWar').updateGBFGData() # get gbfg data
+            data : GBFGData|None = await self.bot.get_cog('GuildWar').updateGBFGData() # get gbfg data
             if data is None or cid not in data or len(data[cid][-1]) == 0:
                 await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="No player data found", color=self.COLOR))
             else: # list honor per players, not sorted
-                players = data[cid][-1]
+                players : list[str|int|list[str|int]] = data[cid][-1]
                 await asyncio.sleep(0)
                 # query db
-                data = await self.bot.ranking.searchGWDB("(" + ",".join(players) + ")", 4)
+                data : GWDBSearchResult = await self.bot.ranking.searchGWDB("(" + ",".join(players) + ")", 4)
                 # send result
                 if data[1] is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="(You) Honor List", description="No GW data found", color=self.COLOR))
                 else:
-                    players = {int(p) : "n/a" for p in players}
+                    players : dict[int, str] = {int(p) : "n/a" for p in players}
+                    p : Score
                     for p in data[1]:
                         if p.id in players:
                             players[p.id] = str(p.current)

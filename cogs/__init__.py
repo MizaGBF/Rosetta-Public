@@ -1,3 +1,4 @@
+from __future__ import annotations
 from importlib import import_module
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ Returns
 --------
 bool: True if loaded, False if not
 """
-def loadCogFile(bot : 'DiscordBot', path_filename : str, filename : str, regex : re.Pattern, relative : str = "", package = str|None, silent : bool = False) -> bool:
+def loadCogFile(bot : DiscordBot, path_filename : str, filename : str, regex : re.Pattern, relative : str = "", package = str|None, silent : bool = False) -> bool:
     try:
         with open(path_filename, mode='r', encoding='utf-8') as py:
             all : list[str] = regex.findall(str(py.read())) # search all matches
@@ -64,7 +65,7 @@ Returns
 --------
 tuple: Tuple containing the number of loaded cogs and the number of failed loadings
 """
-def load(bot : 'DiscordBot') -> tuple[int, int]: # load all cogs in the 'cog' folder
+def load(bot : DiscordBot) -> tuple[int, int]: # load all cogs in the 'cog' folder
     # Silent flag
     silent : bool = ('debug' not in bot.data.config)
     # Set the global ids

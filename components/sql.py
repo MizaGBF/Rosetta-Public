@@ -15,8 +15,8 @@ import sqlite3
 class Database():
     def __init__(self, filename : str) -> None:
         self.filename = filename
-        self.conn = None # connection
-        self.cursor = None # cursor
+        self.conn :  sqlite3.Connection|None = None # connection
+        self.cursor : sqlite3.Cursor|None = None # cursor
         self.lock = asyncio.Lock()
 
     async def __aenter__(self) -> Optional[sqlite3.Cursor]: # opening

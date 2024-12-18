@@ -1,6 +1,9 @@
+from __future__ import annotations
 import types
-from typing import Any, Generator, Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import Generator, Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+from components.util import JSON
 from contextlib import asynccontextmanager
 import aiohttp
 import re
@@ -14,47 +17,49 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 
 # Type Aliases
-RequestResult : types.GenericAlias = dict|list|str|int|float|bool|bytes|None # cover None, JSON types, bytes
+RequestResult : types.GenericAlias = JSON|bytes|None # cover None, JSON types, bytes
+GBFAccount : types.GenericAlias = JSON
 
 class Network():
-    VERSION_REGEX = [ # possible regex to detect the GBF game version
+    VERSION_REGEX : list[re.Pattern] = [ # possible regex to detect the GBF game version
         re.compile("\"version\": \"(\d+)\""), # new one
         re.compile("\\/assets\\/(\d+)\\/"), # alternative/fallback
         re.compile("Game\.version = \"(\d+)\";") # old one
     ]
     # Request types
-    GET = 0
-    POST = 1
-    HEAD = 2
+    GET : int = 0
+    POST : int = 1
+    HEAD : int = 2
     # Account status
-    ACC_STATUS_UNSET = -1
-    ACC_STATUS_UNDEF = 0
-    ACC_STATUS_OK = 1
-    ACC_STATUS_DOWN = 2
+    ACC_STATUS_UNSET : int = -1
+    ACC_STATUS_UNDEF : int = 0
+    ACC_STATUS_OK : int = 1
+    ACC_STATUS_DOWN : int = 2
     # Default user agent
-    DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    DEFAULT_UA : str = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
-        self.user_agent = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION # default user agent, we add Rosetta name and version for websites which might have bot exceptions for it
-        self.translator = GoogleTranslator(source='auto', target='en') # translator instance
-        self.client = None
-        self.client_req = {}
-        self.gbf_client = None
-        self.gbf_client_req = {}
+    def __init__(self : Network, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        self.user_agent : str = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION # default user agent, we add Rosetta name and version for websites which might have bot exceptions for it
+        self.translator : GoogleTranslator = GoogleTranslator(source='auto', target='en') # translator instance
+        self.client : aiohttp.ClientSession|None = None
+        self.client_req : dict[int, Callable] = {}
+        self.gbf_client : aiohttp.ClientSession|None = None
+        self.gbf_client_req : dict[int, Callable] = {}
 
-    def init(self) -> None:
+    def init(self : Network) -> None:
         pass
 
     """update_user_agent()
     Automatically update the default Chrome user agent used by Rosetta
     """
-    async def update_user_agent(self) -> None:
+    async def update_user_agent(self : Network) -> None:
         try:
             # access this list of user agents
-            response = await self.client.get("https://jnrbsn.github.io/user-agents/user-agents.json")
+            response : aiohttp.HTTPResponse = await self.client.get("https://jnrbsn.github.io/user-agents/user-agents.json")
             async with response:
                 if 200 <= response.status < 400:
+                    ua : str
                     for ua in await response.json(): # look for the latest chrome one...
                         if "Windows" in ua and "Chrome" in ua:
                             self.user_agent = ua + ' Rosetta/' + self.bot.VERSION # and update our user agent
@@ -68,10 +73,10 @@ class Network():
     Context manager for the aiohttp clients, to ensure it will be closed upon exit. Used in bot.py
     """
     @asynccontextmanager
-    async def init_clients(self) -> Generator[tuple, None, None]:
+    async def init_clients(self : Network) -> Generator[tuple[aiohttp.ClientSession, aiohttp.ClientSession], None, None]:
         try:
             # The TCPConnector is shared/common to both clients
-            conn = aiohttp.TCPConnector(keepalive_timeout=60, ttl_dns_cache=600)
+            conn : aiohttp.TCPConnector = aiohttp.TCPConnector(keepalive_timeout=60, ttl_dns_cache=600)
             # set generic client and methods
             self.client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
             self.client_req[self.GET] = self.client.get
@@ -97,7 +102,7 @@ class Network():
     ----------
     Exception
     """
-    async def unknown_req(*args, **kwargs) -> None:
+    async def unknown_req(self : Network, *args, **kwargs) -> None:
         raise Exception("Unknown request type")
 
     """request()
@@ -119,12 +124,13 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def request(self, url : str, *, rtype : int = 0, headers : dict = {}, params : Optional[dict] = None, payload : Optional[dict] = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> RequestResult:
+    async def request(self : Network, url : str, *, rtype : int = 0, headers : dict = {}, params : dict|None = None, payload : dict|None = None, add_user_agent : bool = False, allow_redirects : bool = False, expect_JSON : bool = False, ssl : bool = True) -> RequestResult:
         try:
             headers['Connection'] = 'keep-alive'
             # Add user agent
             if add_user_agent and 'User-Agent' not in headers:
                 headers['User-Agent'] = self.user_agent
+            response : aiohttp.HTTPResponse
             if payload is None: # call request method with given parameters
                 response = await (self.client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
             else: # the request is always POST if we have a payload
@@ -133,8 +139,8 @@ class Network():
             async with response:
                 if response.status >= 400 or response.status < 200: # raise Exception if our HTTP code isn't in the 200-399 range
                     raise Exception()
-                ct = response.headers.get('content-type', '')
-                is_json = 'application/json' in ct
+                ct : str = response.headers.get('content-type', '')
+                is_json : bool = 'application/json' in ct
                 # raise error if we expected a json and it's not
                 if expect_JSON and not is_json:
                     raise Exception("Expected `application/json`, got `{}`".format(ct))
@@ -169,29 +175,30 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
     """
-    async def requestGBF(self, path : str, *, rtype : int = 0, params : dict = {}, payload : Optional[dict] = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> RequestResult:
+    async def requestGBF(self : Network, path : str, *, rtype : int = 0, params : dict = {}, payload : dict|None = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> RequestResult:
         try:
-            silent = True
+            silent : bool = True
             # don't proceed if the game is down
             if await self.gbf_maintenance():
                 return None
             # build the URL
+            url : str
             if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
             else: url = "https://game.granbluefantasy.jp" + path
             # check and retrieve the account info
             if not self.has_account():
                 raise Exception("No GBF account set")
-            acc = self.get_account()
+            acc : GBFAccount = self.get_account()
             # if account is down, we silence errors
-            silent = (acc['state'] == self.ACC_STATUS_DOWN)
+            silent : bool = (acc['state'] == self.ACC_STATUS_DOWN)
             # retrieve the game version
-            ver = self.bot.data.save['gbfversion']
+            ver : JSON = self.bot.data.save['gbfversion']
             if ver == "Maintenance": # Note: I don't think the version should ever be equal to "Maintenance" but I'm keeping it for safety
                 raise Exception("Maintenance on going")
             elif ver is None: # If not set, we proceed with a version of 0. Other mechanisms will take care of the rest
                 ver = 0
             # prepare and set headers
-            headers = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc['ua'], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
+            headers : dict[str, str] = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':acc['ua'], 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
             # set cookies
             # Note: To ensure the cookie doesn't expire, we have to clear and reset the jar manually
             # We use a separe client for that purpose
@@ -199,10 +206,11 @@ class Network():
             self.gbf_client.cookie_jar.clear()
             self.gbf_client.cookie_jar.update_cookies(acc['ck'])
             # set request params
-            ts = int(self.bot.util.UTC().timestamp() * 1000)
+            ts : int = int(self.bot.util.UTC().timestamp() * 1000)
             params["_"] = str(ts)
             params["t"] = str(ts+300) # second timestamp is always a bit further. No idea if a random number would be better
             params["uid"] = str(acc['id'])
+            response : aiohttp.HTTPResponse
             if payload is None: # call request method with given parameters
                 response = await (self.gbf_client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
             else: # if we have a payload, it's always a POST request
@@ -219,8 +227,8 @@ class Network():
             async with response:
                 if response.status >= 400 or response.status < 200: # error if our HTTP code isn't in the 200-399 range
                     if not _updated_: # if _updated_ isn't raised, it MIGHT be due to an invalid version (in case an update happened)
-                        x = await self.gbf_version() # in that case, we check for an update
-                        if x is not None and x >= 2:
+                        x : int|str|None = await self.gbf_version() # in that case, we check for an update
+                        if x is not None and not isinstance(x, str) and x >= 2:
                             # x = 2: our version number in memory wasn't set
                             # x = 3: an update occured
                             if x == 3:
@@ -230,8 +238,8 @@ class Network():
                     # else, raise exception
                     raise Exception()
                 # check content type
-                ct = response.headers.get('content-type', '')
-                is_json = 'application/json' in ct
+                ct : str = response.headers.get('content-type', '')
+                is_json : bool = 'application/json' in ct
                 if expect_JSON and not is_json: # we expected a json but we didn't receive one
                     self.set_account_state(self.ACC_STATUS_DOWN) # the account is likely down
                     return None
@@ -264,13 +272,14 @@ class Network():
     ----------
     unknown: None if error, else Bytes or JSON object
     """
-    async def requestWiki(self, path : str, params : dict = {}, allow_redirects : bool = False) -> RequestResult:
+    async def requestWiki(self : Network, path : str, params : dict = {}, allow_redirects : bool = False) -> RequestResult:
         try:
             # build the URL
+            url : str
             if path[:1] != "/": url = "https://gbf.wiki/" + path
             else: url = "https://gbf.wiki" + path
             # make the GET request with given parameters
-            response = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, params=params, timeout=8, allow_redirects=allow_redirects)
+            response : aiohttp.HTTPResponse = await self.client.get(url, headers= {'Connection':'keep-alive', 'User-Agent':self.user_agent, "Accept":"text/html,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7", "Accept-Encoding":"gzip, deflate", "Accept-Language":"en-US,en;q=0.9", 'Host':'gbf.wiki', 'Origin':'https://gbf.wiki', "Referer":"https://gbf.wiki/"}, params=params, timeout=8, allow_redirects=allow_redirects)
             async with response:
                 if response.status == 403: # if you get this error, contact the admins to get your user-agent whitelisted
                     raise Exception("HTTP Error 403 - Possibly Cloudflare related")
@@ -296,10 +305,10 @@ class Network():
     ----------
     Dict: Resulting dict
     """
-    def str2cookie(self, header : str) -> dict:
-        cd = {}
+    def str2cookie(self : Network, header : str) -> dict[str, str]:
+        cd : dict[str, str] = {}
         for c in header.split(";"): # split via ;
-            ct = c.split("=", 1) # then each element by =
+            ct : list[str] = c.split("=", 1) # then each element by =
             cd[ct[0].strip()] = ct[1].strip() # store each part as a pair in our dict
         # return the dict
         return cd
@@ -307,10 +316,10 @@ class Network():
     """refresh_account()
     Refresh the GBF account cookie by making a request (only if not done recently)
     """
-    async def refresh_account(self) -> None:
+    async def refresh_account(self : Network) -> None:
         if self.has_account(): # check if the account exists
-            state = self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET)
-            last = self.bot.data.save['gbfaccount'].get('last', None)
+            state : int = self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET)
+            last : datetime|None = self.bot.data.save['gbfaccount'].get('last', None)
             # if it's down...
             if state != self.ACC_STATUS_DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
                 # attempt a request
@@ -324,7 +333,7 @@ class Network():
     ----------
     bool: True if valid, False if not
     """
-    def has_account(self) -> bool:
+    def has_account(self : Network) -> bool:
         return self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_UNSET and len(self.bot.data.save['gbfaccount'].get('ck', {})) > 0 and self.bot.data.save['gbfaccount'].get('ua', "") != ""
 
     """is_account_valid()
@@ -335,7 +344,7 @@ class Network():
     ----------
     bool: True if usable, False if not
     """
-    def is_account_valid(self) -> bool:
+    def is_account_valid(self : Network) -> bool:
         return self.has_account() and self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_DOWN
 
     """get_account()
@@ -345,7 +354,7 @@ class Network():
     ----------
     dict: Account data
     """
-    def get_account(self) -> dict[str, str|int|None|datetime]:
+    def get_account(self : Network) -> GBFAccount:
         return self.bot.data.save['gbfaccount']
 
     """set_account()
@@ -357,7 +366,7 @@ class Network():
     ck: String, valid Cookie
     ua: String, User-Agent used to get the Cookie
     """
-    def set_account(self, uid : int, ck : str, ua : str):
+    def set_account(self : Network, uid : int, ck : str, ua : str):
         self.bot.data.save['gbfaccount'] = {"id":uid, "ck":self.str2cookie(ck), "ua":ua, "state":self.ACC_STATUS_UNDEF, "last":None}
         self.bot.data.pending = True
 
@@ -374,11 +383,11 @@ class Network():
     ----------
     Boolean: True if success, False if error
     """
-    def edit_account(self, **options : dict) -> bool:
+    def edit_account(self : Network, **options : dict[str, int|str]) -> bool:
         try:
-            uid = options.pop('uid', None)
-            ck = options.pop('ck', None)
-            ua = options.pop('ua', None)
+            uid : str|int|None = options.pop('uid', None)
+            ck : str|None = options.pop('ck', None)
+            ua : str|None = options.pop('ua', None)
             if uid is not None: # GBF user id
                 self.bot.data.save['gbfaccount']['id'] = uid
                 self.bot.data.pending = True
@@ -395,7 +404,7 @@ class Network():
     """clear_account()
     Clear the GBF account data
     """
-    def clear_account(self) -> None:
+    def clear_account(self : Network) -> None:
         self.bot.data.save['gbfaccount'] = {}
         self.bot.data.pending = True
 
@@ -410,11 +419,11 @@ class Network():
     ----------
     Boolean: True if success, False if error
     """
-    def set_account_cookie(self, ck : str) -> bool:
+    def set_account_cookie(self : Network, ck : str) -> bool:
         try:
             if ck is None: return False
-            cookie = self.str2cookie(ck) # convert it to dict
-            reference = self.bot.data.save['gbfaccount']['ck']
+            cookie : dict[str, str] = self.str2cookie(ck) # convert it to dict
+            reference : dict[str, str] = self.bot.data.save['gbfaccount']['ck']
             self.bot.data.save['gbfaccount']['ck'] = reference | {k:v for k, v in cookie.items() if k in reference}
             self.bot.data.save['gbfaccount']['state'] = self.ACC_STATUS_OK # account has a new cookie so it should be considered ok
             self.bot.data.save['gbfaccount']['last'] = self.bot.util.JST() # cookie just updated
@@ -431,7 +440,7 @@ class Network():
     ----------
     state: Integer, 0 for undefined, 1 for good, 2 for bad
     """
-    def set_account_state(self, state : int) -> None:
+    def set_account_state(self : Network, state : int) -> None:
         try:
             if state != self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET):
                 self.bot.data.save['gbfaccount']['state'] = state
@@ -444,16 +453,16 @@ class Network():
     
     Returns
     ----------
-    unknown: None if GBF is down, "Maintenance" if in maintenance, -1 if version comparison error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
+    int or string: None if GBF is down, "Maintenance" if in maintenance, -1 if version comparison error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
     """
-    async def gbf_version(self) -> Any: # retrieve the game version
+    async def gbf_version(self : Network) -> int|str|None: # retrieve the game version
         # simply request the main page
-        res = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
-        if res is None: # main page is down
+        response : RequestResult = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
+        if response is None: # main page is down
             return None
         # convert page html to string
-        res = str(res)
-        i = 0
+        res : str = str(response)
+        i : int = 0
         while i < len(self.VERSION_REGEX): # look for the version number. it's always embedded in the html. It recently changed tho, so we used multiple regexes to cover our tracks now.
             try:
                 return self.gbf_update(int(self.VERSION_REGEX[i].findall(res)[0])) # if the number if found, we call gbf_update and return its result
@@ -476,7 +485,7 @@ class Network():
     ----------
     Integer: -1 if error, 0 if equal, 1 if v is None, 2 if saved number is None, 3 if different
     """
-    def gbf_update(self, v : Optional[int]) -> int: # compare version with given value, then update and return a value depending on difference
+    def gbf_update(self : Network, v : int|None) -> int: # compare version with given value, then update and return a value depending on difference
         try:
             if v is None:
                 return 1 # invalid parameter
@@ -507,10 +516,10 @@ class Network():
     ----------
     Boolean: True if the game is available, False otherwise.
     """
-    async def gbf_available(self, skip_check = False) -> bool:
+    async def gbf_available(self : Network, skip_check = False) -> bool:
         if skip_check is False and await self.gbf_maintenance(): # if skip_check isn't raised an the game is in maintenance, we return False
             return False
-        v = await self.gbf_version() # get version number
+        v : int|str|None = await self.gbf_version() # get version number
         if v is None: # if None, try again in case it was a server lag
             v = await self.gbf_version() 
         match v: # check result
@@ -538,8 +547,9 @@ class Network():
     --------
     tuple: Containing the Status string and the Status flag (True if on going, False if not)
     """
-    async def gbf_maintenance_status(self, check_maintenance_end : bool = False) -> str:
-        current_time = self.bot.util.JST()
+    async def gbf_maintenance_status(self : Network, check_maintenance_end : bool = False) -> str:
+        current_time : datetime = self.bot.util.JST()
+        d : timedelta
         # Check GBF maintenance data in memory
         if self.bot.data.save['maintenance']['state'] is True: # there is data
             if self.bot.data.save['maintenance']['time'] is not None and current_time < self.bot.data.save['maintenance']['time']: # Maintenance hasn't started
@@ -564,7 +574,7 @@ class Network():
                         self.bot.data.pending = True
                         return "", False
                     else:
-                        e = self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration'])
+                        e : datetime = self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration'])
                         d = e - current_time
                         return "{} Maintenance ends in **{}**".format(self.bot.emote.get('cog'), self.bot.util.delta2str(d, 2)), True
         return "", False
@@ -581,7 +591,7 @@ class Network():
     --------
     bool: True if on going, False otherwise
     """
-    async def gbf_maintenance(self, check_maintenance_end : bool = False) -> bool:
+    async def gbf_maintenance(self : Network, check_maintenance_end : bool = False) -> bool:
         return (await self.gbf_maintenance_status(check_maintenance_end=check_maintenance_end))[1]
 
     """translate()
@@ -599,7 +609,7 @@ class Network():
     ----------
     exception: If an error occurs
     """
-    def translate(self, original_text : str) -> str:
+    def translate(self : Network, original_text : str) -> str:
         if original_text == "": # ignore empty strings
             return original_text
         return self.translator.translate(original_text)

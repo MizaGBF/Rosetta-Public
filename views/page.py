@@ -95,7 +95,7 @@ class RankingDropdown(disnake.ui.StringSelect):
         options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # change the list of selectable elements
         self.options=options # update the disnake.ui.StringSelect
 
-    async def callback(self, inter: disnake.MessageInteraction) -> None:
+    async def callback(self, inter : disnake.MessageInteraction) -> None:
         # called when a choice is made
         if not self.disabled and self.view.ownership_check(inter): # check if enabled and the view author
             if len(self.view.embeds) >= 2: # disable previous and next buttons if they exist (i.e. if there are at least 2 pages)

@@ -4,7 +4,7 @@ import asyncio
 from typing import Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-    from ..cogs.util import GameCard
+    from components.util import GameCard
 import random
 
 # ----------------------------------------------------------------------------------------------------------------

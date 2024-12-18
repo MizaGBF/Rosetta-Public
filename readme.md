@@ -262,13 +262,11 @@ Same principle, but shorter:
         "drive" : "SAVE_FOLDER_ID",
         "upload" : "",
         "files" : "FILE_FOLDER_ID"
-    },
-    "debug" : null
+    }
 }
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Leave the `debug` value as it is.  
   
 > [!IMPORTANT]
 > In Debug mode, the bot is unable to write to your Google Drive.  

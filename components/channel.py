@@ -1,6 +1,9 @@
+from __future__ import annotations
 import disnake
+from disnake.ext import commands
 import asyncio
-from typing import Union, Optional, Any, TYPE_CHECKING
+import types
+from typing import TYPE_CHECKING
 if TYPE_CHECKING: from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -10,21 +13,25 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # It also manages settings related to channels (auto message cleanup, announcement channel...)
 # ----------------------------------------------------------------------------------------------------------------
 
-class Channel():
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
-        self.cache = {}
-        self.announcements = [] # channels to send announcement to
-        self.auto_publish = [] # channels to auto publish
+# Type Aliases
+CleanupSetting : types.GenericAlias = list[bool|list[int]]
+AnnouncementSetting : types.GenericAlias = list[int|bool]
 
-    def init(self) -> None:
+class Channel():
+    def __init__(self : Channel, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        self.cache : dict[str, disnake.abc.Messageable] = {}
+        self.announcements : list[int] = [] # channels to send announcement to
+        self.auto_publish : list[int] = [] # channels to auto publish
+
+    def init(self : Channel) -> None:
         self.cache = {}
         self.update_announcement_channels()
 
     """update_announcement_channels()
     Update announcement channel lists
     """
-    def update_announcement_channels(self) -> None:
+    def update_announcement_channels(self : Channel) -> None:
         # reset containers
         self.announcements = []
         self.auto_publish = []
@@ -46,7 +53,7 @@ class Channel():
     ----------
     bool: True if it is, False otherwise
     """
-    def can_publish(self, channel_id : int) -> bool:
+    def can_publish(self : Channel, channel_id : int) -> bool:
         return (channel_id in self.auto_publish)
 
     """set()
@@ -57,11 +64,11 @@ class Channel():
     name: Channel name
     id_key: Channel name in config.json
     """
-    def set(self, name : str, id_key : str) -> None:
+    def set(self : Channel, name : str, id_key : str) -> None:
         try:
             if name in self.cache:
                 raise Exception("Name already used")
-            c = self.bot.get_channel(self.bot.data.config['ids'][id_key]) # retrieve channel for given config.json id
+            c : disnake.Channel|None = self.bot.get_channel(self.bot.data.config['ids'][id_key]) # retrieve channel for given config.json id
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
@@ -77,11 +84,11 @@ class Channel():
     name: Channel name
     cid: Channel id
     """
-    def setID(self, name : str, cid : int) -> None:
+    def setID(self : Channel, name : str, cid : int) -> None:
         try:
             if name in self.cache:
                 raise Exception("Name already used")
-            c = self.bot.get_channel(cid) # retrieve channel for given id
+            c : disnake.Channel|None = self.bot.get_channel(cid) # retrieve channel for given id
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
@@ -96,7 +103,8 @@ class Channel():
     ----------
     channel_list: List of pair [name, id_key or id]
     """
-    def setMultiple(self, channel_list: list) -> None:
+    def setMultiple(self : Channel, channel_list: list[str|int]) -> None:
+        c : str|int
         for c in channel_list:
             if len(c) == 2 and isinstance(c[0], str): # iterate over list and call corresponding set function
                 if isinstance(c[1], str):
@@ -115,7 +123,7 @@ class Channel():
     ----------
     bool: True if the channel name is cached
     """
-    def has(self, name : str) -> bool:
+    def has(self : Channel, name : str) -> bool:
         return (name in self.cache)
 
     """get()
@@ -129,15 +137,16 @@ class Channel():
     ----------
     discord.Channel: Discord Channel, None if error
     """
-    def get(self, name : str) -> disnake.abc.Messageable:
+    def get(self : Channel, name : str) -> disnake.abc.Messageable:
         return self.cache.get(name, self.bot.get_channel(name))
 
     """clean_data()
     Clean unused cleanup and announcement settings
     """
-    def clean_data(self) -> None:
-        guild_ids = set([str(g.id) for g in self.bot.guilds])
+    def clean_data(self : Channel) -> None:
+        guild_ids : set[str] = set([str(g.id) for g in self.bot.guilds])
         # Note: data is removed if the bot left the guild or if the data is empty
+        gid : str
         # cleanup
         for gid in list(self.bot.data.save['cleanup'].keys()):
             if gid not in guild_ids or (not self.bot.data.save['cleanup'][gid][0] and len(self.bot.data.save['cleanup'][gid][1]) == 0):
@@ -161,7 +170,7 @@ class Channel():
     delay: Time in second before deletion
     all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
     """
-    async def clean(self, target : Union[disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[int|float] = None, all : bool = False) -> None:
+    async def clean(self : Channel, target : disnake.Message|disnake.ApplicationCommandInteraction, delay : int|float|None = None, all : bool = False) -> None:
         try:
             match target:
                 case disnake.ApplicationCommandInteraction()|disnake.ModalInteraction(): # interactions
@@ -192,10 +201,10 @@ class Channel():
     --------
     bool: True if if must be cleaned up, False if not
     """
-    def interaction_must_be_cleaned(self, inter : Any) -> bool:
+    def interaction_must_be_cleaned(self : Channel, inter : disnake.Interaction|disnake.Message|commands.Context) -> bool:
         if inter is None:
             return False
-        settings = self.get_cleanup_settings(str(inter.guild.id))
+        settings : CleanupSetting = self.get_cleanup_settings(str(inter.guild.id))
         if settings[0] and inter.channel.id not in settings[1]:
             return True
         return False
@@ -207,7 +216,7 @@ class Channel():
     ----------
     gid: String, guild id
     """
-    def toggle_cleanup(self, gid : str) -> None:
+    def toggle_cleanup(self : Channel, gid : str) -> None:
         if gid not in self.bot.data.save['cleanup']:
             self.bot.data.save['cleanup'][gid] = [False, []]
         else:
@@ -221,7 +230,7 @@ class Channel():
     ----------
     gid: String, guild id
     """
-    def reset_cleanup(self, gid : str) -> None:
+    def reset_cleanup(self : Channel, gid : str) -> None:
         if gid in self.bot.data.save['cleanup']:
             self.bot.data.save['cleanup'].pop(gid)
             self.bot.data.pending = True
@@ -234,7 +243,7 @@ class Channel():
     gid: String, guild id
     cid: Integer, channel id
     """
-    def toggle_cleanup_channel(self, gid : str, cid : int) -> None:
+    def toggle_cleanup_channel(self : Channel, gid : str, cid : int) -> None:
         if gid not in self.bot.data.save['cleanup']:
             self.bot.data.save['cleanup'][gid] = [True, [cid]]
             self.bot.data.pending = True
@@ -242,7 +251,7 @@ class Channel():
             self.bot.data.save['cleanup'][gid][1].append(cid)
             self.bot.data.pending = True
         else:
-            i = 0
+            i : int = 0
             while i < len(self.bot.data.save['cleanup'][gid][1]):
                 if self.bot.data.save['cleanup'][gid][1][i] == cid:
                     self.bot.data.save['cleanup'][gid][1].pop(i)
@@ -261,7 +270,7 @@ class Channel():
     ----------
     list: Containing Enable flag (bool) and the list of excluded channels (list[int])
     """
-    def get_cleanup_settings(self, gid : str) -> list:
+    def get_cleanup_settings(self : Channel, gid : str) -> CleanupSetting:
         return self.bot.data.save['cleanup'].get(gid, [False, []])
 
     """render_cleanup_settings()
@@ -272,18 +281,18 @@ class Channel():
     inter: A command interaction. Must have been deferred beforehand.
     color: Integer, embed color to use.
     """
-    async def render_cleanup_settings(self, inter : disnake.GuildCommandInteraction, color : int) -> None:
-        gid = str(inter.guild.id)
-        settings = self.get_cleanup_settings(gid)
-        descs = ["- Status ▫️ "]
+    async def render_cleanup_settings(self : Channel, inter : disnake.GuildCommandInteraction, color : int) -> None:
+        gid : str = str(inter.guild.id)
+        settings : CleanupSetting = self.get_cleanup_settings(gid)
+        descs : list[str] = ["- Status ▫️ "]
         descs.append("**Enabled**" if settings[0] else "**Disabled**")
         descs.append("\nTo toggle this setting: ")
         descs.append(self.bot.util.command2mention('mod cleanup toggle'))
         if len(settings[1]) > 0:
             descs.append("\n- Excluded channels:\n")
-            i = 0
+            i : int = 0
             while i < len(settings[1]):
-                ch = inter.guild.get_channel(settings[1][i])
+                ch : disnake.Channel|None = inter.guild.get_channel(settings[1][i])
                 if ch is None: # deleted channel?
                     settings[1].pop(i)
                     self.bot.data.pending = True
@@ -306,7 +315,7 @@ class Channel():
     ----------
     list: Containing the announcement channel id (int) and the auto publish flag (bool)
     """
-    def get_announcement_settings(self, gid : str) -> list:
+    def get_announcement_settings(self : Channel, gid : str) -> AnnouncementSetting:
         return self.bot.data.save['announcement'].get(gid, [-1, False])
 
     """toggle_announcement()
@@ -317,7 +326,7 @@ class Channel():
     gid: String, guild id
     cid: Integer, channel id
     """
-    def toggle_announcement_channel(self, gid : str, cid : int) -> None:
+    def toggle_announcement_channel(self : Channel, gid : str, cid : int) -> None:
         if gid not in self.bot.data.save['announcement']:
             self.bot.data.save['announcement'][gid] = [cid, False]
             self.bot.data.pending = True
@@ -337,7 +346,7 @@ class Channel():
     ----------
     gid: String, guild id
     """
-    def toggle_announcement_publish(self, gid : str) -> None:
+    def toggle_announcement_publish(self : Channel, gid : str) -> None:
         if gid not in self.bot.data.save['announcement']:
             self.bot.data.save['announcement'][gid] = [-1, True]
             self.bot.data.pending = True
@@ -355,11 +364,11 @@ class Channel():
     inter: A command interaction. Must have been deferred beforehand.
     color: Integer, embed color to use.
     """
-    async def render_announcement_settings(self, inter: disnake.GuildCommandInteraction, color : int) -> None:
-        gid = str(inter.guild.id)
-        settings = self.get_announcement_settings(gid)
-        c = self.bot.get_channel(settings[0])
-        descs = ["- Status ▫️ "]
+    async def render_announcement_settings(self : Channel, inter : disnake.GuildCommandInteraction, color : int) -> None:
+        gid : str = str(inter.guild.id)
+        settings : AnnouncementSetting = self.get_announcement_settings(gid)
+        c : disnake.Channel|None = self.bot.get_channel(settings[0])
+        descs : list[str] = ["- Status ▫️ "]
         descs.append("**Enabled**" if c is not None else "**Disabled**")
         if c is None:
             descs.append("\nTo enable, use in the desired channel: ")

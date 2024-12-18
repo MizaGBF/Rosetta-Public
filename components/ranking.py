@@ -1,6 +1,6 @@
 import asyncio
 import types
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from components.singleton import Score, GWDB
 if TYPE_CHECKING:
     from ..bot import DiscordBot
@@ -19,6 +19,8 @@ import sqlite3
 GWDBList : types.GenericAlias = list[Score]
 GWDBInfo : types.GenericAlias = list[GWDB|None]
 GWDBSearchResult : types.GenericAlias = list[None|GWDBList, None|GWDBList, GWDBInfo]
+CrewDataEntry : types.GenericAlias = tuple[int, int, str, int, int, int, int, int, float, float]
+PlayerDataEntry : types.GenericAlias = tuple[int, int, str, int]
 
 class Ranking():
     # The Ranking component
@@ -51,12 +53,15 @@ class Ranking():
         self.dblock = asyncio.Lock()
 
     def init(self) -> None:
-        self.gbfgcrews = self.bot.data.config.get('granblue', {}).get('gbfgcrew', {})
-        self.othercrews = self.bot.data.config.get('granblue', {}).get('othercrew', {})
-        self.allconfigcrews = self.gbfgcrews | self.othercrews
-        self.gbfgcrews_id = list(set(self.gbfgcrews.values()))
-        self.othercrews_id = list(set(self.othercrews.values()))
-        i = 0 # remove dupes
+        self.gbfgcrews : dict[str, str] = self.bot.data.config.get('granblue', {}).get('gbfgcrew', {})
+        self.othercrews : dict[str, str] = self.bot.data.config.get('granblue', {}).get('othercrew', {})
+        self.allconfigcrews : dict[str, str] = self.gbfgcrews | self.othercrews
+        for v in self.allconfigcrews.values():
+            if not isinstance(v, str):
+                raise TypeError
+        self.gbfgcrews_id : list[str] = list(set(self.gbfgcrews.values()))
+        self.othercrews_id : list[str] = list(set(self.othercrews.values()))
+        i : int = 0 # remove dupes
         while i < len(self.othercrews_id):
             if self.othercrews_id[i] in self.gbfgcrews_id:
                 self.othercrews_id.pop(i)
@@ -452,7 +457,7 @@ class Ranking():
         25: Final rally or end
         None: Undefined
     """
-    def getCurrentGWDayID(self) -> Optional[int]:
+    def getCurrentGWDayID(self) -> int|None:
         if self.bot.data.save['gw']['state'] is False: # gw isn't on going
             return None
         current_time = self.bot.util.JST()

@@ -1,6 +1,10 @@
+from __future__ import annotations
 import asyncio
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+from components.util import JSON
+from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -12,39 +16,39 @@ from logging.handlers import RotatingFileHandler
 
 class Logger():
     # shortcut to these constants
-    CRITICAL = logging.CRITICAL
-    ERROR = logging.ERROR
-    WARNING = logging.WARNING
-    INFO = logging.INFO
-    DEBUG = logging.DEBUG
-    NOTSET = logging.NOTSET
+    CRITICAL : int = logging.CRITICAL
+    ERROR : int = logging.ERROR
+    WARNING : int = logging.WARNING
+    INFO : int = logging.INFO
+    DEBUG : int = logging.DEBUG
+    NOTSET : int = logging.NOTSET
     # Embed colors for those log levels
-    COLORS = {
+    COLORS : dict[int, int] = {
         CRITICAL : 0x6e0412,
         ERROR : 0xff0022,
         WARNING : 0xff8c00,
         INFO : 0x3eba25,
         DEBUG : 0xc7e046
     }
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
-        debug = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
+    def __init__(self : Logger, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        debug : bool = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
         logging.basicConfig(level=logging.INFO)
-        self.logger = None # logging object
+        self.logger : logging.Logger|None = None # logging object
         if not self.bot.test_mode: # we still create loggers in debug mode
             self.logger = logging.getLogger('Rosetta')
             self.logger.setLevel(logging.NOTSET)
-            discord_logger = logging.getLogger('disnake')
+            discord_logger : logging.Logger = logging.getLogger('disnake')
             discord_logger.setLevel(logging.WARNING)
             if not debug: # plus rotary files in normal mode
                 self.logger.addHandler(RotatingFileHandler(filename="rosetta.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=1))
                 discord_logger.addHandler(RotatingFileHandler(filename="disnake.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=1))
             # we disable these logs
             for log_name in ['oauth2client', 'oauth2client.transport', 'oauth2client.client', 'oauth2client.crypt']:
-                l = logging.getLogger(log_name)
+                l : logging.Logger = logging.getLogger(log_name)
                 l.setLevel(logging.ERROR)
 
-    def init(self) -> None:
+    def init(self : Logger) -> None:
         pass
 
     """color()
@@ -53,22 +57,27 @@ class Logger():
     Parameters
     ----------
     level: Integer
+    
+    Returns
+    ----------
+    int: Color
     """
-    def color(self, level : int) -> None:
+    def color(self : Logger, level : int) -> int:
         return self.COLORS.get(level, 0x000000)
 
     """process()
     Read through the stack and send the errors to the debug channel
     """
-    async def process(self) -> None:
+    async def process(self : Logger) -> None:
         while True:
             try:
                 await asyncio.sleep(2)
                 if len(self.bot.data.save['log']) > 0: # if messages are waiting in the queue
-                    logs = self.bot.data.save['log'] # get them out
+                    logs : JSON|None = self.bot.data.save['log'] # get them out
                     self.bot.data.save['log'] = [] # and clear
                     self.bot.data.pending = True
                     # for each message
+                    msg : JSON
                     for msg in logs:
                         if len(msg[1]) > 4000: # if too long, truncate
                             msg[1] = msg[1][:4000] + "...\n*Too long, check rosetta.log for details*"
@@ -92,8 +101,8 @@ class Logger():
     send_to_discord: If true, it will be stored in the save data to be processed later
     level: Integer, logging level used by log()
     """
-    def push(self, msg : str, send_to_discord : bool = True, level : int = logging.INFO) -> None:
-        now = self.bot.util.UTC()
+    def push(self : Logger, msg : str, send_to_discord : bool = True, level : int = logging.INFO) -> None:
+        now : datetime = self.bot.util.UTC()
         if send_to_discord: # if this flag is on
             if len(self.bot.data.save['log']) > 0 and self.bot.data.save['log'][-1][1] == msg: # if the last message in the log is the same
                 self.bot.data.save['log'][-1][2] += 1 # we simply increase its occurence counter
@@ -116,7 +125,7 @@ class Logger():
     send_to_discord: If true, it will be stored in the save data to be processed later
     level: Integer, logging level used by log()
     """
-    def pushError(self, msg : str, exception : Optional[Exception] = None, send_to_discord : bool = True, level : int = logging.ERROR) -> None:
+    def pushError(self : Logger, msg : str, exception : Exception|None = None, send_to_discord : bool = True, level : int = logging.ERROR) -> None:
         if 'Session is closed' in str(exception): # Don't send these errors to discord
             send_to_discord = False
         if exception is not None: # add full exception traceback to message
