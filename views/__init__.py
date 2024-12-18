@@ -1,6 +1,8 @@
+from __future__ import annotations
 import disnake
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
 # Base View
@@ -20,12 +22,12 @@ class BaseView(disnake.ui.View):
     timeout: timeout in second before the interaction becomes invalid
     enable_timeout_cleanup: if True, the original message will be cleaned up (if possible), if the time out is triggered
     """
-    def __init__(self, bot : 'DiscordBot', owner_id : Optional[int] = None, timeout : float = 60.0, enable_timeout_cleanup : bool = True) -> None:
+    def __init__(self : BaseView, bot : DiscordBot, owner_id : int|None = None, timeout : float = 60.0, enable_timeout_cleanup : bool = True) -> None:
         super().__init__(timeout=timeout)
-        self.bot : 'DiscordBot' = bot # reference to the bot
-        self.owner_id = owner_id # id of whoever was the cause of this View creation
-        self.message = None # used to store messages to display
-        self.enable_timeout_cleanup = enable_timeout_cleanup # flag for the timeout auto cleanup
+        self.bot : DiscordBot = bot # reference to the bot
+        self.owner_id : int|None = owner_id # id of whoever was the cause of this View creation
+        self.message : disnake.Message|None = None # used to store messages to display
+        self.enable_timeout_cleanup : bool = enable_timeout_cleanup # flag for the timeout auto cleanup
 
     """ownership_check()
     Check if the interaction user id matches the owner_id set in the constructor
@@ -38,14 +40,14 @@ class BaseView(disnake.ui.View):
     --------
     bool: True if it matches, False if not
     """
-    def ownership_check(self, interaction: disnake.Interaction) -> bool:
+    def ownership_check(self : BaseView, interaction: disnake.Interaction) -> bool:
         return (self.owner_id is None or interaction.user.id == self.owner_id)
 
     """on_timeout()
     Coroutine callback
     Called when the view times out
     """
-    async def on_timeout(self) -> None:
+    async def on_timeout(self : BaseView) -> None:
         self.stopall() # disable all children
         if self.enable_timeout_cleanup: # if auto cleanup is enabled
             if self.bot.channel.interaction_must_be_cleaned(self.message): # replace message by Lyria emote if authorized to
@@ -61,7 +63,8 @@ class BaseView(disnake.ui.View):
     """stop()
     Override disnake.ui.View.stopall()
     """
-    def stopall(self) -> None:
+    def stopall(self : BaseView) -> None:
+        c : disnake.ui.Component
         for c in self.children: # iterate over view children
             try: c.disabled = True # and disable them
             except: pass
@@ -71,5 +74,5 @@ class BaseView(disnake.ui.View):
     Coroutine callback
     Called when the view triggers an error
     """
-    async def on_error(self, error: Exception, item: disnake.ui.Item, interaction: disnake.Interaction) -> None:
+    async def on_error(self : BaseView, error: Exception, item: disnake.ui.Item, interaction: disnake.Interaction) -> None:
         await self.bot.send('debug', embed=self.bot.embed(title="⚠ Error caused by {}".format(interaction.user), description="{} Exception\n{}".format(item, self.bot.pexc(error)), thumbnail=interaction.user.display_avatar, footer='{}'.format(interaction.user.id), timestamp=self.bot.util.UTC()))

@@ -3,7 +3,7 @@ import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import JSON
+    from components.util import JSON
 from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler

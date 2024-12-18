@@ -1,9 +1,12 @@
 from __future__ import annotations
-import types
 from typing import Generator, Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import JSON
+    from components.util import JSON
+    # Type Aliases
+    import types
+    RequestResult : types.GenericAlias = JSON|bytes|None # cover None, JSON types, bytes
+    GBFAccount : types.GenericAlias = JSON
 from contextlib import asynccontextmanager
 import aiohttp
 import re
@@ -15,10 +18,6 @@ from deep_translator import GoogleTranslator
 # ----------------------------------------------------------------------------------------------------------------
 # This component is the interface with Granblue Fantasy (account wise) and other websites
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-RequestResult : types.GenericAlias = JSON|bytes|None # cover None, JSON types, bytes
-GBFAccount : types.GenericAlias = JSON
 
 class Network():
     VERSION_REGEX : list[re.Pattern] = [ # possible regex to detect the GBF game version

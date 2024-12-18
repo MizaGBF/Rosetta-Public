@@ -1,10 +1,16 @@
 ﻿from __future__ import annotations
 import disnake
 import asyncio
-import types
-from typing import Any, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
+from typing import Any, TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.network import RequestResult
+    # Type Aliases
+    import types
+    BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
+    BotCommandSearch : types.GenericAlias = list[None|int|str]
+    JSON : types.GenericAlias = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
 import psutil
 import platform
 import os
@@ -17,25 +23,18 @@ import html
 # Feature a lot of utility functions and classes
 # ----------------------------------------------------------------------------------------------------------------
 
-# Type Aliases
-BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
-BotCommandSearch : types.GenericAlias = list[None|int|str]
-JSON : types.GenericAlias = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
-
 class Util():
-    JSTDIFF = 32400 # JST <-> UTC difference in seconds
-    MULTIPLIER_1000 = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
+    JSTDIFF : int = 32400 # JST <-> UTC difference in seconds
+    MULTIPLIER_1000 : dict[str, int] = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
 
     def __init__(self : Util, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
-        self.starttime = self.UTC() # used to check the bot uptime
+        self.starttime : datetime = self.UTC() # used to check the bot uptime
         # bot process
-        self.process = psutil.Process(os.getpid())
+        self.process : psutil.Process = psutil.Process(os.getpid())
         self.process.cpu_percent() # called once to initialize
-        # others
-        self.gamecard_cache = {}
 
-    def init(self) -> None:
+    def init(self : Util) -> None:
         pass
 
     """json_deserial_array()
@@ -49,8 +48,8 @@ class Util():
     --------
     list: Deserialized list
     """
-    def json_deserial_array(self, array : list) -> list:
-        a = []
+    def json_deserial_array(self : Util, array : list) -> list:
+        a : list = []
         for v in array: # go over entries
             match v: # check type
                 case list():
@@ -77,8 +76,8 @@ class Util():
     --------
     dict: Deserialized Dict
     """
-    def json_deserial_dict(self, pairs : dict) -> dict: # deserialize a dict from a json
-        d = {}
+    def json_deserial_dict(self : Util, pairs : dict) -> dict: # deserialize a dict from a json
+        d : dict = {}
         for k, v in pairs: # go over entries
             match v: # check type
                 case list():
@@ -109,7 +108,7 @@ class Util():
     --------
     unknown: Serialized object
     """
-    def json_serial(self, obj : Any) -> Any: # serialize everything including datetime objects
+    def json_serial(self : Util, obj : Any) -> Any: # serialize everything including datetime objects
         if isinstance(obj, datetime): # convert datetimes to string isoformat
             return obj.replace(microsecond=0).isoformat()
         raise TypeError ("Type %s not serializable" % type(obj))
@@ -121,7 +120,7 @@ class Util():
     --------
     datetime: Current time
     """
-    def UTC(self) -> datetime:
+    def UTC(self : Util) -> datetime:
         return datetime.now(timezone.utc).replace(tzinfo=None) # we don't use timezone data to avoid headaches
 
     """JST()
@@ -135,7 +134,7 @@ class Util():
     --------
     datetime: Current time
     """
-    def JST(self, delay : bool = True) -> datetime:
+    def JST(self : Util, delay : bool = True) -> datetime:
         # we apply a delay by default to be sure some functions are sure to get the content at certain time
         if delay:
             return self.UTC() + timedelta(seconds=self.JSTDIFF) - timedelta(seconds=30)
@@ -157,10 +156,10 @@ class Util():
     --------
     str: Formatted time
     """
-    def time(self, to_convert : datetime|None = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
+    def time(self : Util, to_convert : datetime|None = None, style : list[str] = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
         if to_convert is None: # if no datetime isn't passed, we get the current time, as UTC
             to_convert = self.UTC()
-        msgs = []
+        msgs : list[str] = []
         if removejst: # remove JST time difference
             to_convert -= timedelta(seconds=self.JSTDIFF)
         # additional timezone checks
@@ -182,9 +181,9 @@ class Util():
     --------
     timedelta: Bot uptime
     """
-    def uptime(self, as_string : bool = True) -> str|timedelta: # get the uptime
+    def uptime(self : Util, as_string : bool = True) -> str|timedelta: # get the uptime
         # get elapsed time between now and the start
-        delta = self.UTC() - self.starttime
+        delta : timedelta = self.UTC() - self.starttime
         if as_string:
             return "{}".format(self.delta2str(delta, 3))
         else:
@@ -206,7 +205,7 @@ class Util():
     --------
     str: Resulting string
     """
-    def delta2str(self, delta : timedelta, mode : int = 1) -> str:
+    def delta2str(self : Util, delta : timedelta, mode : int = 1) -> str:
         match mode: # convert a timedelta into a string. different modes possible:
             case 3:
                 return "{}d{}h{}m{}s".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60, delta.seconds % 60)
@@ -228,10 +227,11 @@ class Util():
     --------
     timedelta: Resulting timedelta object or None if error
     """
-    def str2delta(self, d : str) -> timedelta|None: # return None if error
-        flags = {'d':False,'h':False,'m':False,'s':False} # expected string parts
-        tmp = 0 # buffer
-        sum = 0 # delta in seconds
+    def str2delta(self : Util, d : str) -> timedelta|None: # return None if error
+        flags : dict[str, bool] = {'d':False,'h':False,'m':False,'s':False} # expected string parts
+        tmp : int = 0 # buffer
+        sum : int = 0 # delta in seconds
+        c : str
         for c in d: # go character by character
             if c.isdigit(): # digit
                 tmp = (tmp * 10) + int(c)
@@ -261,7 +261,7 @@ class Util():
     --------
     dict: Dict of string
     """
-    def status(self) -> dict[str, str]:
+    def status(self : Util) -> dict[str, str]:
         return {
             "Uptime": self.uptime(),
             "Version": self.bot.VERSION,
@@ -283,9 +283,9 @@ class Util():
     --------
     str: Status string
     """
-    def statusString(self) -> str:
-        status = self.status()
-        msgs = []
+    def statusString(self : Util) -> str:
+        status : dict[str, str] = self.status()
+        msgs : list[str] = []
         # make a string from the status dict
         for k in status:
             msgs.append("**")
@@ -307,7 +307,7 @@ class Util():
     --------
     bool: True if success, False if not
     """
-    async def react(self, msg : disnake.Message, key : str) -> bool:
+    async def react(self : Util, msg : disnake.Message, key : str) -> bool:
         try:
             await msg.add_reaction(self.bot.emote.get(key)) # add reaction to given message
             return True
@@ -328,7 +328,7 @@ class Util():
     --------
     bool: True if success, False if not
     """
-    async def unreact(self, msg : disnake.Message, key : str) -> bool:
+    async def unreact(self : Util, msg : disnake.Message, key : str) -> bool:
         try:
             await msg.remove_reaction(self.bot.emote.get(key), msg.guild.me) # remove reaction to given message
             return True
@@ -348,20 +348,22 @@ class Util():
     --------
     str: The resulting name
     """
-    def shortenName(self, name : str) -> str:
-        name = html.unescape(name) # unescape html special characters
-        arabic = 0 # arabic characters
-        rlo = [] # rlo characters
+    def shortenName(self : Util, name : str) -> str:
+        name : str = html.unescape(name) # unescape html special characters
+        arabic : int = 0 # arabic characters
+        rlo : list[int] = [] # rlo characters
+        i : int
+        c : str
         for i, c in enumerate(name): # iterate over string
-            o = ord(c)
+            o : int = ord(c)
             if o == 0x202E:
                 rlo.append(i - len(rlo))
             elif o >= 0xFB50 and o <= 0xFDFF:
                 arabic += 1
-        name = list(name)
+        namel : list[str] = list(name)
         for i in rlo: # remove rlo characters
-            name.pop(i)
-        name = "".join(name)
+            namel.pop(i)
+        name = "".join(namel)
         if len(name) == 0: # resulting name is empty
             name = "?" # return question mark
         if arabic > 1: # there are arabic characters
@@ -381,9 +383,9 @@ class Util():
     --------
     list: The resulting list
     """
-    def breakdownHTML(self, content : str) -> list:
-        firstsplit = content.replace('\n', '').replace('    ','').split('<') # split string by <
-        result = [firstsplit[0]]
+    def breakdownHTML(self : Util, content : str) -> list[str]:
+        firstsplit : list[str] = content.replace('\n', '').replace('    ','').split('<') # split string by <
+        result : list[str] = [firstsplit[0]]
         for i in range(1, len(firstsplit)):
             result.extend(firstsplit[i].split('>', 1)) # additional split by >
         # The split works shit way:
@@ -408,7 +410,8 @@ class Util():
     --------
     int or str: The GBF ID or an error string if an error happened
     """
-    async def str2gbfid(self, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> int|str:
+    async def str2gbfid(self : Util, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> int|str:
+        tid : int|str
         if memberTarget is not None: # memberTarget is valid
             if str(memberTarget.id) not in self.bot.data.save['gbfids']: # check if their id is linked
                 return "`{}` didn't set its GBF profile ID.".format(memberTarget.display_name)
@@ -419,8 +422,10 @@ class Util():
             tid = self.bot.data.save['gbfids'][str(inter.author.id)] # return GBF ID
         elif target.startswith('<@') and target.endswith('>'): # mention
             try:
-                if target[2] == "!": target = str(int(target[3:-1])) # parse to retrieve member id
-                else: target = str(int(target[2:-1]))
+                if target[2] == "!":
+                    target = str(int(target[3:-1])) # parse to retrieve member id
+                else:
+                    target = str(int(target[2:-1]))
                 if target not in self.bot.data.save['gbfids']: # check if their id is linked
                     return "This member didn't set its profile ID.\nTry to use {} to search the GW Database instead".format(self.command2mention('gw find player'))
                 tid = self.bot.data.save['gbfids'][target] # return gbf id
@@ -444,7 +449,7 @@ class Util():
     --------
     str: Formatted string
     """
-    def formatElement(self, elem : str) -> str:
+    def formatElement(self : Util, elem : str) -> str:
         # left is the advantaged element, right is the disadvantaged
         return "{}⚔️{}".format(self.bot.emote.get(elem), self.bot.emote.get({'fire':'wind', 'water':'fire', 'earth':'water', 'wind':'earth', 'light':'dark', 'dark':'light'}.get(elem)))
 
@@ -459,12 +464,12 @@ class Util():
     --------
     int: Converted value
     """
-    def strToInt(self, s : str) -> int:
+    def strToInt(self : Util, s : str) -> int:
         try:
             return int(s) # try to convert to int
         except: # error, there are characters
-            n = float(s[:-1]) # convert to float, except the last character (to support for example something like 1.2B)
-            m = s[-1].lower() # get last character
+            n : float = float(s[:-1]) # convert to float, except the last character (to support for example something like 1.2B)
+            m : str = s[-1].lower() # get last character
             return int(n * self.MULTIPLIER_1000[m]) # if m isn't in MULTIPLIER_1000, trigger an exception
 
     """valToStr()
@@ -480,12 +485,14 @@ class Util():
     --------
     str: Converted string
     """
-    def valToStr(self, s : int|float, p : int = 1) -> str:
+    def valToStr(self : Util, s : int|float, p : int = 1) -> str:
         if s is None: # value is None
             return "n/a"
         if isinstance(s, int): # convert int to float
             s = float(s)
-        bs = abs(s) # bs is the unsigned version
+        bs : int|float = abs(s) # bs is the unsigned version
+        b : str
+        rs : str
         match p: # float precision
             case 2:
                 b = "{:,.2f}"
@@ -497,6 +504,8 @@ class Util():
                 b = "{:,.1f}"
                 rs = ".0"
         # go over string formats
+        chara : str
+        value : int
         for chara, value in self.MULTIPLIER_1000.items():
             if bs >= value: # greater, so we divive by value, format and add the character
                 return b.format(s/value).replace(rs, '') + chara.upper()
@@ -515,8 +524,8 @@ class Util():
     --------
     str: resulting string
     """
-    def players2mentions(self, players : list) -> str:
-        s = []
+    def players2mentions(self : Util, players : list) -> str:
+        s : list[str] = []
         for p in players:
             s.append(p.mention)
         return " ".join(s)
@@ -536,10 +545,10 @@ class Util():
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self, name : str, category : str, from_gacha : bool = False, element : str|None = None, proficiency : str|None = None) -> str|None:
+    async def search_wiki_for_id(self : Util, name : str, category : str, from_gacha : bool = False, element : str|None = None, proficiency : str|None = None) -> str|None:
         try:
-            addition = []
-            extra_fields = ""
+            addition : list[str] = []
+            extra_fields : str = ""
             if from_gacha: # add check to be sure it's a gacha weapon
                 addition.append('AND (obtain LIKE "%normal%" OR obtain LIKE "%premium%" OR obtain LIKE "%gala%")')
             if element is not None: # add element check
@@ -548,7 +557,7 @@ class Util():
                 addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
             # make request
-            data = (await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True))
+            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True)
             # return result id
             return str(data[0]['id'])
         except:
@@ -565,7 +574,7 @@ class Util():
     ----------
     list: Contains [full name, id, description]
     """
-    def process_command(self, cmd : BotCommand) -> list[BotCommandSearch]:
+    def process_command(self : Util, cmd : BotCommand) -> list[BotCommandSearch]:
         has_sub : bool = False
         results : list[BotCommandSearch] = []
         opt : disnake.app_commands.Option
@@ -608,16 +617,19 @@ class Util():
     ----------
     str: mention or base_command_name if failed
     """
-    def command2mention(self, base_command_name : str) -> str:
-        global_slash_commands = self.bot.global_slash_commands
+    def command2mention(self : Util, base_command_name : str) -> str:
+        global_slash_commands : list[disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand] = self.bot.global_slash_commands
         # retrieve command name
+        cmd_name : str
         if base_command_name.startswith('/'):
             cmd_name = base_command_name[1:].lower()
         else:
             cmd_name = base_command_name.lower()
         # look for that command in the list
+        command : disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
         for command in global_slash_commands:
-            rs = self.process_command(command) # child command check
+            rs : list[BotCommandSearch] = self.process_command(command) # child command check
+            r : BotCommandSearch
             for r in rs:
                 if cmd_name.lower() == r[0].lower(): # good match
                     return '</{}:{}>'.format(r[0], r[1]) # make and return the mention (format: </command_name:command_id> )
@@ -634,7 +646,7 @@ class Util():
     ----------
     str: Timestamp string
     """
-    def version2str(self, version_number : str|int) -> str: # convert gbf version number to its timestamp
+    def version2str(self : Util, version_number : str|int) -> str: # convert gbf version number to its timestamp
         try:
             return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # add JST
         except:

@@ -2,20 +2,20 @@
 import disnake
 from disnake.ext import commands
 import asyncio
-import types
-from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    # Type Aliases
+    import types
+    ReminderData : types.GenericAlias = list[datetime|str]
+    ReminderList : types.GenericAlias = list[ReminderData]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Reminder Cog
 # ----------------------------------------------------------------------------------------------------------------
 # Let users setup and manage "reminders" for later
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-ReminderData : types.GenericAlias = list[datetime|str]
-ReminderList : types.GenericAlias = list[ReminderData]
 
 class Reminder(commands.Cog):
     """Set Reminders."""

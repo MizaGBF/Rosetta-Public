@@ -2,16 +2,19 @@
 import disnake
 from disnake.ext import commands
 import asyncio
-import types
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
+    from components.network import RequestResult
+    from components.gacha import CurrentGacha
+    from components.singleton import Score
+    from components.ranking import GWDBSearchResult
+    # Type Aliases
+    import types
+    NewsResult : types.GenericAlias = list[str]
+    ExtraDropData : types.GenericAlias = list[None|str]
 from views import BaseView
 from views.url_button import UrlButton
-from components.network import RequestResult
-from components.gacha import CurrentGacha
-from components.singleton import Score
-from components.ranking import GWDBSearchResult
 from datetime import datetime, timedelta
 import re
 from bs4 import BeautifulSoup
@@ -25,10 +28,6 @@ import math
 # ----------------------------------------------------------------------------------------------------------------
 # All other Granblue Fantasy-related commands
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-NewsResult : types.GenericAlias = list[str]
-ExtraDropData : types.GenericAlias = list[None|str]
 
 class GranblueFantasy(commands.Cog):
     """Granblue Fantasy Utility."""
@@ -300,7 +299,7 @@ class GranblueFantasy(commands.Cog):
         news : list[int] = []
         for ii in to_process:
             # request news patch
-            data : 'RequestResult' = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), expect_JSON=True)
+            data : RequestResult = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), expect_JSON=True)
             if data is None:
                 continue
             elif data[0]['id'] == str(ii): # check if id matches
@@ -379,7 +378,7 @@ class GranblueFantasy(commands.Cog):
         res : list[NewsResult] = [] # news list
         ret : list[NewsResult] = [] # new news articles to return
         # retrieve news page
-        data : 'RequestResult' = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
+        data : RequestResult = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
         if data is not None:
             soup : BeautifulSoup = BeautifulSoup(data, 'html.parser')
             # extract articles
@@ -433,7 +432,7 @@ class GranblueFantasy(commands.Cog):
     """
     async def check4koma(self : GranblueFantasy) -> None:
         # retrieve gran blues page
-        data : 'RequestResult' = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
+        data : RequestResult = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
         if data is None:
             return
         # get last one
@@ -470,7 +469,7 @@ class GranblueFantasy(commands.Cog):
             extra : ExtraDropData|None = self.bot.data.save['gbfdata'].get('extradrop', None)
             if extra is None or c > extra[0]: # outdated/not valid
                 # call endpoint
-                r : 'RequestResult' = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
+                r : RequestResult = await self.bot.net.requestGBF("rest/quest/adddrop_info", expect_JSON=True)
                 if r is None: # no extra
                     self.bot.data.save['gbfdata']['extradrop'] = [c + timedelta(seconds=300), None] # next check in 5min, element set to None to make it NOT VALID
                     self.bot.data.pending = True
@@ -587,7 +586,7 @@ class GranblueFantasy(commands.Cog):
         """Search the GBF wiki"""
         await inter.response.defer()
         # call the search API
-        r : 'RequestResult' = await self.bot.net.requestWiki("api.php", params={"action":"opensearch", "format":"json", "formatversion":"2", "search":quote(terms), "namespace":"0", "limit":"10"})
+        r : RequestResult = await self.bot.net.requestWiki("api.php", params={"action":"opensearch", "format":"json", "formatversion":"2", "search":quote(terms), "namespace":"0", "limit":"10"})
         title : str = "Search for " + terms
         if len(title) >= 200:
             title = title[:200] + "..."
@@ -787,7 +786,7 @@ class GranblueFantasy(commands.Cog):
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="You are banned to use this feature", color=self.COLOR))
                 return
             # check if account exists
-            data : 'RequestResult'
+            data : RequestResult
             if not await self.bot.net.gbf_available(): # gbf must be available
                 data = "Maintenance"
             else:
@@ -900,11 +899,11 @@ class GranblueFantasy(commands.Cog):
         except:
             pass
         # GW Scores
-        pdata : None|'GWDBSearchResult' = await self.bot.ranking.searchGWDB(str(pid), 2)
+        pdata : None|GWDBSearchResult = await self.bot.ranking.searchGWDB(str(pid), 2)
         n : int
         for n in range(0, 2):
             try:
-                pscore : 'Score' = pdata[n][0]
+                pscore : Score = pdata[n][0]
                 if pscore.ranking is None:
                     descs.append("{} GW**{}** ▫️ **{:,}** honors\n".format(self.bot.emote.get('gw'), pscore.gw, pscore.current))
                 else:
@@ -1034,7 +1033,7 @@ class GranblueFantasy(commands.Cog):
         if color is None:
             color = self.COLOR # use cog color
         # retrieve profile data
-        data : 'RequestResult'
+        data : RequestResult
         if not await self.bot.net.gbf_available():
             data = "Maintenance"
         else:
@@ -1168,7 +1167,7 @@ class GranblueFantasy(commands.Cog):
             else:
                 # use the scout endpoint to check for the brand
                 # IMPORTANT: The GBF account used by Rosetta must be in a crew and with access to the scout menu
-                data : 'RequestResult' = await self.bot.net.requestGBF("forum/search_users_id", expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
+                data : RequestResult = await self.bot.net.requestGBF("forum/search_users_id", expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
                 if data is None:
                     await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
                 else:
@@ -1196,7 +1195,7 @@ class GranblueFantasy(commands.Cog):
     """
     async def getGrandList(self : GranblueFantasy) -> dict[str, None|dict[str, str|datetime]]:
         # get grand list from cargo table
-        data : 'RequestResult' = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"characters", "fields":"series,name,element,release_date", "where":'series = "grand"', "format":"json", "limit":"200"})
+        data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"characters", "fields":"series,name,element,release_date", "where":'series = "grand"', "format":"json", "limit":"200"})
         if data is None:
             return {}
         grand_list : dict[str, None|dict[str, str|datetime]] = {'fire':None, 'water':None, 'earth':None, 'wind':None, 'light':None, 'dark':None}
@@ -1339,7 +1338,7 @@ class GranblueFantasy(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             # check mission endpoint
-            data : 'RequestResult' = (await self.bot.net.requestGBF('coopraid/daily_mission', expect_JSON=True))['daily_mission']
+            data : RequestResult = (await self.bot.net.requestGBF('coopraid/daily_mission', expect_JSON=True))['daily_mission']
             msgs : list[str] = []
             i : int
             for i in range(len(data)):
@@ -1513,7 +1512,7 @@ class GranblueFantasy(commands.Cog):
                 msg = "The event hasn't started."
             else:
                 # get data from endpoint
-                data : 'RequestResult' = await self.bot.net.requestGBF("rest/campaign/accumulatebattle/point_list", expect_JSON=True)
+                data : RequestResult = await self.bot.net.requestGBF("rest/campaign/accumulatebattle/point_list", expect_JSON=True)
                 msgs : list[str] = ["Goal ▫️ **{:,}**".format(data["goal"])]
                 elems : dict[str, str] = {"1":"fire", "2":"water", "3":"earth", "4":"wind", "5":"light", "6":"dark"}
                 k : str

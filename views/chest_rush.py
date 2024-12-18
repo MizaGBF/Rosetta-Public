@@ -1,7 +1,9 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -19,10 +21,10 @@ class ChestRushButton(disnake.ui.Button):
     grid: the list of remaining winnable items
     row: an integer indicating on what row to set the button on
     """
-    def __init__(self, grid : str, row : int) -> None:
+    def __init__(self : ChestRushButton, grid : list[str], row : int) -> None:
         super().__init__(style=disnake.ButtonStyle.secondary, label='Chest', row=row)
         # ref to the view chest grid
-        self.grid = grid
+        self.grid : list[str] = grid
 
     """callback()
     Coroutine callback called when the button is called
@@ -32,7 +34,7 @@ class ChestRushButton(disnake.ui.Button):
     ----------
     interaction: a Discord interaction
     """
-    async def callback(self, interaction: disnake.Interaction) -> None:
+    async def callback(self : ChestRushButton, interaction: disnake.Interaction) -> None:
         if not self.disabled and self.view.ownership_check(interaction): # check if the button is enabled and the interaction author is the player
             # disable this button
             self.disabled = True
@@ -64,13 +66,14 @@ class ChestRush(BaseView):
     grid: list of items to be hidden behind the buttons
     color: the color to be used for the message embed
     """
-    def __init__(self, bot : 'DiscordBot', owner_id : int, grid, color : int) -> None:
+    def __init__(self : ChestRush, bot : DiscordBot, owner_id : int, grid : list[str], color : int) -> None:
         super().__init__(bot, owner_id=owner_id, timeout=120.0)
         # Chest grid, i.e list of the items to win (1 to 9 items)
-        self.grid = grid
-        self.color = color
+        self.grid : list[str] = grid
+        self.color : int = color
         # Create 9 buttons (one for each theorical grid space)
         # The buttons aren't directly linked to a particular grid space, we just create the illusion of random placement. They will simply take the next grid item
+        i : int
         for i in range(9):
             self.add_item(ChestRushButton(self.grid, i // 3)) # second parameter is the row the button is on
 
@@ -85,7 +88,8 @@ class ChestRush(BaseView):
     --------
     bool: True if the game is over, False if not
     """
-    def check_status(self) -> bool:
+    def check_status(self : ChestRush) -> bool:
+        c : disnake.ui.Component
         if len(self.grid) == 0: # Grid is empty, game is over
             for c in self.children:
                 if not c.disabled: # disable remaining buttons and set label to empty space
@@ -96,7 +100,8 @@ class ChestRush(BaseView):
             self.grid[0] = self.grid[0].replace("###", "$$$")
             while True:
                 c = random.choice(self.children) # pick a random button
-                if c.disabled: continue # the button must NOT be disabled
+                if c.disabled:
+                    continue # the button must NOT be disabled
                 c.style = disnake.ButtonStyle.danger # change its color to show it's special
                 c.label = "Surprise" # add surprise name
                 for c in self.children: # disable every other buttons

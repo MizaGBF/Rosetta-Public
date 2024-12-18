@@ -2,16 +2,29 @@ from __future__ import annotations
 import disnake
 from disnake.ext import commands
 import asyncio
-import types
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
+    from components.network import RequestResult
+    from components.singleton import Score
+    from components.ranking import GWDBSearchResult, GWDBList
+    from views.page import PageResult, PageResultList
+    # Type Aliases
+    import types
+    PlayerData : types.GenericAlias = dict[str, str|int|None]
+    CrewData : types.GenericAlias = dict[str, str|datetime|bool|list[PlayerData]]
+    ScheduleDay : types.GenericAlias = tuple[str, str, str]
+    ScheduleList : types.GenericAlias = list[ScheduleDay]
+    PlayerData : types.GenericAlias = dict[str, int|str|float|Score|None]
+    PlayerList : types.GenericAlias = list[PlayerData]
+    CrewParameter : types.GenericAlias = datetime|bool|str|int|float|PlayerList|None
+    CrewData : types.GenericAlias = dict[str, CrewParameter]
+    GBFGData : types.GenericAlias = dict[str, list[str|int|list[str|int]]]
+    PlayerEntry : types.GenericAlias = tuple[str, str, int|None, str, int|None]
+    PlayerRanking : types.GenericAlias = list[PlayerEntry]
 from views import BaseView
 from views.page import Page, PageRanking
-from components.network import RequestResult
-from components.singleton import Score
-from components.ranking import GWDBSearchResult, GWDBList
-from datetime import datetime, timedelta
 import random
 import math
 from bs4 import BeautifulSoup
@@ -25,21 +38,6 @@ import statistics
 # ----------------------------------------------------------------------------------------------------------------
 # Commands related to Unite and Fight and Granblue Fantasy Crews
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-PlayerData : types.GenericAlias = dict[str, str|int|None]
-CrewData : types.GenericAlias = dict[str, str|datetime|bool|list[PlayerData]]
-ScheduleDay : types.GenericAlias = tuple[str, str, str]
-ScheduleList : types.GenericAlias = list[ScheduleDay]
-PlayerData : types.GenericAlias = dict[str, int|str|float|Score|None]
-PlayerList : types.GenericAlias = list[PlayerData]
-CrewParameter : types.GenericAlias = datetime|bool|str|int|float|PlayerList|None
-CrewData : types.GenericAlias = dict[str, CrewParameter]
-GBFGData : types.GenericAlias = dict[str, list[str|int|list[str|int]]]
-PlayerEntry : types.GenericAlias = tuple[str, str, int|None, str, int|None]
-PlayerRanking : types.GenericAlias = list[PlayerEntry]
-PageResult : types.GenericAlias = list[tuple[int|str, str]]
-PageResultList : types.GenericAlias = list[PageResult]
 
 class GuildWar(commands.Cog):
     """Unite & Fight and Crew commands."""
@@ -62,11 +60,10 @@ class GuildWar(commands.Cog):
         (80, 10000),
         (None, 15000)
     ]
-    REVERSE_DAYS : list[str] = ['Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
     DAYS_W_INTER : list[str] = ['Interlude', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']
 
-    def __init__(self : GuildWar, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : GuildWar, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
         self.day_list : ScheduleList|None = None
         self.crewcache : CrewData = {}
 
@@ -201,18 +198,18 @@ class GuildWar(commands.Cog):
                 return "{} Final Rally is on going\n{} Guild War ends in **{}**".format(self.bot.emote.get('mark_a'), self.bot.emote.get('time'), self.bot.util.delta2str(d))
             elif current_time > self.bot.data.save['gw']['dates']["Day 1"]: # If in between day 1 included and day 5
                 i : int
-                for i in range(1, len(self.REVERSE_DAYS)): # Loop from day 4 to 1
-                    if current_time > self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i]]: # if over this day date
-                        d = self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i-1]] - current_time
+                for i in range(1, len(self.bot.ranking.REVERSE_DAYS)): # Loop from day 4 to 1
+                    if current_time > self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i]]: # if over this day date
+                        d = self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i-1]] - current_time
                         # calculate if this day match ended and the end to next day
                         if d < timedelta(seconds=25200):
-                            msg = "{} {} ended".format(self.bot.emote.get('mark_a'), self.REVERSE_DAYS[i])
+                            msg = "{} {} ended".format(self.bot.emote.get('mark_a'), self.bot.ranking.REVERSE_DAYS[i])
                         else:
-                            msg = "{} GW {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), self.REVERSE_DAYS[i], self.bot.util.delta2str(self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i]] + timedelta(seconds=61200) - current_time))
+                            msg = "{} GW {} is on going (Time left: **{}**)".format(self.bot.emote.get('mark_a'), self.bot.ranking.REVERSE_DAYS[i], self.bot.util.delta2str(self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i]] + timedelta(seconds=61200) - current_time))
                         if i == 1:
-                            return "{}\n{} {} starts in **{}**".format(msg, self.bot.emote.get('time'), self.REVERSE_DAYS[i-1].replace('Day 5', 'Final Rally'), self.bot.util.delta2str(d))
+                            return "{}\n{} {} starts in **{}**".format(msg, self.bot.emote.get('time'), self.bot.ranking.REVERSE_DAYS[i-1].replace('Day 5', 'Final Rally'), self.bot.util.delta2str(d))
                         else:
-                            return "{}\n{} {} starts in **{}**".format(msg, self.bot.emote.get('time'), self.REVERSE_DAYS[i-1], self.bot.util.delta2str(d))
+                            return "{}\n{} {} starts in **{}**".format(msg, self.bot.emote.get('time'), self.bot.ranking.REVERSE_DAYS[i-1], self.bot.util.delta2str(d))
             elif current_time > self.bot.data.save['gw']['dates']["Interlude"]: # interlude is on going
                 d = self.bot.data.save['gw']['dates']["Day 1"] - current_time
                 return "{} Interlude is on going\n{} Day 1 starts in **{}**".format(self.bot.emote.get('mark_a'), self.bot.emote.get('time'), self.bot.util.delta2str(d))
@@ -248,11 +245,11 @@ class GuildWar(commands.Cog):
         if current_time < self.bot.data.save['gw']['dates']["Preliminaries"] or current_time >= self.bot.data.save['gw']['dates']["Day 5"]:
             return None
         elif current_time > self.bot.data.save['gw']['dates']["Day 1"]:
-            for i in range(1, len(self.REVERSE_DAYS)): # loop to not copy paste this 5 more times
-                if current_time > self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i]]:
-                    if self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i-1]] - current_time < timedelta(seconds=25200):
+            for i in range(1, len(self.bot.ranking.REVERSE_DAYS)): # loop to not copy paste this 5 more times
+                if current_time > self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i]]:
+                    if self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i-1]] - current_time < timedelta(seconds=25200):
                         return None
-                    return self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i]] + timedelta(seconds=61200) - current_time
+                    return self.bot.data.save['gw']['dates'][self.bot.ranking.REVERSE_DAYS[i]] + timedelta(seconds=61200) - current_time
             return None
         elif current_time > self.bot.data.save['gw']['dates']["Interlude"]:
             return self.bot.data.save['gw']['dates']["Day 1"] - current_time
@@ -481,7 +478,7 @@ class GuildWar(commands.Cog):
     dict: Crew data, empty if error or invalid
     """
     async def getCrewSummary(self : GuildWar, cid : int) -> CrewData:
-        res : 'RequestResult' = await self.bot.net.requestGBF("guild_main/content/detail/{}".format(cid), expect_JSON=True)
+        res : RequestResult = await self.bot.net.requestGBF("guild_main/content/detail/{}".format(cid), expect_JSON=True)
         if res is not None:
             soup : BeautifulSoup = BeautifulSoup(unquote(res['data']), 'html.parser')
             try:
@@ -538,7 +535,7 @@ class GuildWar(commands.Cog):
             for i in range(0, 4): # for each page (page 0 being the crew page, 1 to 3 being the crew page
                 if i > 0 and mode > 0:
                     break
-                get : 'RequestResult' = await self.requestCrew(tid, i)
+                get : RequestResult = await self.requestCrew(tid, i)
                 if get is None:
                     if i == 0: # if error on page 0, the crew doesn't exist
                         return {'error':'Crew not found or Service unavailable'}
@@ -760,7 +757,7 @@ class GuildWar(commands.Cog):
         if view is None and not crew.get('private', False):
             self_view = True
             embed.footer.text += " ▫️ Buttons expire in 100 seconds"
-            search_results = []
+            search_results : PageResultList = []
             i : int
             p : PlayerData
             for i, p in enumerate(crew['player']):
@@ -1764,7 +1761,7 @@ class GuildWar(commands.Cog):
     async def gbfgranking(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Sort and post all /gbfg/ crew per contribution or speed"""
         await inter.response.defer()
-        embed : list[disnake.Embed]
+        embeds : list[disnake.Embed]
         final_results : PageResultList
         embeds, final_results = await self._gbfgranking() # see above
         if len(embeds) == 0:

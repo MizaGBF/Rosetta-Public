@@ -1,7 +1,8 @@
 from __future__ import annotations
 import disnake
 from typing import Generator, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 import os
 import io
 import shutil

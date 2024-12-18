@@ -1,7 +1,14 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.singleton import GameCard
+    # Type Aliases
+    import types
+    CardList : types.GenericAlias = list[GameCard]
+    Hand : types.GenericAlias = tuple[int, CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -12,11 +19,11 @@ import random
 
 class Blackjack(BaseView):
     # player states
-    PLAYING = 0
-    STOPPED = 1
-    BLACKJACK = 2
-    TWENTYONE = 3
-    LOST = 4
+    PLAYING : int = 0
+    STOPPED : int = 1
+    BLACKJACK : int = 2
+    TWENTYONE : int = 3
+    LOST : int = 4
 
     """__init__()
     Constructor
@@ -27,30 +34,31 @@ class Blackjack(BaseView):
     players: list of Players
     embed: disnake.Embed to edit
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed) -> None:
+    def __init__(self : Blackjack, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed) -> None:
         super().__init__(bot, timeout=240)
         # game state
-        self.state = 0
+        self.state : int = 0
         # player list
-        self.players = players
+        self.players : list[disnake.User|disnake.Member] = players
         # add bot to the player list if there are space
-        if len(self.players) < 6: self.players.append(self.bot.user)
+        if len(self.players) < 6:
+            self.players.append(self.bot.user)
         # shuffle player order
         random.shuffle(self.players)
         # the view embed
-        self.embed = embed
+        self.embed : disnake.Embed = embed
         # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
-        self.deck = [self.bot.singleton.get_GameCard((i % 13) + 1, i // 13) for i in range(51)]
+        self.deck : CardList = [self.bot.singleton.get_GameCard((i % 13) + 1, i // 13) for i in range(51)]
         # shuffle the deck
         random.shuffle(self.deck)
         # make hands and give one card to each player
-        self.hands = [[self.PLAYING, [self.deck.pop()]] for i in range(len(self.players))] # player state, cards
+        self.hands : list[Hand] = [(self.PLAYING, [self.deck.pop()]) for i in range(len(self.players))] # player state, cards
         # Start
         # If the player to start is the bot, call play ai
         if self.players[self.state].id == self.bot.user.id:
             self.playai()
         # Then the player in slot 0 will play
-        self.notification = "Turn of **{}**".format(self.players[self.state].display_name)
+        self.notification : str = "Turn of **{}**".format(self.players[self.state].display_name)
 
     """renderHand()
     Generate a Hand string for the given hand
@@ -64,9 +72,9 @@ class Blackjack(BaseView):
     ----------
     list: resulting list of strings to add to a message list
     """
-    def renderHand(self, hand : list, playing : bool) -> str:
-        msgs = []
-        score = self.computeScore(hand[1])
+    def renderHand(self : Blackjack, hand : Hand, playing : bool) -> str:
+        msgs : list[str] = []
+        score : int = self.computeScore(hand[1])
         for card in hand[1]: # display each card
             msgs.append(str(card))
             msgs.append(", ")
@@ -91,14 +99,16 @@ class Blackjack(BaseView):
     ----------
     str: resulting string
     """
-    def getWinner(self) -> str:
-        winner = []
-        best = 0
+    def getWinner(self : Blackjack) -> str:
+        winner : list[disnake.User|disnake.Member] = []
+        best : int = 0
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
             if self.hands[i][0] == self.LOST: # this player lost anyway, skip
                 continue
             else:
-                score = self.computeScore(self.hands[i][1])
+                score : int = self.computeScore(self.hands[i][1])
                 if score == 21 and len(self.hands[i][1]) == 2:
                     score = 22 # blackjack, set to 22 to ensure it's considered higher than regular 21
                 if score == best: # if it's equal to the best score
@@ -113,7 +123,7 @@ class Blackjack(BaseView):
             case 1: # one winner
                 return "**{}** is the winner".format(winner[0].display_name)
             case _: # multiple winners
-                msgs = ["It's a **draw** between "]
+                msgs : list[str] = ["It's a **draw** between "]
                 for p in winner:
                     msgs.append(p.display_name)
                     msgs.append(", ")
@@ -127,9 +137,11 @@ class Blackjack(BaseView):
     inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
-    async def update(self, inter : disnake.Interaction, init : bool = False) -> None:
-        desc = []
+    async def update(self : Blackjack, inter : disnake.Interaction, init : bool = False) -> None:
+        desc : list[str] = []
         # iterate over player
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
             # and display their hand and score
             desc.append(str(self.bot.emote.get(str(i+1))))
@@ -161,8 +173,9 @@ class Blackjack(BaseView):
     ----------
     int: The score
     """
-    def computeScore(self, cards : list) -> int:
-        score = 0
+    def computeScore(self : Blackjack, cards : CardList) -> int:
+        score : int = 0
+        card: GameCard
         for card in cards:
             if card.value == 1 and score < 11: # ace
                 score += 11
@@ -175,8 +188,8 @@ class Blackjack(BaseView):
     """playai()
     The logic for the bot to play the game
     """
-    def playai(self) -> None:
-        score = self.computeScore(self.hands[self.state][1])
+    def playai(self : Blackjack) -> None:
+        score : int = self.computeScore(self.hands[self.state][1])
         # act depending on score
         if score < 12: # score is 11 or less
             self.play(False) # keep playing
@@ -197,7 +210,7 @@ class Blackjack(BaseView):
     ----------
     stop: boolean, True for the player to stop, False to draw a card
     """
-    def play(self, stop : bool) -> None:
+    def play(self : Blackjack, stop : bool) -> None:
         if self.state == -1: # check if game is over
             return
         if stop: # set player as stopped
@@ -206,7 +219,7 @@ class Blackjack(BaseView):
             # draw card
             self.hands[self.state][1].append(self.deck.pop())
             # compute score
-            score = self.computeScore(self.hands[self.state][1])
+            score : int = self.computeScore(self.hands[self.state][1])
             # game over checks
             if score == 21: # reached max
                 if len(self.hands[self.state][1]) == 2: # only 2 cards, blackjack
@@ -225,8 +238,8 @@ class Blackjack(BaseView):
     Cycle over the players until the next one in line able to play, to update the game state
     Stop the game if no players can play.
     """
-    def lookupNextPlayerTurn(self) -> None:
-        current_state = self.state
+    def lookupNextPlayerTurn(self : Blackjack) -> None:
+        current_state : int = self.state
         while True:
             # go to next player
             self.state = (self.state + 1) % len(self.players)
@@ -245,7 +258,7 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     action: boolean used for self.play()
     """
-    async def buttoncallback(self, interaction: disnake.Interaction, action: bool) -> None:
+    async def buttoncallback(self : Blackjack, interaction: disnake.Interaction, action: bool) -> None:
         if self.state >= 0 and self.players[self.state].id == interaction.user.id: # check if the game is on going and if the interaction author is the current player
             self.play(action) # do the action corresponding to the button (True = stop, False = draw)
             # Check if the game is over and print status accordingly
@@ -269,7 +282,7 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='Draw Card', style=disnake.ButtonStyle.success)
-    async def draw(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def draw(self : Blackjack, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.buttoncallback(interaction, False)
 
     """giveup()
@@ -282,5 +295,5 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='Stop', style=disnake.ButtonStyle.danger)
-    async def giveup(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def giveup(self : Blackjack, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.buttoncallback(interaction, True)

@@ -1,7 +1,9 @@
 ﻿from __future__ import annotations
 import disnake
 from typing import Callable, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.ranking import CrewDataEntry, PlayerDataEntry
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -12,8 +14,8 @@ from datetime import datetime
 # ----------------------------------------------------------------------------------------------------------------
 
 class Singleton():
-    def __init__(self : Singleton, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
+    def __init__(self : Singleton, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
 
     def init(self : Singleton) -> None:
         pass
@@ -33,7 +35,7 @@ class Singleton():
     ----------
     disnake.ModalInteraction: The modal, else None if failed/cancelled
     """
-    async def make_and_send_modal(self : Singleton, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list, extra : str = None) -> CustomModal:
+    async def make_and_send_modal(self : Singleton, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list[disnake.ui.Component], extra : str|None = None) -> CustomModal:
         # see below for the custom modal class
         await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
 
@@ -54,7 +56,7 @@ class Singleton():
             raise Exception("Invalid GameCard value")
         elif suit < 0 or suit > 3:
             raise Exception("Invalid GameCard suit")
-        index = value << 8 + suit # calculate index
+        index : int = value << 8 + suit # calculate index
         if index not in self.gamecard_cache: # add card in cache if it doesn't exist
             self.gamecard_cache[index] = GameCard.make_card(value, suit)
         return self.gamecard_cache[index]
@@ -72,8 +74,8 @@ class Singleton():
     ----------
     Score: The generated card
     """
-    def make_Score(self : Singleton, type : int|None, ver : int|None, gw : int|None) -> Score:
-        return Score(type, ver, gw)
+    def make_Score(self : Singleton, type : int|None, ver : int|None, gw : int|None, data : CrewDataEntry|PlayerDataEntry) -> Score:
+        return Score.make_score(type, ver, gw, data)
 
     """make_GWDB()
     Initialize and return a GWDB instance
@@ -99,17 +101,17 @@ class Singleton():
 A Modal class where you can set your own callback
 """
 class CustomModal(disnake.ui.Modal):
-    def __init__(self, bot : 'DiscordBot', title : str, custom_id : str, components : list, callback : Callable, extra : str = None) -> None:
+    def __init__(self : CustomModal, bot : DiscordBot, title : str, custom_id : str, components : list, callback : Callable, extra : str|None = None) -> None:
         super().__init__(title=title, custom_id=custom_id, components=components)
-        self.bot : 'DiscordBot' = bot # bot reference
-        self.custom_callback = callback # our callback
-        self.extra = extra # any extra info we can pass here. will be accessible from the interaction in the callback
+        self.bot : DiscordBot = bot # bot reference
+        self.custom_callback : Callable = callback # our callback
+        self.extra : str = extra # any extra info we can pass here. will be accessible from the interaction in the callback
 
-    async def on_error(self, error: Exception, inter : disnake.ModalInteraction) -> None:
+    async def on_error(self : CustomModal, error: Exception, inter : disnake.ModalInteraction) -> None:
         await inter.response.send_message(embed=self.bot.embed(title="Error", description="An unexpected error occured, my owner has been notified"))
         self.bot.logger.pushError("[MODAL] 'on_error' event:", error)
 
-    async def callback(self, inter : disnake.ModalInteraction) -> None:
+    async def callback(self : CustomModal, inter : disnake.ModalInteraction) -> None:
         await self.custom_callback(self, inter) # trigger the callback
 
 """GameCard
@@ -164,54 +166,111 @@ class GameCard():
 """Score
 Store a score for a Guild War participant/crew
 """
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Score(): # GW Score structure
-    type : int
-    ver : int # database version
-    gw : int # gw id
-    ranking : int # ranking
-    id : int # crew/player id
-    name : str
+    type : int|None # crew or player
+    ver : int|None # database version
+    gw : int|None # gw id
+    ranking : int|None # ranking
+    id : int|None # crew/player id
+    name : str|None
     # scores
-    current : int # will match preliminaries or total1-4
-    current_day : int # current day. 0 : int = prelims, 1-4 : int = day 1-4
-    day : int
-    preliminaries : int
-    day1 : int
-    total1 : int
-    day2 : int
-    total2 : int
-    day3 : int
-    total3 : int
-    day4 : int
-    total4 : int
+    current : int|None # will match preliminaries or total1-4
+    current_day : int|None # current day. 0 : int = prelims, 1-4 : int = day 1-4
+    day : int|None
+    preliminaries : int|None
+    day1 : int|None
+    total1 : int|None
+    day2 : int|None
+    total2 : int|None
+    day3 : int|None
+    total3 : int|None
+    day4 : int|None
+    total4 : int|None
     # speed
-    top_speed : int
-    current_speed : int
+    top_speed : float|None
+    current_speed : float|None
     
-    def __init__(self : Score, type : int|None = None, ver : int|None = None, gw : int|None = None) -> None:
-        self.type = type # crew or player
-        self.ver = ver # database version
-        self.gw = gw # gw id
-        self.ranking = None # ranking
-        self.id = None # crew/player id
-        self.name = None
-        # scores
-        self.current = None # will match preliminaries or total1-4
-        self.current_day = None # current day. 0 = prelims, 1-4 = day 1-4
-        self.day = None
-        self.preliminaries = None
-        self.day1 = None
-        self.total1 = None
-        self.day2 = None
-        self.total2 = None
-        self.day3 = None
-        self.total3 = None
-        self.day4 = None
-        self.total4 = None
-        # speed
-        self.top_speed = None
-        self.current_speed = None
+    @classmethod
+    def make_score(cls : Score, type : int|None, ver : int|None, gw : int|None, data : CrewDataEntry|PlayerDataEntry) -> None:
+        # init
+        ranking : int|None = None
+        id : int|None = None
+        name : str|None = None
+        current : int|None = None
+        current_day : int|None = None
+        day : int|None = None
+        preliminaries : int|None = None
+        day1 : int|None = None
+        total1 : int|None = None
+        day2 : int|None = None
+        total2 : int|None = None
+        day3 : int|None = None
+        total3 : int|None = None
+        day4 : int|None = None
+        total4 : int|None = None
+        top_speed : float|None = None
+        current_speed : float|None = None
+        
+        if type == 0: # player
+            ranking = data[0]
+            id = data[1]
+            name = data[2]
+            current = data[3]
+        else: # crew
+            if ver >= 2: # (version 2 and above)
+                ranking = data[0]
+                id = data[1]
+                name = data[2]
+                preliminaries = data[3]
+                total1 = data[4]
+                total2 = data[5]
+                total3 = data[6]
+                total4 = data[7]
+                if total1 is not None and preliminaries is not None: day1 = total1 - preliminaries
+                if total2 is not None and total1 is not None: day2 = total2 - total1
+                if total3 is not None and total2 is not None: day3 = total3 - total2
+                if total4 is not None and total3 is not None: day4 = total4 - total3
+                if ver >= 3:
+                    top_speed = data[8]
+                if ver >= 4: # and version 6
+                    current_speed = data[9]
+            else: # old database format
+                ranking = data[0]
+                id = data[1]
+                name = data[2]
+                preliminaries = data[3]
+                day1 = data[4]
+                total1 = data[5]
+                day2 = data[6]
+                total2 = data[7]
+                day3 = data[8]
+                total3 = data[9]
+                day4 = data[10]
+                total4 = data[11]
+            # set the current score, etc
+            if total4 is not None:
+                current = total4
+                current_day = day4
+                day = 4
+            elif total3 is not None:
+                current = total3
+                current_day = day3
+                day = 3
+            elif total2 is not None:
+                current = total2
+                current_day = day2
+                day = 2
+            elif total1 is not None:
+                current = total1
+                current_day = day1
+                day = 1
+            elif preliminaries is not None:
+                current = preliminaries
+                current_day = preliminaries
+                day = 0
+        
+        return cls(type, ver, gw, ranking, id, name, current, current_day, day, preliminaries, day1, total1, day2, total2, day3, total3, day4, total4, top_speed, current_speed)
 
     def __repr__(self : Score) -> str: # used for debug
         return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)

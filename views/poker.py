@@ -1,10 +1,15 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.util import GameCard
+    # Type Aliases
+    import types
+    CardList : types.GenericAlias = list[GameCard]
+    Hand : types.GenericAlias = tuple[int, CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -15,13 +20,13 @@ import random
 # ----------------------------------------------------------------------------------------------------------------
 
 class PokerSub(BaseView):
-    CARD_1_HOLD = 0b001
-    CARD_2_HOLD = 0b010
-    CONFIRMED   = 0b100
+    CARD_1_HOLD : int = 0b001
+    CARD_2_HOLD : int = 0b010
+    CONFIRMED   : int = 0b100
     
-    BUTTON_CONFIRM = 0
-    BUTTON_CARD_1 = 1
-    BUTTON_CARD_2 = 2
+    BUTTON_CONFIRM : int = 0
+    BUTTON_CARD_1 : int = 1
+    BUTTON_CARD_2 : int = 2
     
     """__init__()
     Constructor
@@ -31,9 +36,9 @@ class PokerSub(BaseView):
     bot: a pointer to the bot for ease of access
     parent: the Poker view
     """
-    def __init__(self, bot : 'DiscordBot', parent : 'Poker') -> None:
+    def __init__(self : PokerSub, bot : DiscordBot, parent : Poker) -> None:
         super().__init__(bot, timeout=120)
-        self.parent = parent # Poker view
+        self.parent : Poker = parent # Poker view
 
     """do()
     Coroutine called by buttons
@@ -43,7 +48,9 @@ class PokerSub(BaseView):
     interaction: the button interaction
     mode: 0 = confirm, 1 = toggle card 1, 2 = toggle card 2
     """
-    async def do(self, interaction: disnake.Interaction, mode : int) -> None:
+    async def do(self : PokerSub, interaction: disnake.Interaction, mode : int) -> None:
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.parent.players): # search for player
             if p.id == interaction.user.id:
                 break
@@ -83,33 +90,33 @@ class PokerSub(BaseView):
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=self)
 
     @disnake.ui.button(label='Toggle Card 1', style=disnake.ButtonStyle.success)
-    async def holdcard1(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def holdcard1(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
             await self.do(interaction, self.BUTTON_CARD_1)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Toggle Card 2', style=disnake.ButtonStyle.success)
-    async def holdcard2(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def holdcard2(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
             await self.do(interaction, self.BUTTON_CARD_2)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Confirm', style=disnake.ButtonStyle.danger)
-    async def confirm(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def confirm(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
             await self.do(interaction, self.BUTTON_CONFIRM)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
 class Poker(BaseView):
-    ROYAL_FLUSH_SET = set(["10", "11", "12", "13", "14"])
-    STRAIGTH_SET = set(["14", "2", "3", "4", "5"])
-    FULL_HOUSE_SET = set([2,3])
-    FOUR_KIND_SET = set([1,4])
-    THREE_KIND_SET = set([1,3])
-    DOUBLE_PAIR_LIST = [1,2,2]
+    ROYAL_FLUSH_SET : set[str] = set(["10", "11", "12", "13", "14"])
+    STRAIGTH_SET : set[str] = set(["14", "2", "3", "4", "5"])
+    FULL_HOUSE_SET : set[int] = set([2,3])
+    FOUR_KIND_SET : set[int] = set([1,4])
+    THREE_KIND_SET : set[int] = set([1,3])
+    DOUBLE_PAIR_LIST : list[int] = [1,2,2]
     
     """__init__()
     Constructor
@@ -121,34 +128,36 @@ class Poker(BaseView):
     embed: disnake.Embed to edit
     remaining: integer, remaining number of rounds, put 0 to ignore the round system
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed, remaining : int = 0) -> None:
+    def __init__(self : Poker, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed, remaining : int = 0) -> None:
         super().__init__(bot, timeout=120)
-        self.state = 0 # game state, -1 = over, 0~N player turn
-        self.players = players # player list
-        self.embed = embed # embed to updae
+        self.state : int = 0 # game state, -1 = over, 0~N player turn
+        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.embed : disnake.Embed = embed # embed to updae
         # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
-        self.deck = [self.bot.singleton.get_GameCard((i % 13) + 2, i // 13) for i in range(51)]
+        self.deck : CardList = [self.bot.singleton.get_GameCard((i % 13) + 2, i // 13) for i in range(51)]
         # shuffle the deck
         random.shuffle(self.deck)
         # draw 3 cards for the dealer
-        self.dealer = [self.deck.pop(), self.deck.pop(), self.deck.pop()]
+        self.dealer : CardList = [self.deck.pop(), self.deck.pop(), self.deck.pop()]
         # get dealer minimum hand value
-        self.min_value = Poker.calculateMinValue(self.dealer) # dealer hand value
+        self.min_value : int = Poker.calculateMinValue(self.dealer) # dealer hand value
         # set player hands
-        self.hands = [[0, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
+        self.hands : Hand = [(0, [self.deck.pop(), self.deck.pop()]) for i in range(len(self.players))] # state, hand (currently 2 cards)
         # set sub view to select cards
-        self.sub = PokerSub(self.bot, self)
+        self.sub : PokerSub = PokerSub(self.bot, self)
         # set sub embeds
-        self.subembeds = []
+        self.subembeds : list[disnake.Embed] = []
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
             self.subembeds.append(self.bot.embed(title="♠️ {}'s hand ♥".format(p.display_name), description="Initialization", color=self.embed.color))
             self.updateSubEmbed(i)
         # the max number of cards to draw
-        self.max_state = 3 + len(self.players) * 2 # 3 from dealer, 2 for each player
+        self.max_state : int = 3 + len(self.players) * 2 # 3 from dealer, 2 for each player
         # winner list
-        self.winners = []
+        self.winners : list[disnake.User|disnake.Member] = []
         # remaining rounds
-        self.remaining = remaining
+        self.remaining : int = remaining
 
     """update()
     Update the embed
@@ -158,8 +167,8 @@ class Poker(BaseView):
     inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
-    async def update(self, inter : disnake.Interaction, init=False) -> None:
-        desc = await self.renderTable()
+    async def update(self : Poker, inter : disnake.Interaction, init : bool = False) -> None:
+        desc : list[str] = await self.renderTable()
         # check game state
         if self.state == 0: # start
             desc.append("Waiting for all players to make their choices")
@@ -200,9 +209,9 @@ class Poker(BaseView):
     ----------
     list: List of strings for the embed description
     """
-    async def renderTable(self) -> list:
+    async def renderTable(self : Poker) -> list:
         # init message
-        desc = [":spy: Dealer ▫️ ", str(self.dealer[0]), ", "]
+        desc : list[str] = [":spy: Dealer ▫️ ", str(self.dealer[0]), ", "]
         # dealer card 2
         if self.state < 1:
             desc.append("🎴, ")
@@ -216,9 +225,11 @@ class Poker(BaseView):
             desc.append(str(self.dealer[2]))
             desc.append("\n")
         
-        s = self.state - 3 # state WITHOUT the dealer draw steps
+        s : int = self.state - 3 # state WITHOUT the dealer draw steps
         self.winners = [] # list of winners
-        best = 0
+        best : int = 0
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players): # write a line for each player
             desc.append(str(self.bot.emote.get(str(i+1)))) # number
             desc.append(" ")
@@ -235,6 +246,8 @@ class Poker(BaseView):
                 desc.append(", ")
                 desc.append(str(self.hands[i][1][1])) # card 2 revealed
                 desc.append(", ")
+                score : int
+                scorestr : str
                 score, scorestr = Poker.checkPokerHand(self.dealer + self.hands[i][1])
                 desc.append(scorestr)
                 await asyncio.sleep(0)
@@ -263,8 +276,10 @@ class Poker(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='See Your Hand', style=disnake.ButtonStyle.primary)
-    async def control(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        i = None
+    async def control(self : Poker, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+        i : int|None = None
+        idx : int
+        p : disnake.User|disnake.Member
         for idx, p in enumerate(self.players): # search which player used this button
             if p.id == interaction.user.id:
                 i = idx
@@ -281,8 +296,8 @@ class Poker(BaseView):
     ----------
     index: Player index
     """
-    def updateSubEmbed(self, index : int) -> None:
-        has_confirmed = self.hands[index][0] & PokerSub.CONFIRMED == PokerSub.CONFIRMED
+    def updateSubEmbed(self : Poker, index : int) -> None:
+        has_confirmed : bool = self.hands[index][0] & PokerSub.CONFIRMED == PokerSub.CONFIRMED
         self.subembeds[index].description = [
             str(self.bot.emote.get("1")),
             " ",
@@ -321,7 +336,7 @@ class Poker(BaseView):
     """playRound()
     Coroutine to play the round
     """
-    async def playRound(self) -> None:
+    async def playRound(self : Poker) -> None:
         while self.state < self.max_state:
             await asyncio.sleep(1)
             await self.update(None)
@@ -338,8 +353,8 @@ class Poker(BaseView):
     --------
     int : Strength value
     """
-    def calculateMinValue(dealer : list) -> int:
-        value_counts = {}
+    def calculateMinValue(dealer : CardList) -> int:
+        value_counts : dict[int, int] = {}
         for card in dealer:
             value_counts[card.value] = value_counts.get(card.value, 0) + 1
         if 3 in value_counts.values():
@@ -362,18 +377,19 @@ class Poker(BaseView):
         - int : Hand strength value
         - str: Hand string
     """
-    def checkPokerHand(hand : list) -> tuple:
+    def checkPokerHand(hand : CardList) -> tuple:
         # flush detection
-        flush = len(set([card.suit for card in hand])) == 1 # if only one suit found in hand
+        flush : bool = len(set([card.suit for card in hand])) == 1 # if only one suit found in hand
         # variables needed for hand checks
-        values = [card.value for card in hand] # get card values
-        value_counts = {}
+        values : list[int] = [card.value for card in hand] # get card values
+        value_counts : dict[int, int] = {}
         for v in values: # count occurences of each value (for example, 3 kings -> value_counts[13] = 3 )
             value_counts[v] = value_counts.get(v, 0) + 1
-        sorted_values = sorted(value_counts.values()) # sorted values
-        counts_set = set(sorted_values) # the unique values of value_counts
-        value_range = max(values) - min(values) # get the difference between highest and lowest card
-        highest_card = Poker.highestCard(hand) # get highest card (for later use)
+        sorted_values : list[int] = sorted(value_counts.values()) # sorted values
+        counts_set : set[int] = set(sorted_values) # the unique values of value_counts
+        value_range : int = max(values) - min(values) # get the difference between highest and lowest card
+        highest_card : GameCard = Poker.highestCard(hand) # get highest card (for later use)
+        card : GameCard
         # determinate hand strength
         # checks happen in strength order, from highest to lowest
         if flush and set(values) == Poker.ROYAL_FLUSH_SET: # flush and royal flush set match
@@ -415,16 +431,19 @@ class Poker(BaseView):
     --------
     GameCard: A matching card or None if none is found
     """
-    def highestCardForOccurence(selection : list, occurences : dict, occurence : int) -> Optional['GameCard']:
+    def highestCardForOccurence(selection : CardList, occurences : dict[int, int], occurence : int) -> GameCard|None:
         # get the highest value matching the asked occurence
-        best = None
+        bestval : int|None = None
+        val : int
+        ocu : int
         for val, ocu in occurences.items():
-            if ocu == occurence and (best is None or val > best):
-                best = val
-        if best is not None:
+            if ocu == occurence and (bestval is None or val > bestval):
+                bestval = val
+        if bestval is not None:
             # return a matching card
+            card : GameCard
             for card in selection:
-                if card.value == best:
+                if card.value == bestval:
                     return card
         return None
 
@@ -440,7 +459,7 @@ class Poker(BaseView):
     --------
     GameCard: Highest card
     """
-    def highestCard(selection : list) -> 'GameCard':
-        cards = selection.copy()
+    def highestCard(selection : CardList) -> GameCard:
+        cards : CardList = selection.copy()
         cards.sort()
         return cards[-1]

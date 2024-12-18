@@ -4,7 +4,7 @@ from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.channel import CleanupSetting, AnnouncementSetting
+    from components.channel import CleanupSetting, AnnouncementSetting
 
 # ----------------------------------------------------------------------------------------------------------------
 # Moderation Cog

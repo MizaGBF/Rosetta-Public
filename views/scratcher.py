@@ -1,7 +1,9 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
 # Scratcher View
@@ -20,10 +22,10 @@ class ScratcherButton(disnake.ui.Button):
     label: the default string label on the button
     style: the default Discord button style
     """
-    def __init__(self, item : tuple, row : int, label : str = '???', style : disnake.ButtonStyle = disnake.ButtonStyle.secondary) -> None:
+    def __init__(self : ScratcherButton, item: tuple[str, str], row : int, label : str = '???', style : disnake.ButtonStyle = disnake.ButtonStyle.secondary) -> None:
         super().__init__(style=style, label='\u200b', row=row)
-        self.item = item
-        self.label = label
+        self.item : tuple[str, str] = item
+        self.label : str = label
 
     """callback()
     Coroutine callback called when the button is called
@@ -33,7 +35,7 @@ class ScratcherButton(disnake.ui.Button):
     ----------
     interaction: a Discord interaction
     """
-    async def callback(self, interaction: disnake.Interaction) -> None:
+    async def callback(self : ScratcherButton, interaction: disnake.Interaction) -> None:
         if not self.disabled and self.view.ownership_check(interaction):
             self.disabled = True
             self.label = self.item[0]
@@ -59,13 +61,14 @@ class Scratcher(BaseView):
     color: the color to be used for the message embed
     footer: the footer to be used for the message embed
     """
-    def __init__(self, bot : 'DiscordBot', owner_id : int, grid, color : int, footer : str) -> None:
+    def __init__(self : Scratcher, bot : DiscordBot, owner_id : int, grid : list[tuple[str, str]], color : int, footer : str) -> None:
         super().__init__(bot, owner_id=owner_id, timeout=120.0, enable_timeout_cleanup=False)
-        self.grid = grid
-        self.color = color
-        self.footer = footer
-        self.state = {}
-        self.counter = 0
+        self.grid : list[tuple[str, str]] = grid
+        self.color : int = color
+        self.footer : str = footer
+        self.state : dict[tuple[str, str], int] = {}
+        self.counter : int = 0
+        i : int
         for i in range(9):
             self.add_item(ScratcherButton(self.grid[i], i // 3))
 
@@ -80,17 +83,22 @@ class Scratcher(BaseView):
     --------
     bool: True if the game is over, False if not
     """
-    def check_status(self, item : tuple) -> bool:
+    def check_status(self : Scratcher, item : tuple) -> bool:
         self.counter += 1
-        if item not in self.state: self.state[item] = 0
+        if item not in self.state:
+            self.state[item] = 0
         self.state[item] += 1
-        game_over = (self.state[item] == 3)
+        game_over : bool = (self.state[item] == 3)
+        c : disnake.ui.Component
         for c in self.children:
             if c.disabled:
-                if self.state.get(c.item, 0) == 2: c.style = disnake.ButtonStyle.success
-                elif self.state.get(c.item, 0) == 3: c.style = disnake.ButtonStyle.danger
+                if self.state.get(c.item, 0) == 2:
+                    c.style = disnake.ButtonStyle.success
+                elif self.state.get(c.item, 0) == 3:
+                    c.style = disnake.ButtonStyle.danger
             elif game_over:
                 self.state[c.item] = self.state.get(c.item, 0) + 1
+                e : disnake.ui.Component
                 for e in self.children:
                     e.label = e.item[0]
                     e.disabled = True

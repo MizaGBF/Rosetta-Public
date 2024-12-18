@@ -1,8 +1,14 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 import asyncio
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    # Type Aliases
+    import types
+    PageResult : types.GenericAlias = list[tuple[int|str, str]]
+    PageResultList : types.GenericAlias = list[PageResult]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Page View
@@ -22,10 +28,10 @@ class Page(BaseView):
     timeout: timeout in second before the interaction becomes invalid
     enable_timeout_cleanup: set to True to cleanup the interaction once over
     """
-    def __init__(self, bot : 'DiscordBot', owner_id : int, embeds : list, timeout : float = 180.0, enable_timeout_cleanup : bool = False) -> None:
+    def __init__(self : Page, bot : DiscordBot, owner_id : int, embeds : list[disnake.Embed], timeout : float = 180.0, enable_timeout_cleanup : bool = False) -> None:
         super().__init__(bot, owner_id=owner_id, timeout=timeout, enable_timeout_cleanup=enable_timeout_cleanup)
-        self.current = 0 # current selected embed
-        self.embeds = embeds # list of embeds, one embed = one page
+        self.current : int = 0 # current selected embed
+        self.embeds : list[disnake.Embed] = embeds # list of embeds, one embed = one page
 
     """prev()
     The previous button coroutine callback.
@@ -37,7 +43,7 @@ class Page(BaseView):
     button: a Discord interaction
     """
     @disnake.ui.button(label='◀️', style=disnake.ButtonStyle.blurple)
-    async def prev(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def prev(self : Page, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if not button.disabled and self.ownership_check(interaction): # check if enabled and is view author
             if len(self.embeds) > 0:
                 # cycle to previous page/embed
@@ -59,7 +65,7 @@ class Page(BaseView):
     button: a Discord interaction
     """
     @disnake.ui.button(label='▶️', style=disnake.ButtonStyle.blurple)
-    async def next(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def next(self : Page, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if not button.disabled and self.ownership_check(interaction): # check if enabled and is view author
             if len(self.embeds) > 0:
                 # cycle to next page/embed
@@ -81,9 +87,9 @@ class Page(BaseView):
 
 class RankingDropdown(disnake.ui.StringSelect):
     # The drop down
-    def __init__(self, placeholder : str, search_results : list) -> None:
+    def __init__(self : RankingDropdown, placeholder : str, search_results : PageResultList) -> None:
         # Define the options that will be presented inside the dropdown
-        options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # List of selectable elements
+        options : disnake.SelectOption = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # List of selectable elements
         super().__init__(
             placeholder=placeholder,
             min_values=1,
@@ -91,11 +97,11 @@ class RankingDropdown(disnake.ui.StringSelect):
             options=options
         ) # init the disnake.ui.StringSelect
 
-    def update_options(self, search_results : list) -> None:
+    def update_options(self : RankingDropdown, search_results : PageResultList) -> None:
         options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # change the list of selectable elements
         self.options=options # update the disnake.ui.StringSelect
 
-    async def callback(self, inter : disnake.MessageInteraction) -> None:
+    async def callback(self : RankingDropdown, inter : disnake.MessageInteraction) -> None:
         # called when a choice is made
         if not self.disabled and self.view.ownership_check(inter): # check if enabled and the view author
             if len(self.view.embeds) >= 2: # disable previous and next buttons if they exist (i.e. if there are at least 2 pages)
@@ -158,23 +164,23 @@ class PageRanking(BaseView):
     timeout: timeout in second before the interaction becomes invalid
     enable_timeout_cleanup: set to True to cleanup the interaction once over
     """
-    def __init__(self, bot : 'DiscordBot', owner_id : int, embeds : list, search_results : list, color, stype : bool, timeout : float = 180.0, enable_timeout_cleanup : bool = False) -> None:
+    def __init__(self : PageRanking, bot : DiscordBot, owner_id : int, embeds : list, search_results : PageResultList, color, stype : bool, timeout : float = 180.0, enable_timeout_cleanup : bool = False) -> None:
         super().__init__(bot, owner_id=owner_id, timeout=timeout, enable_timeout_cleanup=enable_timeout_cleanup)
-        self.current = 0 # current page/embed
-        self.embeds = embeds # list of pages/embeds
-        self.search_results = search_results # list of list for each pages. A list = a dropdown selection for that page
-        self.color = color # embeds color
-        self.stype = stype # type of content, True for crews, False for players
+        self.current : int = 0 # current page/embed
+        self.embeds : list[disnake.Embed] = embeds # list of pages/embeds
+        self.search_results : PageResultList = search_results # list of list for each pages. A list = a dropdown selection for that page
+        self.color : int = color # embeds color
+        self.stype : bool = stype # type of content, True for crews, False for players
         # buttons
-        self.prev_b = self.children[0] # Note: they are in order of the callback definitions below
+        self.prev_b : disnake.ui.Component|None = self.children[0] # Note: they are in order of the callback definitions below
         self.prev_b.disabled=(len(embeds)<2) # disable if single page
-        self.close_b = self.children[1]
+        self.close_b : disnake.ui.Component|None = self.children[1]
         self.close_b.disabled=True
-        self.next_b = self.children[2]
+        self.next_b : disnake.ui.Component|None = self.children[2]
         self.next_b.disabled=(len(embeds)<2) # disable if single page
         # dropdown
         self.add_item(RankingDropdown("Open Crew Page" if self.stype else "Open Profile", search_results[0]))
-        self.dropdown = self.children[-1]
+        self.dropdown : disnake.ui.Component|None = self.children[-1]
         # remove previous and next buttons if single page
         if len(embeds) < 2:
             self.remove_item(self.prev_b).remove_item(self.next_b)
@@ -189,7 +195,7 @@ class PageRanking(BaseView):
     button: a Discord interaction
     """
     @disnake.ui.button(label='◀️', style=disnake.ButtonStyle.blurple)
-    async def prev(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def prev(self : PageRanking, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         try:
             if not button.disabled and self.ownership_check(interaction): # check if enabled and author is view owner
                 if len(self.embeds) > 0:
@@ -219,7 +225,7 @@ class PageRanking(BaseView):
     button: a Discord interaction
     """
     @disnake.ui.button(label='Page 1', style=disnake.ButtonStyle.secondary)
-    async def close_profile(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def close_profile(self : PageRanking, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if not button.disabled and self.ownership_check(interaction): # check if enabled and author is view owner
             if len(self.embeds) > 0:
                 await interaction.send("\u200b", ephemeral=True, delete_after=0)
@@ -250,7 +256,7 @@ class PageRanking(BaseView):
     button: a Discord interaction
     """
     @disnake.ui.button(label='▶️', style=disnake.ButtonStyle.blurple)
-    async def next(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def next(self : PageRanking, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         try:
             if not button.disabled and self.ownership_check(interaction): # check if enabled and author is view owner
                 if len(self.embeds) > 0:

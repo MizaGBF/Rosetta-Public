@@ -1,10 +1,13 @@
 ﻿from __future__ import annotations
 import disnake
 from disnake.ext import commands
-import types
-from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    # Type Aliases
+    import types
+    SparkData : types.GenericAlias = list[int|datetime]
 import math
 from operator import itemgetter
 import re
@@ -14,9 +17,6 @@ import re
 # ----------------------------------------------------------------------------------------------------------------
 # Register and estimate people GBF Spark status
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-SparkData : types.GenericAlias = list[int|datetime]
 
 class Sparking(commands.Cog):
     """Track your Granblue Spark."""

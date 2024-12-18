@@ -1,9 +1,12 @@
 ﻿from __future__ import annotations
 import disnake
 from disnake.ext import commands
-import types
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    # Type Aliases
+    import types
+    AssignableData : types.GenericAlias = dict[str, dict[str, int]]
 from views.page import Page
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -11,9 +14,6 @@ from views.page import Page
 # ----------------------------------------------------------------------------------------------------------------
 # Self-Assignable roles
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-AssignableData : types.GenericAlias = dict[str, dict[str, int]]
 
 class Roles(commands.Cog):
     """Self assignable roles."""

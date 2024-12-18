@@ -2,9 +2,13 @@ from __future__ import annotations
 import disnake
 from disnake.ext import commands
 import asyncio
-import types
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    # Type Aliases
+    import types
+    CleanupSetting : types.GenericAlias = list[bool|list[int]]
+    AnnouncementSetting : types.GenericAlias = list[int|bool]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Channel Component
@@ -12,10 +16,6 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # This component lets you register channels with a keyword to be later used by the send() function of the bot
 # It also manages settings related to channels (auto message cleanup, announcement channel...)
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-CleanupSetting : types.GenericAlias = list[bool|list[int]]
-AnnouncementSetting : types.GenericAlias = list[int|bool]
 
 class Channel():
     def __init__(self : Channel, bot : DiscordBot) -> None:

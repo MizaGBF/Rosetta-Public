@@ -1,9 +1,11 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 import asyncio
-from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
-from datetime import timedelta
+from typing import Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+from datetime import datetime, timedelta
 
 # ----------------------------------------------------------------------------------------------------------------
 # JoinGame View
@@ -23,18 +25,18 @@ class JoinGame(BaseView):
     min_p: required participants
     callback: coroutine to be called on button press (optional)
     """
-    def __init__(self, bot : 'DiscordBot', players : list, limit : int, min_p : int, callback = None) -> None:
+    def __init__(self : JoinGame, bot : DiscordBot, players : list[disnake.User|disnake.Member], limit : int, min_p : int, callback : Callable|None = None) -> None:
         super().__init__(bot)
-        self.players = players
-        self.limit = limit # player limit
-        self.min_p = min_p # minimum player requirement
+        self.players : list[disnake.User|disnake.Member] = players
+        self.limit : int = limit # player limit
+        self.min_p : int = min_p # minimum player requirement
         if bot.debug_mode and len(self.players) > 0: # in debug mode, the author can play against itself
             while len(self.players) < self.min_p:
                 self.players.append(self.players[0])
         # callback
         self.callback = (self.default_callback if callback is None else callback)
         # timer tracker
-        self.timer = None
+        self.timer : datetime|None = None
 
     """updateTimer()
     Coroutine to update the waiting message
@@ -46,11 +48,11 @@ class JoinGame(BaseView):
     desc: description of the embed to update, must contains two {} for the formatting
     limit: time limit in seconds
     """
-    async def updateTimer(self, msg : disnake.Message, embed : disnake.Embed, desc : str, limit : int) -> None:
+    async def updateTimer(self : JoinGame, msg : disnake.Message, embed : disnake.Embed, desc : str, limit : int) -> None:
         self.timer = self.bot.util.JST() + timedelta(seconds=limit) # initialize the timer to now + the timer duration
         while True:
             await asyncio.sleep(1) # wait a second
-            c = self.bot.util.JST() # get current time
+            c : datetime = self.bot.util.JST() # get current time
             if c >= self.timer or len(self.players) >= self.limit: # check if we reached the timer OR if the player limit is reached
                 break # if so, exit the loop
             # update timer and player cout message
@@ -72,7 +74,8 @@ class JoinGame(BaseView):
     ----------
     bool: True if participating, False if not
     """
-    def isParticipating(self, pid : int) -> bool:
+    def isParticipating(self : JoinGame, pid : int) -> bool:
+        p : disnake.User|disnake.Member
         for p in self.players:
             if p.id == pid: # ids match
                 return True
@@ -85,7 +88,7 @@ class JoinGame(BaseView):
     ----------
     interaction: a disnake interaction
     """
-    async def default_callback(self, interaction : disnake.Interaction):
+    async def default_callback(self : JoinGame, interaction : disnake.Interaction):
         await interaction.response.send_message("You are registered", ephemeral=True)
 
     """joinbutton()
@@ -97,7 +100,7 @@ class JoinGame(BaseView):
     interaction: a disnake interaction
     """
     @disnake.ui.button(label='Join', style=disnake.ButtonStyle.blurple)
-    async def joinbutton(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def joinbutton(self : JoinGame, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if not button.disabled and not self.isParticipating(interaction.user.id): # check if the button is enabled and the user isn't already in the player list
             self.players.append(interaction.user) # add the user
             if len(self.players) >= self.limit: # disable everything if the player limit is full
@@ -116,7 +119,7 @@ class JoinGame(BaseView):
     interaction: a disnake interaction
     """
     @disnake.ui.button(label='Start', style=disnake.ButtonStyle.blurple)
-    async def startbutton(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def startbutton(self : JoinGame, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if not button.disabled and self.players[0].id == interaction.user.id: # check if the button is enabled and the user if the game initiator
             if len(self.players) >= self.min_p: # if minimum requirement is met
                 self.timer = self.bot.util.JST() # set timer to now to stop the wait

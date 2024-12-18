@@ -1,12 +1,11 @@
 ﻿from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
-import types
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import JSON
-from components.network import RequestResult
-from cogs.reminder import Reminder
+    from components.util import JSON
+    from components.network import RequestResult
+    from cogs.reminder import Reminder
 import json
 from io import BytesIO
 from datetime import datetime, timedelta

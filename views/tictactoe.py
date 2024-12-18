@@ -1,7 +1,9 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
 # TicTacToe View
@@ -17,9 +19,9 @@ class TicTacToeButton(disnake.ui.Button):
     ----------
     pos: Integer position in grid (0 - 9)
     """
-    def __init__(self, pos : int) -> None:
+    def __init__(self : TicTacToeButton, pos : int) -> None:
         super().__init__(style=disnake.ButtonStyle.secondary, label='\u200b', row=pos // 3)
-        self.pos = pos
+        self.pos : int = pos
 
     """callback()
     Coroutine callback called when the button is called
@@ -29,7 +31,7 @@ class TicTacToeButton(disnake.ui.Button):
     ----------
     interaction: a disnake interaction
     """
-    async def callback(self, interaction: disnake.Interaction) -> None:
+    async def callback(self : TicTacToeButton, interaction: disnake.Interaction) -> None:
         if not self.disabled and interaction.user.id == self.view.playing.id and self.view.grid[self.pos] == 0: # if enabled and author is current player and this space in the grid is free
             self.disabled = True # disable this button
             self.view.grid[self.pos] = self.view.playing_index + 1 # set player id + 1
@@ -41,7 +43,7 @@ class TicTacToeButton(disnake.ui.Button):
                 self.style = disnake.ButtonStyle.danger
                 self.label = "O"
             # update the game
-            state = self.view.update_status()
+            state : bool = self.view.update_status()
             # update description
             self.view.embed.description = ":x: {} :o: {}\n{}".format(self.view.players[0].display_name, self.view.players[1].display_name, self.view.notification)
             # check game state
@@ -54,7 +56,7 @@ class TicTacToeButton(disnake.ui.Button):
             await interaction.response.send_message("It's not your turn to play", ephemeral=True)
 
 class TicTacToe(BaseView):
-    WIN_SCENARIOS = [ # index of cells to check for a possible win
+    WIN_SCENARIOS : list[list[int]] = [ # index of cells to check for a possible win
         [0,1,2],
         [3,4,5],
         [6,7,8],
@@ -74,16 +76,17 @@ class TicTacToe(BaseView):
     players: list of Players
     embed: disnake.Embed to edit
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed) -> None:
+    def __init__(self : TicTacToe, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed) -> None:
         super().__init__(bot, timeout=180)
-        self.players = players # players
-        self.embed = embed # embed to update
-        self.playing = self.players[0] # current player
-        self.playing_index = 0 # player index in players
-        self.grid = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 3x3 grid
-        self.moves = 0 # total moves played
-        self.notification = "Turn of {}".format(self.playing.display_name)
+        self.players : list[disnake.User|disnake.Member] = players # players
+        self.embed : disnake.Embed = embed # embed to update
+        self.playing : disnake.User|disnake.Member = self.players[0] # current player
+        self.playing_index : int = 0 # player index in players
+        self.grid : list[int] = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 3x3 grid
+        self.moves : int = 0 # total moves played
+        self.notification : str = "Turn of {}".format(self.playing.display_name)
         # add buttons
+        i : int
         for i in range(len(self.grid)):
             self.add_item(TicTacToeButton(i))
 
@@ -94,7 +97,8 @@ class TicTacToe(BaseView):
     --------
     tuple: (win boolean, id of the winning player)
     """
-    def state(self) -> tuple:
+    def state(self : TicTacToe) -> tuple[bool, int|None]:
+        w : list[int]
         for w in self.WIN_SCENARIOS: # check each configuration
             if self.grid[w[0]] != 0 and self.grid[w[0]] == self.grid[w[1]] and self.grid[w[0]] == self.grid[w[2]]:
                 # change button color
@@ -111,8 +115,10 @@ class TicTacToe(BaseView):
     --------
     bool: True if the game is over, False if not
     """
-    def update_status(self) -> bool:
+    def update_status(self : TicTacToe) -> bool:
         self.moves += 1 # increase move count
+        won : bool
+        win_id : int|None
         won, win_id = self.state() # check for win
         if won or self.moves == 9: # check if game over
             if win_id is not None: # a player won
@@ -122,6 +128,7 @@ class TicTacToe(BaseView):
             else: # draw, out of space for more moves
                 self.notification = "It's a **Draw**..."
             # disable buttons
+            c : disnake.ui.Component
             for c in self.children:
                 c.disabled = True
             # return game over

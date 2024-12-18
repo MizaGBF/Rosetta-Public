@@ -1,15 +1,18 @@
 ﻿from __future__ import annotations
 import disnake
 import asyncio
-import types
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import JSON
-from components.network import RequestResult
+    from components.util import JSON
+    from components.network import RequestResult
+    # Type Aliases
+    import types
+    CurrentGacha : types.GenericAlias = list[timedelta|JSON]
+    CurrentBanner : types.GenericAlias = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
 import random
 import time
-from datetime import datetime, timedelta
 from views.roll_tap import Tap
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -18,10 +21,6 @@ from views.roll_tap import Tap
 # Manage the real granblue gacha
 # Also provide a simulator for games
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-CurrentGacha : types.GenericAlias = list[timedelta|JSON]
-CurrentBanner : types.GenericAlias = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
 
 class Gacha():
     ZODIAC_WPN : list[str] = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius'] # for the twelve generals detection, gotta update it yearly

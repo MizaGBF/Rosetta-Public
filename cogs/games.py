@@ -2,12 +2,23 @@
 import disnake
 from disnake.ext import commands
 import asyncio
-import types
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.util import GameCard
-from components.gacha import GachaSimulator
+    from components.gacha import GachaSimulator
+    # Type Aliases
+    import types
+    ScratcherItem : types.GenericAlias = tuple[str, str]
+    ScratcherTierList : types.GenericAlias = list[ScratcherItem]
+    ScratcherLootTable : types.GenericAlias = dict[int, ScratcherTierList]
+    FortuneCardList : types.GenericAlias = list[str]
+    FortuneWinningNumberList : types.GenericAlias = list[str]
+    FortuneWinningNumberPerTier : types.GenericAlias = tuple[FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList]
+    FortuneWinningPattern : types.GenericAlias = tuple[int, int]
+    FortuneWinningPatternPerTier : types.GenericAlias = tuple[FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern]
+    RandomCharacterStrings : types.GenericAlias = tuple[str, str, str]
+    RandomCharacterContainer : types.GenericAlias = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
 from datetime import datetime
 import random
 from views.scratcher import Scratcher
@@ -25,18 +36,6 @@ from views.rockpaperscissor import RPS
 # ----------------------------------------------------------------------------------------------------------------
 # Fun commands
 # ----------------------------------------------------------------------------------------------------------------
-
-# Type Aliases
-ScratcherItem : types.GenericAlias = tuple[str, str]
-ScratcherTierList : types.GenericAlias = list[ScratcherItem]
-ScratcherLootTable : types.GenericAlias = dict[int, ScratcherTierList]
-FortuneCardList : types.GenericAlias = list[str]
-FortuneWinningNumberList : types.GenericAlias = list[str]
-FortuneWinningNumberPerTier : types.GenericAlias = tuple[FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList]
-FortuneWinningPattern : types.GenericAlias = tuple[int, int]
-FortuneWinningPatternPerTier : types.GenericAlias = tuple[FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern]
-RandomCharacterStrings : types.GenericAlias = tuple[str, str, str]
-RandomCharacterContainer : types.GenericAlias = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
 
 class Games(commands.Cog):
     """Granblue-themed (or not) Games and more."""
@@ -492,12 +491,12 @@ class Games(commands.Cog):
         """Deal a random poker hand"""
         await inter.response.defer()
         # generate cards
-        hand_table : dict[str, 'GameCard'] = {}
+        hand_table : dict[str, GameCard] = {}
         while len(hand_table) < 5:
-            card : 'GameCard' = self.bot.singleton.get_GameCard(random.randint(2, 14), random.randint(0, 3))
+            card : GameCard = self.bot.singleton.get_GameCard(random.randint(2, 14), random.randint(0, 3))
             if str(card) not in hand_table:
                 hand_table[str(card)] = card
-        hand : list['GameCard'] = list(hand_table.values())
+        hand : list[GameCard] = list(hand_table.values())
         # default message
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s hand".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="🎴, 🎴, 🎴, 🎴, 🎴", color=self.COLOR))
         # reveal cards one by one (Use Poker view for parsing)

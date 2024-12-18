@@ -5,9 +5,9 @@ import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from cogs.gw import GBFGData
-from components.data import JSON
-from components.ranking import GWDBSearchResult, Score, CrewDataEntry
+    from cogs.gw import GBFGData
+    from components.data import JSON
+    from components.ranking import GWDBSearchResult, Score, CrewDataEntry
 from cogs import CREW_SERVER_ID
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw

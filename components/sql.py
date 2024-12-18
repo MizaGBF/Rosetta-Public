@@ -1,7 +1,9 @@
+from __future__ import annotations
 import asyncio
-from typing import Optional, Type, TYPE_CHECKING
+from typing import Type, TYPE_CHECKING
 import traceback
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 import sqlite3
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -13,13 +15,13 @@ import sqlite3
 # ----------------------------------------------------------------------------------------------------------------
 
 class Database():
-    def __init__(self, filename : str) -> None:
-        self.filename = filename
+    def __init__(self : Database, filename : str) -> None:
+        self.filename : str = filename
         self.conn :  sqlite3.Connection|None = None # connection
         self.cursor : sqlite3.Cursor|None = None # cursor
-        self.lock = asyncio.Lock()
+        self.lock : asyncio.Lock = asyncio.Lock()
 
-    async def __aenter__(self) -> Optional[sqlite3.Cursor]: # opening
+    async def __aenter__(self : Database) -> sqlite3.Cursor|None: # opening
         try:
             await self.lock.acquire() # lock
             # open handles
@@ -34,7 +36,7 @@ class Database():
             self.lock.release() # error, unlock
             return None
     
-    async def __aexit__(self, exc_type : Optional[Type[BaseException]], exc_val : Optional[BaseException], exc_tb : Optional[traceback]) -> Optional[bool]: # closing
+    async def __aexit__(self : Database, exc_type : Type[BaseException]|None, exc_val : BaseException|None, exc_tb : traceback|None) -> bool|None: # closing
         # close the handles
         try: self.cursor.close()
         except: pass
@@ -46,12 +48,12 @@ class Database():
         self.lock.release()
 
 class SQL():
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot : 'DiscordBot' = bot
-        self.db = {} # sql files
-        self.lock = asyncio.Lock() # global lock
+    def __init__(self : SQL, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        self.db : dict[str, Database] = {} # sql files
+        self.lock : asyncio.Lock = asyncio.Lock() # global lock
 
-    def init(self) -> None:
+    def init(self : SQL) -> None:
         pass
 
     """remove()
@@ -61,10 +63,10 @@ class SQL():
     ----------
     filename: SQL file name
     """
-    async def remove(self, filename : str) -> None:
+    async def remove(self : SQL, filename : str) -> None:
         async with self.lock:
             if filename in self.db: # remove file if in memory
-                db = self.db[filename]
+                db : Database = self.db[filename]
                 async with db.lock:
                     self.db.pop(filename)
 
@@ -75,11 +77,12 @@ class SQL():
     ----------
     filename: SQL file name
     """
-    async def remove_list(self, filenames : list) -> None:
+    async def remove_list(self : SQL, filenames : list[str]) -> None:
         async with self.lock:
+            f : str
             for f in filenames: # remove all given files if they are in memory
                 if f in self.db:
-                    db = self.db[f]
+                    db : Database = self.db[f]
                     async with db.lock:
                         self.db.pop(f)
 
@@ -95,7 +98,7 @@ class SQL():
     --------
     Database: The new Database object. None if the file doesn't exist
     """
-    async def add(self, filename : str) -> Optional[Database]:
+    async def add(self, filename : str) -> Database|None:
         async with self.lock:
             if self.bot.file.exist(filename): # create Database instance in memory if file exists
                     self.db[filename] = Database(filename)
@@ -114,6 +117,6 @@ class SQL():
     --------
     Database: The Database object. None if it doesn't exist
     """
-    async def get(self, filename : str) -> Optional[Database]:
+    async def get(self, filename : str) -> Database|None:
         async with self.lock: # return Database instance if it exists
             return self.db.get(filename, None)

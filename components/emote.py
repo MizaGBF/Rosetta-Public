@@ -3,8 +3,8 @@ import disnake
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import JSON
-from components.network import RequestResult
+    from components.util import JSON
+    from components.network import RequestResult
 import asyncio
 import os
 

@@ -1,7 +1,9 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -12,21 +14,21 @@ import random
 
 class RPS(BaseView):
     # Picks
-    ROCK = 0
-    PAPER = 1
-    SCISSOR = 2
+    ROCK : int = 0
+    PAPER : int = 1
+    SCISSOR : int = 2
     # Strings for results
-    PICK_STRINGS = [
+    PICK_STRINGS : list[str] = [
         "🪨 **Rock**",
         "🧻 **Paper**",
         "✂️ **Scissor**"
     ]
     # Indexes
-    DRAW = -1
-    PLAYER_1 = 0
-    PLAYER_2 = 1
+    DRAW : int = -1
+    PLAYER_1 : int = 0
+    PLAYER_2 : int = 1
     # Pick combinations and results
-    WIN_STATES = {
+    WIN_STATES : dict[int, int] = {
         ROCK*10+ROCK : DRAW,
         PAPER*10+ROCK : PLAYER_1,
         SCISSOR*10+ROCK : PLAYER_2,
@@ -49,14 +51,14 @@ class RPS(BaseView):
     scores: list, current player scores
     target: number of round won to win
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed, scores : list, target : int) -> None:
+    def __init__(self : RPS, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed, scores : list[int], target : int) -> None:
         super().__init__(bot, timeout=60)
-        self.players = players # player list
-        self.embed = embed # embed to update
-        self.scores = scores # global score
-        self.target = target # best of X wins
-        self.state = [-1, -1] # players selection
-        self.won = False # game state
+        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.embed : disnake.Embed = embed # embed to update
+        self.scores : list[int] = scores # global score
+        self.target : int = target # best of X wins
+        self.state : list[int] = [-1, -1] # players selection
+        self.won : bool = False # game state
 
     """update()
     Update the embed
@@ -66,9 +68,9 @@ class RPS(BaseView):
     inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
-    async def update(self, inter : disnake.Interaction, init : bool = False) -> None:
+    async def update(self : RPS, inter : disnake.Interaction, init : bool = False) -> None:
         if not self.won: # if the game is on going
-            desc = []
+            desc : list[str] = []
             if self.state[self.PLAYER_1] == -1 or self.state[self.PLAYER_2] == -1: # at least one player hasn't picked a choice yet
                 # display pending state
                 for i in range(len(self.players)):
@@ -76,12 +78,13 @@ class RPS(BaseView):
                 self.embed.description = "".join(desc)
             else: # both player picked
                 # display picks
+                i : int
                 for i in range(len(self.players)):
                     desc.extend(self.renderPlayer(i, False))
                 # this round ended, raise flag
                 self.won = True
                 # check who won
-                win = self.WIN_STATES[self.state[self.PLAYER_1] * 10 + self.state[self.PLAYER_2]]
+                win : int = self.WIN_STATES[self.state[self.PLAYER_1] * 10 + self.state[self.PLAYER_2]]
                 match win:
                     case self.DRAW:
                         desc.append("This round is a **draw**\n**Next round in 10 seconds...**")
@@ -130,8 +133,8 @@ class RPS(BaseView):
     index: Integer, player index in self.players
     pending: Boolean, set to True if players are picking their choice, False otherwise
     """
-    def renderPlayer(self, index : int, pending : bool) -> list:
-        desc = ["**"]
+    def renderPlayer(self : RPS, index : int, pending : bool) -> list[str]:
+        desc : list[str] = ["**"]
         desc.append(self.players[index].display_name)
         if pending: # picking choice
             if self.state[index] == -1: # hasn't picked
@@ -151,9 +154,10 @@ class RPS(BaseView):
     ----------
     inter: a Discord interaction
     """
-    async def timeoutCheck(self, inter : disnake.Interaction) -> None:
+    async def timeoutCheck(self : RPS, inter : disnake.Interaction) -> None:
         if not self.won: # if game isn't over
             # generate random hand for players waiting confirmation
+            i : int
             for i in range(len(self.state)):
                 if self.state[i] == -1:
                     self.state[i] = random.randint(0, 2)
@@ -168,8 +172,10 @@ class RPS(BaseView):
     interaction: a Discord interaction
     action: integer, what item the player picked
     """
-    async def callback(self, interaction: disnake.Interaction, action: int) -> None:
-        i = None
+    async def callback(self : RPS, interaction: disnake.Interaction, action: int) -> None:
+        i : int|None = None
+        idx : int
+        p : disnake.User|disnake.Member
         for idx, p in enumerate(self.players): # look which of the two players pressed this button
             if p.id == interaction.user.id:
                 if self.state[idx] == -1:
@@ -193,13 +199,13 @@ class RPS(BaseView):
             await interaction.response.send_message("You can't play this game", ephemeral=True)
 
     @disnake.ui.button(label='Rock', style=disnake.ButtonStyle.primary, emoji='🪨')
-    async def rock(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def rock(self: RPS, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.callback(interaction, self.ROCK)
 
     @disnake.ui.button(label='Paper', style=disnake.ButtonStyle.primary, emoji='🧻')
-    async def paper(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def paper(self: RPS, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.callback(interaction, self.PAPER)
 
     @disnake.ui.button(label='Scissor', style=disnake.ButtonStyle.primary, emoji='✂️')
-    async def scissor(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def scissor(self: RPS, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.callback(interaction, self.SCISSOR)

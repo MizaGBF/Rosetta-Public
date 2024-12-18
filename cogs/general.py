@@ -4,7 +4,7 @@ from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-from components.util import BotCommandSearch
+    from components.util import BotCommandSearch
 import math
 
 # ----------------------------------------------------------------------------------------------------------------
