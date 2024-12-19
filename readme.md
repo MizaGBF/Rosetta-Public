@@ -95,8 +95,8 @@ options:
                         generate the discordbot.html help file (the destination PATH can be set).
 ```
   
-Except `-h`/`--debug`, all parameters are mutually exclusive.  
-Check the **Debug Mode** section for more infos on the `-h`/`--debug` parameter.   
+Except `-d`/`--debug`, all parameters are mutually exclusive.  
+Check the **Debug Mode** section for more infos on the `-d`/`--debug` parameter.   
   
 ### Stop Rosetta   
   
@@ -268,7 +268,7 @@ You are free to remove or change the crews if you want, but don't remove it enti
 > [!TIP]  
 > You can skip this section if you don't plan to use it.
    
-Using the `-debug` argument requires to set up `config_test.json`.  
+Using the `-d`/`--debug` argument requires to set up `config_test.json`.  
 Same principle, but shorter:  
 ```json
 {
