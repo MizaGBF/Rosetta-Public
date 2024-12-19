@@ -114,6 +114,18 @@ class Emote():
     async def create_app_emoji(self : Emote, name : str, image : bytes) -> None:
         await self.bot.http.request(disnake.http.Route('POST', '/applications/{app_id}/emojis', app_id=self.bot.user.id), json={'name':name, 'image':await disnake.utils._assetbytes_to_base64_data(image)})
 
+    """delete_app_emoji()
+    Placeholder for delete_app_emoji from the upcoming disnake 2.10.
+    Create a new application emoji.
+    
+    Parameters
+    --------
+    name: String, must be alphanumeric and at least 2 in length
+    image: Bytes, image data. Max 128x128 pixels.
+    """
+    async def delete_app_emoji(self : Emote, emoji_id : int) -> None:
+        await self.bot.http.request(disnake.http.Route('DELETE', '/applications/{app_id}/emojis/{emoji_id}', app_id=self.bot.user.id, emoji_id=emoji_id))
+
     """create_emoji_in_cache_from()
     Placeholder until the upcoming disnake 2.10.
     Create a new emoji from an application emoji data and put it in our cache.
@@ -136,12 +148,19 @@ class Emote():
             emote_file_table : dict[str, str] = {f.split('.', 1)[0].ljust(2, '_') : f for f in next(os.walk("assets/emojis"), (None, None, []))[2]}
             # get the list of app emojis already set
             existing : JSON|None = await self.get_all_app_emojis()
+            deleted : int = 0
             item : JSON
             for item in existing['items']: # and remove the ones already uploaded from emote_file_table
-                emote_file_table.pop(item['name'], None)
+                if item['name'] not in emote_file_table:
+                    await self.delete_app_emoji(item['id'])
+                    deleted += 1
+                else:
+                    emote_file_table.pop(item['name'], None)
+            if deleted > 0:
+                self.bot.logger.push("[LOAD EMOJI] {} unused application emojis have been deleted.".format(deleted))
             # if we have files remaining to be uploaded in emote_file_table...
             if len(emote_file_table) > 0:
-                self.bot.logger.push("[UPLOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.3)))
+                self.bot.logger.push("[LOAD EMOJI] {} file(s) in the 'assets/emojis' folder not uploaded...\nUploading...\n(Expected time: {}s)".format(len(emote_file_table), int(len(emote_file_table)*1.3)))
                 try:
                     k : str
                     v : str
@@ -149,15 +168,15 @@ class Emote():
                         with open("assets/emojis/" + v, mode="rb") as f: # read the file
                             await self.create_app_emoji(k, f.read()) # and create an app emoji with it
                             await asyncio.sleep(1)
-                    self.bot.logger.push("[UPLOAD EMOJI] Done.\nEmojis have been uploaded")
+                    self.bot.logger.push("[LOAD EMOJI] Done.\nEmojis have been uploaded")
                 except Exception as e:
-                    self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
-                    self.bot.logger.push("[UPLOAD EMOJI] An error occured.\nThe upload process has been aborted.")
+                    self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
+                    self.bot.logger.push("[LOAD EMOJI] An error occured.\nThe upload process has been aborted.")
                 # get new updated list
                 existing = await self.get_all_app_emojis()
         except Exception as xe:
-            self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error A", xe)
-            self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
+            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section A", xe)
+            self.bot.logger.push("[LOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
         # now initializing app emoji list
         try:
             for item in existing['items']: # for each emoji item
@@ -166,5 +185,5 @@ class Emote():
                     name = name[0]
                 self.create_emoji_in_cache_from(name, item) # set our custom cache with this emoji
         except Exception as e:
-            self.bot.logger.pushError("[UPLOAD EMOJI] upload_app_emojis Unexpected error B", e)
-            self.bot.logger.push("[UPLOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
+            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section B", e)
+            self.bot.logger.push("[LOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
