@@ -319,7 +319,7 @@ class General(commands.Cog):
     @commands.message_command(name="Translate to English")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 15, commands.BucketType.guild)
-    async def translate_(self : commands.SubCommand, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
+    async def translate_(self : commands.message_command, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
         """Translate a message embed or content to english"""
         try:
             await inter.response.defer()

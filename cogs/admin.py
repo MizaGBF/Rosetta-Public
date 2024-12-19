@@ -380,8 +380,7 @@ class Admin(commands.Cog):
 
     @unban.sub_command()
     async def roll(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
-        """Unban an user from all the roll ranking (Owner Only)
-        Ask me for an unban (to avoid abuses)"""
+        """Unban an user from all the roll ranking (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.unset(user_id, self.bot.ban.SPARK)
         await inter.edit_original_message(embed=self.bot.embed(title="Unbanned user for roll ranking", color=self.COLOR))

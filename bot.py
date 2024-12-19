@@ -703,7 +703,7 @@ if __name__ == "__main__":
     elif args.test:
         DiscordBot(debug_mode=True).test_bot()
     elif args.generatehelp is not None:
-        print(args.generatehelp) # placeholder
+        cogs.generateHelp(DiscordBot.VERSION, args.generatehelp)
     elif args.run:
         DiscordBot(debug_mode=args.debug).start_bot()
     else:

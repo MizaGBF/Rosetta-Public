@@ -50,20 +50,12 @@ The `components` folder contains the bot components, which are piece of codes ne
 The `views` folder contains the bot interactions to make interfaces and such for some commands.  
 
 The `tools` folder contains a few standalone pieces of code which might help you:  
-* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html.  
-> [!WARNING]  
-> If you wrote your own Cogs, I recommend following how I format my syntax or this tool might not be able to detect your commands properly.
-  
-> [!WARNING]  
-> The tool attempts to write the HTML file to my github page [repo](https://github.com/MizaGBF/MizaGBF.github.io) before doing so in the current directory.  
-> If you want to change this behavior, look around line [529](https://github.com/MizaGBF/Rosetta-Public/blob/main/tools/generate_help.py#L529).
-  
 * `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. You can drag and drop a file on them but I suggest using them in a terminal/command prompt. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
   
 > [!CAUTION]  
 > It's a good practice to **always** make a copy of your save data before attempting any manipulation on it.
   
-* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish.  
+* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish. Add a [Gifsicle](https://github.com/kohler/gifsicle) executable in the same folder for a better result.  
   
 ## Usage  
 ### Method 1:  

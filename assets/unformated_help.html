@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!--This page is automatically generated, please excuse the poor formatting-->
+<html lang="en">
+<head>
+	<title>Rosetta Online Help vVERSION_STRING</title>
+	<meta charset="utf-8">
+	<meta name="title" content="Rosetta Online Help vVERSION_STRING">
+	<meta name="description" content="Online Help and Command List for the Granblue Fantasy Discord bot Rosetta.">
+	<meta name="theme-color" content="#5217b0">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://mizagbf.github.io/">
+	<meta property="og:title" content="Rosetta Online Help vVERSION_STRING">
+	<meta property="og:description" content="Online Help and Command List for the Granblue Fantasy Discord bot Rosetta.">
+	<meta property="twitter:card" content="summary_large_image">
+	<meta property="twitter:url" content="https://mizagbf.github.io/">
+	<meta property="twitter:title" content="Rosetta Online Help vVERSION_STRING">
+	<meta property="twitter:description" content="Online Help and Command List for the Granblue Fantasy Discord bot Rosetta.">
+	<link rel="icon" type="image/png" href="assets/boticon.png">
+	<style>
+	html, body {
+		background: #040c1c;
+		font-family: sans-serif;
+		font-size: 16px;
+	}
+
+	h1 {
+		text-align: center;
+		color: white;
+	}
+
+	h2 {
+		color: white;
+	}
+
+	p {
+		color: white;
+	}
+
+	ul {
+		color: white;
+	}
+
+	a {
+		color: #981cd6;
+	}
+
+	a:visited {
+		color: #ca1cd6;
+	}
+
+	#textSelection {
+		background-image: url('assets/searchicon.png');
+		background-position: 10px 12px;
+		background-repeat: no-repeat;
+		width: 95%;
+		font-size: 16px;
+		padding: 12px 20px 12px 40px;
+		border: 1px solid #ddd;
+		margin-bottom: 12px;
+	}
+
+	#commandList {
+		list-style-type: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.command-count {
+		color: white;
+	}
+
+	.command {
+		float: left;
+		background-color: #101010;
+		color: #ffffff;
+		width: 100%;
+		margin: 2px;
+		opacity: 1;
+		transition: opacity 0.2s linear;
+		display: none; /* Hidden by default */
+	}
+
+	.command:hover {
+		background-color: #981cd6;
+	}
+
+	.command-name {
+		padding: 10px;
+		background: rgba(0, 0, 0, 0.7);
+		font-size: 18px;
+		font-weight: 700;
+	}
+	.command-use {
+		padding: 10px;
+		background: rgba(0, 0, 0, 0.3);
+	}
+	.command-description {
+		padding: 10px;
+		background: rgba(0, 0, 0, 0.6);
+	}
+
+	.show {
+		display: block;
+	}
+
+	.btn {
+		border: none;
+		outline: none;
+		padding: 12px 16px;
+		cursor: pointer;
+		color: white;
+		text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
+		margin: 2px;
+		font-size: 20px;
+	}
+
+	.btn:hover {
+		outline: solid #ca1cd6;
+	}
+
+	.btn.active {
+		outline: solid #981cd6;
+	}
+
+	.tab {
+		overflow: hidden;
+	}
+
+	.tablinks {
+		border: none;
+		outline: none;
+		padding: 12px 16px;
+		cursor: pointer;
+		background: #4f4f4f;
+		color: white;
+		text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
+		margin: 2px;
+		border-radius: 10%;
+		font-size: 25px;
+	}
+
+	.tablinks:hover {
+		background-color: #6f6f6f;
+	}
+
+	.tablinks.active {
+		background-color: #463254;
+	}
+
+	.tabcontent {
+		display: none;
+		padding: 6px 12px;
+	}
+
+	.popup {
+		border-radius: 25px;
+		border: 2px solid #73ff21;
+		padding: 20px;
+		background-color: #113300;
+		position:fixed;
+		top:5%;
+		left:5%;
+		z-index:100;
+		text-align: center;
+		font-size: 25px;
+		width: 12em;
+		color: #ffffff;
+		align-items: center;
+	}
+	</style>
+	<script>
+	var lastFilter = "all";
+	var intervals = [];
+	function init() {
+		try {
+			document.getElementById('tab-' + location.hash.substr(1).toLowerCase()).click();
+		}catch (e) {}
+		let btns = document.getElementsByClassName("btn");
+		for (let i = 0; i < btns.length; i++) {
+			btns[i].addEventListener("click", function() {
+				let current = document.getElementsByClassName("btn active");
+				current[0].className = current[0].className.replace(" active", "");
+				this.className += " active";
+			});
+		}
+		filterSelection("all");
+	}
+
+	function copyCommand(cmd_string) {
+		navigator.clipboard.writeText(cmd_string);
+		let div = document.createElement('div');
+		div.className = 'popup';
+		div.textContent = cmd_string + ' has been copied'
+		document.body.appendChild(div)
+		intervals.push(setInterval(rmPopup, 2500, div));
+	}
+
+	function rmPopup(popup) {
+		popup.parentNode.removeChild(popup);
+		clearInterval(intervals[0]);
+		intervals.shift();
+	}
+
+	function searchSelection(update=true) {
+		let input, filter, ul, li, a, i, txtValue;
+		input = document.getElementById('textSelection');
+		filter = input.value.toUpperCase();
+		ul = document.getElementById("commandList");
+		li = ul.getElementsByTagName('li');
+
+		for (i = 0; i < li.length; i++) {
+			txtValue = li[i].textContent || li[i].innerText;
+			if (txtValue.toUpperCase().indexOf(filter) > -1) {
+				if(update)
+					addClass(li[i], "show");
+			} else {
+				rmClass(li[i], "show");
+			}
+		}
+		if(update) filterSelection(lastFilter);
+	}
+	function filterSelection(c) {
+		let x, i;
+		x = document.getElementsByClassName("command");
+		if (c == "all") c = "";
+		for (i = 0; i < x.length; i++) {
+			rmClass(x[i], "show");
+			if (x[i].className.indexOf(c) > -1) addClass(x[i], "show");
+		}
+		lastFilter=c;
+		searchSelection(false);
+	}
+
+	function addClass(element, name) {
+		let i, arr1, arr2;
+		arr1 = element.className.split(" ");
+		arr2 = name.split(" ");
+		for (i = 0; i < arr2.length; i++) {
+			if (arr1.indexOf(arr2[i]) == -1) {
+				element.className += " " + arr2[i];
+			}
+		}
+	}
+
+	function rmClass(element, name) {
+		let i, arr1, arr2;
+		arr1 = element.className.split(" ");
+		arr2 = name.split(" ");
+		for (i = 0; i < arr2.length; i++) {
+			while (arr1.indexOf(arr2[i]) > -1) {
+				arr1.splice(arr1.indexOf(arr2[i]), 1);
+			}
+		}
+		element.className = arr1.join(" ");
+	}
+
+	function openTab(evt, tabName) {
+		let i, tabcontent, tablinks;
+
+		window.location.hash = '#' + tabName.toLowerCase();
+		tabcontent = document.getElementsByClassName("tabcontent");
+		for (i = 0; i < tabcontent.length; i++) {
+			tabcontent[i].style.display = "none";
+		}
+
+		tablinks = document.getElementsByClassName("tablinks");
+		for (i = 0; i < tablinks.length; i++) {
+			tablinks[i].className = tablinks[i].className.replace(" active", "");
+		}
+
+		document.getElementById(tabName).style.display = "block";
+		evt.currentTarget.className += " active";
+	}
+	</script>
+</head>
+<body onload="init()">
+	<h1 style="width:630px;margin-left: auto; margin-right: auto;">
+		<img src="assets/boticon.png" alt="icon" style="vertical-align:middle;border-radius: 50%;box-shadow: 0 0 0 2pt #981cd6;width: 120px; height: 120px">&nbsp;Rosetta Online Help<br>&nbsp;<small>vVERSION_STRING</small>
+	</h1>
+	<div class="tab">
+		<button class="tablinks" id="tab-commands" onclick="openTab(event, 'Commands')">Commands</button>
+		<button class="tablinks" id="tab-guides" onclick="openTab(event, 'Guides')">Guides</button>
+		<button class="tablinks" id="tab-faq" onclick="openTab(event, 'FAQ')">FAQ</button>
+		<button class="tablinks" id="tab-privacy" onclick="openTab(event, 'Privacy')">Privacy</button>
+		<button class="tablinks" id="tab-tos" onclick="openTab(event, 'tos')">Terms of Service</button>
+	</div>
+	<div id="Commands" class="tabcontent">
+		<div id="buttons">
+FILTER_STRINGS
+		</div>
+		<br>
+		<div class="command-count"><b>COMMAND_STRING</b></div>
+		<br>
+		<input type="text" id="textSelection" onkeyup="searchSelection()" placeholder="Search a command">
+		<ul id="commandList">
+COMMAND_LIST
+		</ul>
+	</div>
+
+	<div id="Guides" class="tabcontent">
+		<h1>Guides</h1>
+		<h2>Good practices and recommendations</h2>
+		<p>1) Make a channel dedicated to the bot and use the commands <b>/mod cleanup toggle</b> and <b>/mod cleanup channel</b> in that channel.<br>
+		<br>
+		2) Remove the <b>"send message"</b> permission in the channel where you don't want it to be usable. (<b>Note:</b> Commands will still appear in said channel unless disabled in your Server Integration Permissions.)<br>
+		<br>
+		3) (Optional) In your Server Settings, under "Integration", you can tune which and how a command is usable (See below for more informations).<br>
+		<br>
+		4) Make sure the bot has the <b>"use external emoji"</b> permission enabled.<br>
+		<br>
+		You can use <b>/mod server info</b> or the Message Command <b>Server Info</b> to verify quickly if something is enabled or disabled.<br>
+		Keep in mind <b>anyone with the "manage message" permission is considered a moderator by the bot</b>. You can restrict those commands via the Server Integration Permissions if needed.</p>
+		
+		<h2>Notifications</h2>
+		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement channel</b>.<br>
+		You can see your settings with <b>/mod announcement see</b>.<br>
+		Do note, if the channel is a News Channel and you enabled the Auto Publish setting (with <b>/mod announcement publish</b>), it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>.<br>
+		</p>
+		
+		<h2>Pinboard</h2>
+		<p>You can setup a pinboard channel. Here are some steps to guide you:<br>
+		1) First, make or select the text channel where the pinned messages will appear. Make sure the bot has access to it and do <b>/mod pinboard output</b>.<br>
+		2) Use <b>/mod pinboard track</b> in all the channels you want the bot to track. Make sure the bot can access those channels. Forum Posts are also supported.<br>
+		3) Use <b>/mod pinboard settings</b> to see your settings or change them. Emoji lets you change the emoji used to trigger the pin, Threshold lets you change how many emojis are required, Mod Bypass lets Moderators bypass the threshold.<br>
+		<br>
+		A pin will occur when people react, with the select emoji, to messages in the tracked channels. The required number of reaction is the threshold you set. If the Mod Bypass is enabled, a mod reacting will instantly trigger the pin.
+		Do <b>/help search:pinboard</b> to see all the related commands if you need more help.<br>
+		</p>
+		
+		<h2>Server Integration Permissions</h2>
+		<p>Like mentionned at the start, you can disable or restrict certain command groups to specific channels or roles, in your Server Settings, under "Integration".<br>
+		If you are a server administrator, all commands will keep working for you regardless of the settings.<br>
+		If you want to test your settings, go under "Roles", pick a suitable one and use the "View Server as Role" feature.<br>
+		</p>
+		
+		<h2>Context Menu</h2>
+		<p>Right clicking on an user or message lets you access the following Context Menus.<br>
+			<img src="assets/discordbot_help_1.png" alt="help 1"><br>
+		Such commands are called, in the command list, <span class="command-name" style="display: inline-block;background: #cc83b1;padding: 3px;text-shadow: 2px 2px 2px rgba(0,0,0,0.75); font-size: 14px;">Message Command</span> for message ones, <span class="command-name" style="display: inline-block;background: #77bf85;padding: 3px;text-shadow: 2px 2px 2px rgba(0,0,0,0.75); font-size: 14px;">User Command</span> for user ones.<br>
+		</p>
+	</div>
+	<div id="FAQ" class="tabcontent">
+		<h1>Frequently Asked Questions / Troubleshooting</h1>
+		<h2>What is Rosetta?</h2>
+		<p>Rosetta is a <a href="https://game.granbluefantasy.jp">Granblue Fantasty</a> themed <a href="https://discord.com/">Discord</a> Bot.<br>
+		It's a fork of MizaBOT (which was available on <a href="https://github.com/MizaGBF/MizaBOT">GitHub</a>).<br>
+		Code source is available <a href="https://github.com/MizaGBF/Rosetta-Public">here</a>.<br>
+		It provides various commands, ranging from utilty to recreative ones, related (or not) to the game.<br>
+		<b>This page is meant to be a private help page for people with access to this Discord Bot.<br>
+		The bot itself isn't open to invitations.</b><br></p>
+		
+		<h2>Does the bot collect my messages/data?</h2>
+		<p>See the <b>Privacy</b> tab.</p>
+		
+		<h2>Can you explain the various command types?</h2>
+		<p>Slash Commands are used by simply typing / in chat.<br>
+		User Commands are used by right clicking on an user and going into the Apps context menu.<br>
+		Message Commands are used by right clicking a message and going into the Apps context menu.</p>
+		
+		<h2>How do I report a bug?</h2>
+		<p>Errors are usually automatically reported but, if you found an odd behavior or what seems like an error, you can use the <b>/bug_report</b> command or open an issue on <a href="https://github.com/MizaGBF/Rosetta-Public">Github</a>.</p>
+		
+		<h2>Emotes used by the bot don't work</h2>
+		<p>Make sure the bot has the <b>Use External Emojis</b> permission enabled.<br>
+		If you thinkered with the invite link or the bot role permissions (which I don't recommend to), you can use the invitation link again to restore them to default (without needing to kick the bot).<br>
+		If the problem persists, make sure you didn't give a role, with this permission disabled, to the bot.<br>
+		This paragraph is true for other permissions that the bot might need.</p>
+		
+		<h2>How do I remove my GBF Profile ID?</h2>
+		<p>Your linked GBF ID can be removed with the <b>/gbf profile unset</b> command.
+		It's also deleted if you leave all servers where the bot is present.</p>
+		
+		<h2>How do I remove my set Rolls?</h2>
+		<p>Your spark data is deleted after 30 days without an update, just leave it alone.</p>
+		
+		<h2>One or multiple commands don't work</h2>
+		<p>If no commands appear when typing /, you might have to wait (it can take up to one hour to register them).<br>
+		<br>
+		If you get an "Interaction failed" error, either you tried to use a command without the proper permission (example, a mod command without being mod), you or the bot doesn't have the permission to run this command in this channel, OR the bot is down or rebooting.</p>
+		
+		<h2>My command froze/hanged</h2>
+		<p>The bot most likely rebooted or crashed during this timeframe, bad luck for you.</p>
+		
+		<h2>The command didn't register what I set</h2>
+		<p>Again, the bot most likely rebooted and it didn't save in properly. Just wait and do it again.</p>
+		
+		<h2>When are the Unite and Fight rankings updated?</h2>
+		<p>They are updated in-game every 20 minutes.<br>
+        To ensure they are properly updated, the bot waits minute 3, 23 or 43 to start fetching the data.<br>
+        Commands such as <b>/gw ranking</b> will be updated almost immediatly.<br>
+        For other commands such as <b>/gw find crew</b> or <b>/gbfg ranking</b>, it will take around 7 more minutes.<br>
+        Do note the bot doesn't update everything in some periods (during breaks or crews during interlude for example).</p>
+	</div>
+	<div id="Privacy" class="tabcontent">
+		<h2>Privacy Policy</h2>
+		<p>This tab describes the privacy policy of Rosetta.<br>
+		We do not store any personally identifiable data nor do we share any data to a third party.<br>
+		When the bot leaves a server, data related to this server is deleted in the next monthly cleanup.<br>
+		The following points describe in details what kind of data is accessed or saved by the bot.</p>
+		
+		<h2>Data Collected Automatically</h2>
+		<p>When reacting to a message, this message is processed by the bot, for the purpose of the Pinboard feature. The message itself isn't saved or stored for further use, nor used for any other purpose, and no data is collected from the message itself.</p>
+		
+		<h2>Data Collected by Commands</h2>
+		<p>The following data is stored: <br>
+		</p>
+		<ul>
+			<li>An user's <a href="https://game.granbluefantasy.jp/">Granblue Fantasy</a> profile ID, associated with its Discord User ID, set by using the command <b>/gbf profile set</b>. The data can be deleted by the user, using <b>/gbf profile unset</b> or by leaving all the servers where the bot is present (This automatic deletion occurs on the third day of each month).</li>
+			<li>An user's reminders, set by using the command <b>/remind add</b>. Data can be removed using <b>/remind remove</b> or once the reminders have been triggered.</li>
+			<li>An user's current roll count for <a href="https://game.granbluefantasy.jp/">Granblue Fantasy</a>, set by using the <b>/spark</b> command group. This data is deleted after 30 days without any update.</li>
+			<li>A server self-assignable roles, registered using the <b>/role</b> command group. The data is deleted if the bot leaves the server.</li>
+			<li>A server channel ID used to receive broadcasts/announcements/news from the bot, registered using the <b>/mod announcement togglechannel</b> command. The data is deleted if the bot leaves the server.</li>
+			<li>Server settings for the bot auto cleanup feature, using the <b>/mod cleanup</b> command group. The data is deleted if the bot leaves the server.</li>
+			<li>Server settings for the bot pinboard feature, using the <b>/mod pinboard</b> command group. The data is deleted if the bot leaves the server.</li>
+		</ul>
+		
+		<h2>Others</h2>
+		<p>Your user ID is issued to the developper upon sending a bug report, to contact you back if needed or link the report to a previous error message.<br>
+		User and/or server IDs are also issued, along with the command used, when a critical error occurs, for debugging purpose.
+		</p>
+	</div>
+
+	<div id="tos" class="tabcontent">
+		<p>We reserve the right to remove you the possiblity to use this instance of Rosetta if you abuse it (purposely making it crash, for example) or to use it to break <a href="https://discord.com/terms">Discord Terms of Service</a>.<br>
+		This software is licensed under the <a href="https://github.com/MizaGBF/Rosetta-Public/blob/main/license">MIT License</a>.<br>
+		For anything else, please refer to Discord Terms of Service.</p>
+	</div>
+</body>
+</html>
