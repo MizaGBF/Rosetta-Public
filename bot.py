@@ -691,10 +691,10 @@ if __name__ == "__main__":
     import argparse
     # Set Argument Parser
     parser : argparse.ArgumentParser = argparse.ArgumentParser(prog='bot.py', description='Rosetta v{}: https://github.com/MizaGBF/Rosetta-Public'.format(DiscordBot.VERSION))
-    parser.add_argument('-c', '--clean', help="desync Guild slash commands (to remove commands from a Debug mode instance, from all server).", action='store_const', const=True, default=False, metavar='')
-    parser.add_argument('-t', '--test', help="attempt to boot Rosetta and load the command cogs, in Debug mode.", action='store_const', const=True, default=False, metavar='')
     parser.add_argument('-r', '--run', help="run Rosetta.", action='store_const', const=True, default=False, metavar='')
     parser.add_argument('-d', '--debug', help="set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-t', '--test', help="attempt to boot Rosetta and load the command cogs, in Debug mode.", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-c', '--clean', help="desync Guild slash commands (to remove commands from a Debug mode instance, from all server).", action='store_const', const=True, default=False, metavar='')
     parser.add_argument('-g', '--generatehelp', nargs='?', help="generate the discordbot.html help file (the destination PATH can be set).", const=".", metavar='PATH')
     args : argparse.Namespace = parser.parse_args()
     # Check flags/variables
