@@ -95,8 +95,8 @@ options:
                         generate the discordbot.html help file (the destination PATH can be set).
 ```
   
-Except `-d`/`--debug`, all parameters are mutually exclusive.  
-Check the **Debug Mode** section for more infos on the `-d`/`--debug` parameter.   
+Except `-d`/`--debug`, all arguments are mutually exclusive.  
+Check the **Debug Mode** section for more infos on the `-d`/`--debug` argument.   
   
 ### Stop Rosetta   
   
