@@ -138,35 +138,35 @@ Standard card representation for card games
 class GameCard():
     value : int
     suit : int
-    strings : list[str]
+    _strings_ : list[str]
 
     @classmethod
     def make_card(cls : GameCard, value: int, suit: int) -> GameCard:
         value = value # value ranges from 1 (ace) to 13 (king) or 14 (ace)
         suit = suit # suit ranges from 0 to 3
-        strings = [None, None, None] # value, suit, complete
-        # set strings
+        _strings_ = [None, None, None] # value, suit, complete
+        # set _strings_
         # value
         match value:
-            case 1|14: strings[0] = "A"
-            case 11: strings[0] = "J"
-            case 12: strings[0] = "Q"
-            case 13: strings[0] = "K"
-            case _: strings[0] = str(value)
+            case 1|14: _strings_[0] = "A"
+            case 11: _strings_[0] = "J"
+            case 12: _strings_[0] = "Q"
+            case 13: _strings_[0] = "K"
+            case _: _strings_[0] = str(value)
         # suit
         match suit:
-            case 0: strings[1] = "\♦️"
-            case 1: strings[1] = "\♦️"
-            case 2: strings[1] = "\♥️"
-            case 3: strings[1] = "\♣️"
-        strings[2] = "".join(strings[:2])
-        return cls(value, suit, strings)
+            case 0: _strings_[1] = "\♦️"
+            case 1: _strings_[1] = "\♦️"
+            case 2: _strings_[1] = "\♥️"
+            case 3: _strings_[1] = "\♣️"
+        _strings_[2] = "".join(_strings_[:2])
+        return cls(value, suit, _strings_)
 
     def __repr__(self : GameCard) -> str: 
-        return self.strings[2]
+        return self._strings_[2]
 
     def __str__(self : GameCard) -> str:
-        return self.strings[2]
+        return self._strings_[2]
 
     def __int__(self : GameCard) -> int:
         return self.value
@@ -175,10 +175,10 @@ class GameCard():
          return self.value < other.value
 
     def getStringValue(self : GameCard) -> str:
-        return self.strings[0]
+        return self._strings_[0]
 
     def getStringSuit(self : GameCard) -> str:
-        return self.strings[1]
+        return self._strings_[1]
 
 """Score
 Store a score for a Guild War participant/crew
