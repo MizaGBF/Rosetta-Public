@@ -21,7 +21,6 @@ from typing import Callable, Any
 import asyncio
 import time
 import signal
-import sys
 import os
 import traceback
 
@@ -689,25 +688,23 @@ class DiscordBot(commands.InteractionBot):
 
 # entry point / main function
 if __name__ == "__main__":
-    # check given parameter
-    bot : DiscordBot
-    if '-remove' in sys.argv:
-        bot = DiscordBot(debug_mode=True)
-        bot.start_bot(no_cogs=True)
-    elif '-test' in sys.argv:
-        bot = DiscordBot(test_mode=True, debug_mode=('-debug' in sys.argv))
-        bot.test_bot()
-    elif '-run' in sys.argv:
-        bot = DiscordBot(debug_mode=('-debug' in sys.argv))
-        bot.start_bot()
+    import argparse
+    # Set Argument Parser
+    parser : argparse.ArgumentParser = argparse.ArgumentParser(prog='bot.py', description='Rosetta v{}: https://github.com/MizaGBF/Rosetta-Public'.format(DiscordBot.VERSION))
+    parser.add_argument('-c', '--clean', help="desync Guild slash commands (to remove commands from a Debug mode instance, from all server).", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-t', '--test', help="attempt to boot Rosetta and load the command cogs, in Debug mode.", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-r', '--run', help="run Rosetta.", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-d', '--debug', help="set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).", action='store_const', const=True, default=False, metavar='')
+    parser.add_argument('-g', '--generatehelp', nargs='?', help="generate the discordbot.html help file (the destination PATH can be set).", const=".", metavar='PATH')
+    args : argparse.Namespace = parser.parse_args()
+    # Check flags/variables
+    if args.clean:
+        DiscordBot(debug_mode=args.debug).start_bot(no_cogs=True)
+    elif args.test:
+        DiscordBot(debug_mode=True).test_bot()
+    elif args.generatehelp is not None:
+        print(args.generatehelp) # placeholder
+    elif args.run:
+        DiscordBot(debug_mode=args.debug).start_bot()
     else:
-        print("Rosetta v{}".format(DiscordBot.VERSION))
-        print("Usage: python bot.py [options]")
-        print("")
-        print("# Start Parameters (mutually exclusive, in order of priority):")
-        print("-remove: Used to desync Guild slash commands (to remove a Debug mode Bot commands from a server).")
-        print("-test: Run the Bot in Test mode. It'll merely test to boot and load the cogs.")
-        print("-run: Run the Bot.")
-        print("")
-        print("# Others Parameters:")
-        print("-debug: Put the Bot in Debug mode (config_test.json will be used, some operations such as saving will be impossible).")
+        parser.print_help()
