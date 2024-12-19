@@ -170,9 +170,11 @@ class General(commands.Cog):
             d : dict[str, float] = {} # variable container
             for i in range(1, len(m)): # process the variables if any
                 x = m[i].replace(" ", "").split("=") # remove spaces and split around the equal
-                if len(x) == 2: d[x[0]] = float(x[1])
-                else: raise Exception('')
-            msgs : list[str] = ["`{}` = **{}**".format(m[0], self.bot.calc.evaluate(m[0], d))] # expression and result (using Calc module)
+                if len(x) == 2:
+                    d[x[0]] = float(x[1])
+                else:
+                    raise Exception('')
+            msgs : list[str] = ["`{}` = **{}**".format(m[0], self.bot.singleton.make_calc(m[0], d))] # expression and result (using Calc module)
             if len(d) > 0: # add variables
                 msgs.append("\nwith:\n")
                 k : str

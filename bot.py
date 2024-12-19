@@ -6,7 +6,6 @@ from components.singleton import Singleton
 from components.network import Network
 from components.pinboard import Pinboard
 from components.emote import Emote
-from components.calc import Calc
 from components.channel import Channel
 from components.file import File
 from components.sql import SQL
@@ -76,7 +75,6 @@ class DiscordBot(commands.InteractionBot):
             self.net : Network = Network(self)
             self.pinboard : Pinboard = Pinboard(self)
             self.emote : Emote = Emote(self)
-            self.calc : Calc = Calc(self)
             self.channel : Channel = Channel(self)
             self.file : File = File(self)
             self.sql : SQL = SQL(self)
@@ -136,7 +134,6 @@ class DiscordBot(commands.InteractionBot):
             self.net.init()
             self.pinboard.init()
             self.emote.init()
-            self.calc.init()
             self.channel.init()
             self.file.init()
             self.sql.init()
