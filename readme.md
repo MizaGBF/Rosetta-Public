@@ -20,6 +20,15 @@
 > I recommend to install [jemalloc](https://github.com/jemalloc/jemalloc) if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
 > Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
   
+### Third-party packages
+Here's the list of third-party python modules installed from [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt).  
+- **[Disnake](https://github.com/DisnakeDev/disnake)**, a Discord API wrapper.  
+- **[Pydrive2](https://github.com/iterative/PyDrive2)**, a Google Drive API wrapper.  
+- **[psutil](https://github.com/giampaolo/psutil)**, a library to retrieve system and process informations.  
+- **[Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)**, a library for HTML parsing.  
+- **[Pillow](https://github.com/python-pillow/Pillow)**, a PIL fork for image processing.  
+- **[deep-translator](https://github.com/nidhaloff/deep-translator)**, a library to access many online translator tools.  
+  
 ## General Informations  
 * Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
 * This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
@@ -115,7 +124,6 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "debug_channel" : BOT_DEBUG_CHANNEL_ID,
         "image_upload" : BOT_IMAGE_UPLOAD_CHANNEL_ID,
         "debug_server" : BOT_SERVER_ID,
-        "owner" : YOUR_USER_ID_ID,
         "you_server" : YOUR_CREW_OR_THE_BOT_SERVER_ID,
         "you_announcement" : YOUR_CREW_ANNOUNCEMENT_CHANNEl_ID,
         "you_meat" : YOUR_CREW_MEAT_CHANNEl_ID,
@@ -224,12 +232,13 @@ You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.
 > On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
   
 ## Emojis  
-The emotes found in `assets/emojis` folder will be automatically uploaded on boot.  
-It can take some time.
+The emotes found in `assets/emojis` folder will be automatically loaded and uploaded on boot to your bot **Emojis** list.  
+It can take some time, so it's normal if emotes don't display right away at the start.  
   
 > [!IMPORTANT]
-> You're limited to 2000 emojis par application.  
-> You can manage them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> You can add more to the folder if you wish to use them in your own commands, but you're limited to **2000** emojis par application.  
+> You can find them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> If you remove an emoji from `assets/emojis`, it'll automatically be deleted from the **Emojis** list on the next boot.  
 
 To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
 For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
@@ -254,13 +263,15 @@ Same principle, but shorter:
         "drive" : "SAVE_FOLDER_ID",
         "upload" : "",
         "files" : "FILE_FOLDER_ID"
-    },
-    "debug" : null
+    }
 }
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
 For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.  
+  
+> [!IMPORTANT]
+> In Debug mode, the bot is unable to write to your Google Drive.  
+> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
   
 ## Updating  
   
@@ -290,7 +301,7 @@ Here's a quick overview of the sub command groups:
 * `/owner maintenance`: Commands to manually set or clear a GBF maintenance date.  
 * `/owner stream`: Commands to manually set a GBF upcoming stream date and infos.  
 * `/owner schedule`: Commands to manually edit the GBF schedule or to force an update.  
-* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this.  
+* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this and the commands are self-explanatory.  
 * `/owner db`: Commands to manually set a Dread Barrage event.  
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
@@ -303,3 +314,53 @@ If you want a GW.sql file for the ranking commands, you can go grab the most rec
   
 The `cogs/youcrew.py` Command Cog contains commands for my own crew. If you don't need them, you can simply delete the file.  
   
+### Develop your own cog  
+  
+The following is a template to make your own command cog:  
+```python
+import disnake
+from disnake.ext import commands
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from ..bot import DiscordBot
+
+class Example(commands.Cog):
+    """The cog description"""
+    COLOR = 0xffffff
+
+    def __init__(self, bot : 'DiscordBot') -> None:
+        self.bot = bot
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def helloworld(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True) # good practice to always defer first. Ephemeral flag is if you want your command to only show to the user
+        #
+        # Do stuff...
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the hello world command!", description="Hello world!", color=self.COLOR)
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def group(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Command Group"""
+        pass
+
+    @group.sub_command()
+    async def subcommand(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True)
+        #
+        #
+        #
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the sub command!", description="You called me using `/group subcommand`!", color=self.COLOR)
+```  
+It's important to keep the same syntax, if you want to use `tools/generate_help.py`.  
+If you don't, only the cog definition is important (`class Example(commands.Cog):`).  
+The Cog loader (`cogs/__init__.py`) looks for this part of the file to decide what to load as a cog.  
+This also means you shouldn't put more than one cog per python file.  
+Adding other general purpose classes is fine, however.  
+  
+> [!TIP]  
+> Check existing cogs if you need examples of more advanced behaviors.  

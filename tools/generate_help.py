@@ -139,7 +139,7 @@ def generate_html(command_list): # main function to generate the html
 	<div id="Guides" class="tabcontent">
 		<h1>Guides</h1>
 		<h2>Good practices and recommendations</h2>
-		<p>1) Make a channel dedicated to the bot and use the command <b>/mod cleanup toggle</b>.<br>
+		<p>1) Make a channel dedicated to the bot and use the commands <b>/mod cleanup toggle</b> and <b>/mod cleanup channel</b> in that channel.<br>
 		<br>
 		2) Remove the <b>"send message"</b> permission in the channel where you don't want it to be usable. (<b>Note:</b> Commands will still appear in said channel unless disabled in your Server Integration Permissions.)<br>
 		<br>
@@ -151,14 +151,14 @@ def generate_html(command_list): # main function to generate the html
 		Keep in mind <b>anyone with the "manage message" permission is considered a moderator by the bot</b>. You can restrict those commands via the Server Integration Permissions if needed.</p>
 		
 		<h2>Notifications</h2>
-		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement toggle_channel</b>.<br>
+		<p>Select a channel where you want the bot to post notifications and use <b>/mod announcement channel</b>.<br>
 		You can see your settings with <b>/mod announcement see</b>.<br>
-		Do note, if the channel is an Announcement Channel and you enabled the Auto Publish setting, it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>,.<br>
+		Do note, if the channel is a News Channel and you enabled the Auto Publish setting (with <b>/mod announcement publish</b>), it will auto publish posts, up to the <b>hourly 10 posts publish limit</b>.<br>
 		</p>
 		
 		<h2>Pinboard</h2>
 		<p>You can setup a pinboard channel. Here are some steps to guide you:<br>
-		1) First, make or select the text channel where the pinned messages will appear. Make sure the bot has access to it and do <b>/mod pinboard output_here</b>.<br>
+		1) First, make or select the text channel where the pinned messages will appear. Make sure the bot has access to it and do <b>/mod pinboard output</b>.<br>
 		2) Use <b>/mod pinboard track</b> in all the channels you want the bot to track. Make sure the bot can access those channels. Forum Posts are also supported.<br>
 		3) Use <b>/mod pinboard settings</b> to see your settings or change them. Emoji lets you change the emoji used to trigger the pin, Threshold lets you change how many emojis are required, Mod Bypass lets Moderators bypass the threshold.<br>
 		<br>
@@ -239,7 +239,6 @@ def generate_html(command_list): # main function to generate the html
 		
 		<h2>Data Collected Automatically</h2>
 		<p>When reacting to a message, this message is processed by the bot, for the purpose of the Pinboard feature. The message itself isn't saved or stored for further use, nor used for any other purpose, and no data is collected from the message itself.</p>
-		<p>Same thing applies if you use the <b>vxtwitter</b> feature to convert your twitter links: Message ares read and processed upon received by the bot but nothing is saved or stored for further use.</p>
 		
 		<h2>Data Collected by Commands</h2>
 		<p>The following data is stored: <br>
