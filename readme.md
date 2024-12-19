@@ -7,6 +7,7 @@
 > If you're looking for an invite for my instance, it's **not open to public**.  
 > Use this repo if you have the how-to to host your own instance.  
 > If you're somehow close to me in some way however, feel free to ask and I'll see if it's possible.  
+> You can, however, use it in your [Direct Messages](https://discord.com/channels/@me/1041344151519772755).  
   
 ## Requirements  
 * **System**: The bot itself requires a few hundred MB of RAM, 100 MB of disk space and a stable and fast internet connection, and a CPU with good single treaded performance. Expect the RAM and CPU usage to ramp up as you invite the bot in more servers.  
@@ -19,6 +20,15 @@
 > [!TIP]  
 > I recommend to install [jemalloc](https://github.com/jemalloc/jemalloc) if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
 > Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
+  
+### Third-party packages
+Here's the list of third-party python modules installed from [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt).  
+- **[Disnake](https://github.com/DisnakeDev/disnake)**, a Discord API wrapper.  
+- **[Pydrive2](https://github.com/iterative/PyDrive2)**, a Google Drive API wrapper.  
+- **[psutil](https://github.com/giampaolo/psutil)**, a library to retrieve system and process informations.  
+- **[Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)**, a library for HTML parsing.  
+- **[Pillow](https://github.com/python-pillow/Pillow)**, a PIL fork for image processing.  
+- **[deep-translator](https://github.com/nidhaloff/deep-translator)**, a library to access many online translator tools.  
   
 ## General Informations  
 * Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
@@ -41,20 +51,12 @@ The `components` folder contains the bot components, which are piece of codes ne
 The `views` folder contains the bot interactions to make interfaces and such for some commands.  
 
 The `tools` folder contains a few standalone pieces of code which might help you:  
-* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html.  
-> [!WARNING]  
-> If you wrote your own Cogs, I recommend following how I format my syntax or this tool might not be able to detect your commands properly.
-  
-> [!WARNING]  
-> The tool attempts to write the HTML file to my github page [repo](https://github.com/MizaGBF/MizaGBF.github.io) before doing so in the current directory.  
-> If you want to change this behavior, look around line [529](https://github.com/MizaGBF/Rosetta-Public/blob/main/tools/generate_help.py#L529).
-  
 * `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. You can drag and drop a file on them but I suggest using them in a terminal/command prompt. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
   
 > [!CAUTION]  
 > It's a good practice to **always** make a copy of your save data before attempting any manipulation on it.
   
-* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish.  
+* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish. Add a [Gifsicle](https://github.com/kohler/gifsicle) executable in the same folder for a better result.  
   
 ## Usage  
 ### Method 1:  
@@ -70,15 +72,24 @@ Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/
 > This method is mostly used for testing, although the end result should be analog to method 1.
   
 Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requirements.txt` in the bot folder, to install the third-party modules. You only need to do it once or if it gets updated.  
-Then, you can run the bot with `python -O bot.py -run` to start the bot (`-O` is optional).  
+Then, you can run the bot with `python -O bot.py -r` to start the bot (`-O` is optional).  
   
-There are three ways to start the bot:  
-`-run`: Start the bot.  
-`-test`: Start the bot but stop before connecting to Discord. Used to test if bot can start properly.  
-`-remove`: Start the bot without loading any commands. Mainly used to desync and remove a test bot commands from a server.  
+Here are the possible usages taken from the **help** (obtained from `python bot.py -h`):
+```
+usage: bot.py [-h] [-r] [-d] [-t] [-c] [-g [PATH]]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --run             run Rosetta.
+  -d, --debug           set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).
+  -t, --test            attempt to boot Rosetta and load the command cogs, in Debug mode.
+  -c, --clean           desync Guild slash commands (to remove commands from a Debug mode instance, from all server).
+  -g [PATH], --generatehelp [PATH]
+                        generate the discordbot.html help file (the destination PATH can be set).
+```
   
-You can also add the following to change its behavior:  
-`-debug`: Start the bot in debug mode. `config_test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
+Except `-d`/`--debug`, all arguments are mutually exclusive.  
+Check the **Debug Mode** section for more infos on the `-d`/`--debug` argument.   
   
 ### Stop Rosetta   
   
@@ -115,7 +126,6 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "debug_channel" : BOT_DEBUG_CHANNEL_ID,
         "image_upload" : BOT_IMAGE_UPLOAD_CHANNEL_ID,
         "debug_server" : BOT_SERVER_ID,
-        "owner" : YOUR_USER_ID_ID,
         "you_server" : YOUR_CREW_OR_THE_BOT_SERVER_ID,
         "you_announcement" : YOUR_CREW_ANNOUNCEMENT_CHANNEl_ID,
         "you_meat" : YOUR_CREW_MEAT_CHANNEl_ID,
@@ -224,12 +234,13 @@ You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.
 > On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
   
 ## Emojis  
-The emotes found in `assets/emojis` folder will be automatically uploaded on boot.  
-It can take some time.
+The emotes found in `assets/emojis` folder will be automatically loaded and uploaded on boot to your bot **Emojis** list.  
+It can take some time, so it's normal if emotes don't display right away at the start.  
   
 > [!IMPORTANT]
-> You're limited to 2000 emojis par application.  
-> You can manage them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> You can add more to the folder if you wish to use them in your own commands, but you're limited to **2000** emojis par application.  
+> You can find them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> If you remove an emoji from `assets/emojis`, it'll automatically be deleted from the **Emojis** list on the next boot.  
 
 To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
 For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
@@ -242,10 +253,15 @@ If you decide to add more emojis for custom commands, make sure they don't have 
 You are free to remove or change the crews if you want, but don't remove it entirely.  
   
 ## Debug Mode  
+> [!IMPORTANT]
+> In Debug mode, the bot is unable to write to your Google Drive.  
+> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
+> This mode is intended for testing and debugging, on a second, separate, Bot instance.  
+  
 > [!TIP]  
 > You can skip this section if you don't plan to use it.
    
-Using the `-debug` argument requires to set up `config_test.json`.  
+Using the `-d`/`--debug` argument requires to set up `config_test.json`.  
 Same principle, but shorter:  
 ```json
 {
@@ -254,13 +270,11 @@ Same principle, but shorter:
         "drive" : "SAVE_FOLDER_ID",
         "upload" : "",
         "files" : "FILE_FOLDER_ID"
-    },
-    "debug" : null
+    }
 }
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
-For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.  
+For the folders, either reuse the existing ones (recommended if you wish to load an existing save file) or make new ones if you want to use separate data.  
   
 ## Updating  
   
@@ -290,7 +304,7 @@ Here's a quick overview of the sub command groups:
 * `/owner maintenance`: Commands to manually set or clear a GBF maintenance date.  
 * `/owner stream`: Commands to manually set a GBF upcoming stream date and infos.  
 * `/owner schedule`: Commands to manually edit the GBF schedule or to force an update.  
-* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this.  
+* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this and the commands are self-explanatory.  
 * `/owner db`: Commands to manually set a Dread Barrage event.  
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
@@ -303,3 +317,48 @@ If you want a GW.sql file for the ranking commands, you can go grab the most rec
   
 The `cogs/youcrew.py` Command Cog contains commands for my own crew. If you don't need them, you can simply delete the file.  
   
+### Develop your own cog  
+  
+The following is a template to make your own command cog:  
+```python
+import disnake
+from disnake.ext import commands
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: from ..bot import DiscordBot
+
+class Example(commands.Cog):
+    """The cog description"""
+    COLOR = 0xffffff
+
+    def __init__(self, bot : 'DiscordBot') -> None:
+        self.bot = bot
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def helloworld(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True) # good practice to always defer first. Ephemeral flag is if you want your command to only show to the user
+        #
+        # Do stuff...
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the hello world command!", description="Hello world!", color=self.COLOR)
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def group(self, inter: disnake.GuildCommandInteraction) -> None:
+        """Command Group"""
+        pass
+
+    @group.sub_command()
+    async def subcommand(self, inter: disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True)
+        #
+        #
+        #
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the sub command!", description="You called me using `/group subcommand`!", color=self.COLOR)
+```  
+  
+> [!TIP]  
+> Check existing cogs if you need examples of more advanced behaviors.  
