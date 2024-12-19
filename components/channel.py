@@ -192,7 +192,8 @@ class Channel():
             return False
 
     """interaction_must_be_cleaned()
-    Take an interaction (or similar) and determine if cleanup must be invoked based on server settings
+    Take an interaction (or similar) and determine if cleanup must be invoked based on server settings.
+    Will always return False when invoked in DMs.
     
     Parameters
     ----------
@@ -203,7 +204,7 @@ class Channel():
     bool: True if if must be cleaned up, False if not
     """
     def interaction_must_be_cleaned(self : Channel, inter : disnake.Interaction|disnake.Message|commands.Context) -> bool:
-        if inter is None:
+        if inter is None or inter.guild is None:
             return False
         settings : CleanupSetting = self.get_cleanup_settings(str(inter.guild.id))
         if settings[0] and inter.channel.id not in settings[1]:
