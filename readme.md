@@ -79,15 +79,24 @@ Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/
 > This method is mostly used for testing, although the end result should be analog to method 1.
   
 Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requirements.txt` in the bot folder, to install the third-party modules. You only need to do it once or if it gets updated.  
-Then, you can run the bot with `python -O bot.py -run` to start the bot (`-O` is optional).  
+Then, you can run the bot with `python -O bot.py -r` to start the bot (`-O` is optional).  
   
-There are three ways to start the bot:  
-`-run`: Start the bot.  
-`-test`: Start the bot but stop before connecting to Discord. Used to test if bot can start properly.  
-`-remove`: Start the bot without loading any commands. Mainly used to desync and remove a test bot commands from a server.  
+Here are the possible usages taken from the **help** (obtained from `python bot.py -h`):
+```
+usage: bot.py [-h] [-r] [-d] [-t] [-c] [-g [PATH]]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --run             run Rosetta.
+  -d, --debug           set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).
+  -t, --test            attempt to boot Rosetta and load the command cogs, in Debug mode.
+  -c, --clean           desync Guild slash commands (to remove commands from a Debug mode instance, from all server).
+  -g [PATH], --generatehelp [PATH]
+                        generate the discordbot.html help file (the destination PATH can be set).
+```
   
-You can also add the following to change its behavior:  
-`-debug`: Start the bot in debug mode. `config_test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
+Except `-h`/`--debug`, all parameters are mutually exclusive.  
+Check the **Debug Mode** section for more infos on the `-h`/`--debug` parameter.   
   
 ### Stop Rosetta   
   
@@ -251,6 +260,11 @@ If you decide to add more emojis for custom commands, make sure they don't have 
 You are free to remove or change the crews if you want, but don't remove it entirely.  
   
 ## Debug Mode  
+> [!IMPORTANT]
+> In Debug mode, the bot is unable to write to your Google Drive.  
+> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
+> This mode is intended for testing and debugging, on a second, separate, Bot instance.  
+  
 > [!TIP]  
 > You can skip this section if you don't plan to use it.
    
@@ -267,11 +281,7 @@ Same principle, but shorter:
 }
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
-For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-  
-> [!IMPORTANT]
-> In Debug mode, the bot is unable to write to your Google Drive.  
-> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
+For the folders, either reuse the existing ones (recommended if you wish to load an existing save file) or make new ones if you want to use separate data.  
   
 ## Updating  
   
