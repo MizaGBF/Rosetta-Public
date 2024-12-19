@@ -1234,6 +1234,7 @@ class GranblueFantasy(commands.Cog):
             ("Sunlight_Stone", "WaitInterval", "Arcarum Shop", {0:"Sunlight Shard Sunlight Stone", 1:"Arcarum Sunlight Stone"}, None),
             ("Sephira_Evolite", "WaitInterval", None, {0:"Arcarum Sephira Evolite"}, None)
         ]
+        current_time : datetime = self.bot.util.JST()
         result : dict[str, tuple[datetime, str]] = {}
         # loop over target
         t : tuple[str, str, str|None, dict[int, str], str|None]
@@ -1278,7 +1279,8 @@ class GranblueFantasy(commands.Cog):
                                 for j in range(1, len(date)): # iterate over extra groups
                                     if date[j] != "0": # Note: we're expected to find numbers only
                                         duration = max(duration, int(date[j]))
-                                d += timedelta(days=duration) # add to date
+                                if current_time > d + timedelta(days=duration):
+                                    d += timedelta(days=duration) # add to date
                             # check if our date is the highest, i.e. closest to us
                             if highest is None or d > highest:
                                 highest = d
