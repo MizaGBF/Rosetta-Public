@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     # Type Aliases
     import types
     CardList : types.GenericAlias = list[GameCard]
-    Hand : types.GenericAlias = tuple[int, CardList]
+    Hand : types.GenericAlias = list[int|CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ class Blackjack(BaseView):
         # shuffle the deck
         random.shuffle(self.deck)
         # make hands and give one card to each player
-        self.hands : list[Hand] = [(self.PLAYING, [self.deck.pop()]) for i in range(len(self.players))] # player state, cards
+        self.hands : list[Hand] = [[self.PLAYING, [self.deck.pop()]] for i in range(len(self.players))] # player state, cards
         # Start
         # If the player to start is the bot, call play ai
         if self.players[self.state].id == self.bot.user.id:

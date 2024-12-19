@@ -106,12 +106,12 @@ class DreadBarrage(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.max_concurrency(8, commands.BucketType.default)
-    async def db(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def db(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @db.sub_command()
-    async def time(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def time(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the Dread Barrage schedule"""
         await inter.response.defer()
         if self.bot.data.save['dread']['state'] is True:
@@ -154,7 +154,7 @@ class DreadBarrage(commands.Cog):
             await self.bot.channel.clean(inter, 40)
 
     @db.sub_command()
-    async def token(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
+    async def token(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
         """Convert Dread Barrage token values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -181,7 +181,7 @@ class DreadBarrage(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
     @db.sub_command()
-    async def box(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
+    async def box(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
         """Convert Dread Barrage box values"""
         try:
             await inter.response.defer(ephemeral=True)

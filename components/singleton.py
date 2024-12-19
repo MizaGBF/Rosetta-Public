@@ -17,6 +17,7 @@ import math
 class Singleton():
     def __init__(self : Singleton, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
+        self.gamecard_cache : dict[int, GameCard] = {}
 
     def init(self : Singleton) -> None:
         pass

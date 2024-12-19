@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     # Type Aliases
     import types
     CardList : types.GenericAlias = list[GameCard]
-    Hand : types.GenericAlias = tuple[int, CardList]
+    Hand : types.GenericAlias = list[int|CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ class Poker(BaseView):
         # get dealer minimum hand value
         self.min_value : int = Poker.calculateMinValue(self.dealer) # dealer hand value
         # set player hands
-        self.hands : Hand = [(0, [self.deck.pop(), self.deck.pop()]) for i in range(len(self.players))] # state, hand (currently 2 cards)
+        self.hands : list[Hand] = [[0, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
         # set sub view to select cards
         self.sub : PokerSub = PokerSub(self.bot, self)
         # set sub embeds

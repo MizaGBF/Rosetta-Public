@@ -37,6 +37,9 @@ class Moderation(commands.Cog):
     """
     async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
         await inter.response.defer(ephemeral=True)
+        if inter.guild is None:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
+            return
         guild : disnake.Guild = inter.guild
         icon : str|None
         try: icon = guild.icon.url

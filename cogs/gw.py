@@ -263,12 +263,12 @@ class GuildWar(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(2, 20, commands.BucketType.user)
     @commands.max_concurrency(16, commands.BucketType.default)
-    async def gw(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def gw(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @gw.sub_command()
-    async def time(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def time(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the GW schedule"""
         await inter.response.defer()
         if self.bot.data.save['gw']['state'] is True: # read gw data and make a schedule
@@ -319,7 +319,7 @@ class GuildWar(commands.Cog):
             await self.bot.channel.clean(inter, 40)
 
     @gw.sub_command(name="ranking")
-    async def gwranking(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def gwranking(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Retrieve the current GW ranking"""
         try:
             await inter.response.defer()
@@ -355,7 +355,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An unexpected error occured", color=self.COLOR))
 
     @gw.sub_command()
-    async def estimation(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def estimation(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Estimatation of the GW ranking cutoffs"""
         await inter.response.defer()
         current_time : datetime =  self.bot.util.JST()
@@ -738,7 +738,7 @@ class GuildWar(commands.Cog):
     Returns
     bool: True if success, False otherwise
     """
-    async def _crew_sub(self : GuildWar, inter : disnake.GuildCommandInteraction, crew_id : str, mode : int, view : BaseView|None = None) -> bool:
+    async def _crew_sub(self : GuildWar, inter : disnake.ApplicationCommandInteraction, crew_id : str, mode : int, view : BaseView|None = None) -> bool:
         # retrieve crew data
         crew : CrewData = await self.getCrewData(crew_id, 0)
         if 'error' in crew: # print the error if any
@@ -774,7 +774,7 @@ class GuildWar(commands.Cog):
         return True
 
     @gw.sub_command(name="crew")
-    async def _crew(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, crew_id : str = commands.Param(description="Crew ID"), mode : int = commands.Param(description="Mode (0=Auto, 1=Rank, 2=Honor)", ge=0, le=2, default=0)) -> None:
+    async def _crew(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, crew_id : str = commands.Param(description="Crew ID"), mode : int = commands.Param(description="Mode (0=Auto, 1=Rank, 2=Honor)", ge=0, le=2, default=0)) -> None:
         """Get a crew profile"""
         await inter.response.defer()
         try:
@@ -805,7 +805,7 @@ class GuildWar(commands.Cog):
             return await self.bot.net.requestGBF("guild_other/member_list/{}/{}".format(page, cid), expect_JSON=True)
 
     @gw.sub_command()
-    async def lead(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, id_crew_1 : str = commands.Param(description="First crew ID"), id_crew_2 : str = commands.Param(description="Second crew ID")) -> None:
+    async def lead(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, id_crew_1 : str = commands.Param(description="First crew ID"), id_crew_2 : str = commands.Param(description="Second crew ID")) -> None:
         """Search two crew current scores and compare them"""
         await inter.response.defer()
         day : int|None = self.bot.ranking.getCurrentGWDayID()
@@ -929,11 +929,11 @@ class GuildWar(commands.Cog):
         return self.bot.data.save['gw']['gbfgdata']
 
     @gw.sub_command_group()
-    async def utility(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def utility(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @utility.sub_command()
-    async def box(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
+    async def box(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, box : int = commands.Param(description="Number of box to clear", ge=1, le=1000), box_done : int = commands.Param(description="Your current box progress, default 0 (Will be ignored if equal or higher than target)", ge=0, default=0), with_token : str = commands.Param(description="Your current token amount (support T, B, M and K)", default="0")) -> None:
         """Convert Guild War box values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -967,7 +967,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description=str(e), color=self.COLOR))
 
     @utility.sub_command()
-    async def token(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, token_target : str = commands.Param(description="Number of tokens you want (support T, B, M and K)"), final_rally : int = commands.Param(description="1 to include final rally (default), 0 to disable", default=1, le=1, ge=0)) -> None:
+    async def token(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, token_target : str = commands.Param(description="Number of tokens you want (support T, B, M and K)"), final_rally : int = commands.Param(description="1 to include final rally (default), 0 to disable", default=1, le=1, ge=0)) -> None:
         """Convert Guild War token values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1009,7 +1009,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid token number", color=self.COLOR))
 
     @utility.sub_command()
-    async def meat(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
+    async def meat(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
         """Convert Guild War meat or clump values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1036,7 +1036,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid meat number", color=self.COLOR))
 
     @utility.sub_command()
-    async def honor(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
+    async def honor(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, value : str = commands.Param(description="Value to convert (support T, B, M and K)")) -> None:
         """Convert Guild War honor values"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1062,7 +1062,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid honor number", color=self.COLOR))
 
     @utility.sub_command()
-    async def honorplanning(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, target : str = commands.Param(description="Number of honors (support T, B, M and K)")) -> None:
+    async def honorplanning(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, target : str = commands.Param(description="Number of honors (support T, B, M and K)")) -> None:
         """Calculate how many NM100 to 250 you need for your targeted honor"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1183,7 +1183,7 @@ class GuildWar(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="{} Speed Comparator".format(self.bot.emote.get('gw')), description="**Per hour**" + (', with {} seconds of wasted time between fights\n'.format(loading) if loading > 0 else '\n') + "".join(msgs), color=self.COLOR, footer='' if not error else 'Errors have been ignored'))
 
     @utility.sub_command()
-    async def speed(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, loading : int = commands.Param(description="Wasted time between fights, in second", default=0)) -> None:
+    async def speed(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, loading : int = commands.Param(description="Wasted time between fights, in second", default=0)) -> None:
         """Compare multiple GW Nightmare fights based on your speed"""
 
         # Note: We're limited to 5 inputs
@@ -1233,11 +1233,11 @@ class GuildWar(commands.Cog):
         )
 
     @gw.sub_command_group()
-    async def nm(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def nm(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @nm.sub_command()
-    async def hp90_95(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def hp90_95(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Give a fight equivalent of NM95 and NM90"""
         await inter.response.defer()
         # fight data (Name, HP, URL)
@@ -1261,7 +1261,7 @@ class GuildWar(commands.Cog):
         await self.bot.channel.clean(inter, 90)
 
     @nm.sub_command()
-    async def hp100(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def hp100(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Give a fight equivalent of NM100"""
         await inter.response.defer()
         # fight data (Name, HP, URL)
@@ -1285,17 +1285,17 @@ class GuildWar(commands.Cog):
         await self.bot.channel.clean(inter, 90)
 
     @gw.sub_command_group()
-    async def find(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def find(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @find.sub_command(name="crew")
-    async def crewfind(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, terms : str = commands.Param(description="What to search for"), search_type : int = commands.Param(description="0 = name (default). 1 = exact name. 2 = ID. 3 = ranking.", default=0, ge=0, le=3), mode_past : int = commands.Param(description="1 to search the previous GW. 0  for the current/last (default).", default=0, ge=0, le=1)) -> None:
+    async def crewfind(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, terms : str = commands.Param(description="What to search for"), search_type : int = commands.Param(description="0 = name (default). 1 = exact name. 2 = ID. 3 = ranking.", default=0, ge=0, le=3), mode_past : int = commands.Param(description="1 to search the previous GW. 0  for the current/last (default).", default=0, ge=0, le=1)) -> None:
         """Search a crew or player GW score in the bot data"""
         await inter.response.defer(ephemeral=True)
         await self.findranking(inter, True, terms, search_type, mode_past)
 
     @find.sub_command(name="player")
-    async def playerfind(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, terms : str = commands.Param(description="What to search for"), search_type : int = commands.Param(description="0 = name (default). 1 = exact name. 2 = ID. 3 = ranking.", default=0, ge=0, le=3), mode_past : int = commands.Param(description="1 to search the previous GW. 0  for the current/last (default).", default=0, ge=0, le=1)) -> None:
+    async def playerfind(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, terms : str = commands.Param(description="What to search for"), search_type : int = commands.Param(description="0 = name (default). 1 = exact name. 2 = ID. 3 = ranking.", default=0, ge=0, le=3), mode_past : int = commands.Param(description="1 to search the previous GW. 0  for the current/last (default).", default=0, ge=0, le=1)) -> None:
         """Search a crew or player GW score in the bot data"""
         await inter.response.defer(ephemeral=True)
         await self.findranking(inter, False, terms, search_type, mode_past)
@@ -1313,7 +1313,7 @@ class GuildWar(commands.Cog):
     search_type: 0 = name, 1 = exact name, 2 = ID, 3 = ranking
     mode_past: to enable the past gw search
     """
-    async def findranking(self : GuildWar, inter : disnake.GuildCommandInteraction, stype : bool, terms : str, search_type : int, mode_past : int) -> None:
+    async def findranking(self : GuildWar, inter : disnake.ApplicationCommandInteraction, stype : bool, terms : str, search_type : int, mode_past : int) -> None:
         # set the search strings based on the search type
         txt : str
         if stype:
@@ -1443,12 +1443,12 @@ class GuildWar(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(6, 60, commands.BucketType.guild)
     @commands.max_concurrency(10, commands.BucketType.default)
-    async def gbfg(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def gbfg(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @gbfg.sub_command()
-    async def recruit(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def recruit(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post all recruiting /gbfg/ crews"""
         await inter.response.defer()
         if not await self.bot.net.gbf_available():
@@ -1630,7 +1630,7 @@ class GuildWar(commands.Cog):
             return [], []
 
     @gbfg.sub_command()
-    async def players(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def players(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the /gbfg/ Top 30 (players or captains) per contribution"""
         await inter.response.defer()
         gbfgdata : GBFGData|None = await self.updateGBFGData() # get up to date data
@@ -1758,7 +1758,7 @@ class GuildWar(commands.Cog):
             return [], []
 
     @gbfg.sub_command(name="ranking")
-    async def gbfgranking(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def gbfgranking(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Sort and post all /gbfg/ crew per contribution or speed"""
         await inter.response.defer()
         embeds : list[disnake.Embed]

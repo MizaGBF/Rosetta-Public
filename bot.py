@@ -316,8 +316,8 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if it does, False if not
     """
-    def isMod(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
-        return inter.author.guild_permissions.manage_messages or inter.author.id == self.owner.id
+    def isMod(self : DiscordBot, inter : disnake.GuildCommandInteraction) -> bool:
+        return inter.guild_permissions.manage_messages or inter.author.id == self.owner.id
 
     """isOwner()
     Check if the interaction author is the bot owner
@@ -562,11 +562,14 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if the command can be processed, False if not
     """
-    async def global_check(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
-        if not self.running: return False # do nothing if the bot is stopped/stopping
-        if inter.guild is None or isinstance(inter.channel, disnake.PartialMessageable): # if none or channel is PartialMessageable, the command has been sent via a direct message
-            return False # so we ignore
+    async def global_check(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction) -> bool:
         try:
+            if not self.running:
+                return False # do nothing if the bot is stopped/stopping
+            if inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable): # if No guild and channel is PartialMessageable, the command has been sent via a direct message
+                return not self.ban.check(inter.author.id, self.ban.USE_BOT) # check if the author is banned
+            elif inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable):
+                return False # other cases
             gid : str = str(inter.guild.id)
             if self.ban.check(inter.author.id, self.ban.USE_BOT): # check if the author is banned
                 return False
@@ -588,7 +591,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def application_error_handling(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def application_error_handling(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
         try:
             msg : str = str(error)
             embed : disnake.Embed
@@ -613,7 +616,7 @@ class DiscordBot(commands.InteractionBot):
                 msg = self.pexc(error).replace('*', '\*').split('The above exception was the direct cause of the following exception', 1)[0]
                 if len(msg) > 4000:
                     msg = msg[:4000] + "...\n*Too long, check rosetta.log for details*"
-                await self.send('debug', embed=self.embed(title="⚠ Error caused by {}".format(inter.author), description=msg, thumbnail=inter.author.display_avatar, fields=[{"name":"Options", "value":'`{}`'.format(inter.options)}, {"name":"Server", "value":inter.author.guild.name}], footer='{}'.format(inter.author.id), timestamp=self.util.UTC()))
+                await self.send('debug', embed=self.embed(title="⚠ Error caused by {}".format(inter.author), description=msg, thumbnail=inter.author.display_avatar, fields=[{"name":"Options", "value":'`{}`'.format(inter.options)}, {"name":"Server", "value":inter.guild.name if inter.guild is not None else "Direct Message"}], footer='{}'.format(inter.author.id), timestamp=self.util.UTC()))
                 embed=self.embed(title="Command Error", description="An unexpected error occured. My owner has been notified.\nUse {} if you have additional informations to provide".format(self.util.command2mention('bug_report')), timestamp=self.util.UTC())
             # attempt to send embed to command author
             try:
@@ -642,7 +645,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_slash_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_slash_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_user_command_error()
@@ -653,7 +656,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_user_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_user_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_message_command_error()
@@ -664,7 +667,7 @@ class DiscordBot(commands.InteractionBot):
     inter: Command interaction
     error: Exception
     """
-    async def on_message_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction, error : Exception) -> None:
+    async def on_message_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
         await self.application_error_handling(inter, error)
 
     """on_raw_reaction_add()

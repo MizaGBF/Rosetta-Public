@@ -510,7 +510,7 @@ class GranblueFantasy(commands.Cog):
     --------
     str: Resulting string. Intended to be appended to an embed description.
     """
-    async def getGBFInfoTimers(self : GranblueFantasy, inter : disnake.GuildCommandInteraction, current_time : datetime) -> str:
+    async def getGBFInfoTimers(self : GranblueFantasy, inter : disnake.ApplicationCommandInteraction, current_time : datetime) -> str:
         output : list[str] = [] # will container strings before .join()
         # in this function, we simply call various info functions from various cog and component and compile the result in one big string
         try:
@@ -577,12 +577,12 @@ class GranblueFantasy(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(2, 10, commands.BucketType.user)
     @commands.max_concurrency(16, commands.BucketType.default)
-    async def gbf(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def gbf(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @gbf.sub_command()
-    async def wiki(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
+    async def wiki(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, terms : str = commands.Param(description="Search expression")) -> None:
         """Search the GBF wiki"""
         await inter.response.defer()
         # call the search API
@@ -605,7 +605,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title=title, url="https://gbf.wiki/index.php?title=Special:Search&search={}".format(quote(terms)), description="".join(descs), thumbnail="https://gbf.wiki/images/1/18/Vyrnball.png", color=self.COLOR))
 
     @gbf.sub_command()
-    async def info(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def info(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post various Granblue Fantasy informations"""
         await inter.response.defer()
         current_time : datetime = self.bot.util.JST(delay=False)
@@ -629,7 +629,7 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(description), color=self.COLOR))
 
     @gbf.sub_command()
-    async def maintenance(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def maintenance(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post GBF maintenance status"""
         try:
             await inter.response.defer()
@@ -642,7 +642,7 @@ class GranblueFantasy(commands.Cog):
             self.bot.logger.pushError("[GBF] In 'gbf maintenance' command:", e)
 
     @gbf.sub_command()
-    async def stream(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def stream(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the stream text"""
         await inter.response.defer(ephemeral=True)
         if self.bot.data.save['stream'] is None:
@@ -659,7 +659,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title=self.bot.data.save['stream']['title'], description=msg + self.bot.data.save['stream']['content'], timestamp=self.bot.util.UTC(), color=self.COLOR))
 
     @gbf.sub_command()
-    async def schedule(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def schedule(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the GBF schedule"""
         await inter.response.defer()
         current_time : datetime = self.bot.util.UTC()
@@ -729,7 +729,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="🗓 Event Schedule {} {}".format(self.bot.emote.get('clock'), self.bot.util.time(style=['d','t'])), url="https://gbf.wiki/", color=self.COLOR, description=''.join(msgs), footer="source: https://gbf.wiki/"))
 
     @gbf.sub_command()
-    async def gacha(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def gacha(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the current gacha informations"""
         try:
             await inter.response.defer()
@@ -743,7 +743,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"Granblue Fantasy", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="Unavailable", color=self.COLOR))
 
     @gbf.sub_command_group()
-    async def profile(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def profile(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     """searchprofile()
@@ -764,7 +764,7 @@ class GranblueFantasy(commands.Cog):
             return None
 
     @profile.sub_command(name="unset")
-    async def unsetprofile(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def unsetprofile(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Unlink your GBF id"""
         await inter.response.defer(ephemeral=True)
         if str(inter.author.id) not in self.bot.data.save['gbfids']:
@@ -778,7 +778,7 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Your GBF profile has been unlinked", color=self.COLOR))
 
     @profile.sub_command(name="set")
-    async def setprofile(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, profile_id : int = commands.Param(description="A valid GBF Profile ID. Usurpation will result in ban.", ge=0, le=50000000)) -> None:
+    async def setprofile(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, profile_id : int = commands.Param(description="A valid GBF Profile ID. Usurpation will result in ban.", ge=0, le=50000000)) -> None:
         """Link your GBF id to your Discord ID"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1069,7 +1069,7 @@ class GranblueFantasy(commands.Cog):
             await self.bot.channel.clean(inter, 45)
 
     @profile.sub_command()
-    async def see(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
+    async def see(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
         """Retrieve a GBF profile"""
         try:
             await inter.response.defer()
@@ -1102,11 +1102,11 @@ class GranblueFantasy(commands.Cog):
         await self.bot.channel.clean(inter, 60)
 
     @gbf.sub_command_group(name="utility")
-    async def _utility(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def _utility(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @_utility.sub_command()
-    async def leechlist(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def leechlist(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post a link to /gbfg/ leechlist collection and GW data"""
         await inter.response.defer()
         urls : list[tuple[str, str]] = [
@@ -1121,7 +1121,7 @@ class GranblueFantasy(commands.Cog):
         await self.bot.channel.clean(inter, 60)
 
     @_utility.sub_command()
-    async def spreadsheet(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def spreadsheet(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post a link to my SpreadSheet Folder"""
         await inter.response.defer()
         view : UrlButton = UrlButton(self.bot, [('SpreadSheet Folder', 'https://drive.google.com/drive/folders/1p7rWQLJjVsoujQqYsJ0zVGUERMsQWmKn')])
@@ -1130,7 +1130,7 @@ class GranblueFantasy(commands.Cog):
         await self.bot.channel.clean(inter, 60)
 
     @_utility.sub_command()
-    async def xp(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, start_level : int = commands.Param(description="Starting Point of the calcul", ge=1, le=149, default=1), end_level : int = commands.Param(description="Final Point of the calcul", ge=1, le=150, default=1)) -> None:
+    async def xp(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, start_level : int = commands.Param(description="Starting Point of the calcul", ge=1, le=149, default=1), end_level : int = commands.Param(description="Final Point of the calcul", ge=1, le=150, default=1)) -> None:
         """Character experience calculator"""
         await inter.response.defer(ephemeral=True)
         if start_level < 1: start_level = 1
@@ -1147,17 +1147,17 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Experience Calculator", description="".join(msgs), color=self.COLOR))
 
     @_utility.sub_command()
-    async def kirinanima(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, talisman : int = commands.Param(description="Talisman count", ge=0, le=100000, default=0), ream : int = commands.Param(description="Ream count", ge=0, le=100000, default=0), silver_anima : int = commands.Param(description="Silver Anima count", ge=0, le=100000, default=0), omega_anima : int = commands.Param(description="Omega Anima count", ge=0, le=100000, default=0)) -> None:
+    async def kirinanima(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, talisman : int = commands.Param(description="Talisman count", ge=0, le=100000, default=0), ream : int = commands.Param(description="Ream count", ge=0, le=100000, default=0), silver_anima : int = commands.Param(description="Silver Anima count", ge=0, le=100000, default=0), omega_anima : int = commands.Param(description="Omega Anima count", ge=0, le=100000, default=0)) -> None:
         """Calcul how many Omega animas of Kirin or Huanglong you own"""
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(embed=self.bot.embed(title="Kirin Anima Calculator", description="You own the equivalent of **{}** Omega Animas".format(omega_anima + (ream+talisman//5+silver_anima)//10), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img_low/sp/assets/item/article/s/{}.jpg".format([529, 531][int(datetime.now().timestamp()) & 1]), color=self.COLOR))
 
     @gbf.sub_command_group()
-    async def check(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def check(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @check.sub_command()
-    async def brand(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
+    async def brand(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
         """Check if a GBF profile is restricted"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1292,7 +1292,7 @@ class GranblueFantasy(commands.Cog):
         return result
 
     @check.sub_command()
-    async def doom(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def doom(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Give the time elapsed of various GBF related releases"""
         await inter.response.defer()
         msgs : list[str] = []
@@ -1333,7 +1333,7 @@ class GranblueFantasy(commands.Cog):
         await self.bot.channel.clean(inter, 40)
 
     @check.sub_command()
-    async def coop(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def coop(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Retrieve the current coop daily missions"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1357,7 +1357,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
 
     @check.sub_command()
-    async def koregra(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def koregra(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the time to the next monthly dev post"""
         await inter.response.defer()
         c : datetime = self.bot.util.JST()
@@ -1367,7 +1367,7 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="{} Kore Kara".format(self.bot.emote.get('clock')), description="Release approximately in **{}**".format(self.bot.util.delta2str(m - c, 2)),  url="https://granbluefantasy.jp/news/index.php", thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR))
 
     @check.sub_command()
-    async def news(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def news(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post the latest news posts"""
         await inter.response.defer(ephemeral=True)
         msgs : list[str] = []
@@ -1391,7 +1391,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"Latest Granblue Fantasy News", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description="".join(msgs), image=thumb, color=self.COLOR))
 
     @check.sub_command()
-    async def granblues(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, episode : int = commands.Param(description="A Grand Blues! episode number", default=1, ge=1, le=99999)) -> None:
+    async def granblues(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, episode : int = commands.Param(description="A Grand Blues! episode number", default=1, ge=1, le=99999)) -> None:
         """Post a Granblues Episode"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -1401,11 +1401,11 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Invalid Grand Blues! number", color=self.COLOR))
 
     @gbf.sub_command_group()
-    async def campaign(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
+    async def campaign(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
     @campaign.sub_command()
-    async def crystal(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def crystal(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Granblue Summer Festival - Crystal Countdown 2023"""
         await inter.response.defer()
         try:
@@ -1495,7 +1495,7 @@ class GranblueFantasy(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Granblue Summer Festival", description=msg, url="https://game.granbluefantasy.jp/#campaign/division", footer=footer, color=self.COLOR))
 
     @campaign.sub_command()
-    async def element(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def element(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Granblue Summer Festival - Skyfarer Assemble 2024"""
         await inter.response.defer()
         try:
@@ -1532,12 +1532,12 @@ class GranblueFantasy(commands.Cog):
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def guide(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def guide(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
     @guide.sub_command()
-    async def defense(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def defense(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post some known defense values"""
         await inter.response.defer(ephemeral=True)
         dev_values : dict[str, str] = {

@@ -113,7 +113,7 @@ class Reminder(commands.Cog):
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 2, commands.BucketType.user)
     @commands.max_concurrency(10, commands.BucketType.default)
-    async def remind(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+    async def remind(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
 
@@ -122,11 +122,11 @@ class Reminder(commands.Cog):
     
     Parameters
     ----------
-    inter: A disnake.GuildCommandInteraction interaction object
+    inter: A disnake.ApplicationCommandInteraction interaction object
     delta: timedelta to desired reminder date
     msg: String, the reminder message
     """
-    async def _add(self : Reminder, inter : disnake.GuildCommandInteraction, delta : timedelta, msg : str):
+    async def _add(self : Reminder, inter : disnake.ApplicationCommandInteraction, delta : timedelta, msg : str):
         aid : str = str(inter.author.id)
         if aid not in self.bot.data.save['reminders']: # Add reminder list for this user
             self.bot.data.save['reminders'][aid] = []
@@ -153,7 +153,7 @@ class Reminder(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", footer="I have no clues about what went wrong", color=self.COLOR))
 
     @remind.sub_command()
-    async def add(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, duration : str = commands.Param(description="Format: XdXhXmXs"), msg : str = commands.Param(description="Content of the reminder")) -> None:
+    async def add(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, duration : str = commands.Param(description="Format: XdXhXmXs"), msg : str = commands.Param(description="Content of the reminder")) -> None:
         """Remind you of something at the specified time (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
@@ -165,7 +165,7 @@ class Reminder(commands.Cog):
         await self._add(inter, d, msg)
 
     @remind.sub_command()
-    async def event(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12), year : int = commands.Param(description="UTC Timezone", ge=2022), hour : int = commands.Param(description="UTC Timezone", ge=0, le=23), minute : int = commands.Param(description="UTC Timezone", ge=0, le=59)) -> None:
+    async def event(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12), year : int = commands.Param(description="UTC Timezone", ge=2022), hour : int = commands.Param(description="UTC Timezone", ge=0, le=23), minute : int = commands.Param(description="UTC Timezone", ge=0, le=59)) -> None:
         """Remind you of something at the specified time (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
@@ -180,7 +180,7 @@ class Reminder(commands.Cog):
         await self._add(inter, d, msg)
 
     @remind.sub_command()
-    async def birthday(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12)) -> None:
+    async def birthday(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12)) -> None:
         """Remind you of something at the next specified date (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
@@ -195,7 +195,7 @@ class Reminder(commands.Cog):
         await self._add(inter, d, "Happy Birthday:\n" + msg)
 
     @remind.sub_command(name="list")
-    async def remindlist(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def remindlist(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post your current list of reminders"""
         await inter.response.defer(ephemeral=True)
         aid : str = str(inter.author.id)
@@ -213,7 +213,7 @@ class Reminder(commands.Cog):
             await inter.edit_original_message(embed=embed)
 
     @remind.sub_command(name="remove")
-    async def reminddel(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, rid : int = commands.Param(description="Number of the reminder to delete", ge=0)) -> None:
+    async def reminddel(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, rid : int = commands.Param(description="Number of the reminder to delete", ge=0)) -> None:
         """Delete one of your reminders"""
         await inter.response.defer(ephemeral=True)
         aid: str  = str(inter.author.id)

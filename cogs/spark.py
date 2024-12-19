@@ -34,14 +34,6 @@ class Sparking(commands.Cog):
     def __init__(self : Sparking, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 
-    @commands.slash_command()
-    @commands.default_member_permissions(send_messages=True, read_messages=True)
-    @commands.cooldown(2, 10, commands.BucketType.user)
-    @commands.max_concurrency(4, commands.BucketType.default)
-    async def spark(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
-        """Command Group"""
-        pass
-
     """clean_data()
     Coroutine to clear user spark data from the save data
     """
@@ -60,6 +52,14 @@ class Sparking(commands.Cog):
         if count > 0:
             self.bot.data.pending = True
 
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.cooldown(2, 10, commands.BucketType.user)
+    @commands.max_concurrency(4, commands.BucketType.default)
+    async def spark(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
+        """Command Group"""
+        pass
+
     """_seeroll()
     Display the user roll count
     
@@ -69,7 +69,7 @@ class Sparking(commands.Cog):
     member: A disnake.Member object
     ephemeral: Boolean to display or not the result to everyone
     """
-    async def _seeroll(self : Sparking, inter : disnake.GuildCommandInteraction, member: disnake.Member|None, ephemeral : bool = True) -> None:
+    async def _seeroll(self : Sparking, inter : disnake.ApplicationCommandInteraction, member: disnake.Member|None, ephemeral : bool = True) -> None:
         await inter.response.defer(ephemeral=ephemeral)
         if member is None:
             member = inter.author # set member to interaction author if not set
@@ -142,7 +142,7 @@ class Sparking(commands.Cog):
             await inter.response.send_message(embed=self.bot.embed(title="Error", description="Your entered an invalid number.", footer=str(e), color=self.COLOR), ephemeral=True)
 
     @spark.sub_command()
-    async def set(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def set(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Set your roll count"""
         data : SparkData = self.bot.data.save['spark'].get(str(inter.author.id), [0, 0, 0, 0, None])
         await self.bot.singleton.make_and_send_modal(inter, "spark_set-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()), "Set your Spark Data", self.set_callback, [
@@ -238,12 +238,12 @@ class Sparking(commands.Cog):
         return t_max, t_min, expected, now
 
     @spark.sub_command()
-    async def see(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, member : disnake.Member = None) -> None:
+    async def see(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, member : disnake.Member = None) -> None:
         """Post your (or the target) roll count"""
         await self._seeroll(inter, member)
 
     @spark.sub_command()
-    async def zero(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, day_difference: int = commands.Param(description="Add a number of days to today date", ge=0, default=0)) -> None:
+    async def zero(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, day_difference: int = commands.Param(description="Add a number of days to today date", ge=0, default=0)) -> None:
         """Post a spark estimation based on today date"""
         try:
             await inter.response.defer(ephemeral=True)
@@ -259,19 +259,21 @@ class Sparking(commands.Cog):
             self.bot.logger.pushError("[SPARK] In 'spark zero' command:", e)
 
     @spark.sub_command()
-    async def nickname(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def nickname(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Update your nickname with your number of rolls""" 
         await inter.response.defer(ephemeral=True)
         aid : str = str(inter.author.id) # author id as a string
         # do various permission checks
-        if not inter.channel.permissions_for(inter.me).manage_nicknames:
-            await inter.edit_original_message(embed=self.bot.embed(title="I lack the Manage Nickname permission for this feature", color=self.COLOR))
+        if inter.guild is None:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
+        elif not inter.channel.permissions_for(inter.me).manage_nicknames:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="I lack the Manage Nickname permission for this feature", color=self.COLOR))
         elif inter.channel.permissions_for(inter.me).administrator:
-            await inter.edit_original_message(embed=self.bot.embed(title="Sorry, administrator nicknames can't be edited", color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Sorry, administrator nicknames can't be edited", color=self.COLOR))
         elif inter.guild.owner_id == inter.author.id:
-            await inter.edit_original_message(embed=self.bot.embed(title="Sorry, server owner nicknames can't be edited", color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Sorry, server owner nicknames can't be edited", color=self.COLOR))
         elif aid not in self.bot.data.save['spark']:
-            await inter.edit_original_message(embed=self.bot.embed(title="No data in memory, please set your roll count first", color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No data in memory, please set your roll count first", color=self.COLOR))
         else: # all good it seems
             # retrieve and calculate user spark
             s : SparkData = self.bot.data.save['spark'][aid]
@@ -303,7 +305,7 @@ class Sparking(commands.Cog):
         - msg: String containing the ranking
         - ar: Integer, Author ranking
     """
-    async def _ranking(self : Sparking, inter : disnake.GuildCommandInteraction, guild : disnake.Guild) -> tuple[str|None, int|None]:
+    async def _ranking(self : Sparking, inter : disnake.ApplicationCommandInteraction, guild : disnake.Guild) -> tuple[str|None, int|None]:
         ranking : dict[str, float] = {}
         iid : str
         s : SparkData
@@ -344,11 +346,14 @@ class Sparking(commands.Cog):
         return "".join(msgs), ar
 
     @spark.sub_command()
-    async def ranking(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    async def ranking(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Show the ranking of everyone saving for a spark in the server"""
         try:
             await inter.response.defer()
-            guild : disnake.Guild = inter.author.guild
+            if inter.guild is None:
+                await inter.edit_original_message(embed=self.bot.embed(title="{} Spark ranking".format(self.bot.emote.get('crown')), color=self.COLOR, description="Unavailable in Direct Messages."))
+                return
+            guild : disnake.Guild = inter.guild
             msg : str|None
             ar : int|None
             msg, ar = await self._ranking(inter, guild) # get ranking text
