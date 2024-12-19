@@ -366,11 +366,6 @@ class Example(commands.Cog):
         #
         await inter.edit_original_message(embed=self.bot.embed(title="This is the sub command!", description="You called me using `/group subcommand`!", color=self.COLOR)
 ```  
-It's important to keep the same syntax, if you want to use `tools/generate_help.py`.  
-If you don't, only the cog definition is important (`class Example(commands.Cog):`).  
-The Cog loader (`cogs/__init__.py`) looks for this part of the file to decide what to load as a cog.  
-This also means you shouldn't put more than one cog per python file.  
-Adding other general purpose classes is fine, however.  
   
 > [!TIP]  
 > Check existing cogs if you need examples of more advanced behaviors.  

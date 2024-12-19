@@ -5,12 +5,33 @@ if TYPE_CHECKING:
     from ..bot import DiscordBot
     from disnake.ext import commands
 import os
-import re
+import ast
 
 # configuration variables
 DEBUG_SERVER_ID : int|None = None # the bot server
 CREW_SERVER_ID : int|None = None # my crew server
 # Note: In global scope to be usable during initialization
+
+"""get_cogs_from_ast()
+Find command Cogs from processing a Python abstract syntax grammar tree.
+
+Parameters
+----------
+tree: The ast tree.
+
+Returns
+----------
+list: A list of class definition
+"""
+def get_cogs_from_ast(tree : ast.Module) -> list[ast.ClassDef]:
+    classes : list[ast.ClassDef] = []
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            base : ast.Attribute
+            for base in node.bases:
+                if base.attr == "Cog":
+                    classes.append(node)
+    return classes
 
 """loadCogFile()
 Called by load() below.
@@ -31,26 +52,32 @@ Returns
 --------
 bool: True if loaded, False if not
 """
-def loadCogFile(bot : DiscordBot, path_filename : str, filename : str, regex : re.Pattern, relative : str = "", package = str|None, silent : bool = False) -> bool:
+def loadCogFile(bot : DiscordBot, path_filename : str, filename : str, relative : str = "", package = str|None, silent : bool = False) -> tuple[int, int]:
     try:
+        loadattempt : int = 0
+        failed : int = 0
         with open(path_filename, mode='r', encoding='utf-8') as py:
-            all : list[str] = regex.findall(str(py.read())) # search all matches
-            class_name : str
-            for class_name in all:
+            # check for BOM
+            if ord(py.read(1)) != 65279:
+                py.seek(0)
+            tree : ast.Module = ast.parse(py.read())
+            classes : list[ast.ClassDef] = get_cogs_from_ast(tree)
+            for node in classes:
                 try:
-                    module_name : str = filename[:-3] # equal to filename without .py
-                    _class : commands.cog.CogMeta = getattr(import_module(relative + module_name, package=package), class_name) # import and create class
-                    bot.add_cog(_class(bot)) # instantiate and add to the bot
-                    return True
-                except Exception as e:
-                    bot.logger.pushError("[COG] Exception in file {}:".format(path_filename), e, send_to_discord=not silent)
-                    return False
-    except Exception as e2:
-        if 'No such file or directory:' in str(e2):
+                    loadattempt += 1
+                    module_name : str = filename[:-3]
+                    _class : commands.cog.CogMeta = getattr(import_module(relative + module_name, package=package), node.name)
+                    bot.add_cog(_class(bot))
+                except Exception as e2:
+                    bot.logger.pushError("[COG] Failed to instantiate class {}:".format(node.name), e2, send_to_discord=not silent)
+                    failed += 1
+            return loadattempt, failed
+    except Exception as e:
+        if 'No such file or directory:' in str(e):
             bot.logger.pushError("[COG] {} is missing and will be ignored.\nIgnore this message if it's intended.".format(path_filename), send_to_discord=not silent and filename != "test.py", level=bot.logger.WARNING)
         else:
-            bot.logger.pushError("[COG] Exception in file {}:".format(path_filename), e2, send_to_discord=not silent)
-    return False
+            bot.logger.pushError("[COG] Exception in file {}:".format(path_filename), e, send_to_discord=not silent)
+        return 1, 1
 
 """load()
 Called on the bot startup.
@@ -78,20 +105,18 @@ def load(bot : DiscordBot) -> tuple[int, int]: # load all cogs in the 'cog' fold
     global CREW_SERVER_ID
     CREW_SERVER_ID = bot.data.config['ids'].get('you_server', None)
     # Start the loading
-    regex : re.Pattern = re.compile("^class ([a-zA-Z0-9_]*)\\(commands\\.Cog\\):", re.MULTILINE) # to search the name class
     count : int = 0 # number of attempt at loading cogs
     failed : int = 0 # number of loading failed (ignore debug and test cogs)
     # List all files
+    result : tuple[int, int]
     filename : str
     for filename in os.listdir('cogs/'):
         path_filename = os.path.join('cogs/', filename) # create path
         if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename): # search for valid python files
-            if loadCogFile(bot, path_filename, filename, regex, relative=".", package='cogs'):
-                count += 1
-            else:
-                failed += 1
+            result = loadCogFile(bot, path_filename, filename, relative=".", package='cogs')
+            count += result[0]
+            failed += result[1]
     # Optional dev files
-    if loadCogFile(bot, "test.py", "test.py", regex, silent=silent): # doesn't increase failed in case of errors
-        count += 1
+    result = loadCogFile(bot, "test.py", "test.py", silent=silent) # doesn't increase failed in case of errors
     # Return results
     return count, failed

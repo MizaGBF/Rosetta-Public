@@ -178,7 +178,7 @@ class DiscordBot(commands.InteractionBot):
         failed : int
         self.cogn, failed = cogs.load(self)
         if failed > 0:
-            self.logger.pushError("{} cog(s) / {} failed to load".format(failed, self.cogn), send_to_discord=False)
+            self.logger.pushError("{} / {} cog(s) failed to load".format(failed, self.cogn), send_to_discord=False)
         else:
             self.logger.push("OK", send_to_discord=False)
 
@@ -198,7 +198,7 @@ class DiscordBot(commands.InteractionBot):
             self.logger.push("[MAIN] Loading cogs...", send_to_discord=False)
             self.cogn, failed = cogs.load(self) # load cogs
         if failed > 0: # return if a cog failed to load
-            self.logger.push("[MAIN] {} cog(s) / {} failed to load".format(failed, self.cogn), send_to_discord=False, level=self.logger.CRITICAL)
+            self.logger.push("[MAIN] {} / {} cog(s) failed to load".format(failed, self.cogn), send_to_discord=False, level=self.logger.CRITICAL)
             time.sleep(36000)
             return
         else:
