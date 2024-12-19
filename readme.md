@@ -232,12 +232,13 @@ You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.
 > On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
   
 ## Emojis  
-The emotes found in `assets/emojis` folder will be automatically uploaded on boot.  
-It can take some time.
+The emotes found in `assets/emojis` folder will be automatically loaded and uploaded on boot to your bot **Emojis** list.  
+It can take some time, so it's normal if emotes don't display right away at the start.  
   
 > [!IMPORTANT]
-> You're limited to 2000 emojis par application.  
-> You can manage them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> You can add more to the folder if you wish to use them in your own commands, but you're limited to **2000** emojis par application.  
+> You can find them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> If you remove an emoji from `assets/emojis`, it'll automatically be deleted from the **Emojis** list on the next boot.  
 
 To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
 For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
