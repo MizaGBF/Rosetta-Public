@@ -7,6 +7,7 @@
 > If you're looking for an invite for my instance, it's **not open to public**.  
 > Use this repo if you have the how-to to host your own instance.  
 > If you're somehow close to me in some way however, feel free to ask and I'll see if it's possible.  
+> You can, however, use it in your [Direct Messages](https://discord.com/channels/@me/1041344151519772755).  
   
 ## Requirements  
 * **System**: The bot itself requires a few hundred MB of RAM, 100 MB of disk space and a stable and fast internet connection, and a CPU with good single treaded performance. Expect the RAM and CPU usage to ramp up as you invite the bot in more servers.  
