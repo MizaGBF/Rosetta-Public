@@ -170,12 +170,12 @@ class Emote():
                             await asyncio.sleep(1)
                     self.bot.logger.push("[LOAD EMOJI] Done.\nEmojis have been uploaded")
                 except Exception as e:
-                    self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Error for {}".format(v), e)
+                    self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Error for {}:".format(v), e)
                     self.bot.logger.push("[LOAD EMOJI] An error occured.\nThe upload process has been aborted.")
                 # get new updated list
                 existing = await self.get_all_app_emojis()
         except Exception as xe:
-            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section A", xe)
+            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section A:", xe)
             self.bot.logger.push("[LOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
         # now initializing app emoji list
         try:
@@ -185,5 +185,5 @@ class Emote():
                     name = name[0]
                 self.create_emoji_in_cache_from(name, item) # set our custom cache with this emoji
         except Exception as e:
-            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section B", e)
+            self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Unexpected error in section B:", e)
             self.bot.logger.push("[LOAD EMOJI] An unexpected error occured.\nThe upload process has been aborted.")
