@@ -1,5 +1,6 @@
 from __future__ import annotations
 import disnake
+import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
@@ -205,6 +206,32 @@ class Pinboard():
             self.bot.logger.pushError("[PINBOARD] 'pin' error:", e)
         return False
 
+    """clean_data()
+    Clean unused data
+    """
+    async def clean_data(self : Pinboard) -> bool:
+        guild_ids : list[str] = set([str(g.id) for g in self.bot.guilds])
+        count : int = 0
+        await asyncio.sleep(1)
+        gid : str
+        for gid in list(self.bot.data.save['pinboard'].keys()):
+            if gid not in guild_ids: # the bot left the guild
+                self.bot.data.save['pinboard'].pop(gid)
+                count += 1
+            else:
+                i : int = 0
+                while i < len(self.bot.data.save['pinboard'][gid]['tracked']): # remove deleted channels from data
+                    if self.bot.get_channel(self.bot.data.save['pinboard'][gid]['tracked'][i]) is None:
+                        self.bot.data.save['pinboard'][gid]['tracked'].pop(i)
+                        count += 1
+                    else:
+                        i += 1
+                if self.bot.data.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.bot.data.save['pinboard'][gid]['output']) is None: # remove data if empty
+                    self.bot.data.save['pinboard'][gid]['output'] = None
+                    count += 1
+        if count > 0:
+            self.bot.data.pending = True
+
     """is_enabled()
     Return True if the pinboard is enabled
     
@@ -214,7 +241,7 @@ class Pinboard():
     
     Returns
     ----------
-    bool
+    bool: True if enabled, False otherwise
     """
     def is_enabled(self : Pinboard, server_id : str) -> bool:
         return server_id in self.bot.data.save['pinboard'] and 'disabled' not in self.bot.data.save['pinboard'][server_id]

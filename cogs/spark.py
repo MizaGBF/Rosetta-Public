@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 import disnake
+import asyncio
 from disnake.ext import commands
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
@@ -40,6 +41,24 @@ class Sparking(commands.Cog):
     async def spark(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group"""
         pass
+
+    """clean_data()
+    Coroutine to clear user spark data from the save data
+    """
+    async def clean_data(self : Sparking) -> None:
+        count : int = 0
+        await asyncio.sleep(1)
+        current_time : datetime = self.bot.util.UTC()
+        keys : list[str] = list(self.bot.data.save['spark'].keys())
+        # go over entries
+        rid : str
+        for rid in keys:
+            d : timedelta = current_time - self.bot.data.save['spark'][rid][4]
+            if d.days >= 30: # older than 30 days
+                del self.bot.data.save['spark'][rid] # we remove
+                count += 1
+        if count > 0:
+            self.bot.data.pending = True
 
     """_seeroll()
     Display the user roll count

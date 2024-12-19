@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 import disnake
+import asyncio
 from disnake.ext import commands
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -21,6 +22,21 @@ class Roles(commands.Cog):
 
     def __init__(self : Roles, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
+
+    """clean_data()
+    Coroutine to clear role data from the save data
+    """
+    async def clean_data(self : Roles) -> None:
+        guild_ids : list[str] = set([str(g.id) for g in self.bot.guilds])
+        count : int = 0
+        await asyncio.sleep(1)
+        # Self Assignable Roles
+        for gid in list(self.bot.data.save['assignablerole'].keys()): # the bot left the guild
+            if gid not in guild_ids:
+                self.bot.data.save['assignablerole'].pop(gid)
+                count += 1
+        if count > 0:
+            self.bot.data.pending = True
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)

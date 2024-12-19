@@ -437,16 +437,25 @@ class Data():
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
                      self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (DB reminders):", se)
-                # update schedule
+                # cog clean up
+                try:
+                    await self.bot.get_cog('Spark').clean_data() # clean up spark data
+                except Exception as se:
+                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
+                try:
+                    await self.bot.get_cog('Roles').clean_data() # clean up spark data
+                except Exception as se:
+                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
+                # update the schedule
                 await self.update_schedule()
+                # component clean up
+                await self.bot.pinboard.clean_data() # clean unused pinboard
+                await self.bot.channel.clean_data() # clean auto cleanup and announcement 
                 # various clean up
-                await self.clean_stream() # clean stream data
-                await self.clean_spark() # clean up spark data
-                await self.bot.channel.clean_data() # clean auto cleanup and announcement settings
+                await self.clean_stream() # clean stream datasettings
+                await self.clean_extra_data() # clean up extra data
                 if current_time.day == 3: # only clean on the third day of each month
                     await self.clean_profile() # clean up profile data
-                await self.clean_general() # clean up everything else
-                
                 self.bot.logger.push("[TASK] 'data:maintenance': Daily cleanup ended", send_to_discord=False)
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'data:maintenance' Task Cancelled")
@@ -522,38 +531,19 @@ class Data():
     Coroutine to clear stream data (if set)
     """
     async def clean_stream(self : Data) -> None:
-        await asyncio.sleep(0)
+        await asyncio.sleep(1)
         # delete if stream exists and it's 4 days old or more
         if self.save['stream'] is not None and self.save['stream'].get('time', None) is not None and self.bot.util.UTC() - self.save['stream']['time'] >= timedelta(days=4):
             self.save['stream'] = None
             self.pending = True
             self.bot.logger.push("[DATA] clean_stream:\nCleaned the Stream data")
 
-    """clean_spark()
-    Coroutine to clear user spark data from the save data
-    """
-    async def clean_spark(self : Data) -> None:
-        await asyncio.sleep(0)
-        count : int = 0
-        current_time : datetime = self.bot.util.UTC()
-        keys : list[str] = list(self.save['spark'].keys())
-        # go over entries
-        rid : str
-        for rid in keys:
-            d : timedelta = current_time - self.save['spark'][rid][4]
-            if d.days >= 30: # older than 30 days
-                del self.save['spark'][rid] # we remove
-                self.pending = True
-                count += 1
-        if count > 0:
-            self.bot.logger.push("[DATA] clean_spark:\nCleaned {} unused spark saves".format(count))
-
     """clean_profile()
     Coroutine to clean user gbf profiles from the save data
     """
     async def clean_profile(self : Data) -> None:
-        await asyncio.sleep(0)
         count : int = 0
+        await asyncio.sleep(1)
         keys : list[str] = list(self.save['gbfids'].keys())
         # go over registered profiles
         uid : str
@@ -566,40 +556,14 @@ class Data():
             if not found: # if the user hasn't been found
                 count += 1
                 self.save['gbfids'].pop(uid) # remove
-                self.pending = True
         if count > 0:
-            self.bot.logger.push("[DATA] clean_profile:\nCleaned {} unused profiles".format(count))
+            self.pending = True
 
-    """clean_general()
+    """clean_extra_data()
     Coroutine to clean the save data
     """
-    async def clean_general(self : Data) -> None:
-        guild_ids : list[str] = set([str(g.id) for g in self.bot.guilds])
+    async def clean_extra_data(self : Data) -> None:
         count : int = 0
-        await asyncio.sleep(1)
-        # Pinbaord cleaning
-        gid : str
-        for gid in list(self.save['pinboard'].keys()):
-            if gid not in guild_ids: # the bot left the guild
-                self.save['pinboard'].pop(gid)
-                count += 1
-            else:
-                i : int = 0
-                while i < len(self.save['pinboard'][gid]['tracked']): # remove deleted channels from data
-                    if self.bot.get_channel(self.save['pinboard'][gid]['tracked'][i]) is None:
-                        self.save['pinboard'][gid]['tracked'].pop(i)
-                        count += 1
-                    else:
-                        i += 1
-                if self.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.save['pinboard'][gid]['output']) is None: # remove data if empty
-                    self.save['pinboard'][gid]['output'] = None
-                    count += 1
-        await asyncio.sleep(1)
-        # Self Assignable Roles
-        for gid in list(self.save['assignablerole'].keys()): # the bot left the guild
-            if gid not in guild_ids:
-                self.save['assignablerole'].pop(gid)
-                count += 1
         await asyncio.sleep(1)
         if 'extra' in self.save: # clean extra data (usually used for development, debug or temp events)
             c : datetime = self.bot.util.JST()
@@ -617,4 +581,3 @@ class Data():
                 self.pending = True
         if count > 0:
             self.pending = True
-            self.bot.logger.push("[DATA] clean_general:\nCleaned up {} elements".format(count))
