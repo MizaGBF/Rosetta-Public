@@ -97,6 +97,8 @@ def load(bot : DiscordBot) -> tuple[int, int]: # load all cogs in the 'cog' fold
             failed += result[1]
     # Optional dev files
     result = loadCogFile(bot, "test.py", "test.py", silent=silent) # doesn't increase failed in case of errors
+    if result[0] == 1 and result[1] == 0:
+        count += 1
     # Return results
     return count, failed
 
