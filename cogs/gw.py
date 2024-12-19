@@ -610,8 +610,9 @@ class GuildWar(commands.Cog):
         - description: Embed description (Crew message, Crew leaders, GW contributions)
         - fields: Embed fields (Player list)
         - footer: Embed footer (message indicating the crew is in cache, only for public crew)
+        - players: Sorted Player list
     """
-    async def processCrewData(self : GuildWar, crew : dict, mode : int = 0) -> tuple[str, str, list[dict[str, str]], str]:
+    async def processCrewData(self : GuildWar, crew : dict, mode : int = 0) -> tuple[str, str, list[dict[str, str]], str, PlayerList]:
         i : int
         j : int
         # Generate Embed Title
@@ -643,6 +644,7 @@ class GuildWar(commands.Cog):
             description.append("\n{}".format(s))
         await asyncio.sleep(0)
 
+        players : PlayerList = []
         if crew['private']:
             description.append('\n{} [{}](https://game.granbluefantasy.jp/#profile/{}) ▫️ *Crew is private*'.format(self.bot.emote.get('captain'), crew['leader'], crew['leader_id']))
         else:
@@ -653,7 +655,7 @@ class GuildWar(commands.Cog):
                 case 2: gwstate = True
                 case 1: gwstate = False
                 case _: gwstate = self.isGWRunning()
-            players : PlayerList = crew['player'].copy()
+            players = crew['player'].copy()
             gwid : int|None = None
             if gwstate:
                 total : int = 0
@@ -722,7 +724,7 @@ class GuildWar(commands.Cog):
         field : dict[str, str|list]
         for field in fields:
             field['value'] = "".join(field['value'])
-        return ''.join(title), ''.join(description), fields, footer
+        return ''.join(title), ''.join(description), fields, footer, players
 
     """_crew_sub()
     Used by /gw crew and the PageRanking view
@@ -750,7 +752,8 @@ class GuildWar(commands.Cog):
         description : str
         fields : list[dict[str, str]]
         footer : str
-        title, description, fields, footer = await self.processCrewData(crew, mode)
+        players : PlayerList
+        title, description, fields, footer, players = await self.processCrewData(crew, mode)
         # prepare embed
         embed=self.bot.embed(title=title, description=description, fields=fields, inline=True, url="https://game.granbluefantasy.jp/#guild/detail/{}".format(crew['id']), footer=footer, timestamp=crew['timestamp'], color=self.COLOR)
         self_view : bool = False
@@ -760,7 +763,7 @@ class GuildWar(commands.Cog):
             search_results : PageResultList = []
             i : int
             p : PlayerData
-            for i, p in enumerate(crew['player']):
+            for i, p in enumerate(players):
                 if (i % 10) == 0:
                     search_results.append([])
                 search_results[-1].append((p['id'], self.escape(p['name'])))
