@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     import types
     RequestResult : types.GenericAlias = JSON|bytes|None # cover None, JSON types, bytes
     GBFAccount : types.GenericAlias = JSON
+from enum import IntEnum
 from contextlib import asynccontextmanager
 import aiohttp
 import re
@@ -25,15 +26,17 @@ class Network():
         re.compile("\\/assets\\/(\d+)\\/"), # alternative/fallback
         re.compile("Game\.version = \"(\d+)\";") # old one
     ]
-    # Request types
-    GET : int = 0
-    POST : int = 1
-    HEAD : int = 2
-    # Account status
-    ACC_STATUS_UNSET : int = -1
-    ACC_STATUS_UNDEF : int = 0
-    ACC_STATUS_OK : int = 1
-    ACC_STATUS_DOWN : int = 2
+    class Method(IntEnum):
+        GET : int = 0
+        POST : int = 1
+        HEAD : int = 2
+    
+    class AccountStatus(IntEnum):
+        UNSET : int = -1
+        UNDEF : int = 0
+        OK : int = 1
+        DOWN : int = 2
+    
     # Default user agent
     DEFAULT_UA : str = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     
@@ -78,14 +81,14 @@ class Network():
             conn : aiohttp.TCPConnector = aiohttp.TCPConnector(keepalive_timeout=60, ttl_dns_cache=600)
             # set generic client and methods
             self.client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
-            self.client_req[self.GET] = self.client.get
-            self.client_req[self.POST] = self.client.post
-            self.client_req[self.HEAD] = self.client.head
+            self.client_req[self.Method.GET] = self.client.get
+            self.client_req[self.Method.POST] = self.client.post
+            self.client_req[self.Method.HEAD] = self.client.head
             # set gbf client and methods
             self.gbf_client = aiohttp.ClientSession(connector=conn, timeout=aiohttp.ClientTimeout(total=20))
-            self.gbf_client_req[self.GET] = self.gbf_client.get
-            self.gbf_client_req[self.POST] = self.gbf_client.post
-            self.gbf_client_req[self.HEAD] = self.gbf_client.head
+            self.gbf_client_req[self.Method.GET] = self.gbf_client.get
+            self.gbf_client_req[self.Method.POST] = self.gbf_client.post
+            self.gbf_client_req[self.Method.HEAD] = self.gbf_client.head
             # update the default user agent
             await self.update_user_agent()
             yield (self.client, self.gbf_client)
@@ -133,7 +136,7 @@ class Network():
             if payload is None: # call request method with given parameters
                 response = await (self.client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects, ssl=ssl)
             else: # the request is always POST if we have a payload
-                rtype = self.POST
+                rtype = self.Method.POST
                 response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects, ssl=ssl)
             async with response:
                 if response.status >= 400 or response.status < 200: # raise Exception if our HTTP code isn't in the 200-399 range
@@ -143,7 +146,7 @@ class Network():
                 # raise error if we expected a json and it's not
                 if expect_JSON and not is_json:
                     raise Exception("Expected `application/json`, got `{}`".format(ct))
-                if rtype == self.HEAD: # HEAD request, we simply return True to signify it's successful
+                if rtype == self.Method.HEAD: # HEAD request, we simply return True to signify it's successful
                     return True
                 elif is_json: # JSON, we return it as a JSON object
                     return await response.json()
@@ -189,7 +192,7 @@ class Network():
                 raise Exception("No GBF account set")
             acc : GBFAccount = self.get_account()
             # if account is down, we silence errors
-            silent : bool = (acc['state'] == self.ACC_STATUS_DOWN)
+            silent : bool = (acc['state'] == self.AccountStatus.DOWN)
             # retrieve the game version
             ver : JSON = self.bot.data.save['gbfversion']
             if ver == "Maintenance": # Note: I don't think the version should ever be equal to "Maintenance" but I'm keeping it for safety
@@ -213,7 +216,7 @@ class Network():
             if payload is None: # call request method with given parameters
                 response = await (self.gbf_client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
             else: # if we have a payload, it's always a POST request
-                rtype = self.POST
+                rtype = self.Method.POST
                 # auto set 'user_id' in the payload according to its value
                 if 'user_id' in payload:
                     match payload['user_id']:
@@ -240,13 +243,13 @@ class Network():
                 ct : str = response.headers.get('content-type', '')
                 is_json : bool = 'application/json' in ct
                 if expect_JSON and not is_json: # we expected a json but we didn't receive one
-                    self.set_account_state(self.ACC_STATUS_DOWN) # the account is likely down
+                    self.set_account_state(self.AccountStatus.DOWN) # the account is likely down
                     return None
                 # retrieve cookies
                 if 'set-cookie' in response.headers:
                     self.set_account_cookie(response.headers['set-cookie']) # and update our copy
                 # result
-                if rtype == self.HEAD: # HEAD request returns True to signify success
+                if rtype == self.Method.HEAD: # HEAD request returns True to signify success
                     return True
                 elif is_json: # JSON, we return the json object
                     return await response.json()
@@ -317,10 +320,10 @@ class Network():
     """
     async def refresh_account(self : Network) -> None:
         if self.has_account(): # check if the account exists
-            state : int = self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET)
+            state : int = self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET)
             last : datetime|None = self.bot.data.save['gbfaccount'].get('last', None)
             # if it's down...
-            if state != self.ACC_STATUS_DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
+            if state != self.AccountStatus.DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
                 # attempt a request
                 await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
 
@@ -333,7 +336,7 @@ class Network():
     bool: True if valid, False if not
     """
     def has_account(self : Network) -> bool:
-        return self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_UNSET and len(self.bot.data.save['gbfaccount'].get('ck', {})) > 0 and self.bot.data.save['gbfaccount'].get('ua', "") != ""
+        return self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET) != self.AccountStatus.UNSET and len(self.bot.data.save['gbfaccount'].get('ck', {})) > 0 and self.bot.data.save['gbfaccount'].get('ua', "") != ""
 
     """is_account_valid()
     Return True if the GBF account is usable.
@@ -344,7 +347,7 @@ class Network():
     bool: True if usable, False if not
     """
     def is_account_valid(self : Network) -> bool:
-        return self.has_account() and self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET) != self.ACC_STATUS_DOWN
+        return self.has_account() and self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET) != self.AccountStatus.DOWN
 
     """get_account()
     Return the GBF account data
@@ -366,7 +369,7 @@ class Network():
     ua: String, User-Agent used to get the Cookie
     """
     def set_account(self : Network, uid : int, ck : str, ua : str):
-        self.bot.data.save['gbfaccount'] = {"id":uid, "ck":self.str2cookie(ck), "ua":ua, "state":self.ACC_STATUS_UNDEF, "last":None}
+        self.bot.data.save['gbfaccount'] = {"id":uid, "ck":self.str2cookie(ck), "ua":ua, "state":self.AccountStatus.UNDEF, "last":None}
         self.bot.data.pending = True
 
     """edit_account()
@@ -424,7 +427,7 @@ class Network():
             cookie : dict[str, str] = self.str2cookie(ck) # convert it to dict
             reference : dict[str, str] = self.bot.data.save['gbfaccount']['ck']
             self.bot.data.save['gbfaccount']['ck'] = reference | {k:v for k, v in cookie.items() if k in reference}
-            self.bot.data.save['gbfaccount']['state'] = self.ACC_STATUS_OK # account has a new cookie so it should be considered ok
+            self.bot.data.save['gbfaccount']['state'] = self.AccountStatus.OK # account has a new cookie so it should be considered ok
             self.bot.data.save['gbfaccount']['last'] = self.bot.util.JST() # cookie just updated
             self.bot.data.pending = True
             return True
@@ -441,7 +444,7 @@ class Network():
     """
     def set_account_state(self : Network, state : int) -> None:
         try:
-            if state != self.bot.data.save['gbfaccount'].get('state', self.ACC_STATUS_UNSET):
+            if state != self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET):
                 self.bot.data.save['gbfaccount']['state'] = state
                 self.bot.data.pending = True
         except:
