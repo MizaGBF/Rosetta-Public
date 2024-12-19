@@ -11,9 +11,16 @@ if TYPE_CHECKING:
     import types
     CurrentGacha : types.GenericAlias = list[timedelta|JSON]
     CurrentBanner : types.GenericAlias = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
+from enum import IntEnum, StrEnum
 import random
 import time
 from views.roll_tap import Tap
+
+# General enum
+class Rarity(IntEnum):
+    R = 0
+    SR = 1
+    SSR = 2
 
 # ----------------------------------------------------------------------------------------------------------------
 # Gacha Component
@@ -89,7 +96,7 @@ class Gacha():
             appear : JSON
             for appear in data['appear']:
                 rarity : int = appear['rarity'] - 2
-                if rarity < 0 or rarity > 2:
+                if rarity < Rarity.R or rarity > Rarity.SSR:
                     continue # eliminate possible N rarity
                 glist[rarity]['rate'] = float(data['ratio'][2 - rarity]['ratio'][:-1])
                 item : JSON
@@ -111,7 +118,7 @@ class Gacha():
                         glist[rarity]['list'][item['drop_rate']] = [] # add a list for that rate
                     glist[rarity]['list'][item['drop_rate']].append("{}{}{}".format(attribute, kind, item['name'])) # add the item to that array (Format is Element Character, Type character and Item name. Example: 5STriple Zero (5 is light, S for summon, Triple Zero is the name)
 
-                    if rarity == 2: # if it's a SSR
+                    if rarity == Rarity.SSR: # if it's a SSR
                         if appear['category_name'] not in grateup: # Add rate list for that type of item (Usually Character Weapons and Summon)
                             grateup[appear['category_name']] = {}
                         if 'character_name' in item and item.get('name', '') in self.ZODIAC_WPN: # check if it's a twelve general
@@ -314,7 +321,7 @@ class Gacha():
         rarity : int
         for i, rarity in enumerate(data['banners'][index]['list']):
             for r in rarity['list']:
-                if i == 2: # SSR
+                if i == Rarity.SSR: # SSR
                     sum_ssr += float(r) * len(rarity['list'][r]) # add rate multiplied by number of item
 
         # rate description
@@ -566,37 +573,36 @@ class Gacha():
 GachaRoll : types.GenericAlias = tuple[int, str, bool]
 
 class GachaSimulator():
-    # Mode constants
-    MODE_UNDEF : int = -1
-    MODE_SINGLE : int = 0
-    MODE_SRSSR : int = 1
-    MODE_MEMEA : int = 2
-    MODE_MEMEB : int = 3
-    MODE_TEN : int = 10
-    MODE_GACHAPIN : int = 11
-    MODE_MUKKU : int = 12
-    MODE_SUPER : int = 13
-    MODE_SCAM : int = 14
-    MODE_AL : int = 20
-    # SSR rates
-    RATE_SUPER : int = 15
-    RATE_MUKKU : int = 9
-    RATE_GALA : int = 6
-    RATE_NORMA : int = 3
-    RATE_ALL : int = 100 # guaranted ssr
-    # Rarity
-    SSR : int = 2
-    SR : int = 1
-    R : int = 0
-    # Assets
-    CRYSTALS : list[str] = [
-        "https://mizagbf.github.io/assets/rosetta-remote-resources/0_s.png",
-        "https://mizagbf.github.io/assets/rosetta-remote-resources/1_s.png",
-        "https://mizagbf.github.io/assets/rosetta-remote-resources/2_s.png",
-        "https://mizagbf.github.io/assets/rosetta-remote-resources/3_s.png"
-    ]
+    class Mode(IntEnum): # Simulator modes
+        UNDEF : int = -1
+        SINGLE : int = 0
+        SRSSR : int = 1
+        MEMEA : int = 2
+        MEMEB : int = 3
+        TEN : int = 10
+        GACHAPIN : int = 11
+        MUKKU : int = 12
+        SUPER : int = 13
+        SCAM : int = 14
+        ALL : int = 20
+
+    class SSRRate(IntEnum): # SSR rate in percent
+        SUPER : int = 15
+        MUKKU : int = 9
+        GALA : int = 6
+        NORMAL : int = 3
+        ALL : int = 100 # guaranted ssr
+    
+    # assets
     ROULETTE : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"
+    class Crystal(StrEnum):
+        N   : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/0_s.png"
+        R   : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/1_s.png"
+        SR  : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/2_s.png"
+        SSR : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/3_s.png"
+    
     # Others
+    RarityStrTable = {Rarity.R:'R', Rarity.SR:'SR', Rarity.SSR:'SSR'}
     RPS : list[str] = ['rock', 'paper', 'scissor']
     ROULETTE_DELAY : int = 4
 
@@ -615,13 +621,13 @@ class GachaSimulator():
         self.bot : DiscordBot = bot
         # unpack the data
         self.data : JSON = gachadata[0]
-        self.rateups : list[str] = gachadata[0]
-        self.ssrrate : int = gachadata[0]
-        self.complete : bool = gachadata[0] 
+        self.rateups : list[str] = gachadata[1]
+        self.ssrrate : int = gachadata[2]
+        self.complete : bool = gachadata[3] 
         self.scamdata : CurrentBanner = scamdata # no need to unpack the scam gacha one (assume it might be None too)
         self.bannerid : int = bannerid
         self.color : int = color
-        self.mode : int = self.MODE_UNDEF
+        self.mode : int = self.Mode.UNDEF
         self.changeMode(simtype)
         self.result : JSON = {} # output of generate()
         self.thumbnail : str|None = None # thumbnail of self.best
@@ -636,7 +642,7 @@ class GachaSimulator():
     simtype: value from Gacha.simulate parameter() simtype
     """
     def changeMode(self : GachaSimulator, simtype : str) -> None:
-        self.mode = {'single':self.MODE_SINGLE, 'srssr':self.MODE_SRSSR, 'memerollA':self.MODE_MEMEA, 'memerollB':self.MODE_MEMEB, 'ten':self.MODE_TEN, 'gachapin':self.MODE_GACHAPIN, 'mukku':self.MODE_MUKKU, 'supermukku':self.MODE_SUPER, 'scam':self.MODE_SCAM, 'all':self.MODE_ALL}[simtype]
+        self.mode = {'single':self.Mode.SINGLE, 'srssr':self.Mode.SRSSR, 'memerollA':self.Mode.MEMEA, 'memerollB':self.Mode.MEMEB, 'ten':self.Mode.TEN, 'gachapin':self.Mode.GACHAPIN, 'mukku':self.Mode.MUKKU, 'supermukku':self.Mode.SUPER, 'scam':self.Mode.SCAM, 'all':self.Mode.ALL}[simtype]
 
     """check_rate()
     Check and calculate modifiers needed to modify real rates to the ones we desire.
@@ -660,22 +666,22 @@ class GachaSimulator():
             rate : str
             for rate in r['list']:
                 proba[-1] += float(rate) * len(r['list'][rate]) # sum of rates x items
-        if ssrrate != self.data[2]['rate']: # if wanted ssr rate different from advertised one
-            mods[self.SSR] = ssrrate / proba[self.SSR] # calculate mod
-            tmp : float = proba[self.SSR] * mods[self.SSR] # get new proba
-            diff : float = proba[self.SSR] - tmp # get diff between old and new
-            if ssrrate == self.RATE_ALL:
-                proba[self.R] = 0
-                proba[self.SR] = 0
-                mods[self.R] = 0
-                mods[self.SR] = 0
+        if ssrrate != self.data[Rarity.SSR]['rate']: # if wanted ssr rate different from advertised one
+            mods[Rarity.SSR] = ssrrate / proba[Rarity.SSR] # calculate mod
+            tmp : float = proba[Rarity.SSR] * mods[Rarity.SSR] # get new proba
+            diff : float = proba[Rarity.SSR] - tmp # get diff between old and new
+            if ssrrate == self.SSRRate.ALL:
+                proba[Rarity.R] = 0
+                proba[Rarity.SR] = 0
+                mods[Rarity.R] = 0
+                mods[Rarity.SR] = 0
             else:
-                proba[self.R] = max(0, proba[self.R] + diff) # lower R proba
+                proba[Rarity.R] = max(0, proba[Rarity.R] + diff) # lower R proba
                 try:
-                    mods[self.R] = (proba[self.R] + diff) / proba[self.R] # calculate lowered R rate modifer
+                    mods[Rarity.R] = (proba[Rarity.R] + diff) / proba[Rarity.R] # calculate lowered R rate modifer
                 except:
-                    mods[self.R] = 1
-            proba[self.SSR] = tmp # store SSR proba
+                    mods[Rarity.R] = 1
+            proba[Rarity.SSR] = tmp # store SSR proba
         return mods, proba
 
     """get_generation_rate_and_modifiers()
@@ -692,10 +698,10 @@ class GachaSimulator():
     def get_generation_rate_and_modifiers(self : GachaSimulator, legfest : int) -> tuple[int, list[float], list[float]]:
         ssrrate : int
         match self.mode:
-            case self.MODE_ALL: ssrrate = self.RATE_ALL
-            case self.MODE_SUPER: ssrrate = self.RATE_SUPER
-            case self.MODE_MUKKU: ssrrate = self.RATE_MUKKU
-            case _: ssrrate = self.RATE_GALA if self.bot.gacha.isLegfest(self.ssrrate, legfest) else self.RATE_NORMAL
+            case self.Mode.ALL: ssrrate = self.SSRRate.ALL
+            case self.Mode.SUPER: ssrrate = self.SSRRate.SUPER
+            case self.Mode.MUKKU: ssrrate = self.SSRRate.MUKKU
+            case _: ssrrate = self.SSRRate.GALA if self.bot.gacha.isLegfest(self.ssrrate, legfest) else self.SSRRate.NORMAL
         return ssrrate, *self.check_rate(ssrrate)
 
     """retrieve_single_roll_item()
@@ -726,7 +732,7 @@ class GachaSimulator():
                 item : str
                 for item in self.data[rarity]['list'][rate]: # and each item
                     rateupitem = False 
-                    if rarity == self.SSR and rate in self.rateups: # if this is a rate up SSR
+                    if rarity == Rarity.SSR and rate in self.rateups: # if this is a rate up SSR
                         rateupitem = True # raise the flag
                     # if our dice value is under the item rate
                     if dice <= floatrate: # this is the one
@@ -753,17 +759,17 @@ class GachaSimulator():
             elif rarity > self.best[0]:
                 self.best = roll.copy()
             # final check
-            if rarity == self.SSR:
+            if rarity == Rarity.SSR:
                 # the loop must stop if we fulfilled the memeroll types
-                if self.mode == self.MODE_MEMEA:
+                if self.mode == self.Mode.MEMEA:
                     return True # memeroll mode A
-                elif self.mode == self.MODE_MEMEB and result['list'][-1][1].startswith("**"):
+                elif self.mode == self.Mode.MEMEB and result['list'][-1][1].startswith("**"):
                     return True # memeroll mode B
         else: # using dummy gacha
             result['list'].append([rarity, '']) # '' because no item names
             result['detail'][rarity] += 1
-            if rarity == self.SSR:
-                if self.mode == self.MODE_MEMEA or self.mode == self.MODE_MEMEB:
+            if rarity == Rarity.SSR:
+                if self.mode == self.Mode.MEMEA or self.mode == self.Mode.MEMEB:
                     return True  # memeroll mode A and B
         return False
 
@@ -787,27 +793,27 @@ class GachaSimulator():
         # our "dice" roll
         dice : int = random.randint(1, int(sum(proba) * 1000)) / 1000
         # Check if we must force a SR
-        if self.mode == self.MODE_SRSSR or (self.mode >= self.MODE_TEN and index == 9 and not tenrollsr): # if SRSSR mode OR (we're doing a ten draw type of roll and we're on the 10th roll without SR/SSR)
+        if self.mode == self.Mode.SRSSR or (self.mode >= self.Mode.TEN and index == 9 and not tenrollsr): # if SRSSR mode OR (we're doing a ten draw type of roll and we're on the 10th roll without SR/SSR)
             sr_mode = True
         else:
             sr_mode = False
         # determine what rarity we got
         rarity : int
-        if dice <= proba[self.SSR]: # SSR CASE
-            rarity = self.SSR
+        if dice <= proba[Rarity.SSR]: # SSR CASE
+            rarity = Rarity.SSR
             tenrollsr = True # raise got sr flag
-            dice /= mods[self.SSR] # apply modifier
-        elif (not sr_mode and dice <= proba[1] + proba[2]) or sr_mode: # SR CASE
-            rarity = self.SR
-            dice -= proba[self.SSR]
-            while dice >= proba[self.SR]: # in case we forced a SR and we're above the rate
-                dice -= proba[self.SR]
+            dice /= mods[Rarity.SSR] # apply modifier
+        elif (not sr_mode and dice <= proba[Rarity.SR] + proba[Rarity.SSR]) or sr_mode: # SR CASE
+            rarity = Rarity.SR
+            dice -= proba[Rarity.SSR]
+            while dice >= proba[Rarity.SR]: # in case we forced a SR and we're above the rate
+                dice -= proba[Rarity.SR]
             tenrollsr = True # raise got sr flag
-            dice /= mods[self.SR] # apply modifier
+            dice /= mods[Rarity.SR] # apply modifier
         else: # R CASE
-            rarity = self.R
-            dice -= proba[self.SSR] + proba[self.SR]
-            dice /= mods[self.R] # apply modifier
+            rarity = Rarity.R
+            dice -= proba[Rarity.SSR] + proba[Rarity.SR]
+            dice /= mods[Rarity.R] # apply modifier
         return tenrollsr, self.retrieve_single_roll_item(result, rarity, dice)
 
     """generate()
@@ -827,8 +833,8 @@ class GachaSimulator():
             self.result = {} # reset the output
             result : JSON = {'list':[], 'detail':[0, 0, 0], 'rate':ssrrate} # temp output
             tenrollsr : bool = False # flag for guaranted SR in ten rolls 
-            if self.mode == self.MODE_MEMEB and len(self.rateups) == 0:
-                self.mode = self.MODE_MEMEA # revert memerollB to A if no rate ups
+            if self.mode == self.Mode.MEMEB and len(self.rateups) == 0:
+                self.mode = self.Mode.MEMEA # revert memerollB to A if no rate ups
             # rolling loop
             i : int
             for i in range(0, count):
@@ -840,9 +846,9 @@ class GachaSimulator():
                 # end of a series of 10 rolls, check for gachapin/mukku/etc...
                 if modulo_i == 9:
                     tenrollsr = False # unset SR flag if we did 10 rolls
-                    if (self.mode == self.MODE_GACHAPIN or self.mode == self.MODE_MUKKU) and result['detail'][2] >= 1:
+                    if (self.mode == self.Mode.GACHAPIN or self.mode == self.Mode.MUKKU) and result['detail'][Rarity.SSR] >= 1:
                         break # gachapin and mukku mode, we end here
-                    elif self.mode == self.MODE_SUPER and result['detail'][2] >= 5:
+                    elif self.mode == self.Mode.SUPER and result['detail'][Rarity.SSR] >= 5:
                         break # super mukku mode, we end here
             self.result = result # store result
         except Exception as e:
@@ -942,7 +948,7 @@ class GachaSimulator():
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
             self.bot.logger.pushError("[GACHA] 'simulator output' error:", self.exception)
             return True
-        elif self.mode == self.MODE_SCAM and (self.scamdata is None or not self.scamdata[3]): # scam error occured
+        elif self.mode == self.Mode.SCAM and (self.scamdata is None or not self.scamdata[3]): # scam error occured
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="No Star Premium Gachas available at selected index", color=self.color))
             return True
         return False
@@ -957,9 +963,9 @@ class GachaSimulator():
     def generate_render_footer(self : GachaSimulator) -> str:
         footer : list[str] = ["{}% SSR rate".format(self.result['rate'])] # banner rate
         match self.mode:
-            case self.MODE_MEMEB:
+            case self.Mode.MEMEB:
                 footer.append(" ▫️ until rate up")
-            case self.MODE_SCAM:
+            case self.Mode.SCAM:
                 footer.append(" ▫️ Selected Scam #{}".format(self.scamdata[5]+1))
             case _:
                 pass
@@ -975,12 +981,12 @@ class GachaSimulator():
     """
     def generate_render_crystal(self : GachaSimulator) -> str:
         # select crystal image
-        if (100 * self.result['detail'][self.SSR] / len(self.result['list'])) >= self.result['rate']: # SSR
-            return random.choice([self.CRYSTALS[2], self.CRYSTALS[3]])
-        elif (100 * self.result['detail'][self.SR] / len(self.result['list'])) >= self.result['rate']: # SR
-            return self.CRYSTALS[2]
+        if (100 * self.result['detail'][Rarity.SSR] / len(self.result['list'])) >= self.result['rate']: # SSR
+            return random.choice([self.Crystal.SR, self.Crystal.SSR])
+        elif (100 * self.result['detail'][Rarity.SR] / len(self.result['list'])) >= self.result['rate']: # SR
+            return self.Crystal.SR
         else:
-            return random.choice([self.CRYSTALS[0], self.CRYSTALS[1]]) # R
+            return random.choice([self.Crystal.N, self.Crystal.R]) # R
 
     """render_single_roll()
     Display the result of a single draw in the given interaction.
@@ -994,7 +1000,7 @@ class GachaSimulator():
     """
     async def render_single_roll(self : GachaSimulator, inter : disnake.Interaction, titles : tuple[str, str], footer : str) -> None:
         item : GachaRoll = self.result['list'][0] # get the first (and likely only) item
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(item[0])), item[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{}{}".format(self.bot.emote.get(self.RarityStrTable.get(item[0])), item[1]), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
 
     """render_ten_roll()
     Display the result of a ten draw in the given interaction.
@@ -1017,7 +1023,7 @@ class GachaSimulator():
             for j in range(0, i): # display revealed items
                 if j >= 10: break
                 # write
-                msgs.append("{}{} ".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(self.result['list'][j][0])), self.result['list'][j][1]))
+                msgs.append("{}{} ".format(self.bot.emote.get(self.RarityStrTable.get(self.result['list'][j][0])), self.result['list'][j][1]))
                 if j & 1 == 1:
                     msgs.append("\n")
             for j in range(i, 10): # display hidden items
@@ -1063,7 +1069,7 @@ class GachaSimulator():
         msgs : list[str] = []
         # speed selection
         item_count : int
-        if self.mode == self.MODE_MEMEB:
+        if self.mode == self.Mode.MEMEB:
             item_count = 5 # by 5 items
         else:
             item_count = 3 # by 3items
@@ -1073,15 +1079,15 @@ class GachaSimulator():
         for i, v in enumerate(self.result['list']):
             if i > 0 and i % item_count == 0:
                 # display once we reached item_count
-                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[0].format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[Rarity.SSR], self.bot.emote.get('SSR'), counter[Rarity.SR], self.bot.emote.get('SR'), counter[Rarity.R], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer), view=None)
                 await asyncio.sleep(1)
                 msgs = []
             # add result
-            msgs.append("{} {}\n".format(self.bot.emote.get({0:'R', 1:'SR', 2:'SSR'}.get(v[0])), v[1]))
+            msgs.append("{} {}\n".format(self.bot.emote.get(self.RarityStrTable.get(v[0])), v[1]))
             counter[v[0]] += 1
         # update title
         title : str = (titles[1].format(inter.author.display_name, len(self.result['list'])) if (len(self.result['list']) < 300) else "{} sparked".format(inter.author.display_name))
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[2], self.bot.emote.get('SSR'), counter[1], self.bot.emote.get('SR'), counter[0], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':title, 'icon_url':inter.author.display_avatar}, description="{} {} ▫️ {} {} ▫️ {} {}\n".format(counter[Rarity.SSR], self.bot.emote.get('SSR'), counter[Rarity.SR], self.bot.emote.get('SR'), counter[Rarity.R], self.bot.emote.get('R')) + ''.join(msgs), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
 
     """render_spark_roll()
     Display the result of a spark in the given interaction.
@@ -1095,7 +1101,7 @@ class GachaSimulator():
     """
     async def render_spark_roll(self : GachaSimulator, inter : disnake.Interaction, titles : tuple[str, str], footer : str) -> None:
         count : int = len(self.result['list'])
-        rate : float = (100*self.result['detail'][2]/count)
+        rate : float = (100*self.result['detail'][Rarity.SSR]/count)
         msgs : list[str] = []
         rolls : dict[str, int] = self.getSSRList()
         if len(rolls) > 0 and self.complete:
@@ -1110,13 +1116,13 @@ class GachaSimulator():
                 msgs.append(" ")
         # add extra messages for other modes
         amsg : str = ""
-        if self.mode == self.MODE_GACHAPIN:
+        if self.mode == self.Mode.GACHAPIN:
             amsg = "Gachapin stopped after **{}** rolls\n".format(len(self.result['list']))
-        elif self.mode == self.MODE_MUKKU:
+        elif self.mode == self.Mode.MUKKU:
             amsg = "Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
-        elif self.mode == self.MODE_SUPER:
+        elif self.mode == self.Mode.SUPER:
             amsg = "Super Mukku stopped after **{}** rolls\n".format(len(self.result['list']))
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description="{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][2], self.bot.emote.get('SSR'), self.result['detail'][1], self.bot.emote.get('SR'), self.result['detail'][0], self.bot.emote.get('R'), ''.join(msgs), rate), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
+        await inter.edit_original_message(embed=self.bot.embed(author={'name':titles[1].format(inter.author.display_name, count), 'icon_url':inter.author.display_avatar}, description="{}{:} {:} ▫️ {:} {:} ▫️ {:} {:}\n{:}\n**{:.2f}%** SSR rate".format(amsg, self.result['detail'][Rarity.SSR], self.bot.emote.get('SSR'), self.result['detail'][Rarity.SR], self.bot.emote.get('SR'), self.result['detail'][Rarity.R], self.bot.emote.get('R'), ''.join(msgs), rate), color=self.color, footer=footer, thumbnail=self.thumbnail), view=None)
 
     """render()
     Output the result in a message, via a given disnake Interaction.
@@ -1165,7 +1171,7 @@ class GachaSimulator():
         rolls : dict[str, int] = {}
         r : GachaRoll
         for r in self.result['list']:
-            if r[0] == 2: # extra SSRs
+            if r[0] == Rarity.SSR:
                 rolls[r[1]] = rolls.get(r[1], 0) + 1
         return rolls
 
@@ -1203,7 +1209,7 @@ class GachaSimulator():
             if prev_best is None or str(self.best) != prev_best:
                 prev_best = str(self.best)
                 await self.updateThumbnail()
-            # wait next roulette update, for the remainer of self.ROULETTE_DELAY
+            # wait next roulette update, for the remainer of Rarity.ROULETTE_DELAY
             diff : float = self.ROULETTE_DELAY - (time.time() - start_time)
             if diff > 0:
                 await asyncio.sleep(diff)
@@ -1211,21 +1217,22 @@ class GachaSimulator():
             await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message() + ("" if not roulette.running else "**...**"), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
 
 class Roulette():
-    # Wheel zones
-    MAX_ROLL : int = 0
-    GACHAPIN : int = 1
-    BIRTHDAY : int = 2
-    ROLL_10 : int = 10
-    ROLL_20 : int = 20
-    ROLL_30 : int = 30
-    NORMAL_ROLLS : list[int] = [MAX_ROLL, ROLL_10, ROLL_20, ROLL_30]
-    # States
-    STATE_JANKEN : int = 0
-    STATE_NORMAL : int = 1
-    STATE_GACHAPIN : int = 2
-    STATE_MUKKU : int = 3
-    STATE_SUPER_MUKKU : int = 4
-    STATE_BIRTHDAY_ZONE : int = 5
+    class Wheel(IntEnum): # Roulette Wheel Zones
+        MAX_ROLL : int = 0
+        GACHAPIN : int = 1
+        BIRTHDAY : int = 2
+        ROLL_10 : int = 10
+        ROLL_20 : int = 20
+        ROLL_30 : int = 30
+    NORMAL_ROLLS : list[int] = [Wheel.MAX_ROLL, Wheel.ROLL_10, Wheel.ROLL_20, Wheel.ROLL_30]
+
+    class State(IntEnum): # Roulette states
+        JANKEN : int = 0
+        NORMAL : int = 1
+        GACHAPIN : int = 2
+        MUKKU : int = 3
+        SUPER_MUKKU : int = 4
+        BIRTHDAY_ZONE : int = 5
     
     """__init__()
     Constructor.
@@ -1270,7 +1277,7 @@ class Roulette():
         
         # variables and flags
         self.running : bool = True
-        self.state : int = self.STATE_NORMAL
+        self.state : int = self.State.NORMAL
         self.current_time : datetime = current_time
         self.msgs : list[str] = [] # message strings container
         self.footers : list[str] = [] # footer strings container
@@ -1329,7 +1336,7 @@ class Roulette():
     """
     def generated_fixed_rolls(self : Roulette) -> None:
         self.msgs = ["{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.forced_rolls//100, self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
-        self.stats = self.STATE_NORMAL
+        self.stats = self.State.NORMAL
         self.rolls = self.forced_rolls
         self.enable_janken = False
         if self.forced_super_mukku:
@@ -1348,17 +1355,17 @@ class Roulette():
             return
         # Add possible wheel results depending on settings
         wheel : list[tuple[int, int|None]] = []
-        wheel.append((self.GACHAPIN, 800)) # gachapin 8%
+        wheel.append((self.Wheel.GACHAPIN, 800)) # gachapin 8%
         if self.birthday_zone:
-            wheel.append((self.BIRTHDAY, 500)) # birthday 5%
+            wheel.append((self.Wheel.BIRTHDAY, 500)) # birthday 5%
         if self.realist:
-            wheel.append((self.ROLL_30, 2000)) # 30 rolls 20%
-            wheel.append((self.ROLL_20, None))
+            wheel.append((self.Wheel.ROLL_30, 2000)) # 30 rolls 20%
+            wheel.append((self.Wheel.ROLL_20, None))
         else:
-            wheel.append((self.MAX_ROLL, 200)) # hundred 2%
-            wheel.append((self.ROLL_30, 2000)) # 30 rolls 20%
-            wheel.append((self.ROLL_20, 3500)) # 20 rolls 35%
-            wheel.append((self.ROLL_10, None))
+            wheel.append((self.Wheel.MAX_ROLL, 200)) # hundred 2%
+            wheel.append((self.Wheel.ROLL_30, 2000)) # 30 rolls 20%
+            wheel.append((self.Wheel.ROLL_20, 3500)) # 20 rolls 35%
+            wheel.append((self.Wheel.ROLL_10, None))
         # Calculate minimum value to get janken
         zone : tuple[int, int|None]
         for zone in wheel:
@@ -1374,34 +1381,34 @@ class Roulette():
                 threshold += zone[1] # remove and iterate
                 continue
             match zone[0]:
-                case self.MAX_ROLL:
+                case self.Wheel.MAX_ROLL:
                     if self.enable_200_rolls: # forced 200 rolls
                         self.msgs = ["{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'), self.bot.emote.get('crystal'))]
                         self.rolls = 200
                     else: # forced 100 rolls
                         self.msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
                         self.rolls = 100
-                case self.GACHAPIN:
+                case self.Wheel.GACHAPIN:
                     self.msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
                     self.rolls = -1
-                    self.state = self.STATE_GACHAPIN
-                case self.BIRTHDAY: # Birthday zone
+                    self.state = self.State.GACHAPIN
+                case self.Wheel.BIRTHDAY: # Birthday zone
                     self.msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
                     self.rolls = -1
-                    self.state = self.STATE_BIRTHDAY_ZONE
-                case self.ROLL_30:
+                    self.state = self.State.BIRTHDAY_ZONE
+                case self.Wheel.ROLL_30:
                     self.msgs = ["**30** rolls! :clap:\n"]
                     self.rolls = 30
-                case self.ROLL_20:
+                case self.Wheel.ROLL_20:
                     self.msgs = ["**20** rolls :open_mouth:\n"]
                     self.rolls = 20
-                case self.ROLL_10:
+                case self.Wheel.ROLL_10:
                     self.msgs = ["**10** rolls :pensive:\n"]
                     self.rolls = 10
             break
         # to disable janken if needed
-        if not self.enable_janken and self.state == self.STATE_JANKEN:
-            self.state = self.STATE_NORMAL
+        if not self.enable_janken and self.state == self.State.JANKEN:
+            self.state = self.State.NORMAL
 
     """janken_event()
     Simulate the Rock Paper Scissor event (if enabled).
@@ -1430,12 +1437,12 @@ class Roulette():
                 else:
                     self.max_janken -= 1
                 if self.max_janken == 0:
-                    self.state = self.STATE_NORMAL # go to normal roll
+                    self.state = self.State.NORMAL # go to normal roll
             else:
                 self.msgs.append(" :pensive:\n")
-                self.state = self.STATE_NORMAL # go to normal roll
+                self.state = self.State.NORMAL # go to normal roll
         else:
-            self.state = self.STATE_NORMAL # go to normal roll
+            self.state = self.State.NORMAL # go to normal roll
 
     """normal_event()
     Simulate standard rolls.
@@ -1454,11 +1461,11 @@ class Roulette():
         self.footers = self.sim.bannerIDtoFooter(["{}% SSR rate".format(self.sim.result['rate'])])
         # Rarity counter line
         rarity : int
-        for rarity in range(self.sim.SSR, self.sim.R-1, -1):
+        for rarity in reversed(Rarity):
             self.msgs.append(str(self.sim.result['detail'][rarity]))
             self.msgs.append(" ")
-            self.msgs.append(str(self.bot.emote.get({self.sim.SSR:'SSR', self.sim.SR:'SR', self.sim.R:'R'}.get(rarity, rarity))))
-            if rarity > self.sim.R:
+            self.msgs.append(str(self.bot.emote.get({Rarity.SSR:'SSR', Rarity.SR:'SR', Rarity.R:'R'}.get(rarity, rarity))))
+            if rarity > Rarity.R:
                 self.msgs.append(" ▫️ ")
         self.msgs.append("\n")
         # SSR List
@@ -1469,7 +1476,7 @@ class Roulette():
         self.msgs.append("**{:.2f}%** SSR rate\n\n".format(rate))
         # Next step
         if self.super_mukku:
-            self.state = self.STATE_SUPER_MUKKU # go to Super Mukku
+            self.state = self.State.SUPER_MUKKU # go to Super Mukku
         else:
             self.running = False # Over
 
@@ -1480,7 +1487,7 @@ class Roulette():
     
     Parameters
     --------
-    sim_mode: String, The simulator mode to use. It must corresponds to the state. The behavior is undefined if there is a mismatch (example, self.state == self.STATE_GACHAPIN but sim_mode = "mukku")
+    sim_mode: String, The simulator mode to use. It must corresponds to the state. The behavior is undefined if there is a mismatch (example, self.state == self.State.GACHAPIN but sim_mode = "mukku")
     """
     async def gachapin_mukku_event(self : Roulette, sim_mode : str) -> None:
         # Generate rolls
@@ -1489,29 +1496,29 @@ class Roulette():
         # Number of SSR
         count : int = len(self.sim.result['list'])
         # Result SSR rate
-        rate : float = (100*self.sim.result['detail'][2]/count)
+        rate : float = (100*self.sim.result['detail'][Rarity.SSR]/count)
         # Get ssr list
         tmp : list[str] = self.SSRList2StrList(self.sim.getSSRList())
         # Update the footer (if gachapin)
-        if self.state == self.STATE_GACHAPIN:
+        if self.state == self.State.GACHAPIN:
             self.footers = self.sim.bannerIDtoFooter(["{}% SSR rate".format(self.sim.result['rate'])])
         # Roll line
         match self.state:
-            case self.STATE_GACHAPIN:
+            case self.State.GACHAPIN:
                 self.msgs.append("Gachapin ▫️ **")
-            case self.STATE_MUKKU:
+            case self.State.MUKKU:
                 self.msgs.append(":confetti_ball: Mukku ▫️ **")
-            case self.STATE_SUPER_MUKKU:
+            case self.State.SUPER_MUKKU:
                 self.msgs.append(":confetti_ball: **Super Mukku** ▫️ **")
         self.msgs.append(str(count))
         self.msgs.append("** rolls\n")
         # Rarity counter line
         rarity : int
-        for rarity in range(self.sim.SSR, self.sim.R-1, -1):
+        for rarity in reversed(Rarity):
             self.msgs.append(str(self.sim.result['detail'][rarity]))
             self.msgs.append(" ")
-            self.msgs.append(str(self.bot.emote.get({self.sim.SSR:'SSR', self.sim.SR:'SR', self.sim.R:'R'}.get(rarity, rarity))))
-            if rarity > self.sim.R:
+            self.msgs.append(str(self.bot.emote.get({Rarity.SSR:'SSR', Rarity.SR:'SR', Rarity.R:'R'}.get(rarity, rarity))))
+            if rarity > Rarity.R:
                 self.msgs.append(" ▫️ ")
         self.msgs.append("\n")
         # SSR List
@@ -1522,19 +1529,19 @@ class Roulette():
         self.msgs.append("**{:.2f}%** SSR rate\n\n".format(rate))
         # Check next step
         match self.state:
-            case self.STATE_GACHAPIN:
+            case self.State.GACHAPIN:
                 # depending on how many rolls we got, and some rng, we decide on the next step
                 if count == 10 and random.randint(1, 100) <= 99:
-                    self.state = self.STATE_MUKKU
+                    self.state = self.State.MUKKU
                 elif count == 20 and random.randint(1, 100) <= 60:
-                    self.state = self.STATE_MUKKU
+                    self.state = self.State.MUKKU
                 elif count == 30 and random.randint(1, 100) <= 30:
-                    self.state = self.STATE_MUKKU
+                    self.state = self.State.MUKKU
                 elif random.randint(1, 100) <= 3:
-                    self.state = self.STATE_MUKKU
+                    self.state = self.State.MUKKU
                 else:
                     self.running = False # Over
-            case self.STATE_MUKKU:
+            case self.State.MUKKU:
                 if self.double_mukku: # Double mukku enabled
                     if random.randint(1, 100) < 25: # roll a dice
                         self.double_mukku = False # disable double mukku and wait to go to mukku again
@@ -1543,7 +1550,7 @@ class Roulette():
                         self.running = False # Over
                 else:
                     self.running = False # Over
-            case self.STATE_SUPER_MUKKU:
+            case self.State.SUPER_MUKKU:
                 self.running = False # Over
 
     """birthday_event()
@@ -1579,17 +1586,17 @@ class Roulette():
     async def update(self : Roulette) -> None:
         if self.running:
             match self.state:
-                case self.STATE_JANKEN:
+                case self.State.JANKEN:
                     await self.janken_event()
-                case self.STATE_NORMAL: # normal rolls
+                case self.State.NORMAL: # normal rolls
                     await self.normal_event()
-                case self.STATE_GACHAPIN: # gachapin
+                case self.State.GACHAPIN: # gachapin
                     await self.gachapin_mukku_event('gachapin')
-                case self.STATE_MUKKU:
+                case self.State.MUKKU:
                     await self.gachapin_mukku_event('mukku')
-                case self.STATE_SUPER_MUKKU:
+                case self.State.SUPER_MUKKU:
                     await self.gachapin_mukku_event('supermukku')
-                case self.STATE_BIRTHDAY_ZONE:
+                case self.State.BIRTHDAY_ZONE:
                     await self.birthday_event()
             # tweak footer
             if self.realist:
