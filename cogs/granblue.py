@@ -523,13 +523,13 @@ class GranblueFantasy(commands.Cog):
 
         try:
             gdata : CurrentGacha = await self.bot.gacha.get()
-            if len(buf) > 0:
+            if len(gdata) > 0:
                 output.append("{} Current {} ends in **{}**".format(self.bot.emote.get('SSR'), self.bot.util.command2mention('gbf gacha'), self.bot.util.delta2str(gdata[1]['time'] - gdata[0], 2)))
                 if gdata[1]['time'] != gdata[1]['timesub']:
                     output.append(" (Spark period ends in **{}**)".format(self.bot.util.delta2str(gdata[1]['timesub'] - gdata[0], 2)))
                 output.append('\n')
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         try:
             buf = self.bot.get_cog('GuildWar').getGWState()
