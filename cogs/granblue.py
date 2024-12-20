@@ -1354,7 +1354,7 @@ class GranblueFantasy(commands.Cog):
                     msgs.append('{} {}\n'.format(self.bot.emote.get(quests.get(cid, 'misc')), data[i]['description']))
                 else:
                     msgs.append('{} {}\n'.format(self.bot.emote.get(str(i+1)), data[i]['description']))
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Daily Coop Missions", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(msgs), color=self.COLOR))
+            await inter.edit_original_message(embed=self.bot.embed(author={'name':"Daily Coop Missions", 'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"}, description=''.join(msgs), url="https://game.granbluefantasy.jp/#coopraid", color=self.COLOR))
         except:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
 
