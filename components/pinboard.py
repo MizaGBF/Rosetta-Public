@@ -246,6 +246,24 @@ class Pinboard():
     def is_enabled(self : Pinboard, server_id : str) -> bool:
         return server_id in self.bot.data.save['pinboard'] and 'disabled' not in self.bot.data.save['pinboard'][server_id]
 
+    """reset()
+    Reset the settings for a guild
+    
+    Parameters
+    ----------
+    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    color: Integer, embed color to use.
+    """
+    async def reset(self : Pinboard, inter : disnake.GuildCommandInteraction, color : int) -> None:
+        server_id : str = str(inter.guild.id)
+        # Check pinboard state
+        if server_id in self.bot.data.save['pinboard']:
+            self.bot.data.save['pinboard'].pop(server_id)
+            msg = "The pinboard has been reset and is disabled"
+        else:
+            msg = "No pinboard data for this server"
+        await self.render(inter, color, msg)
+
     """toggle()
     Toggle the system for a guild, if it exists
     
@@ -408,7 +426,7 @@ class Pinboard():
         if settings is None:
             fields.append({
                 'name':'Information',
-                'value': '**Pinboard not set for this server**',
+                'value': '**Pinboard not set for this server**\nCheck the `/mod pinboard` command group to start.',
                 'inline': True
             })
         else:

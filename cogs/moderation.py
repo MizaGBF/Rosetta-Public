@@ -189,20 +189,20 @@ class Moderation(commands.Cog):
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.toggle(inter, self.COLOR)
 
-    @pinboard.sub_command()
-    async def track(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    @pinboard.sub_command(name="track")
+    async def trackpinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Toggle pinboard tracking for the current text or forum channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.track_toggle(inter, self.COLOR)
 
-    @pinboard.sub_command()
-    async def output(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    @pinboard.sub_command(name="output")
+    async def outputpinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Set the current channel as the output channel (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.set(inter, self.COLOR, {"set_output":True})
 
-    @pinboard.sub_command()
-    async def settings(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, emoji : str = commands.Param(description="The emoji used as a pin trigger", default=""), threshold : int = commands.Param(description="Number of reactions needed to trigger the pin", default=0, ge=0), mod_bypass : int = commands.Param(description="If 1, a moderator can force the pin with a single reaction", ge=-1, le=1, default=-1)) -> None:
+    @pinboard.sub_command(name="settings")
+    async def settingspinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, emoji : str = commands.Param(description="The emoji used as a pin trigger", default=""), threshold : int = commands.Param(description="Number of reactions needed to trigger the pin", default=0, ge=0), mod_bypass : int = commands.Param(description="If 1, a moderator can force the pin with a single reaction", ge=-1, le=1, default=-1)) -> None:
         """See or Change pinboard settings for this server (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         options : dict[str, str|bool|int] = {}
@@ -214,12 +214,11 @@ class Moderation(commands.Cog):
             options["mod_bypass"] = mod_bypass != 0
         await self.bot.pinboard.set(inter, self.COLOR, options)
 
-    @pinboard.sub_command()
-    async def reset(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+    @pinboard.sub_command(name="reset")
+    async def resetpinboard(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """Reset the tracked channel list of this server pinboard settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.pinboard.set(str(inter.guild.id), {"tracked":[]})
-        await self.bot.pinboard.render(inter, self.COLOR, "Settings have been updated")
+        await self.bot.pinboard.reset(inter, self.COLOR)
 
     @mod.sub_command_group()
     async def server(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
