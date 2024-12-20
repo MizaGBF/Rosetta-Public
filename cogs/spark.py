@@ -310,7 +310,7 @@ class Sparking(commands.Cog):
         iid : str
         s : SparkData
         for iid, s in self.bot.data.save['spark'].items(): # go over the spark data
-            if self.bot.ban.check(iid, self.bot.ban.SPARK): # if user is banned, skip
+            if self.bot.ban.check(str(iid), self.bot.ban.SPARK): # if user is banned, skip
                 continue
             m : disnake.Member|None = await guild.get_or_fetch_member(int(iid)) # try to fetch user in given guild
             if m is not None: # user IS in the guild

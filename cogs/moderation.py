@@ -111,9 +111,9 @@ class Moderation(commands.Cog):
     async def banspark(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, member: disnake.Member) -> None:
         """Ban an user from the spark ranking (Mod Only)"""
         await inter.response.defer(ephemeral=True)
-        self.bot.ban.set(member.id, self.bot.ban.SPARK)
+        self.bot.ban.set(str(member.id), self.bot.ban.SPARK)
         await inter.edit_original_message(embed=self.bot.embed(title="The user has been banned from the spark ranking", description="My owner has been notified", color=self.COLOR))
-        await self.bot.send('debug', embed=self.bot.embed(title="{} ▫️ {}".format(member.display_name, member.id), description="Banned from all spark rankings by {}\nValues: `{}`".format(inter.author.display_name, self.bot.data.save['spark'].get(str(member.id), 'No Data')), thumbnail=member.display_avatar, color=self.COLOR, footer=inter.guild.name))
+        await self.bot.send('debug', embed=self.bot.embed(title="{} ▫️ {}".format(member.display_name, member.id), description="Banned from all spark rankings by {:}\nMask: `{:b}`".format(inter.author.display_name, self.bot.ban.get(str(member.id))), thumbnail=member.display_avatar, color=self.COLOR, footer=inter.guild.name))
 
     @mod.sub_command_group()
     async def cleanup(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:

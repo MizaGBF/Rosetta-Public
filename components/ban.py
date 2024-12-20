@@ -30,10 +30,12 @@ class Ban():
     uid: User discord id
     flag: Bit Mask
     """
-    def set(self : Ban, uid : int|str, flag : int) -> None:
+    def set(self : Ban, uid : str, flag : int) -> None:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
         if not self.check(uid, flag): # if not banned for that flag
             # set ban flag
-            self.bot.data.save['ban'][str(uid)] = self.bot.data.save['ban'].get(str(uid), 0) ^ flag
+            self.bot.data.save['ban'][uid] = self.bot.data.save['ban'].get(uid, 0) ^ flag
             self.bot.data.pending = True
 
     """unset()
@@ -44,14 +46,16 @@ class Ban():
     uid: User discord id
     flag: Bit Mask. Optional (If not present or None, all bans will be lifted)
     """
-    def unset(self : Ban, uid : int|str, flag : int|None = None) -> None:
-        if str(uid) in self.bot.data.save['ban']: # if user in ban list
+    def unset(self : Ban, uid : str, flag : int|None = None) -> None:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
+        if uid in self.bot.data.save['ban']: # if user in ban list
             if flag is None: # total unban
-                self.bot.data.save['ban'].pop(str(uid))
+                self.bot.data.save['ban'].pop(uid)
             elif self.check(uid, flag): # if user is banned for that flag, unban
-                self.bot.data.save['ban'][str(uid)] -= flag
-            if self.bot.data.save['ban'][str(uid)] == 0: # if user is totally unbanned, remove from list
-                self.bot.data.save['ban'].pop(str(uid))
+                self.bot.data.save['ban'][uid] -= flag
+            if self.bot.data.save['ban'][uid] == 0: # if user is totally unbanned, remove from list
+                self.bot.data.save['ban'].pop(uid)
             self.bot.data.pending = True
 
     """check()
@@ -66,9 +70,11 @@ class Ban():
     ----------
     bool: True if banned, False if not
     """
-    def check(self : Ban, uid : int|str, mask : int) -> bool:
+    def check(self : Ban, uid : str, mask : int) -> bool:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
         # apply mask to user flag to check if banned
-        return ((self.bot.data.save['ban'].get(str(uid), 0) & mask) == mask)
+        return ((self.bot.data.save['ban'].get(uid, 0) & mask) == mask)
 
     """get()
     Return the user bitmask
@@ -81,6 +87,8 @@ class Ban():
     ----------
     int: Bitmask
     """
-    def get(self : Ban, uid : int|str) -> int:
+    def get(self : Ban, uid : str) -> int:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
         # simply return the user ban value
-        return self.bot.data.save['ban'].get(str(uid), 0)
+        return self.bot.data.save['ban'].get(uid, 0)

@@ -782,7 +782,7 @@ class GranblueFantasy(commands.Cog):
         """Link your GBF id to your Discord ID"""
         try:
             await inter.response.defer(ephemeral=True)
-            if self.bot.ban.check(inter.author.id, self.bot.ban.PROFILE): # check if author is banned
+            if self.bot.ban.check(str(inter.author.id), self.bot.ban.PROFILE): # check if author is banned
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="You are banned to use this feature", color=self.COLOR))
                 return
             # check if account exists

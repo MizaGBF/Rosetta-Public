@@ -567,13 +567,13 @@ class DiscordBot(commands.InteractionBot):
             if not self.running:
                 return False # do nothing if the bot is stopped/stopping
             if inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable): # if No guild and channel is PartialMessageable, the command has been sent via a direct message
-                return not self.ban.check(inter.author.id, self.ban.USE_BOT) # check if the author is banned
+                return not self.ban.check(str(inter.author.id), self.ban.USE_BOT) # check if the author is banned
             elif inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable):
                 return False # other cases
             gid : str = str(inter.guild.id)
-            if self.ban.check(inter.author.id, self.ban.USE_BOT): # check if the author is banned
+            if self.ban.check(str(inter.author.id), self.ban.USE_BOT): # check if the author is banned
                 return False
-            elif gid in self.data.save['banned_guilds'] or self.ban.check(inter.guild.owner_id, self.ban.OWNER): # check if the guild or guild owner is banned
+            elif gid in self.data.save['banned_guilds'] or self.ban.check(str(inter.guild.owner_id), self.ban.OWNER): # check if the guild or guild owner is banned
                 await inter.guild.leave() # leave the server if it is
                 return False
             elif not inter.channel.permissions_for(inter.me).send_messages: # check if the bot has the permission to send messages

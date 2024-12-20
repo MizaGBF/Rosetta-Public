@@ -312,8 +312,8 @@ class Admin(commands.Cog):
         """Command to ban a server owner and leave all its servers (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            self.bot.ban.set(guild_id, self.bot.ban.OWNER) # set ban flag to owner
             g : disnake.Guild
+            self.bot.ban.set(str(g.owner.id), self.bot.ban.OWNER) # set ban flag to owner
             for g in self.bot.guilds: # check all guilds
                 try:
                     if str(g.owner.id) == guild_id: # leave if the owner matches
@@ -354,7 +354,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Banned user for profile", color=self.COLOR))
 
     @ban.sub_command()
-    async def rollid(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def sparkid(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """ID based Ban for /spark ranking (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.set(user_id, self.bot.ban.SPARK)
@@ -379,7 +379,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Unbanned user for profile", color=self.COLOR))
 
     @unban.sub_command()
-    async def roll(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
+    async def spark(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, user_id : str = commands.Param()) -> None:
         """Unban an user from all the roll ranking (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         self.bot.ban.unset(user_id, self.bot.ban.SPARK)
