@@ -172,7 +172,7 @@ The bot is configured with a simple file called `config.json`. Create one in its
 ```  
   
 * `"tokens"` contains the tokens and IDs used by the Discord and Google Drive clients.  
-* `"ids"` contains various Discord IDs (user, server, channel...) required for the bot to work. In Discord, with *Developer Mode* enabled, you can right-click on anything to copy an ID.  
+* `"ids"` contains various Discord IDs (user, server, channel...) required for the bot to work. In Discord, with *Developer Mode* enabled, you can right-click on anything to copy an ID. **IDs are integer**, i.e. number. Don't put them between quotes `"` like tokens.  
 * `"games"` contains a list of games to be displayed in the bot activity status.  
 * `"granblue"` contains shorthands to crew ids, separated in two categories: `"gbfgcrew"`, crews from the the [/gbfg/ 4chan community](https://boards.4chan.org/vg/catalog#s=gbfg) and "`othercrew`", related crews or crews with access to Rosetta.  
   
