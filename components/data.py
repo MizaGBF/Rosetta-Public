@@ -439,7 +439,7 @@ class Data():
                      self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (DB reminders):", se)
                 # cog clean up
                 try:
-                    await self.bot.get_cog('Spark').clean_data() # clean up spark data
+                    await self.bot.get_cog('Sparking').clean_data() # clean up spark data
                 except Exception as se:
                      self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
                 try:

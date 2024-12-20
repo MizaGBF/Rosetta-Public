@@ -154,9 +154,9 @@ class Channel():
                 self.bot.data.save['cleanup'].pop(gid)
                 self.bot.data.pending = True
         # announcement
-        for gid in list(self.save['announcement'].keys()):
-            if gid not in guild_ids or (self.bot.get_channel(self.save['announcement'][gid][0]) is None and not self.save['announcement'][gid][1]):
-                self.save['announcement'].pop(gid)
+        for gid in list(self.bot.data.save['announcement'].keys()):
+            if gid not in guild_ids or (self.bot.get_channel(self.bot.data.save['announcement'][gid][0]) is None and not self.save['announcement'][gid][1]):
+                self.bot.data.save['announcement'].pop(gid)
                 self.bot.data.pending = True
         # update announcement channels
         self.bot.channel.update_announcement_channels()
