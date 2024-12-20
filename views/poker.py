@@ -1,9 +1,27 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 import asyncio
-from typing import Union, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.util import GameCard
+    # Type Aliases
+    import types
+    CardList : types.GenericAlias = list[GameCard]
+    Hand : types.GenericAlias = list[int|CardList]
+from enum import IntEnum
 import random
+
+# General enum
+class Constant(IntEnum):
+    CARD_1_HOLD : int = 0b001
+    CARD_2_HOLD : int = 0b010
+    CONFIRMED   : int = 0b100
+    
+    BUTTON_CONFIRM : int = 0
+    BUTTON_CARD_1 : int = 1
+    BUTTON_CARD_2 : int = 2
 
 # ----------------------------------------------------------------------------------------------------------------
 # Poker View
@@ -21,9 +39,9 @@ class PokerSub(BaseView):
     bot: a pointer to the bot for ease of access
     parent: the Poker view
     """
-    def __init__(self, bot : 'DiscordBot', parent : 'Poker') -> None:
+    def __init__(self : PokerSub, bot : DiscordBot, parent : Poker) -> None:
         super().__init__(bot, timeout=120)
-        self.parent = parent
+        self.parent : Poker = parent # Poker view
 
     """do()
     Coroutine called by buttons
@@ -33,58 +51,76 @@ class PokerSub(BaseView):
     interaction: the button interaction
     mode: 0 = confirm, 1 = toggle card 1, 2 = toggle card 2
     """
-    async def do(self, interaction: disnake.Interaction, mode : int) -> None:
-        for i, p in enumerate(self.parent.players):
+    async def do(self : PokerSub, interaction: disnake.Interaction, mode : int) -> None:
+        i : int
+        p : disnake.User|disnake.Member
+        for i, p in enumerate(self.parent.players): # search for player
             if p.id == interaction.user.id:
                 break
-        if self.parent.hands[i][0] >= 100:
+        if self.parent.hands[i][0] & Constant.CONFIRMED == Constant.CONFIRMED:
             await interaction.response.send_message("You can't modify your choice", ephemeral=True)
             return
         match mode:
-            case 0:
-                if self.parent.hands[i][0] < 10: self.parent.hands[i][1][0] = self.parent.deck.pop()
-                if self.parent.hands[i][0] in [0, 10]: self.parent.hands[i][1][1] = self.parent.deck.pop()
-                self.parent.hands[i][0] += 100
+            case Constant.BUTTON_CONFIRM: # confirm button
+                # check held card
+                if self.parent.hands[i][0] & Constant.CARD_1_HOLD == 0: # card 1 isn't held
+                    self.parent.hands[i][1][0] = self.parent.deck.pop() # draw new
+                if self.parent.hands[i][0] & Constant.CARD_2_HOLD == 0: # card 2 isn't held
+                    self.parent.hands[i][1][1] = self.parent.deck.pop() # draw new
+                # set state to confirmed
+                self.parent.hands[i][0] = self.parent.hands[i][0] | Constant.CONFIRMED
+                # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=None)
+                # check if all players confirmed
                 for h in self.parent.hands:
-                    if h[0] < 100: return
+                    if h[0] & Constant.CONFIRMED == 0: return # one hasn't, stop here
+                # all confirmed, disable this sub view and change parent to state 1
                 self.stopall()
                 self.parent.stopall()
                 self.parent.state = 1
-            case 1:
-                if self.parent.hands[i][0] in [10, 11]: self.parent.hands[i][0] -= 10
-                else: self.parent.hands[i][0] += 10
+            case Constant.BUTTON_CARD_1: # card 1
+                # toggle bit
+                self.parent.hands[i][0] = self.parent.hands[i][0] ^ Constant.CARD_1_HOLD
+                # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=self)
-            case 2:
-                if self.parent.hands[i][0] in [1, 11]: self.parent.hands[i][0] -= 1
-                else: self.parent.hands[i][0] += 1
+            case Constant.BUTTON_CARD_2: # card 2
+                # toggle bit
+                self.parent.hands[i][0] = self.parent.hands[i][0] ^ Constant.CARD_2_HOLD
+                # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=self)
 
     @disnake.ui.button(label='Toggle Card 1', style=disnake.ButtonStyle.success)
-    async def holdcard1(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if self.parent.state == 0:
-            await self.do(interaction, 1)
+    async def holdcard1(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+        if self.parent.state == 0: # card selection stage
+            await self.do(interaction, Constant.BUTTON_CARD_1)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Toggle Card 2', style=disnake.ButtonStyle.success)
-    async def holdcard2(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if self.parent.state == 0:
-            await self.do(interaction, 2)
+    async def holdcard2(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+        if self.parent.state == 0: # card selection stage
+            await self.do(interaction, Constant.BUTTON_CARD_2)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Confirm', style=disnake.ButtonStyle.danger)
-    async def confirm(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        if self.parent.state == 0:
-            await self.do(interaction, 0)
+    async def confirm(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+        if self.parent.state == 0: # card selection stage
+            await self.do(interaction, Constant.BUTTON_CONFIRM)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
 class Poker(BaseView):
+    ROYAL_FLUSH_SET : set[str] = set(["10", "11", "12", "13", "14"])
+    STRAIGTH_SET : set[str] = set(["14", "2", "3", "4", "5"])
+    FULL_HOUSE_SET : set[int] = set([2,3])
+    FOUR_KIND_SET : set[int] = set([1,4])
+    THREE_KIND_SET : set[int] = set([1,3])
+    DOUBLE_PAIR_LIST : list[int] = [1,2,2]
+    
     """__init__()
     Constructor
     
@@ -95,29 +131,36 @@ class Poker(BaseView):
     embed: disnake.Embed to edit
     remaining: integer, remaining number of rounds, put 0 to ignore the round system
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed, remaining : int = 0) -> None:
+    def __init__(self : Poker, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed, remaining : int = 0) -> None:
         super().__init__(bot, timeout=120)
-        self.state = 0
-        self.players = players
-        self.embed = embed
-        self.deck = []
-        kind = ["D", "S", "H", "C"]
-        for i in range(51):
-            self.deck.append('{}{}'.format((i % 13) + 2, kind[i // 13]))
+        self.state : int = 0 # game state, -1 = over, 0~N player turn
+        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.embed : disnake.Embed = embed # embed to updae
+        # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
+        self.deck : CardList = [self.bot.singleton.get_GameCard((i % 13) + 2, i // 13) for i in range(51)]
+        # shuffle the deck
         random.shuffle(self.deck)
-        self.dealer = [self.deck.pop(), self.deck.pop(), self.deck.pop()]
-        self.min_value = Poker.calculateMinValue(self.dealer)
-        self.hands = []
-        for i in range(len(self.players)):
-            self.hands.append([11, [self.deck.pop(), self.deck.pop()]])
-        self.sub = PokerSub(self.bot, self)
-        self.subembeds = []
+        # draw 3 cards for the dealer
+        self.dealer : CardList = [self.deck.pop(), self.deck.pop(), self.deck.pop()]
+        # get dealer minimum hand value
+        self.min_value : int = Poker.calculateMinValue(self.dealer) # dealer hand value
+        # set player hands
+        self.hands : list[Hand] = [[Constant.CARD_1_HOLD | Constant.CARD_2_HOLD, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
+        # set sub view to select cards
+        self.sub : PokerSub = PokerSub(self.bot, self)
+        # set sub embeds
+        self.subembeds : list[disnake.Embed] = []
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
             self.subembeds.append(self.bot.embed(title="♠️ {}'s hand ♥".format(p.display_name), description="Initialization", color=self.embed.color))
             self.updateSubEmbed(i)
-        self.max_state = 3 + len(self.players) * 2
-        self.winners = []
-        self.remaining = remaining
+        # the max number of cards to draw
+        self.max_state : int = 3 + len(self.players) * 2 # 3 from dealer, 2 for each player
+        # winner list
+        self.winners : list[disnake.User|disnake.Member] = []
+        # remaining rounds
+        self.remaining : int = remaining
 
     """update()
     Update the embed
@@ -127,50 +170,104 @@ class Poker(BaseView):
     inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
-    async def update(self, inter : disnake.Interaction, init=False) -> None:
-        self.embed.description = ":spy: Dealer ▫️ "
-        match self.state:
-            case 0: self.embed.description += "{}, 🎴, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0]))
-            case 1: self.embed.description += "{}, {}, 🎴\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1]))
-            case _: self.embed.description += "{}, {}, {}\n".format(Poker.valueNsuit2head(self.dealer[0]), Poker.valueNsuit2head(self.dealer[1]), Poker.valueNsuit2head(self.dealer[2]))
-        s = self.state - 3
-        self.winners = []
-        best = 0
-        for i, p in enumerate(self.players):
-            if s < 0:
-                self.embed.description += "{} {} ▫️ 🎴, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."))
-            elif s == 0:
-                self.embed.description += "{} {} ▫️ {}, 🎴\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0]))
-            else:
-                hs, hstr = await Poker.checkPokerHand(self.dealer + self.hands[i][1])
-                if hs <= self.min_value:
-                    hs = int(Poker.highestCard(self.hands[i][1])[:-1])
-                    hstr += ", Best in hand is **{}**".format(Poker.value2head(Poker.highestCard(self.hands[i][1]).replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️")))
-                if hs == best: self.winners.append(p)
-                elif hs > best:
-                    best = hs
-                    self.winners = [p]
-                self.embed.description += "{} {} ▫️ {}, {}, {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), Poker.valueNsuit2head(self.hands[i][1][0]), Poker.valueNsuit2head(self.hands[i][1][1]), hstr)
-            s -= 2
-        if self.state == 0:
-            self.embed.description += "Waiting for all players to make their choices"
-        elif self.state >= self.max_state - 1:
+    async def update(self : Poker, inter : disnake.Interaction, init : bool = False) -> None:
+        desc : list[str] = await self.renderTable()
+        # check game state
+        if self.state == 0: # start
+            desc.append("Waiting for all players to make their choices")
+        elif self.state >= self.max_state - 1: # card reveal reached the end
             match len(self.winners):
-                case 0: pass # shouldn't happen
-                case 1:
-                    self.embed.description += "**{}** is the winner".format(self.winners[0].display_name)
-                case _:
-                    self.embed.description += "It's a **draw** between "
+                case 0:
+                    pass # shouldn't happen
+                case 1: # 1 winner
+                    desc.append("**{}** is the winner".format(self.winners[0].display_name))
+                case _: # draw
+                    desc.append("It's a **draw** between ")
                     for p in self.winners:
-                        self.embed.description += "{}, ".format(p.display_name)
-                    self.embed.description = self.embed.description[:-2]
+                        desc.append(p.display_name)
+                        desc.append(", ")
+                    desc.pop(-1)
+            # add remaining rounds
             match self.remaining:
-                case 0: pass
-                case 1: self.embed.description += "\n*Please wait for the results*"
-                case _: self.embed.description += "\n*Next round in 10 seconds...*"
-        if init: self.message = await inter.followup.send(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self)
-        elif self.state >= 0: await self.message.edit(embed=self.embed, view=None)
-        else: await self.message.edit(embed=self.embed, view=self)
+                case 0:
+                    pass
+                case 1: # that was the final one
+                    desc.append("\n*Please wait for the results*")
+                case _:
+                    desc.append("\n*Next round in 10 seconds...*")
+        # set embed
+        self.embed.description = "".join(desc)
+        if init:
+            # Note: ping players
+            self.message = await inter.followup.send(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self) # init is true, we edit
+        elif self.state >= 0:
+            await self.message.edit(embed=self.embed, view=None) # game is on going
+        else:
+            await self.message.edit(embed=self.embed, view=self) # game is over, remove the view
+
+    """renderTable()
+    Render the table (dealer and player hands) according to the game state
+    
+    Returns
+    ----------
+    list: List of strings for the embed description
+    """
+    async def renderTable(self : Poker) -> list:
+        # init message
+        desc : list[str] = [":spy: Dealer ▫️ ", str(self.dealer[0]), ", "]
+        # dealer card 2
+        if self.state < 1:
+            desc.append("🎴, ")
+        else:
+            desc.append(str(self.dealer[1]))
+            desc.append(", ")
+        # dealer card 3
+        if self.state < 2:
+            desc.append("🎴\n")
+        else:
+            desc.append(str(self.dealer[2]))
+            desc.append("\n")
+        
+        s : int = self.state - 3 # state WITHOUT the dealer draw steps
+        self.winners = [] # list of winners
+        best : int = 0
+        i : int
+        p : disnake.User|disnake.Member
+        for i, p in enumerate(self.players): # write a line for each player
+            desc.append(str(self.bot.emote.get(str(i+1)))) # number
+            desc.append(" ")
+            desc.append(p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...") # name
+            desc.append(" ▫️ ")
+            
+            if s < 0: # dealer draw stage
+                desc.append("🎴, 🎴\n") # nothing revealed
+            elif s == 0: # 1st card revealed
+                desc.append(str(self.hands[i][1][0])) # card 1 revealed
+                desc.append(", 🎴\n")
+            else:
+                desc.append(str(self.hands[i][1][0])) # card 1 revealed
+                desc.append(", ")
+                desc.append(str(self.hands[i][1][1])) # card 2 revealed
+                desc.append(", ")
+                score : int
+                scorestr : str
+                score, scorestr = Poker.checkPokerHand(self.dealer + self.hands[i][1])
+                desc.append(scorestr)
+                await asyncio.sleep(0)
+                if score <= self.min_value: # check if total hand is inferior to dealer value
+                    highestCard = Poker.highestCard(self.hands[i][1])
+                    score = int(highestCard) # set score to highest card
+                    desc.append(", Best in hand is **")
+                    desc.append(highestCard.getStringValue()) # add highest mention
+                    desc.append("**")
+                desc.append("\n")
+                if score > best: # best score among players so far
+                    best = score
+                    self.winners = [p] # set this player to winner list
+                elif score == best: # equal to best score so far
+                    self.winners.append(p) # add this player to winner list
+            s -= 2
+        return desc
 
     """control()
     The button making the PokerSub view appears.
@@ -182,13 +279,15 @@ class Poker(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='See Your Hand', style=disnake.ButtonStyle.primary)
-    async def control(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
-        i = None
-        for idx, p in enumerate(self.players):
+    async def control(self : Poker, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+        i : int|None = None
+        idx : int
+        p : disnake.User|disnake.Member
+        for idx, p in enumerate(self.players): # search which player used this button
             if p.id == interaction.user.id:
                 i = idx
                 break
-        if self.state == 0 and i is not None:
+        if self.state == 0 and i is not None: # show them their hand
             await interaction.response.send_message(embed=self.subembeds[i], view=self.sub, ephemeral=True)
         else:
             await interaction.response.send_message("You can't play this game", ephemeral=True)
@@ -200,53 +299,54 @@ class Poker(BaseView):
     ----------
     index: Player index
     """
-    def updateSubEmbed(self, index : int) -> None:
-        self.subembeds[index].description = "{} {} ▫️ {} {}\n".format(Poker.valueNsuit2head(self.hands[index][1][0]), ("**Holding**" if self.hands[index][0] in [10, 11] else ""), Poker.valueNsuit2head(self.hands[index][1][1]), ("**Holding**" if self.hands[index][0] in [1, 11] else ""))
-        if self.hands[index][0] >= 100:
-            self.subembeds[index].description += "**Your hand is locked**\nYou can dismiss this message"
+    def updateSubEmbed(self : Poker, index : int) -> None:
+        has_confirmed : bool = self.hands[index][0] & Constant.CONFIRMED == Constant.CONFIRMED
+        self.subembeds[index].description = [
+            str(self.bot.emote.get("1")),
+            " ",
+            str(self.hands[index][1][0]),
+            " ",
+            "",
+            "\n",
+            str(self.bot.emote.get("2")),
+            " ",
+            str(self.hands[index][1][1]),
+            " ",
+            "",
+            "\n"
+        ]
+        # Add card selections
+        if self.hands[index][0] & Constant.CARD_1_HOLD == Constant.CARD_1_HOLD:
+            if not has_confirmed:
+                self.subembeds[index].description[4] = "**Hold**"
+        elif not has_confirmed:
+            self.subembeds[index].description[4] = "*Exchange*"
+        else:
+            self.subembeds[index].description[4] = "*Exchanged*"
+        if self.hands[index][0] & Constant.CARD_2_HOLD == Constant.CARD_2_HOLD:
+            if not has_confirmed:
+                self.subembeds[index].description[10] = "**Hold**"
+        elif not has_confirmed:
+            self.subembeds[index].description[10] = "*Exchange*"
+        else:
+            self.subembeds[index].description[10] = "*Exchanged*"
+        # Add confirm message
+        if has_confirmed:
+            self.subembeds[index].description.append("**Your hand is locked**\nYou can dismiss this message")
+        # Merge strings
+        self.subembeds[index].description = "".join(self.subembeds[index].description)
 
-    """final()
-    Coroutine to announce the results
+    """playRound()
+    Coroutine to play the round
     """
-    async def final(self) -> None:
+    async def playRound(self : Poker) -> None:
         while self.state < self.max_state:
             await asyncio.sleep(1)
             await self.update(None)
             self.state += 1
 
-    """value2head()
-    Convert a card value to a string.
-    Heads are converted to the equivalent (J, Q, K, A)
-    
-    Parameters
-    ----------
-    value: Integer or string card value
-    
-    Returns
-    --------
-    str: Card string
-    """
-    def value2head(value : Union[int, str]) -> str:
-        return str(value).replace("11", "J").replace("12", "Q").replace("13", "K").replace("14", "A")
-
-    """valueNsuit2head()
-    Convert a card value and suit to a string.
-    Heads are converted to the equivalent (J, Q, K, A).
-    Suits are converted to ♦, ♠️, ♥️ and ♣️
-    
-    Parameters
-    ----------
-    value: String card value
-    
-    Returns
-    --------
-    str: Card string
-    """
-    def valueNsuit2head(value : str) -> str:
-        return value.replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️").replace("11", "J").replace("12", "Q").replace("13", "K").replace("14", "A")
-
     """calculateMinValue()
-    Returns the value of the deal cards
+    Returns the value of the dealt cards
     
     Parameters
     ----------
@@ -256,17 +356,18 @@ class Poker(BaseView):
     --------
     int : Strength value
     """
-    def calculateMinValue(dealer : list) -> int:
-        value_counts = {}
-        for c in dealer:
-            value_counts[c[:-1]] = value_counts.get(c[:-1], 0) + 1
+    def calculateMinValue(dealer : CardList) -> int:
+        value_counts : dict[int, int] = {}
+        for card in dealer:
+            value_counts[card.value] = value_counts.get(card.value, 0) + 1
         if 3 in value_counts.values():
-            return 300 + int(list(value_counts.keys())[list(value_counts.values()).index(3)])
+            return 300 + int(Poker.highestCardForOccurence(dealer, value_counts, 3))
         elif 2 in value_counts.values():
-            return 100 + int(list(value_counts.keys())[list(value_counts.values()).index(2)])
-        return int(Poker.highestCard(dealer)[:-1])
+            return 100 + int(Poker.highestCardForOccurence(dealer, value_counts, 2))
+        return int(Poker.highestCard(dealer))
 
     """checkPokerHand()
+    Static function
     Check a poker hand strength
     
     Parameters
@@ -276,76 +377,92 @@ class Poker(BaseView):
     Returns
     --------
     tuple:
-        - int : Strength value
-        - str: Strength string
+        - int : Hand strength value
+        - str: Hand string
     """
-    async def checkPokerHand(hand : list) -> tuple:
-        flush = False
+    def checkPokerHand(hand : CardList) -> tuple:
         # flush detection
-        suits = [h[-1] for h in hand]
-        if len(set(suits)) == 1: flush = True
-        # other checks
-        values = [i[:-1] for i in hand] # get card values
-        value_counts = {}
-        for v in values:
-            value_counts[v] = value_counts.get(v, 0) + 1 # count each match
-        rank_values = [int(i) for i in values] # rank them
-        value_range = max(rank_values) - min(rank_values) # and get the difference
-        highest_card_stripped = Poker.highestCardStripped(list(value_counts.keys()))
-        await asyncio.sleep(0)
-        # determinate hand from their
-        # checks happen in strength order
-        if flush and set(values) == set(["10", "11", "12", "13", "14"]):
-            return 800 + int(Poker.highestCard(hand)[:-1]), "**Royal Straight Flush**"
-        elif flush and ((len(set(value_counts.values())) == 1 and (value_range==4)) or set(values) == set(["14", "2", "3", "4", "5"])):
-            return "**Straight Flush, high {}**".format(Poker.value2head(highest_card_stripped))
-        elif sorted(value_counts.values()) == [1,4]:
-            return 700 + int(list(value_counts.keys())[list(value_counts.values()).index(4)]), "**Four of a Kind of {}**".format(Poker.value2head(list(value_counts.keys())[list(value_counts.values()).index(4)]))
-        elif sorted(value_counts.values()) == [2,3]:
-            return 600 + int(list(value_counts.keys())[list(value_counts.values()).index(3)]), "**Full House, high {}**".format(Poker.value2head(list(value_counts.keys())[list(value_counts.values()).index(3)]))
+        flush : bool = len(set([card.suit for card in hand])) == 1 # if only one suit found in hand
+        # variables needed for hand checks
+        values : list[int] = [card.value for card in hand] # get card values
+        value_counts : dict[int, int] = {}
+        for v in values: # count occurences of each value (for example, 3 kings -> value_counts[13] = 3 )
+            value_counts[v] = value_counts.get(v, 0) + 1
+        sorted_values : list[int] = sorted(value_counts.values()) # sorted values
+        counts_set : set[int] = set(sorted_values) # the unique values of value_counts
+        value_range : int = max(values) - min(values) # get the difference between highest and lowest card
+        highest_card : GameCard = Poker.highestCard(hand) # get highest card (for later use)
+        card : GameCard
+        # determinate hand strength
+        # checks happen in strength order, from highest to lowest
+        if flush and set(values) == Poker.ROYAL_FLUSH_SET: # flush and royal flush set match
+            return 1000, "**Royal Straight Flush**"
+        elif flush and ((len(counts_set) == 1 and (value_range==4)) or set(values) == Poker.STRAIGTH_SET): # flush and ((all values are unique and the range between highest and lowest is 4) or it matches STRAIGTH_SET)
+            return "**Straight Flush, high {}**".format(highest_card.getStringValue())
+        elif counts_set == Poker.FOUR_KIND_SET:
+            card = Poker.highestCardForOccurence(hand, value_counts, 4)
+            return 700 + int(card), "**Four of a Kind of {}**".format(card.getStringValue())
+        elif counts_set == Poker.FULL_HOUSE_SET:
+            return 600 + int(highest_card), "**Full House, high {}**".format(highest_card.getStringValue())
         elif flush:
-            return 500 + int(Poker.highestCard(hand)[:-1]), "**Flush**"
-        elif (len(set(value_counts.values())) == 1 and (value_range==4)) or set(values) == set(["14", "2", "3", "4", "5"]):
-            return 400 + int(highest_card_stripped), "**Straight, high {}**".format(Poker.value2head(highest_card_stripped))
-        elif set(value_counts.values()) == set([3,1]):
-            return 300 + int(list(value_counts.keys())[list(value_counts.values()).index(3)]), "**Three of a Kind of {}**".format(Poker.value2head(list(value_counts.keys())[list(value_counts.values()).index(3)]))
-        elif sorted(value_counts.values())==[1,2,2]:
-            k = list(value_counts.keys())
-            k.pop(list(value_counts.values()).index(1))
-            return 200 + int(Poker.highestCardStripped(k)), "**Two Pairs, high {}**".format(Poker.value2head(Poker.highestCardStripped(k)))
-        elif 2 in value_counts.values():
-            return 100 + int(list(value_counts.keys())[list(value_counts.values()).index(2)]), "**Pair of {}**".format(Poker.value2head(list(value_counts.keys())[list(value_counts.values()).index(2)]))
+            return 500 + int(highest_card), "**Flush, high {}**".format(highest_card.getStringValue())
+        elif (len(counts_set) == 1 and (value_range==4)) or set(values) == Poker.STRAIGTH_SET: # (all values are unique and the range between highest and lowest is 4) or it matches STRAIGTH_SET
+            return 400 + int(highest_card), "**Straight, high {}**".format(highest_card.getStringValue())
+        elif counts_set == Poker.THREE_KIND_SET:
+            card = Poker.highestCardForOccurence(hand, value_counts, 3)
+            return 300 + int(card), "**Three of a Kind of {}**".format(card.getStringValue())
+        elif sorted_values==Poker.DOUBLE_PAIR_LIST:
+            card = Poker.highestCardForOccurence(hand, value_counts, 2)
+            return 200 + int(card), "**Two Pairs, high {}**".format(card.getStringValue())
+        elif 2 in counts_set:
+            card = Poker.highestCardForOccurence(hand, value_counts, 2)
+            return 100 + int(card), "**Pair of {}**".format(card.getStringValue())
         else:
-            return int(Poker.highestCard(hand)[:-1]), "**Highest card is {}**".format(Poker.value2head(Poker.highestCard(hand).replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️")))
+            return int(highest_card), "**Highest card is {}**".format(highest_card.getStringValue())
 
-    """highestCardStripped()
-    Return the highest card in the selection, without the suit
+    """highestCardForOccurence()
+    Static function
+    Look for a card which is present N number of time in the selection
     
     Parameters
     ----------
-    selection: List of card to check
+    selection: List of cards to check
+    occurences: Dict, a dictionary of pair (card value: occurence of this value)
+    occurence: Integer, the occurence to check for
     
     Returns
     --------
-    str: Highest card
+    GameCard: A matching card or None if none is found
     """
-    def highestCardStripped(selection : list) -> str:
-        ic = [int(i) for i in selection] # convert to int
-        return str(sorted(ic)[-1]) # sort and then convert back to str
+    def highestCardForOccurence(selection : CardList, occurences : dict[int, int], occurence : int) -> GameCard|None:
+        # get the highest value matching the asked occurence
+        bestval : int|None = None
+        val : int
+        ocu : int
+        for val, ocu in occurences.items():
+            if ocu == occurence and (bestval is None or val > bestval):
+                bestval = val
+        if bestval is not None:
+            # return a matching card
+            card : GameCard
+            for card in selection:
+                if card.value == bestval:
+                    return card
+        return None
 
     """highestCard()
-    Return the highest card in the selection
+    Static function
+    Return the highest card in the list
     
     Parameters
     ----------
-    selection: List of card to check
+    selection: List of cards to check
     
     Returns
     --------
-    str: Highest card
+    GameCard: Highest card
     """
-    def highestCard(selection : list) -> str:
-        cards = [c.zfill(3) for c in selection]
-        last = sorted(cards)[-1]
-        if last[0] == '0': last = last[1:]
-        return last
+    def highestCard(selection : CardList) -> GameCard:
+        cards : CardList = selection.copy()
+        cards.sort()
+        return cards[-1]

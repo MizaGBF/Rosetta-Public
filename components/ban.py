@@ -1,5 +1,7 @@
-from typing import Union, Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
 
 # ----------------------------------------------------------------------------------------------------------------
 # Ban Component
@@ -8,17 +10,17 @@ if TYPE_CHECKING: from ..bot import DiscordBot
 # ----------------------------------------------------------------------------------------------------------------
 
 class Ban():
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+    # ban flags (binary number)
+    OWNER   : int = 0b00000001
+    SPARK   : int = 0b00000010
+    PROFILE : int = 0b00000100
+    USE_BOT : int = 0b10000000
 
-    def init(self) -> None:
+    def __init__(self : Ban, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+
+    def init(self : Ban) -> None:
         pass
-
-    # ban flags
-    OWNER   = 0b00000001
-    SPARK   = 0b00000010
-    PROFILE = 0b00000100
-    USE_BOT = 0b10000000
 
     """set()
     Ban an user for different bot functions. Also update existing bans
@@ -28,9 +30,12 @@ class Ban():
     uid: User discord id
     flag: Bit Mask
     """
-    def set(self, uid : Union[int, str], flag : int) -> None:
-        if not self.check(uid, flag):
-            self.bot.data.save['ban'][str(uid)] = self.bot.data.save['ban'].get(str(uid), 0) ^ flag
+    def set(self : Ban, uid : str, flag : int) -> None:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
+        if not self.check(uid, flag): # if not banned for that flag
+            # set ban flag
+            self.bot.data.save['ban'][uid] = self.bot.data.save['ban'].get(uid, 0) ^ flag
             self.bot.data.pending = True
 
     """unset()
@@ -39,13 +44,18 @@ class Ban():
     Parameters
     ----------
     uid: User discord id
+    flag: Bit Mask. Optional (If not present or None, all bans will be lifted)
     """
-    def unset(self, uid : Union[int, str], flag : Optional[int] = None) -> None:
-        if str(uid) in self.bot.data.save['ban']:
-            if flag is None: self.bot.data.save['ban'].pop(str(uid))
-            elif self.check(uid, flag): self.bot.data.save['ban'][str(uid)] -= flag
-            if self.bot.data.save['ban'][str(uid)] == 0:
-                self.bot.data.save['ban'].pop(str(uid))
+    def unset(self : Ban, uid : str, flag : int|None = None) -> None:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
+        if uid in self.bot.data.save['ban']: # if user in ban list
+            if flag is None: # total unban
+                self.bot.data.save['ban'].pop(uid)
+            elif self.check(uid, flag): # if user is banned for that flag, unban
+                self.bot.data.save['ban'][uid] -= flag
+            if self.bot.data.save['ban'][uid] == 0: # if user is totally unbanned, remove from list
+                self.bot.data.save['ban'].pop(uid)
             self.bot.data.pending = True
 
     """check()
@@ -60,8 +70,11 @@ class Ban():
     ----------
     bool: True if banned, False if not
     """
-    def check(self, uid : Union[int, str], mask : int) -> bool:
-        return ((self.bot.data.save['ban'].get(str(uid), 0) & mask) == mask)
+    def check(self : Ban, uid : str, mask : int) -> bool:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
+        # apply mask to user flag to check if banned
+        return ((self.bot.data.save['ban'].get(uid, 0) & mask) == mask)
 
     """get()
     Return the user bitmask
@@ -74,5 +87,8 @@ class Ban():
     ----------
     int: Bitmask
     """
-    def get(self, uid : Union[int, str]) -> int:
-        return self.bot.data.save['ban'].get(str(uid), 0)
+    def get(self : Ban, uid : str) -> int:
+        if not isinstance(uid, str):
+            raise TypeError("User ID isn't a string.")
+        # simply return the user ban value
+        return self.bot.data.save['ban'].get(uid, 0)
