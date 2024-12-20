@@ -691,9 +691,14 @@ class DiscordBot(commands.InteractionBot):
 
 # entry point / main function
 if __name__ == "__main__":
+    import sys
     import argparse
+    # Get python file name
+    prog_name : str
+    try: prog_name = sys.argv[0].replace('\\', '/').split('/')[-1]
+    except: prog_name = "bot.py" # fallback to default
     # Set Argument Parser
-    parser : argparse.ArgumentParser = argparse.ArgumentParser(prog='bot.py', description='Rosetta v{}: https://github.com/MizaGBF/Rosetta-Public'.format(DiscordBot.VERSION))
+    parser : argparse.ArgumentParser = argparse.ArgumentParser(prog=prog_name, description='Rosetta v{}: https://github.com/MizaGBF/Rosetta-Public'.format(DiscordBot.VERSION))
     parser.add_argument('-r', '--run', help="run Rosetta.", action='store_const', const=True, default=False, metavar='')
     parser.add_argument('-d', '--debug', help="set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).", action='store_const', const=True, default=False, metavar='')
     parser.add_argument('-t', '--test', help="attempt to boot Rosetta and load the command cogs, in Debug mode.", action='store_const', const=True, default=False, metavar='')
