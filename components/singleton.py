@@ -157,7 +157,7 @@ class GameCard():
         # suit
         match suit:
             case 0: _strings_[1] = "\♦️"
-            case 1: _strings_[1] = "\♦️"
+            case 1: _strings_[1] = "\♠"
             case 2: _strings_[1] = "\♥️"
             case 3: _strings_[1] = "\♣️"
         _strings_[2] = "".join(_strings_[:2])
