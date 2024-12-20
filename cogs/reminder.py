@@ -109,6 +109,42 @@ class Reminder(commands.Cog):
         self.bot.data.save['reminders'][str(self.bot.user.id)].append([date, msg]) # add it
         self.bot.data.pending = True
 
+    """render()
+    Display the interaction author's reminder list
+    
+    Parameters
+    --------
+    inter: A deferred disnake.ApplicationCommandInteraction
+    description: String, the embed description. The reminder count will be appended to it.
+    """
+    async def render(self : Reminder, inter : disnake.ApplicationCommandInteraction, description : str) -> None:
+        aid : str = str(inter.author.id)
+        # set description
+        append : str
+        if aid not in self.bot.data.save['reminders']:
+            append = "0 / {} reminders".format(self.REMINDER_LIMIT)
+        elif len(self.bot.data.save['reminders'][aid]) >= self.REMINDER_LIMIT:
+            append = "**{}** / {} reminders".format(len(self.bot.data.save['reminders'][aid]), self.REMINDER_LIMIT)
+        else:
+            append = "{} / {} reminders".format(len(self.bot.data.save['reminders'][aid]), self.REMINDER_LIMIT)
+        if description != "" and not description.endswith('\n'):
+            description += "\n" + append
+        else:
+            description += append
+        # display list
+        if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0: # no reminder for this user
+            await inter.edit_original_message(embed=self.bot.embed(title="{}'s reminder list".format(inter.author.display_name), description=description, color=self.COLOR))
+        else:
+            embed : disnake.Embed = disnake.Embed(title="{}'s reminder list".format(inter.author.display_name).format(inter.author.display_name), description=description, color=self.COLOR)
+            embed.set_thumbnail(url=inter.author.display_avatar)
+            i : int
+            v : ReminderList
+            for i, v in enumerate(self.bot.data.save['reminders'][aid]): # list all reminders
+                if i >= 25: # field limit
+                    break
+                embed.add_field(name="#{} ▫️ {}".format(i, self.bot.util.time(v[0], style=['d','t'], removejst=True)), value=v[1], inline=False)
+            await inter.edit_original_message(embed=embed)
+
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
     @commands.cooldown(1, 2, commands.BucketType.user)
@@ -131,26 +167,27 @@ class Reminder(commands.Cog):
         if aid not in self.bot.data.save['reminders']: # Add reminder list for this user
             self.bot.data.save['reminders'][aid] = []
         # Check if the user reached its reminder limit
+        description : str
         if len(self.bot.data.save['reminders'][aid]) >= self.REMINDER_LIMIT and inter.author.id != self.bot.owner.id: # Owner isn't limited
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Sorry, I'm limited to 8 reminders per user 🙇", color=self.COLOR))
-            return
-        now : datetime = self.bot.util.JST(delay=False).replace(microsecond=0) # we keep dates in JST as most of the bot uses it
-        target : datetime = now + delta
-        if target - now >= timedelta(days=500):
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="You can't set a reminder further than 500 days in the  future", color=self.COLOR))
-            return
-        elif msg == "":
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Tell me what I'm supposed to remind you 🤔", color=self.COLOR))
-            return
-        elif len(msg) > 400:
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Reminders are limited to 400 characters", color=self.COLOR))
-            return
-        try:
-            self.bot.data.save['reminders'][aid].append([target, msg])
-            self.bot.data.pending = True
-            await inter.edit_original_message(embed=self.bot.embed(title="The Reminder has been added", color=self.COLOR))
-        except:
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", footer="I have no clues about what went wrong", color=self.COLOR))
+            description = "Error, you've reached the **limit**"
+        else:
+            now : datetime = self.bot.util.JST(delay=False).replace(microsecond=0) # we keep dates in JST as most of the bot uses it
+            target : datetime = now + delta
+            if target - now >= timedelta(days=500):
+                description = "Error, you can't set a reminder **further than 500 days** in the  future"
+                return
+            elif msg == "":
+                description = "Error, your reminder message is empty"
+            elif len(msg) > 400:
+                description = "Error, reminder messages are limited to 400 characters"
+            else:
+                try:
+                    self.bot.data.save['reminders'][aid].append([target, msg])
+                    self.bot.data.pending = True
+                    description = "The Reminder has been added"
+                except:
+                    description = "An unexpected error occured"
+        await self.render(inter, description)
 
     @remind.sub_command()
     async def add(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, duration : str = commands.Param(description="Format: XdXhXmXs"), msg : str = commands.Param(description="Content of the reminder")) -> None:
@@ -198,33 +235,23 @@ class Reminder(commands.Cog):
     async def remindlist(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post your current list of reminders"""
         await inter.response.defer(ephemeral=True)
-        aid : str = str(inter.author.id)
-        if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0: # no reminder for this user
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="You don't have any reminders", color=self.COLOR))
-        else:
-            embed : disnake.Embed = disnake.Embed(title="{}'s Reminder List".format(inter.author.display_name), color=self.COLOR)
-            embed.set_thumbnail(url=inter.author.display_avatar)
-            i : int
-            v : ReminderList
-            for i, v in enumerate(self.bot.data.save['reminders'][aid]): # list all reminders
-                if i >= 25: # field limit
-                    break
-                embed.add_field(name="#{} ▫️ {}".format(i, self.bot.util.time(v[0], style=['d','t'], removejst=True)), value=v[1], inline=False)
-            await inter.edit_original_message(embed=embed)
+        await self.render(inter, "")
 
     @remind.sub_command(name="remove")
     async def reminddel(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, rid : int = commands.Param(description="Number of the reminder to delete", ge=0)) -> None:
         """Delete one of your reminders"""
         await inter.response.defer(ephemeral=True)
         aid: str  = str(inter.author.id)
+        description : str
         if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0: # no reminder for this user
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="You don't have any reminders", color=self.COLOR))
+            description = "Error, you don't have any reminders"
         else:
             if rid < 0 or rid >= len(self.bot.data.save['reminders'][aid]): # check if given reminder index is valid
-                await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Invalid id `{}`".format(rid), color=self.COLOR))
+                description = "Error, Invalid id `{}`".format(rid)
             else:
                 self.bot.data.save['reminders'][aid].pop(rid) # remove the reminder
                 if len(self.bot.data.save['reminders'][aid]) == 0: # remove user list if empty
                     self.bot.data.save['reminders'].pop(aid)
                 self.bot.data.pending = True
-                await inter.edit_original_message(embed=self.bot.embed(title="The Reminder has been deleted", color=self.COLOR))
+                description = "The Reminder has been deleted"
+        await self.render(inter, description)
