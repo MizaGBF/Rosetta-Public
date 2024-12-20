@@ -10,7 +10,18 @@ if TYPE_CHECKING:
     import types
     CardList : types.GenericAlias = list[GameCard]
     Hand : types.GenericAlias = list[int|CardList]
+from enum import IntEnum
 import random
+
+# General enum
+class Constant(IntEnum):
+    CARD_1_HOLD : int = 0b001
+    CARD_2_HOLD : int = 0b010
+    CONFIRMED   : int = 0b100
+    
+    BUTTON_CONFIRM : int = 0
+    BUTTON_CARD_1 : int = 1
+    BUTTON_CARD_2 : int = 2
 
 # ----------------------------------------------------------------------------------------------------------------
 # Poker View
@@ -20,14 +31,6 @@ import random
 # ----------------------------------------------------------------------------------------------------------------
 
 class PokerSub(BaseView):
-    CARD_1_HOLD : int = 0b001
-    CARD_2_HOLD : int = 0b010
-    CONFIRMED   : int = 0b100
-    
-    BUTTON_CONFIRM : int = 0
-    BUTTON_CARD_1 : int = 1
-    BUTTON_CARD_2 : int = 2
-    
     """__init__()
     Constructor
     
@@ -54,37 +57,37 @@ class PokerSub(BaseView):
         for i, p in enumerate(self.parent.players): # search for player
             if p.id == interaction.user.id:
                 break
-        if self.parent.hands[i][0] & self.CONFIRMED == self.CONFIRMED:
+        if self.parent.hands[i][0] & Constant.CONFIRMED == Constant.CONFIRMED:
             await interaction.response.send_message("You can't modify your choice", ephemeral=True)
             return
         match mode:
-            case self.BUTTON_CONFIRM: # confirm button
+            case Constant.BUTTON_CONFIRM: # confirm button
                 # check held card
-                if self.parent.hands[i][0] & self.CARD_1_HOLD == 0: # card 1 isn't held
+                if self.parent.hands[i][0] & Constant.CARD_1_HOLD == 0: # card 1 isn't held
                     self.parent.hands[i][1][0] = self.parent.deck.pop() # draw new
-                if self.parent.hands[i][0] & self.CARD_2_HOLD == 0: # card 2 isn't held
+                if self.parent.hands[i][0] & Constant.CARD_2_HOLD == 0: # card 2 isn't held
                     self.parent.hands[i][1][1] = self.parent.deck.pop() # draw new
                 # set state to confirmed
-                self.parent.hands[i][0] = self.parent.hands[i][0] | self.CONFIRMED
+                self.parent.hands[i][0] = self.parent.hands[i][0] | Constant.CONFIRMED
                 # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=None)
                 # check if all players confirmed
                 for h in self.parent.hands:
-                    if h[0] & self.CONFIRMED == 0: return # one hasn't, stop here
+                    if h[0] & Constant.CONFIRMED == 0: return # one hasn't, stop here
                 # all confirmed, disable this sub view and change parent to state 1
                 self.stopall()
                 self.parent.stopall()
                 self.parent.state = 1
-            case self.BUTTON_CARD_1: # card 1
+            case Constant.BUTTON_CARD_1: # card 1
                 # toggle bit
-                self.parent.hands[i][0] = self.parent.hands[i][0] ^ self.CARD_1_HOLD
+                self.parent.hands[i][0] = self.parent.hands[i][0] ^ Constant.CARD_1_HOLD
                 # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=self)
-            case self.BUTTON_CARD_2: # card 2
+            case Constant.BUTTON_CARD_2: # card 2
                 # toggle bit
-                self.parent.hands[i][0] = self.parent.hands[i][0] ^ self.CARD_2_HOLD
+                self.parent.hands[i][0] = self.parent.hands[i][0] ^ Constant.CARD_2_HOLD
                 # update message
                 self.parent.updateSubEmbed(i)
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=self)
@@ -92,21 +95,21 @@ class PokerSub(BaseView):
     @disnake.ui.button(label='Toggle Card 1', style=disnake.ButtonStyle.success)
     async def holdcard1(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
-            await self.do(interaction, self.BUTTON_CARD_1)
+            await self.do(interaction, Constant.BUTTON_CARD_1)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Toggle Card 2', style=disnake.ButtonStyle.success)
     async def holdcard2(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
-            await self.do(interaction, self.BUTTON_CARD_2)
+            await self.do(interaction, Constant.BUTTON_CARD_2)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
     @disnake.ui.button(label='Confirm', style=disnake.ButtonStyle.danger)
     async def confirm(self : PokerSub, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         if self.parent.state == 0: # card selection stage
-            await self.do(interaction, self.BUTTON_CONFIRM)
+            await self.do(interaction, Constant.BUTTON_CONFIRM)
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
@@ -142,7 +145,7 @@ class Poker(BaseView):
         # get dealer minimum hand value
         self.min_value : int = Poker.calculateMinValue(self.dealer) # dealer hand value
         # set player hands
-        self.hands : list[Hand] = [[0, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
+        self.hands : list[Hand] = [[Constant.CARD_1_HOLD | Constant.CARD_2_HOLD, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
         # set sub view to select cards
         self.sub : PokerSub = PokerSub(self.bot, self)
         # set sub embeds
@@ -297,7 +300,7 @@ class Poker(BaseView):
     index: Player index
     """
     def updateSubEmbed(self : Poker, index : int) -> None:
-        has_confirmed : bool = self.hands[index][0] & PokerSub.CONFIRMED == PokerSub.CONFIRMED
+        has_confirmed : bool = self.hands[index][0] & Constant.CONFIRMED == Constant.CONFIRMED
         self.subembeds[index].description = [
             str(self.bot.emote.get("1")),
             " ",
@@ -313,16 +316,16 @@ class Poker(BaseView):
             "\n"
         ]
         # Add card selections
-        if self.hands[index][0] & PokerSub.CARD_1_HOLD == PokerSub.CARD_1_HOLD:
+        if self.hands[index][0] & Constant.CARD_1_HOLD == Constant.CARD_1_HOLD:
             if not has_confirmed:
-                self.subembeds[index].description[4] = "**Keep**"
+                self.subembeds[index].description[4] = "**Hold**"
         elif not has_confirmed:
             self.subembeds[index].description[4] = "*Exchange*"
         else:
             self.subembeds[index].description[4] = "*Exchanged*"
-        if self.hands[index][0] & PokerSub.CARD_2_HOLD == PokerSub.CARD_2_HOLD:
+        if self.hands[index][0] & Constant.CARD_2_HOLD == Constant.CARD_2_HOLD:
             if not has_confirmed:
-                self.subembeds[index].description[10] = "**Keep**"
+                self.subembeds[index].description[10] = "**Hold**"
         elif not has_confirmed:
             self.subembeds[index].description[10] = "*Exchange*"
         else:
