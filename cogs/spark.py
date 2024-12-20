@@ -65,7 +65,7 @@ class Sparking(commands.Cog):
     
     Parameters
     --------
-    inter : Command or modal interaction
+    inter: Command or modal interaction
     member: A disnake.Member object
     ephemeral: Boolean to display or not the result to everyone
     """
@@ -296,7 +296,7 @@ class Sparking(commands.Cog):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     guild: Target guild
     
     Returns

@@ -109,7 +109,7 @@ class BattleShip(BaseView):
     
     Parameters
     ----------
-    inter : an interaction
+    inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     extra_notif: optional string to append to the embed description
     """

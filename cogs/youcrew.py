@@ -137,7 +137,7 @@ class YouCrew(commands.Cog):
     
     Parameters
     ----------
-    inter : Command interaction (to check the server)
+    inter: Command interaction (to check the server)
     
     Returns
     --------

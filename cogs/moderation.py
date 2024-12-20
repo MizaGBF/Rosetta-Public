@@ -156,7 +156,7 @@ class Moderation(commands.Cog):
     
     Parameters
     ----------
-    inter : disnake Interaction
+    inter: disnake Interaction
     is_mod: Boolean for mod informations
     """
     async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:

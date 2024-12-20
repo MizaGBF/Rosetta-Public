@@ -280,7 +280,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     id_string: Server identifier in config.json
     
     Returns
@@ -295,7 +295,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     id_string: Channel identifier in config.json
     
     Returns
@@ -310,7 +310,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     
     Returns
     --------
@@ -324,7 +324,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     
     Returns
     --------
@@ -556,7 +556,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command context or interaction
+    inter: Command context or interaction
     
     Returns
     --------
@@ -588,7 +588,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     error: Exception
     """
     async def application_error_handling(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
@@ -642,7 +642,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     error: Exception
     """
     async def on_slash_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
@@ -653,7 +653,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     error: Exception
     """
     async def on_user_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:
@@ -664,7 +664,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter : Command interaction
+    inter: Command interaction
     error: Exception
     """
     async def on_message_command_error(self : DiscordBot, inter : disnake.ApplicationCommandInteraction|disnake.GuildCommandInteraction, error : Exception) -> None:

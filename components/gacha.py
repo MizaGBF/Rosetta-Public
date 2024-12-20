@@ -937,7 +937,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : render() interaction
+    inter: render() interaction
     
     Returns
     --------
@@ -994,7 +994,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : render() interaction
+    inter: render() interaction
     titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
     footer: String, embed footer
     """
@@ -1008,7 +1008,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : render() interaction
+    inter: render() interaction
     titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
     footer: String, embed footer
     scamroll: Optional tuple, result of scamRoll()
@@ -1060,7 +1060,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : render() interaction
+    inter: render() interaction
     titles: Tuple of Strings. First (during rolling) and Second element (after the end) are used in the embed author name.
     footer: String, embed footer
     """
@@ -1095,7 +1095,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : render() interaction
+    inter: render() interaction
     titles: Tuple of Strings. Second element is used in the embed author name. First is unused.
     footer: String, embed footer
     """
@@ -1129,7 +1129,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : Interaction to use. Must have been deferred beforehand
+    inter: Interaction to use. Must have been deferred beforehand
     display_mode: Integer. 0=single roll, 1=ten roll, 2=memeroll, 3=ssr list
     titles: Tuple of 2 strings. First and Second embed titles to display
     """
@@ -1180,7 +1180,7 @@ class GachaSimulator():
     
     Parameters
     --------
-    inter : Interaction to use. Must have been deferred beforehand
+    inter: Interaction to use. Must have been deferred beforehand
     legfest: Integer, -1 for auto mod, 0 to force 3%, 1 to force 6%
     realist: Bool, True to force 20 and 30 rolls
     """

@@ -95,7 +95,7 @@ class ConnectFour(BaseView):
     
     Parameters
     ----------
-    inter : an interaction
+    inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
     async def update(self : ConnectFour, inter : disnake.Interaction, init : bool = False) -> None:

@@ -27,7 +27,7 @@ class Singleton():
     
     Parameters
     ----------
-    inter : base interaction
+    inter: base interaction
     custom_id : modal id
     title: modal title
     components: list of disnake ui components

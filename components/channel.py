@@ -197,7 +197,7 @@ class Channel():
     
     Parameters
     ----------
-    inter : Interaction or also Command context, message...
+    inter: Interaction or also Command context, message...
     
     Returns
     --------
@@ -280,7 +280,7 @@ class Channel():
     
     Parameters
     --------
-    inter : A command interaction. Must have been deferred beforehand.
+    inter: A command interaction. Must have been deferred beforehand.
     color: Integer, embed color to use.
     """
     async def render_cleanup_settings(self : Channel, inter : disnake.GuildCommandInteraction, color : int) -> None:
@@ -363,7 +363,7 @@ class Channel():
     
     Parameters
     --------
-    inter : A command interaction. Must have been deferred beforehand.
+    inter: A command interaction. Must have been deferred beforehand.
     color: Integer, embed color to use.
     """
     async def render_announcement_settings(self : Channel, inter : disnake.GuildCommandInteraction, color : int) -> None:
