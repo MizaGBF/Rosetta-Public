@@ -25,77 +25,6 @@ class Moderation(commands.Cog):
         """Retrieve the profile picture of an user"""
         await inter.response.send_message(user.display_avatar.url, ephemeral=True)
 
-    """
-    _serverinfo()
-    Called by Server Info and /mod server info
-    List the server infos and settings
-    
-    Parameters
-    ----------
-    inter : disnake Interaction
-    is_mod: Boolean for mod informations
-    """
-    async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
-        await inter.response.defer(ephemeral=True)
-        if inter.guild is None:
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
-            return
-        guild : disnake.Guild = inter.guild
-        icon : str|None
-        try: icon = guild.icon.url
-        except: icon = None
-        owner : disnake.User|None = await self.bot.get_or_fetch_user(guild.owner_id)
-        # server infos
-        msgs : list[str] = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
-        if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
-        if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
-        if len(guild.voice_channels) > 0: msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
-        if len(guild.forum_channels) > 0: msgs.append(":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels)))
-        if len(guild.stage_channels) > 0: msgs.append(":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels)))
-        if guild.safety_alerts_channel is not None: msgs.append(":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url))
-        msgs.append(":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000)))
-        if len(guild.roles) > 0: msgs.append(":scroll: **{}** Roles\n".format(len(guild.roles)))
-        if len(guild.emojis) > 0: msgs.append("🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2))
-        if len(guild.stickers) > 0: msgs.append("🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit))
-        if len(guild.scheduled_events) > 0: msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
-        if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
-        if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")
-        # rosetta settings
-        rosetta : list[str] = []
-        gid : str = str(guild.id)
-        if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
-        cleanup_settings : CleanupSetting = self.bot.channel.get_cleanup_settings(gid)
-        if cleanup_settings[0]:
-            rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
-            if len(cleanup_settings[1]) > 0:
-                rosetta.append(", {} channel(s) are excluded".format(len(cleanup_settings[1])))
-            rosetta.append("\n")
-        elif is_mod:
-            rosetta.append(":warning: **Auto cleanup** disabled\n")
-        if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
-        elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
-        announcement_settings : AnnouncementSetting =self.bot.channel.get_announcement_settings(gid)
-        if announcement_settings[0] > 0:
-            rosetta.append(":new: **Announcements** enabled")
-            if announcement_settings[1]:
-                rosetta.append(", along with *auto-publish*")
-            rosetta.append("\n")
-        elif is_mod:
-            rosetta.append(":warning: **Announcements** disabled\n")
-        if gid in self.bot.data.save['assignablerole']: rosetta.append(":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys())))
-        # append rosetta setting messages if any
-        if len(rosetta) > 0:
-            msgs.append("\n**Rosetta Settings**\n")
-            msgs.extend(rosetta)
-        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description="".join(msgs), thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
-
-    @commands.message_command(name="Server Info")
-    @commands.default_member_permissions(send_messages=True, read_messages=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    async def serverinfo(self : commands.message_command, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
-        """Get informations on the current guild"""
-        await self._serverinfo(inter, self.bot.isMod(inter))
-
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True, manage_messages=True)
     @commands.max_concurrency(10, commands.BucketType.default)
@@ -219,6 +148,77 @@ class Moderation(commands.Cog):
         """Reset the tracked channel list of this server pinboard settings (Mod Only)"""
         await inter.response.defer(ephemeral=True)
         await self.bot.pinboard.reset(inter, self.COLOR)
+
+    """
+    _serverinfo()
+    Called by Server Info and /mod server info
+    List the server infos and settings
+    
+    Parameters
+    ----------
+    inter : disnake Interaction
+    is_mod: Boolean for mod informations
+    """
+    async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
+        await inter.response.defer(ephemeral=True)
+        if inter.guild is None:
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
+            return
+        guild : disnake.Guild = inter.guild
+        icon : str|None
+        try: icon = guild.icon.url
+        except: icon = None
+        owner : disnake.User|None = await self.bot.get_or_fetch_user(guild.owner_id)
+        # server infos
+        msgs : list[str] = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
+        if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
+        if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
+        if len(guild.voice_channels) > 0: msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
+        if len(guild.forum_channels) > 0: msgs.append(":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels)))
+        if len(guild.stage_channels) > 0: msgs.append(":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels)))
+        if guild.safety_alerts_channel is not None: msgs.append(":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(guild.safety_alerts_channel.name, guild.safety_alerts_channel.jump_url))
+        msgs.append(":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000)))
+        if len(guild.roles) > 0: msgs.append(":scroll: **{}** Roles\n".format(len(guild.roles)))
+        if len(guild.emojis) > 0: msgs.append("🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2))
+        if len(guild.stickers) > 0: msgs.append("🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit))
+        if len(guild.scheduled_events) > 0: msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
+        if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
+        if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")
+        # rosetta settings
+        rosetta : list[str] = []
+        gid : str = str(guild.id)
+        if is_mod and not inter.me.guild_permissions.external_emojis: rosetta.append(":x: **External Emoji** permission is **Missing**\n")
+        cleanup_settings : CleanupSetting = self.bot.channel.get_cleanup_settings(gid)
+        if cleanup_settings[0]:
+            rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
+            if len(cleanup_settings[1]) > 0:
+                rosetta.append(", {} channel(s) are excluded".format(len(cleanup_settings[1])))
+            rosetta.append("\n")
+        elif is_mod:
+            rosetta.append(":warning: **Auto cleanup** disabled\n")
+        if self.bot.pinboard.is_enabled(gid): rosetta.append(":star: **Pinboard** enabled\n")
+        elif is_mod: rosetta.append(":warning: **Pinboard** disabled.\n")
+        announcement_settings : AnnouncementSetting =self.bot.channel.get_announcement_settings(gid)
+        if announcement_settings[0] > 0:
+            rosetta.append(":new: **Announcements** enabled")
+            if announcement_settings[1]:
+                rosetta.append(", along with *auto-publish*")
+            rosetta.append("\n")
+        elif is_mod:
+            rosetta.append(":warning: **Announcements** disabled\n")
+        if gid in self.bot.data.save['assignablerole']: rosetta.append(":people_with_bunny_ears_partying: **{}** self-assignable roles\n".format(len(self.bot.data.save['assignablerole'][gid].keys())))
+        # append rosetta setting messages if any
+        if len(rosetta) > 0:
+            msgs.append("\n**Rosetta Settings**\n")
+            msgs.extend(rosetta)
+        await inter.edit_original_message(embed=self.bot.embed(title=guild.name + " status", description="".join(msgs), thumbnail=icon, footer="creation date", timestamp=guild.created_at, color=self.COLOR))
+
+    @commands.message_command(name="Server Info")
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def serverinfo(self : commands.message_command, inter : disnake.MessageCommandInteraction, message: disnake.Message) -> None:
+        """Get informations on the current guild"""
+        await self._serverinfo(inter, self.bot.isMod(inter))
 
     @mod.sub_command_group()
     async def server(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
