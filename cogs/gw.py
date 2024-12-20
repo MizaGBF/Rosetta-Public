@@ -1413,18 +1413,23 @@ class GuildWar(commands.Cog):
                             gwnum = result[i].gw
                         else: # player -----------------------------------------------------------------
                             if y % (max_v // 3) == 0: # some trickery to make the columns
+                                if len(fields) > 0:
+                                    fields[-1]['value'] = "".join(fields[-1]['value'])
                                 fields.append({'name':'Page {}'.format(self.bot.emote.get(str(((i // 5) % 3) + 1))), 'value':[]})
                             search_list.append((result[i].id, self.escape(result[i].name)))
                             if result[i].ranking is None:
                                 fields[-1]['value'].append("[{}](https://game.granbluefantasy.jp/#profile/{})\n".format(self.escape(result[i].name), result[i].id))
                             else:
                                 fields[-1]['value'].append("[{}](https://game.granbluefantasy.jp/#profile/{}) ▫️ **#{}**\n".format(self.escape(result[i].name), result[i].id, result[i].ranking))
-                            if result[i].current is not None: fields[-1]['value'].append("{:,}\n".format(result[i].current))
-                            else: fields[-1]['value'].append("n/a\n")
-                            fields[-1]['value'] = "".join(fields[-1]['value'])
+                            if result[i].current is not None:
+                                fields[-1]['value'].append("{:,}\n".format(result[i].current))
+                            else:
+                                fields[-1]['value'].append("n/a\n")
                             gwnum = result[i].gw
                     # create new embed
                     if len(fields) > 0:
+                        if isinstance(fields[-1]['value'], list):
+                            fields[-1]['value'] = "".join(fields[-1]['value'])
                         embeds.append(self.bot.embed(title="{} **Guild War {}**".format(self.bot.emote.get('gw'), gwnum), description="Page **{}/{}**".format(x+1, 1+len(result)//max_v), fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 3 minutes"))
                         fields = []
                         search_results.append(search_list)
