@@ -24,7 +24,7 @@
 ## Requirements  
   
 * **Operating System**: Anything supported by the required Python version and third-party modules.  
-* **Hardware**: A few hundred MB of RAM, 100 MB of disk space.  
+* **Hardware**: A few hundred MB of RAM, 100 MB of disk space for the bot itself.  
 * **Software**: [Python 3.11](https://www.python.org/downloads/).  
 * **Third-Party Python packages**: See [below](#third-party-packages) for details. 
   
@@ -64,7 +64,7 @@ The `assets` folder contains various images and other files used by the bot:
   
 The `cogs` folder contains the bot Command Cogs, which can summarize as multiple Command groups and their associated functions:  
 * You can delete the cogs you don't want to use (be careful that they don't run some critical task) or add your own cogs.  
-* In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you don't wish to use it, as it'll likely need some tweaks to use.  
+* In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you don't wish to use it, as it'll likely need some tweaks to use. Refer to [YouCrew IDs](#youcrew-ids) for details.  
 * Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py` at the minimum.
   
 The `components` folder contains the bot components, which are piece of codes needed for it to work. These files can't be removed.  
@@ -230,7 +230,7 @@ Use it now and invite your bot to the server (no need to start the bot). If you 
 The IDs whose names start with `you_` such as "you_server" are for my crew.  
 If you plan to use your bot in your own crew, set the corresponding IDs to the channels and roles you wish.  
 These IDs are mostly used by the [YouCrew Command Cog](https://github.com/MizaGBF/Rosetta-Public/blob/main/cogs/youcrew.py).  
-If you don't plan to use it, you might remove this file from the `cogs` folder, along with the related IDs in `config.json`.  
+If you don't plan to use it, you might remove this Cog file from the `cogs` folder, along with the related IDs in `config.json`.  
   
 ### First Boot
 
@@ -256,7 +256,7 @@ WARNING:Rosetta:2024-12-20 12:00:20 | [COG] test.py is missing and will be ignor
 Ignore this message if it's intended.
 INFO:Rosetta:2024-12-20 12:00:20 | [MAIN] All cogs loaded
 INFO:Rosetta:2024-12-20 12:00:20 | [MAIN] v12.0.0 starting up...
-INFO:Rosetta:2024-12-20 12:00:20 | [NET] Default user-agent set to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Rosetta/12.0.0-ß`
+INFO:Rosetta:2024-12-20 12:00:20 | [NET] Default user-agent set to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Rosetta/12.0.0`
 INFO:Rosetta:2024-12-20 12:00:23 | [CHANNEL] Channel 'debug' registered
 INFO:Rosetta:2024-12-20 12:00:23 | [CHANNEL] Channel 'image' registered
 INFO:Rosetta:2024-12-20 12:00:23 | [MAIN] Rosetta is ready
@@ -328,7 +328,7 @@ So here's my recommendations:
 7. If you developped your own Custom Cogs, you'll have to read the code and make sure no breaking changes got introduced. Major enough changes are usually when the first or second version number is increased (for example, `1.0.0` to `2.0.0` or `1.0.0` to `1.1.0`).  
   
 > [!TIP]  
-> If you're new to Github, you can see, on the page, when each files got modified for the last time on the right.  
+> If you're new to Github, you can see, on the page, when each files got modified for the last time on the right of their names.  
   
 ### Migrating from v11 to v12  
   
@@ -422,4 +422,4 @@ class Example(commands.Cog):
 Once your Cog is ready, place it in the `cogs` folder.  
 Run `python bot.py -t` to test if the bot boots and the Cog loads.  
 If it doesn't, fix any error, else you're good to go!  
-Errors might still pop-up later during runtime but nothing which will should cause an actual crash, the Rosetta will report all errors to you.  
+Errors might still pop-up later during runtime but nothing which will should cause an actual crash. Rosetta will report all errors to you.  
