@@ -16,7 +16,6 @@
 * [Usage](#usage)  
 * [Setup](#setup)  
 * [Emojis](#emojis)  
-* [Setup](#setup)  
 * [Debug Mode](#debug-mode)  
 * [Updating](#updating)  
 * [Additional Informations](#additional-informations)  
@@ -58,9 +57,9 @@ Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Do
 > The `__init__.py` files found in some of those folders shouldn't be deleted either.  
 
 The `assets` folder contains various images and other files used by the bot:  
-* The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.
-* The content of the `emojis` folder is automatically used during the boot to update the bot Application Emojis list.
-* The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
+* The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.  
+* The content of the `emojis` folder is automatically used during the boot to update the bot Application Emojis list. Refer to [Emojis](#emojis) for details.  
+* The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.  
 * `font.ttf` is used by one command specific to my crew. You can remove it if you remove the corresponding cog.  
   
 The `cogs` folder contains the bot Command Cogs, which can summarize as multiple Command groups and their associated functions:  
@@ -87,7 +86,7 @@ The `tools` folder contains a few standalone pieces of code which might help you
 > [!IMPORTANT]  
 > This is the intended way to use the bot.
   
-Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile). Refer to Docker Documentation for details.
+Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile). Refer to the Docker Documentation for details.
   
 ### Method 2:   
   
@@ -97,7 +96,7 @@ Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/
 Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requirements.txt` in the bot folder, to install the third-party modules. You only need to do it once or if it gets updated.  
 Then, you can run the bot with `python -O bot.py -r` to start the bot (`-O` is optional).  
   
-Here are the possible usages taken from the **help** (obtained from `python bot.py -h`):
+Here are the possible usages, taken from the **help** (obtained from `python bot.py -h`):
 ```
 usage: bot.py [-h] [-r] [-d] [-t] [-c] [-g [PATH]]
 
@@ -269,7 +268,7 @@ INFO:Rosetta:2024-12-20 12:00:23 | [MAIN] Rosetta is ready
 > [!IMPORTANT]  
 > If it starts, congratulations.  
 > All the remaining setup is done via the `/owner` commands.  
-> Refer to *Additional Informations* below if you need more help.  
+> Refer to [Additional Informations](#additional-informations) below if you need more help.  
   
 You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.  
   
@@ -334,7 +333,7 @@ So here's my recommendations:
 ### Migrating from v11 to v12  
   
 If you plan to update Rosetta from version `11.X.X` to version `12.X.X`, here are a few things to care for:  
-* Don't overwrite your previous with the new one. Instead, get a clean copy and copy over your JSON files (`config.json`, `save.json`, `service-secrets.json`, etc...), SQL files (`GW.sql`, `GW_old.sql`...), your custom Cogs and Views (if any), custom Emojis (if any) and custom avatars (if any).  
+* Don't blindly overwrite your previous version with the new one. Instead, get a clean copy and copy over your JSON files (`config.json`, `save.json`, `service-secrets.json`, etc...), SQL files (`GW.sql`, `GW_old.sql`...), your custom Cogs and codes (if any), custom Emojis (if any) and custom avatars (if any).  
 * Cogs and Views developped for a version `11.X.X` should work fine on version `12.X.X`.  
 * `config.json` has been slimed down consiberably. Check out [Creating config.json](#creating-config.json) to see what keys remain. You can remove the ones not here anymore (unless you use them in a custom Cog or View).  
 * `config_test.json` has also lost the `"debug"` key. You can remove it, if you were using the [Debug Mode](#debug-mode).  
@@ -360,7 +359,7 @@ Here's a quick overview of the sub command groups:
 > [!WARNING]  
 > I rarely use most of those commands, there is a small chance they might be hiding some bugs.  
   
-If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
+If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the `"files"` drive folder.  
   
 ## Customize  
   
@@ -371,7 +370,7 @@ If you want a GW.sql file for the ranking commands, you can go grab the most rec
 > [!TIP]  
 > Check existing cogs if you need examples of more advanced behaviors.  
   
-The following is a template to make your own command cog, with comments:  
+The following is a template to make your own Command Cog, with comments:  
 ```python
 from __future__ import annotations # used for Type Hints
 import disnake
@@ -419,3 +418,8 @@ class Example(commands.Cog):
 * Commands whose Interaction are from the type `disnake.GuildCommandInteraction` will only be usable in guilds (i.e. Discord Servers).  
 * Commands whose Interaction are from the type `disnake.ApplicationCommandInteraction` will be usable in guilds (i.e. Discord Servers) **and** Direct Messages. Be sure to check if `inter.guild is None` if you plan to do guild specific things within a command usable in DMs.  
 * A sub command interaction type is determined by its parent or grandparent. If `subcommand` is a guild command but its parent `group` is usable in both guilds and DMs, then `/group subcommand` will work in both guilds and DMs.  
+  
+Once your Cog is ready, place it in the `cogs` folder.  
+Run `python bot.py -t` to test if the bot boots and the Cog loads.  
+If it doesn't, fix any error, else you're good to go!  
+Errors might still pop-up later during runtime but nothing which will should cause an actual crash, the Rosetta will report all errors to you.  
