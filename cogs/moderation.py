@@ -172,7 +172,7 @@ class Moderation(commands.Cog):
         # server infos
         msgs : list[str] = [":crown: Owned by {}\n:people_holding_hands: **{}** members\n".format(owner.mention, guild.member_count)]
         if len(guild.categories) > 0: msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
-        if len(guild.text_channels) > 0: msgs.append(":printer: **{}** Text Channels\n".format(len(guild.text_channels)))
+        if len(guild.text_channels) > 0: msgs.append(":printer : **{}** Text Channels\n".format(len(guild.text_channels)))
         if len(guild.voice_channels) > 0: msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
         if len(guild.forum_channels) > 0: msgs.append(":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels)))
         if len(guild.stage_channels) > 0: msgs.append(":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels)))

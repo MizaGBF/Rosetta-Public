@@ -396,7 +396,7 @@ class GuildWar(commands.Cog):
                             target_index = -1
                         else: # other days
                             d : str
-                            for d in self.DAYS_W_INTER:
+                            for d in self.DAYS_W_inter :
                                 if update_time < self.bot.data.save['gw']['dates'][d]:
                                     current_time_left = self.bot.data.save['gw']['dates'][d] - current_time
                                     target_index = (int((self.bot.data.save['gw']['dates'][d] - self.bot.data.save['gw']['dates']['Preliminaries']).total_seconds()) - 1200) // 1200
@@ -731,7 +731,7 @@ class GuildWar(commands.Cog):
     
     Parameters
     ----------
-    inter: Command interaction, must be deferred beforehand
+    inter : Command interaction, must be deferred beforehand
     crew_id: Crew id string (can be name, value, etc)
     mode: Integer, 0 for auto, 1 for member rank, 2 for member honor
     view: Optional view
@@ -1310,7 +1310,7 @@ class GuildWar(commands.Cog):
     
     Parameters
     ----------
-    inter: Command interaction, must be deferred beforehand
+    inter : Command interaction, must be deferred beforehand
     stype: Boolean, True for crews, False for players
     terms: Search string
     search_type: 0 = name, 1 = exact name, 2 = ID, 3 = ranking

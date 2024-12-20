@@ -399,7 +399,7 @@ class Util():
     
     Parameters
     ----------
-    inter: The command interaction
+    inter : The command interaction
     target: String, which can be:
         - Empty (the author GBF ID will be used if set, doesn't work if you set inter to a channel)
         - Positive integer, representing a GBF ID

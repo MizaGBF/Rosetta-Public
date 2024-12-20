@@ -114,7 +114,7 @@ class Reminder(commands.Cog):
     
     Parameters
     --------
-    inter: A deferred disnake.ApplicationCommandInteraction
+    inter : A deferred disnake.ApplicationCommandInteraction
     description: String, the embed description. The reminder count will be appended to it.
     """
     async def render(self : Reminder, inter : disnake.ApplicationCommandInteraction, description : str) -> None:
@@ -158,7 +158,7 @@ class Reminder(commands.Cog):
     
     Parameters
     ----------
-    inter: A disnake.ApplicationCommandInteraction interaction object
+    inter : A disnake.ApplicationCommandInteraction interaction object
     delta: timedelta to desired reminder date
     msg: String, the reminder message
     """

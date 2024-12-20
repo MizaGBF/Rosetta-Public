@@ -65,7 +65,7 @@ class RPS(BaseView):
     
     Parameters
     ----------
-    inter: an interaction
+    inter : an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
     async def update(self : RPS, inter : disnake.Interaction, init : bool = False) -> None:
@@ -152,7 +152,7 @@ class RPS(BaseView):
     
     Parameters
     ----------
-    inter: a Discord interaction
+    inter : a Discord interaction
     """
     async def timeoutCheck(self : RPS, inter : disnake.Interaction) -> None:
         if not self.won: # if game isn't over

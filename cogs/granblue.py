@@ -503,7 +503,7 @@ class GranblueFantasy(commands.Cog):
     
     Parameters
     --------
-    inter: Valid Disnake interaction. Required for getNextBuff().
+    inter : Valid Disnake interaction. Required for getNextBuff().
     current_time: Current time datetime in JST. Required for extra drop and stream timers.
     
     Returns
@@ -1023,7 +1023,7 @@ class GranblueFantasy(commands.Cog):
     
     Parameters
     ----------
-    inter: Command interaction, must be deferred beforehand
+    inter : Command interaction, must be deferred beforehand
     pid: GBF id
     clean: Boolean, set to false to disable the cleanup
     color: To change the embed color

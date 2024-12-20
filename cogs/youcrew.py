@@ -65,9 +65,9 @@ class YouCrew(commands.Cog):
                 self.bot.data.save['gw']['skip'] = False
                 self.bot.data.pending = True
             # retrieve roles
-            gl_role : int = guild.get_role(self.bot.data.config['ids'].get('gl', 0))
-            fo_role : int = guild.get_role(self.bot.data.config['ids'].get('fo', 0))
-            buff_role : tuple[int, int] = ([guild.get_role(self.bot.data.config['ids'].get('atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('deface', 0)), 'deface'])
+            gl_role : int = guild.get_role(self.bot.data.config['ids'].get('you_gl', 0))
+            fo_role : int = guild.get_role(self.bot.data.config['ids'].get('you_fo', 0))
+            buff_role : tuple[int, int] = ([guild.get_role(self.bot.data.config['ids'].get('you_atkace', 0)), 'atkace'], [guild.get_role(self.bot.data.config['ids'].get('you_deface', 0)), 'deface'])
             # task loop (as long as gw is on and buffs are remaining in the queue)
             msgs : list[str] = []
             while self.bot.data.save['gw']['state'] and (len(self.bot.data.save['gw']['buffs']) > 0 or len(msgs) != 0):
@@ -137,7 +137,7 @@ class YouCrew(commands.Cog):
     
     Parameters
     ----------
-    inter: Command interaction (to check the server)
+    inter : Command interaction (to check the server)
     
     Returns
     --------

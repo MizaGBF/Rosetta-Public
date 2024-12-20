@@ -251,7 +251,7 @@ class Pinboard():
     
     Parameters
     ----------
-    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    inter : A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
     color: Integer, embed color to use.
     """
     async def reset(self : Pinboard, inter : disnake.GuildCommandInteraction, color : int) -> None:
@@ -269,7 +269,7 @@ class Pinboard():
     
     Parameters
     ----------
-    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    inter : A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
     color: Integer, embed color to use.
     """
     async def toggle(self : Pinboard, inter : disnake.GuildCommandInteraction, color : int) -> None:
@@ -325,7 +325,7 @@ class Pinboard():
     
     Parameters
     ----------
-    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    inter : A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
     color: Integer, embed color to use.
     options: dict, settings to update
     """
@@ -368,7 +368,7 @@ class Pinboard():
     
     Parameters
     ----------
-    inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
+    inter : A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
     color: Integer, embed color to use.
     """
     async def track_toggle(self : Pinboard, inter : disnake.GuildCommandInteraction, color : int):
@@ -413,7 +413,7 @@ class Pinboard():
     
     Parameters
     ----------
-    inter: Interaction, must have been deferred beforehand
+    inter : Interaction, must have been deferred beforehand
     color: Embed color value
     msg: Optional message to add in the description
     """
