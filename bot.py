@@ -316,8 +316,8 @@ class DiscordBot(commands.InteractionBot):
     --------
     bool: True if it does, False if not
     """
-    def isMod(self : DiscordBot, inter : disnake.GuildCommandInteraction) -> bool:
-        return inter.guild_permissions.manage_messages or inter.author.id == self.owner.id
+    def isMod(self : DiscordBot, inter : disnake.ApplicationCommandInteraction) -> bool:
+        return inter.guild is not None and inter.author.guild_permissions.manage_messages or inter.author.id == self.owner.id
 
     """isOwner()
     Check if the interaction author is the bot owner
