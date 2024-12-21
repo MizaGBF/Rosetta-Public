@@ -292,7 +292,9 @@ class GranblueFantasy(commands.Cog):
             "/i":"*",
             "u":"__",
             "/u":"__",
-            "tr":"\n"
+            "tr":"\n",
+            "div":"\n",
+            "/div":"\n"
         }
         # build a list of id to check
         to_process : list[int] = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
@@ -320,14 +322,15 @@ class GranblueFantasy(commands.Cog):
                         i : int
                         for i in range(0, len(content)):
                             if i & 1 == 1: # Odd, it's a tag
-                                if content[i] in tags: # known tag, replace with corresponding string (see 40 lines above)
-                                    elements.append(tags[content[i]])
+                                tag : str = content[i].split(' ', 1)[0]
+                                if tag in tags: # known tag, replace with corresponding string (see 40 lines above)
+                                    elements.append(tags[tag])
                                 else: # not a known tag
                                     if elements[-1].strip() != "": # last element wasn't empty, we add a space
                                         elements.append(" ")
-                                    if thumbnail is None and content[i].startswith("img "): # thumbnail detection
+                                    if thumbnail is None and tag == "img": # thumbnail detection
                                         thumbnail = content[i].split('src="', 1)[1].split('"', 1)[0]
-                                    elif link is None and content[i].startswith("a "): # url detection
+                                    elif link is None and tag == "a": # url detection
                                         link = content[i].split('href="', 1)[1].split('"', 1)[0]
                             else: # even, it's text
                                 tmp : str = content[i].strip()
@@ -335,6 +338,19 @@ class GranblueFantasy(commands.Cog):
                                     pass
                                 else:
                                     elements.append(content[i])
+                        # Remove extra new lines
+                        i = 0
+                        counter : int = 0
+                        while i < len(elements):
+                            if elements[i] == '\n':
+                                if i == 0 or counter >= 2:
+                                   elements.pop(i)
+                                else:
+                                    counter += 1
+                                    i += 1
+                            else:
+                                counter = 0
+                                i += 1
                         # Adjust thumbnail url
                         thumbnail = self.fix_news_thumbnail(thumbnail)
                         # Adjust link url
@@ -351,8 +367,8 @@ class GranblueFantasy(commands.Cog):
                                 break
                         if len(description) == 0:
                             description.append("")
-                        description.append("[News Link](https://game.granbluefantasy.jp/#news/detail/{}/2/1/1)".format(ii))
-                        description = "\n".join(description)
+                        description.append("\n[News Link](https://game.granbluefantasy.jp/#news/detail/{}/2/1/1)".format(ii))
+                        description = "".join(description)
                         # send news
                         await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=data[0]['title'].replace('<br>', ' '), description=description, url=link, image=thumbnail, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
                         # detect maintenance to automatically set the date
