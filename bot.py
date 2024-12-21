@@ -528,6 +528,7 @@ class DiscordBot(commands.InteractionBot):
         if name in self.tasks:
             try:
                 self.tasks[name].cancel()
+                self.tasks.pop(name, None)
                 self.logger.push("[MAIN] Task '{}' cancelled".format(name), send_to_discord=False)
             except:
                 pass
