@@ -275,6 +275,16 @@ class DiscordBot(commands.InteractionBot):
         self.logger.push("[EXIT] Exited gracefully", send_to_discord=False)
         os._exit(0)
 
+    """isProduction()
+    Return True if the bot is NOT in debug and test modes
+    
+    Returns
+    --------
+    bool: True if valid, False if debug or test mode
+    """
+    def isProduction(self : DiscordBot) -> bool:
+        return not self.debug_mode and not self.test_mode
+
     """isServer()
     Check if the interaction is matching the given config.json ID identifier (server identifier must be set in config.json beforehand)
     
@@ -527,14 +537,20 @@ class DiscordBot(commands.InteractionBot):
     Note: In test mode, only the log is started
     """
     def startTasks(self : DiscordBot) -> None:
-        self.runTask('bot:log', self.logger.process) 
-        if not self.debug_mode and not self.test_mode:
-            c : commands.Cog
-            for c in self.cogs:
-                try:
-                    self.get_cog(c).startTasks()
-                except:
-                    pass
+        # start component tasks
+        cmp : Any
+        for cmp in [self.ban, self.channel, self.data, self.drive, self.emote, self.file, self.gacha, self.logger, self.net, self.pinboard, self.ranking, self.singleton, self.sql, self.util]:
+            try:
+                cmp.startTasks()
+            except:
+                pass
+        # start cog tasks
+        c : commands.Cog
+        for c in self.cogs:
+            try:
+                self.get_cog(c).startTasks()
+            except:
+                pass
 
     """on_guild_join()
     Event.

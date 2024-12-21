@@ -43,7 +43,8 @@ class GranblueFantasy(commands.Cog):
         self.bot : DiscordBot = bot
 
     def startTasks(self : GranblueFantasy) -> None:
-        self.bot.runTask('granblue:watcher', self.granblue_watcher)
+        if self.bot.isProduction():
+            self.bot.runTask('granblue:watcher', self.granblue_watcher)
 
     """granblue_watcher()
     Bot Task checking for new content related to GBF

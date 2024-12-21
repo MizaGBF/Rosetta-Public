@@ -67,9 +67,6 @@ class GuildWar(commands.Cog):
         self.day_list : ScheduleList|None = None
         self.crewcache : CrewData = {}
 
-    def startTasks(self : GuildWar) -> None:
-        self.bot.runTask('gw:ranking', self.bot.ranking.checkGWRanking)
-
     """buildDayList()
     Generate the day list used by the gw command
     

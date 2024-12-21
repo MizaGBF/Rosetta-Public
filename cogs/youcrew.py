@@ -33,7 +33,8 @@ class YouCrew(commands.Cog):
         self.bot : DiscordBot = bot
 
     def startTasks(self : YouCrew) -> None:
-        self.bot.runTask('you:buff', self.checkGWBuff)
+        if self.bot.isProduction():
+            self.bot.runTask('you:buff', self.checkGWBuff)
 
     """checkGWBuff()
     Bot Task managing the buff alert of the (You) server

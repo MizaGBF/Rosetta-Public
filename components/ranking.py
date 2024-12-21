@@ -82,6 +82,10 @@ class Ranking():
         self.gbfgcrews_id.sort()
         self.othercrews_id.sort()
 
+    def startTasks(self : Ranking) -> None:
+        if self.bot.isProduction():
+            self.bot.runTask('ranking:check', self.checkGWRanking)
+
     """requestRanking()
     Request a page from the GW ranking
     

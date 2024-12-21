@@ -26,7 +26,8 @@ class Reminder(commands.Cog):
         self.bot : DiscordBot = bot
 
     def startTasks(self : Reminder) -> None:
-        self.bot.runTask('reminder:task', self.remindertask)
+        if self.bot.isProduction():
+            self.bot.runTask('reminder:task', self.remindertask)
 
     """checkReminders()
     Check the reminders ready to send.

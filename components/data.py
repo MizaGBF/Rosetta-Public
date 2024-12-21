@@ -62,6 +62,10 @@ class Data():
     def init(self : Data) -> None:
         pass
 
+    def startTasks(self : Data) -> None:
+        if self.bot.isProduction():
+            self.bot.runTask('data:maintenance', self.maintenance)
+
     """loadConfig()
     Read config.json. Only called once during boot
     

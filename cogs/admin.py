@@ -35,8 +35,8 @@ class Admin(commands.Cog):
         self.bot : DiscordBot = bot
 
     def startTasks(self : Admin) -> None:
-        self.bot.runTask('owner:status', self.status)
-        self.bot.runTask('data:maintenance', self.bot.data.maintenance)
+        if self.bot.isProduction():
+            self.bot.runTask('admin:status', self.status)
 
     """status()
     Bot Task managing the autosave and update of the bot status

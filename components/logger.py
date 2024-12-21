@@ -51,6 +51,9 @@ class Logger():
     def init(self : Logger) -> None:
         pass
 
+    def startTasks(self : Ranking) -> None:
+        self.bot.runTask('logger:process', self.process)
+
     """color()
     Return an embed color according to the given level
     
