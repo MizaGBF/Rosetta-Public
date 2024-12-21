@@ -42,8 +42,7 @@ class Data():
         'matchtracker': None,
         'pinboard': {},
         'ban': {},
-        'announcement': {},
-        'log': []
+        'announcement': {}
     }
     BASE_CONFIG : list[str] = [
         'tokens',

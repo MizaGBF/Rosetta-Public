@@ -32,6 +32,7 @@ class Logger():
     }
     def __init__(self : Logger, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
+        self.discord_queue : list[datetime|str|int] = []
         debug : bool = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
         logging.basicConfig(level=logging.INFO)
         self.logger : logging.Logger|None = None # logging object
@@ -51,7 +52,7 @@ class Logger():
     def init(self : Logger) -> None:
         pass
 
-    def startTasks(self : Ranking) -> None:
+    def startTasks(self : Logger) -> None:
         self.bot.runTask('logger:process', self.process)
 
     """color()
@@ -75,18 +76,15 @@ class Logger():
         while True:
             try:
                 await asyncio.sleep(2)
-                if len(self.bot.data.save['log']) > 0: # if messages are waiting in the queue
-                    logs : JSON|None = self.bot.data.save['log'] # get them out
-                    self.bot.data.save['log'] = [] # and clear
-                    self.bot.data.pending = True
+                if len(self.discord_queue) > 0: # if messages are waiting in the queue
                     # for each message
                     msg : JSON
-                    for msg in logs:
+                    for msg in self.discord_queue:
                         if len(msg[1]) > 4000: # if too long, truncate
                             msg[1] = msg[1][:4000] + "...\n*Too long, check rosetta.log for details*"
                         # send the message to the debug channel
                         await self.bot.send('debug', embed=self.bot.embed(title="Rosetta Log", description="### " + msg[1], footer=("Occured {} times".format(msg[2]) if msg[2] > 1 else ''), timestamp=msg[0], color=self.color(msg[3])))
-                    logs = None # set to None to discard, for garbage collection
+                    self.discord_queue = [] # and clear
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'bot:log' Task Cancelled")
                 await asyncio.sleep(30)
@@ -107,11 +105,10 @@ class Logger():
     def push(self : Logger, msg : str, send_to_discord : bool = True, level : int = logging.INFO) -> None:
         now : datetime = self.bot.util.UTC()
         if send_to_discord: # if this flag is on
-            if len(self.bot.data.save['log']) > 0 and self.bot.data.save['log'][-1][1] == msg: # if the last message in the log is the same
-                self.bot.data.save['log'][-1][2] += 1 # we simply increase its occurence counter
+            if len(self.discord_queue) > 0 and self.discord_queue[-1][1] == msg: # if the last message in the log is the same
+                self.discord_queue[-1][2] += 1 # we simply increase its occurence counter
             else: # else we add it to the queue
-                self.bot.data.save['log'].append([now, msg, 1, level])
-            self.bot.data.pending = True
+                self.discord_queue.append([now, msg, 1, level])
         # push the message to the logger
         try:
             self.logger.log(level, now.strftime("%Y-%m-%d %H:%M:%S | ") + msg)
