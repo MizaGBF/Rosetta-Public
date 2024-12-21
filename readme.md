@@ -364,8 +364,10 @@ If you want a GW.sql file for the ranking commands, you can go grab the most rec
 ## Customize  
   
 > [!TIP]  
-> The following sections are for developing your own Command Cogs.  
+> The following sections are for customizing the bots with your own Command Cogs, and so on.  
 > You can skip if you don't plan to do so.  
+  
+### Adding a new Command Cog  
   
 > [!TIP]  
 > Check existing cogs if you need examples of more advanced behaviors.  
@@ -423,3 +425,66 @@ Once your Cog is ready, place it in the `cogs` folder.
 Run `python bot.py -t` to test if the bot boots and the Cog loads.  
 If it doesn't, fix any error, else you're good to go!  
 Errors might still pop-up later during runtime but nothing which will should cause an actual crash. Rosetta will report all errors to you.  
+  
+### Tasks  
+  
+Tasks are functions running in the background, periodically executing some code to achieve some purpose.  
+It uses [asyncio.create_task](https://docs.python.org/3/library/asyncio-task.html#creating-tasks) under the hood, hence the name.  
+Realistically, a Task can be located anywhere in the codebase but, for consistency, they are located in their respective Cogs or Components.  
+  
+Here's an example of how to write a Task:  
+  
+```python
+    async def mytask(self : Example) -> None:
+        while True:
+            try:
+                await self.bot.send('debug', "Hello world from the task!")
+                await asyncio.sleep(300)
+            except asyncio.CancelledError:
+                self.bot.logger.push("[TASK] 'mytask' Task Cancelled")
+                #
+                # Do stuff related to cancellation here
+                #
+                return
+            except Exception as e:
+                self.bot.logger.pushError("[TASK] 'mytask' Task Error:", e)
+                #
+                # Do error handling here
+                #
+                return # you don't have to return if you want your task to keep running
+```  
+  
+In this example, we add a simple Task to our `Example` Cog from above.  
+It'll run forever (`while True:`), send a message to the Debug server channel saying `Hello world from the task!` and then sleep for 5 minutes before repeating.  
+If it encounters an error or if it gets cancelled, the Task will stop.  
+  
+Now to have a Task runs automatically on the bot startup:  
+* Check if the Cog or Component has a `startTasks` function and add it if it doesn't:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        pass
+```  
+  
+Then, call `runTask` with the given name of your choice and your Task function to start it:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        self.bot.runTask('mytask!', self.mytask)
+```  
+  
+If you wish to not execute the Task in Debug mode, use `isProduction()`:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        if self.bot.isProduction():
+            self.bot.runTask('mytask!', self.mytask)
+```  
+  
+Finally, if, at some point, you want to cancel a Task, use `cancelTask` in whatever place you wish, with the name of your task:  
+  
+```python
+        self.bot.cancelTask('mytask!')
+```  
+  
+It will trigger the `asyncio.CancelledError` exception seen above and remove the Task from the bot Task list.  
