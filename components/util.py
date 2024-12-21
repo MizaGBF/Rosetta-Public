@@ -271,7 +271,7 @@ class Util():
             "Memory": "{:.1f}MB ({:.2f}%)".format(self.process.memory_full_info().uss / 1048576, self.process.memory_percent()).replace(".0M", "M").replace(".00%", "%").replace("0%", "%"),
             "Save": ("**Pending**" if self.bot.data.pending else "Ok"),
             "GBF Update": ("**Pending**" if self.bot.data.save['gbfupdate'] else "Ok"),
-            "Task Count": str(len(asyncio.all_tasks())),
+            "Task Count": str(len(self.bot.tasks)),
             "Server Count": str(len(self.bot.guilds)),
             "Cogs Loaded": "{}/{}".format(len(self.bot.cogs), self.bot.cogn) if (len(self.bot.cogs) == self.bot.cogn) else "**{}**/{}".format(len(self.bot.cogs), self.bot.cogn)
         }
