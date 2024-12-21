@@ -3,7 +3,6 @@ import asyncio
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
-    from components.util import JSON
 from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
@@ -32,7 +31,7 @@ class Logger():
     }
     def __init__(self : Logger, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
-        self.discord_queue : list[datetime|str|int] = []
+        self.discord_queue : list[list[datetime|str|int]] = []
         debug : bool = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
         logging.basicConfig(level=logging.INFO)
         self.logger : logging.Logger|None = None # logging object
@@ -78,7 +77,7 @@ class Logger():
                 await asyncio.sleep(2)
                 if len(self.discord_queue) > 0: # if messages are waiting in the queue
                     # for each message
-                    msg : JSON
+                    msg : list[datetime|str|int]
                     for msg in self.discord_queue:
                         if len(msg[1]) > 4000: # if too long, truncate
                             msg[1] = msg[1][:4000] + "...\n*Too long, check rosetta.log for details*"
