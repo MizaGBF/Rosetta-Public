@@ -48,7 +48,7 @@ Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Do
   
 * Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
 * This project is a fork of [MizaBOT v9.31b](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
-* Saving is done simply on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component. Compressed Save Files only weight around 13~14 KB but that number can grow, the more Discord Servers that Rosetta has access to.  
+* Saving is done simply on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` Component. Compressed Save Files only weight around 13~14 KB but that number can grow, the more Discord Servers that Rosetta has access to.  
   
 ### Folder structure  
   
@@ -67,7 +67,7 @@ The `cogs` folder contains the bot Command Cogs, which can summarize as multiple
 * In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you don't wish to use it, as it'll likely need some tweaks to use. Refer to [YouCrew IDs](#youcrew-ids) for details.  
 * Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py` at the minimum.
   
-The `components` folder contains the bot components, which are piece of codes needed for it to work. These files can't be removed.  
+The `components` folder contains the bot Components, which are piece of codes needed for it to work. These files can't be removed.  
   
 The `views` folder contains the bot interactions to make interfaces and such for some commands. Unused ones can be removed, if you are sure they aren't referenced anywhere in the code.  
 
@@ -117,13 +117,13 @@ Check the **Debug Mode** section for more infos on the `-d`/`--debug` argument.
   
 A simple CTRL+C or sending a SIGTERM or SIGINT signal will make the bot saves and exits gracefully.  
 The bot returns the following codes upong exiting:  
-- 0: Exited properly.  
-- 1: Failed to load `config.json` on boot. Check if the file is missing or corrupted.  
-- 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
-- 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
-- 4: Failed to connect to Google Drive with your Service account.  
-- 5: Failed to initialize a bot component.  
-- 6: Bot instance initialization failure.  
+* 0: Exited properly.  
+* 1: Failed to load `config.json` on boot. Check if the file is missing or corrupted.  
+* 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
+* 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
+* 4: Failed to connect to Google Drive with your Service account.  
+* 5: Failed to initialize a bot Component.  
+* 6: Bot instance initialization failure.  
   
 > [!NOTE]  
 > The `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the exit code **0**.  
@@ -286,7 +286,7 @@ It can take some time, so it's normal if emotes don't display right away at the 
 > You can find them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
 > If you remove an emoji from `assets/emojis`, it'll automatically be deleted from the **Emojis** list on the next boot.  
 
-To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
+To use them in the code, you must call the `emote` Component `get` method with the emoji name, without its extension.  
 For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
 If you decide to add more emojis for custom commands, make sure they don't have special characters or the upload might fail.  
   
@@ -488,3 +488,7 @@ Finally, if, at some point, you want to cancel a Task, use `cancelTask` in whate
 ```  
   
 It will trigger the `asyncio.CancelledError` exception seen above and remove the Task from the bot Task list.  
+  
+> [!IMPORTANT]  
+> If you heavily customized the bot and added your own Component(s) with Tasks inside, these Components must be added to the list in `bot.py, startTasks()`, for their respective `startTasks` functions to be called.  
+> Cogs don't have this limitation.  
