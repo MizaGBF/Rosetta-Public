@@ -458,7 +458,7 @@ In this example, we add a simple Task to our `Example` Cog from above.
 It'll run forever (`while True:`), send a message to the Debug server channel saying `Hello world from the task!` and then sleep for 5 minutes before repeating.  
 If it encounters an error or if it gets cancelled, the Task will stop.  
   
-Now to have a Task runs automatically on the bot startup:  
+Now to have a Task run automatically on the bot startup:  
 * Check if the Cog or Component has a `startTasks` function and add it if it doesn't:  
   
 ```python
