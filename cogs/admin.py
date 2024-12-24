@@ -677,7 +677,7 @@ class Admin(commands.Cog):
         await inter.edit_original_message(embed=self.bot.embed(title="Schedule Update", description="Process finished", color=self.COLOR))
 
     @schedule.sub_command(name="add")
-    async def scheduleadd(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), start_hour : int = commands.Param(description="Start Hour UTC (Default is 8)", default=17, ge=0, le=23), end : str = commands.Param(description="End date (DD/MM/YY format)", default=""), end_hour : int = commands.Param(description="Ending Hour UTC (Default is 8)", default=17, ge=0, le=23)) -> None:
+    async def scheduleadd(self : commands.SubCommand, inter : disnake.GuildCommandInteraction, name : str = commands.Param(description="Entry name"), start : str = commands.Param(description="Start date (DD/MM/YY format)"), start_hour : int = commands.Param(description="Start Hour UTC (Default is 8)", default=8, ge=0, le=23), end : str = commands.Param(description="End date (DD/MM/YY format)", default=""), end_hour : int = commands.Param(description="Ending Hour UTC (Default is 8)", default=8, ge=0, le=23)) -> None:
         """Add or modify an entry (Owner Only)"""
         await inter.response.defer(ephemeral=True)
         try:
