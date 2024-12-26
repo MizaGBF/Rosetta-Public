@@ -1201,20 +1201,23 @@ class GachaSimulator():
                 await inter.edit_original_message(embed=self.bot.embed(title="Error", description="An error occured", color=self.color))
                 self.bot.logger.pushError("[GACHA] 'simulator roulette' error:", self.exception)
                 return
-            start_time : float = time.time() # current time
-            await asyncio.sleep(0) # to not risk blocking
-            # update the roulette state
-            await roulette.update()
-            # update thumbnail if it changed
-            if prev_best is None or str(self.best) != prev_best:
-                prev_best = str(self.best)
-                await self.updateThumbnail()
-            # wait next roulette update, for the remainer of Rarity.ROULETTE_DELAY
-            diff : float = self.ROULETTE_DELAY - (time.time() - start_time)
-            if diff > 0:
-                await asyncio.sleep(diff)
-            # send message
-            await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message() + ("" if not roulette.running else "**...**"), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
+            try:
+                start_time : float = time.time() # current time
+                await asyncio.sleep(0) # to not risk blocking
+                # update the roulette state
+                await roulette.update()
+                # update thumbnail if it changed
+                if prev_best is None or str(self.best) != prev_best:
+                    prev_best = str(self.best)
+                    await self.updateThumbnail()
+                # wait next roulette update, for the remainer of Rarity.ROULETTE_DELAY
+                diff : float = self.ROULETTE_DELAY - (time.time() - start_time)
+                if diff > 0:
+                    await asyncio.sleep(diff)
+                # send message
+                await inter.edit_original_message(embed=self.bot.embed(author={'name':"{} spun the Roulette".format(inter.author.display_name), 'icon_url':inter.author.display_avatar}, description=roulette.get_message() + ("" if not roulette.running else "**...**"), color=self.color, footer=roulette.get_footer(), thumbnail=self.thumbnail))
+            except Exception as e:
+                self.exception = e
 
 class Roulette():
     class Wheel(IntEnum): # Roulette Wheel Zones
@@ -1283,7 +1286,7 @@ class Roulette():
         self.footers : list[str] = [] # footer strings container
         self.dice : int = 0
         self.rolls : int = 0
-        self.legfest : int = -1
+        self.legfest : int = legfest
         self.super_mukku : bool = False
         self.janken_threshold : int = 0
 
