@@ -25,7 +25,7 @@
   
 * **Operating System**: Anything supported by the required Python version and third-party modules.  
 * **Hardware**: A few hundred MB of RAM, 100 MB of disk space for the bot itself.  
-* **Software**: [Python 3.11](https://www.python.org/downloads/).  
+* **Software**: [Python 3.13](https://www.python.org/downloads/).  
 * **Third-Party Python packages**: See [below](#third-party-packages) for details. 
   
 ### Third-party packages  
