@@ -1,4 +1,5 @@
 # Rosetta  
+  
 * **[Granblue Fantasy](https://game.granbluefantasy.jp) Discord Bot**.  
 * **Command List** and **Help** available [Here](https://mizagbf.github.io/discordbot.html).  
   
@@ -8,61 +9,84 @@
 > Use this repo if you have the how-to to host your own instance.  
 > If you're somehow close to me in some way however, feel free to ask and I'll see if it's possible.  
   
+## Table of contents  
+  
+* [Requirements](#requirements)  
+* [General Overview](#general-overview)  
+* [Usage](#usage)  
+* [Setup](#setup)  
+* [Emojis](#emojis)  
+* [Debug Mode](#debug-mode)  
+* [Updating](#updating)  
+* [Additional Informations](#additional-informations)  
+* [Customize](#customize)  
+  
 ## Requirements  
-* **System**: The bot itself requires a few hundred MB of RAM, 100 MB of disk space and a stable and fast internet connection, and a CPU with good single treaded performance. Expect the RAM and CPU usage to ramp up as you invite the bot in more servers.  
-* **Software**: [Python 3.11](https://www.python.org/downloads/). See [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt) for the list of third-party modules used in this project.
-
-> [!IMPORTANT]  
-> The bot is designed to run on Linux but it has been tested to run on Windows.  
-> It's untested on other systems but it *should* work on anything supported by the required Python version.
   
-> [!TIP]  
-> I recommend to install [jemalloc](https://github.com/jemalloc/jemalloc) if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, MizaBOT, which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
-> Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
+* **Operating System**: Anything supported by the required Python version and third-party modules.  
+* **Hardware**: A few hundred MB of RAM, 100 MB of disk space for the bot itself.  
+* **Software**: [Python 3.11](https://www.python.org/downloads/).  
+* **Third-Party Python packages**: See [below](#third-party-packages) for details. 
   
-## General Informations  
+### Third-party packages  
+  
+Here's the list of third-party python modules installed from [requirements.txt](https://github.com/MizaGBF/Rosetta-Public/blob/master/requirements.txt).  
+* **[Disnake](https://github.com/DisnakeDev/disnake)**, a Discord API wrapper.  
+* **[Pydrive2](https://github.com/iterative/PyDrive2)**, a Google Drive API wrapper.  
+* **[psutil](https://github.com/giampaolo/psutil)**, a library to retrieve system and process informations.  
+* **[Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)**, a library for HTML parsing.  
+* **[Pillow](https://github.com/python-pillow/Pillow)**, a PIL fork for image processing. Only used by the optional [YouCrew](https://github.com/MizaGBF/Rosetta-Public/blob/main/cogs/youcrew.py) Command Cog.  
+* **[deep-translator](https://github.com/nidhaloff/deep-translator)**, a library to access many online translator tools.  
+  
+### Additional Considerations  
+  
+* The bot is designed to run on Linux but it has been tested to run on Windows.  
+* [jemalloc](https://github.com/jemalloc/jemalloc) is recommended to install if you plan to run it for long periods of time. It's to avoid the high Memory Usage problem encountered on its predecessor, [MizaBOT](https://github.com/MizaGBF/MizaBOT), which was caused by memory fragmentation (although, Rosetta evolved a lot since, I don't know if it's still victim of this issue).  
+Refer to the [jemalloc repository](https://github.com/jemalloc/jemalloc), my [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile) for how I set it up, and the [Python documentation](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONMALLOC) for details.  
+  
+## General Overview  
+  
 * Rosetta is a Discord Bot themed around the Browser Game [Granblue Fantasy](https://game.granbluefantasy.jp), providing utility commands and advanced features to the users, along with moderation and more generalistic commands.  
-* This project is a fork of [MizaBOT latest version](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
-* Saving is done on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` component.  
+* This project is a fork of [MizaBOT v9.31b](https://github.com/MizaGBF/MizaBOT) featuring massive improvements, bug fixes, security fixes and so on.  
+* Saving is done simply on Google Drive. If you want to use something else, you'll have to rewrite the `drive.py` Component. Compressed Save Files only weight around 13~14 KB but that number can grow, the more Discord Servers that Rosetta has access to.  
+  
+### Folder structure  
+  
+> [!IMPORTANT]  
+> The folders below are required for the Rosetta to function properly and shouldn't be deleted unless mentioned otherwise.  
+> The `__init__.py` files found in some of those folders shouldn't be deleted either.  
 
 The `assets` folder contains various images and other files used by the bot:  
-* The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.
-* The content of the `emojis` folder is automatically used during the boot.
-* The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.
+* The various **icon.png** files are automatically set as the bot avatar at the beginning of related months.  
+* The content of the `emojis` folder is automatically used during the boot to update the bot Application Emojis list. Refer to [Emojis](#emojis) for details.  
+* The content of the `hosted` folder is merely a backup of some files I host on a github page. In the advent I disappear, you must rehost them somewhere, and update their links in the code.  
 * `font.ttf` is used by one command specific to my crew. You can remove it if you remove the corresponding cog.  
-
-The `cogs` folder contains the bot Cogs, which are pretty much Command groups:  
-* **Never delete this folder or __init__.py inside**.  
-* You can however delete the the cogs you want (be careful they don't run some critical task) or add your own cogs.  
-* In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you want.  
-* Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py`.
   
-The `components` folder contains the bot components, which are piece of codes needed for it to work.    
-The `views` folder contains the bot interactions to make interfaces and such for some commands.  
+The `cogs` folder contains the bot Command Cogs, which can summarize as multiple Command groups and their associated functions:  
+* You can delete the cogs you don't want to use (be careful that they don't run some critical task) or add your own cogs.  
+* In particular, `youcrew.py` contains commands specific to my crew. You can remove it if you don't wish to use it, as it'll likely need some tweaks to use. Refer to [YouCrew IDs](#youcrew-ids) for details.  
+* Most **cogs** are standalone and should work even if others are missing. However, I suggest to never remove `admin.py`, `moderation.py`, `gw.py` and `granblue.py` at the minimum.
+  
+The `components` folder contains the bot Components, which are piece of codes needed for it to work. These files can't be removed.  
+  
+The `views` folder contains the bot interactions to make interfaces and such for some commands. Unused ones can be removed, if you are sure they aren't referenced anywhere in the code.  
 
 The `tools` folder contains a few standalone pieces of code which might help you:  
-* `generate_help.py` generates the [help page](https://mizagbf.github.io/discordbot.html) html.  
-> [!WARNING]  
-> If you wrote your own Cogs, I recommend following how I format my syntax or this tool might not be able to detect your commands properly.
-  
-> [!WARNING]  
-> The tool attempts to write the HTML file to my github page [repo](https://github.com/MizaGBF/MizaGBF.github.io) before doing so in the current directory.  
-> If you want to change this behavior, look around line [529](https://github.com/MizaGBF/Rosetta-Public/blob/main/tools/generate_help.py#L529).
-  
 * `save_gzip.py` and `save_lzma.py` can be used to decompress/compress a save file. You can drag and drop a file on them but I suggest using them in a terminal/command prompt. Current save data are saved to the drive in the LZMA format. `save_gzip.py` is technically not used anymore.  
   
 > [!CAUTION]  
 > It's a good practice to **always** make a copy of your save data before attempting any manipulation on it.
   
-* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish.  
+* `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish. Add a [Gifsicle](https://github.com/kohler/gifsicle) executable in the same folder for a better result.  
   
 ## Usage  
+  
 ### Method 1:  
 
 > [!IMPORTANT]  
 > This is the intended way to use the bot.
   
-Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile). Refer to Docker Documentation for details.
+Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/blob/master/Dockerfile). Refer to the Docker Documentation for details.
   
 ### Method 2:   
   
@@ -70,39 +94,50 @@ Simply build and run the [Dockerfile](https://github.com/MizaGBF/Rosetta-Public/
 > This method is mostly used for testing, although the end result should be analog to method 1.
   
 Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requirements.txt` in the bot folder, to install the third-party modules. You only need to do it once or if it gets updated.  
-Then, you can run the bot with `python -O bot.py -run` to start the bot (`-O` is optional).  
+Then, you can run the bot with `python -O bot.py -r` to start the bot (`-O` is optional).  
   
-There are three ways to start the bot:  
-`-run`: Start the bot.  
-`-test`: Start the bot but stop before connecting to Discord. Used to test if bot can start properly.  
-`-remove`: Start the bot without loading any commands. Mainly used to desync and remove a test bot commands from a server.  
+Here are the possible usages, taken from the **help** (obtained from `python bot.py -h`):
+```
+usage: bot.py [-h] [-r] [-d] [-t] [-c] [-g [PATH]]
+
+options:
+  -h, --help            show this help message and exit
+  -r, --run             run Rosetta.
+  -d, --debug           set Rosetta to the Debug mode ('config_test.json' will be loaded, some operations such as saving will be disabled).
+  -t, --test            attempt to boot Rosetta and load the command cogs, in Debug mode.
+  -c, --clean           desync Guild slash commands (to remove commands from a Debug mode instance, from all server).
+  -g [PATH], --generatehelp [PATH]
+                        generate the discordbot.html help file (the destination PATH can be set).
+```
   
-You can also add the following to change its behavior:  
-`-debug`: Start the bot in debug mode. `config_test.json` will be loaded and will partially overwrite `config.json` in **memory**, so you can use a different Discord token. The bot won't write on the Google Drive in this state, nor load all the tasks.  
+Except `-d`/`--debug`, all arguments are mutually exclusive.  
+Check the **Debug Mode** section for more infos on the `-d`/`--debug` argument.   
   
 ### Stop Rosetta   
   
 A simple CTRL+C or sending a SIGTERM or SIGINT signal will make the bot saves and exits gracefully.  
 The bot returns the following codes upong exiting:  
-- 0: Exited properly.  
-- 1: Failed to load `config.json` on boot. Check if the file is missing or corrupted.  
-- 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
-- 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
-- 4: Failed to connect to Google Drive with your Service account.  
-- 5: Failed to initialize a bot component.  
-- 6: Bot instance initialization failure.  
+* 0: Exited properly.  
+* 1: Failed to load `config.json` on boot. Check if the file is missing or corrupted.  
+* 2: Failed to load `save.json` on boot. Check if the file is corrupted.  
+* 3: Failed to load the save data from Google Drive. Maybe Google is having troubles or the save file is missing from the folder.  
+* 4: Failed to connect to Google Drive with your Service account.  
+* 5: Failed to initialize a bot Component.  
+* 6: Bot instance initialization failure.  
   
 > [!NOTE]  
 > The `/owner bot reboot` command doesn't actually reboot the bot, it's a simple shutdown with the exit code **0**.  
 > My instance is setup with Watchtower and automatically reboot once stopped, hence why it's called reboot.  
   
 ## Setup  
-### Creating config.json and your Discord Application  
+  
+### Creating config.json  
+  
 > [!IMPORTANT]  
 > If you haven't yet, go to your Discord account settings, *Advanced* and turn on *Developer Mode*.  
 > Now you can right click on anything to copy their IDs.  
   
-The bot is configured with a file called `config.json`. Create one in its folder and paste the following:  
+The bot is configured with a simple file called `config.json`. Create one in its folder and paste the following:  
 ```json
 {
     "tokens" : {
@@ -115,17 +150,14 @@ The bot is configured with a file called `config.json`. Create one in its folder
         "debug_channel" : BOT_DEBUG_CHANNEL_ID,
         "image_upload" : BOT_IMAGE_UPLOAD_CHANNEL_ID,
         "debug_server" : BOT_SERVER_ID,
-        "owner" : YOUR_USER_ID_ID,
         "you_server" : YOUR_CREW_OR_THE_BOT_SERVER_ID,
         "you_announcement" : YOUR_CREW_ANNOUNCEMENT_CHANNEl_ID,
         "you_meat" : YOUR_CREW_MEAT_CHANNEl_ID,
         "you_member" : YOUR_CREW_MEMBER_ROLE_ID,
-        "atkace" : YOUR_CREW_ATK_ACE_ROLE_ID,
-        "deface" : YOUR_CREW_DEF_ACE_ROLE_ID,
-        "fo" : YOUR_CREW_FIRST_OFFICER_ROLE_ID,
-        "gl" : YOUR_CREW_LEADER_ROLE_ID,
-        "gbfg" : 339155308767215618,
-        "gbfg_new" : 402973729942142988
+        "you_atkace" : YOUR_CREW_ATK_ACE_ROLE_ID,
+        "you_deface" : YOUR_CREW_DEF_ACE_ROLE_ID,
+        "you_fo" : YOUR_CREW_FIRST_OFFICER_ROLE_ID,
+        "you_gl" : YOUR_CREW_LEADER_ROLE_ID
     },
     "games" : [
         "Granblue Fantasy",
@@ -138,75 +170,96 @@ The bot is configured with a file called `config.json`. Create one in its folder
     }
 }
 ```  
+  
+* `"tokens"` contains the tokens and IDs used by the Discord and Google Drive clients.  
+* `"ids"` contains various Discord IDs (user, server, channel...) required for the bot to work. In Discord, with *Developer Mode* enabled, you can right-click on anything to copy an ID. **IDs are integers**, i.e. numbers. Don't put them between quotes `"` like tokens.  
+* `"games"` contains a list of games to be displayed in the bot activity status.  
+* `"granblue"` contains shorthands to crew ids, separated in two categories: `"gbfgcrew"`, crews from the the [/gbfg/ 4chan community](https://boards.4chan.org/vg/catalog#s=gbfg) and "`othercrew`", related crews or crews with access to Rosetta.  
+  
+The following sections will explain how to fill the tokens and IDs.  
+  
+### Creating your Discord Application  
+  
 Go to the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications) > *Applications* > *New Application* and create your application.  
-Go to *Bot* on the left and click **Reset Token**. Your Bot Token will appear, copy it and replace DISCORD_TOKEN with it in `config.json` (don't forget to put it between quotes **"**, it's a string).  
+Go to *Bot* on the left and click **Reset Token**. Your Bot Token will appear, copy it and replace `DISCORD_TOKEN` with it in `config.json` (don't forget to put it between quotes **"**, it's a string).  
 Next, turn on the **Message Content Intent**, below.  
   
 > [!NOTE]  
 > If you ever change the Intents used by your bot instance, you'll also need to update them in `bot.py` at the end of the `_init_()` function, or **it won't take effect**. Refer to the [documentation](https://docs.disnake.dev/en/stable/intents.html) for details.  
   
 ### Configuring your Google Service Account  
-**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to use, so I'll only give general steps.**  
-- Find a way to create an application.  
-- Go to *Credentials* on the left, create a new **Service account**.  
-- Copy the email associated with this service account (it should be something like `XXX@YYYY.iam.gserviceaccount.com` ).  
-- You might need to give it some permissions (*Permissions* tab, *Grant Access*, use the application email.).  
-- Add a new key (*Key* tab), pick the *JSON* format and accept. Rename this file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
+  
+**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to navigate and use, so I'll only give general steps.**  
+  
+* Find a way to create an application.  
+* Go to *Credentials* on the left, create a new **Service account**.  
+* Copy the email associated with this service account (it should be something like `XXX@YYYY.iam.gserviceaccount.com` ).  
+* You might need to give it some permissions (*Permissions* tab, *Grant Access*, use the application email.).  
+* Add a new key (*Key* tab), pick the *JSON* format and accept. Rename this file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
   
 Go to your Google Drive and create two folders, one for the bot save data and one for GW related files.  
-Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace SAVE_FOLDER_ID in `config.json` (don't forget to put it between quotes **"**, it's a string).  
-Do the same thing for the other folder and FILE_FOLDER_ID.  
-The third folder ID is unused but you are free to create one and set the key in `config.json` too.  
+Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace `SAVE_FOLDER_ID` in `config.json` (don't forget to put it between quotes **"**, it's a string).  
+Do the same thing for the other folder and `FILE_FOLDER_ID`.  
+The third folder ID is currently unused but you are free to create one and set the key in `config.json` too, for possible future uses.  
   
 Then, **for each of those folders**, right click on them and select *Share*. Add your service account (again, using the email you copied) to each of them.  
   
-### Setup a Server for the Bot and invite it
+### Setup a Server for the Bot and invite it  
+  
 Create a Discord Server for your bot.  
 The bot requires three text channels to be created:
 - One to output debug infos.  
 - One to upload images.  
-- One to post updates.  
   
 Create them.  
   
 Right click on the debug channel, copy the ID and replace BOT_DEBUG_CHANNEL_ID in `config.json`.  
-Same for the second and BOT_IMAGE_UPLOAD_CHANNEL_ID.  
-Same for the third and BOT_SERVER_UPDATE_CHANNEL_ID.  
+Same for the second and `BOT_IMAGE_UPLOAD_CHANNEL_ID`.  
   
-Right click on the Server itself (in your server list), same thing and replace BOT_SERVER_ID.  
-Next, post a message, right click on your avatar and copy your own ID to replace YOUR_USER_ID_ID.  
+Right click on the Server itself (in your server list), same thing and replace `BOT_SERVER_ID`.  
   
 Do the same thing to fill the remaining IDs.  
-The four last IDs are related to the /gbfg/ server and are already set.  
   
 If you did everything properly, you're set. 
 On the [Discord Developer Portal](https://discord.com/developers/docs/game-sdk/applications), copy the *Application ID* (under *General Information).  
 In the following: `https://discord.com/api/oauth2/authorize?client_id=XXXXXXXXXXXXXXXX&permissions=1644905889015&scope=bot%20applications.commands`, replace `XXXXXXXXXXXXXXXX` by this ID. This will be your bot invite link.  
 Use it now and invite your bot to the server (no need to start the bot). If you did it right, it should show up in the member list.  
   
-## First Boot
+### YouCrew IDs  
+  
+The IDs whose names start with `you_` such as "you_server" are for my crew.  
+If you plan to use your bot in your own crew, set the corresponding IDs to the channels and roles you wish.  
+These IDs are mostly used by the [YouCrew Command Cog](https://github.com/MizaGBF/Rosetta-Public/blob/main/cogs/youcrew.py).  
+If you don't plan to use it, you might remove this Cog file from the `cogs` folder, along with the related IDs in `config.json`.  
+  
+### First Boot
 
-Use whatever method you chose at the start to boot the Bot.  
+Use whatever method you chose in [Usage](#usage) to run the Bot.  
 If Rosetta is starting properly, you should get a **Rosetta is Ready** message in the channel that you set as your debug one.  
 The logs should also look similar to this:  
   
 ```
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Logger started up. Loading components...
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Components loaded
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Initializing important components...
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Important components initialized
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Loading the config file...
-INFO:Rosetta:2024-12-03 21:51:01 | [BOOT] Downloading the save file...
-INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Reading the save file...
-INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initializing remaining components...
-INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Remaining components initialized
-INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initializing disnake.InteractionBot with Intent flags: 0b1100011111111011111101
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Logger started up. Loading components...
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Components loaded
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Initializing important components...
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Important components initialized
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Loading the config file...
+INFO:Rosetta:2024-12-20 12:00:16 | [BOOT] Downloading the save file...
+INFO:Rosetta:2024-12-20 12:00:19 | [BOOT] Reading the save file...
+INFO:Rosetta:2024-12-20 12:00:19 | [BOOT] Initializing remaining components...
+INFO:Rosetta:2024-12-20 12:00:19 | [BOOT] Remaining components initialized
+INFO:Rosetta:2024-12-20 12:00:19 | [BOOT] Initializing disnake.InteractionBot with Intent flags: 0b1100011111111011111101
 WARNING:disnake.client:PyNaCl is not installed, voice will NOT be supported
-INFO:Rosetta:2024-12-03 21:51:04 | [BOOT] Initialization complete
-INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] Loading cogs...
-INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] All cogs loaded
-INFO:Rosetta:2024-12-03 21:51:04 | [MAIN] v11.11.0 starting up...
-INFO:Rosetta:2024-12-03 21:51:08 | [MAIN] Rosetta is ready
+INFO:Rosetta:2024-12-20 12:00:19 | [BOOT] Initialization complete
+INFO:Rosetta:2024-12-20 12:00:19 | [MAIN] Loading cogs...
+WARNING:Rosetta:2024-12-20 12:00:20 | [COG] test.py is missing and will be ignored.
+Ignore this message if it's intended.
+INFO:Rosetta:2024-12-20 12:00:20 | [MAIN] All cogs loaded
+INFO:Rosetta:2024-12-20 12:00:20 | [MAIN] v12.0.0 starting up...
+INFO:Rosetta:2024-12-20 12:00:20 | [NET] Default user-agent set to `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Rosetta/12.0.0`
+INFO:Rosetta:2024-12-20 12:00:23 | [CHANNEL] Channel 'debug' registered
+INFO:Rosetta:2024-12-20 12:00:23 | [CHANNEL] Channel 'image' registered
+INFO:Rosetta:2024-12-20 12:00:23 | [MAIN] Rosetta is ready
 ```  
   
 > [!CAUTION]  
@@ -215,7 +268,7 @@ INFO:Rosetta:2024-12-03 21:51:08 | [MAIN] Rosetta is ready
 > [!IMPORTANT]  
 > If it starts, congratulations.  
 > All the remaining setup is done via the `/owner` commands.  
-> Refer to *Additional Informations* below if you need more help.  
+> Refer to [Additional Informations](#additional-informations) below if you need more help.  
   
 You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.  
   
@@ -224,28 +277,29 @@ You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.
 > On Linux, you can do something like `kill -INT <bot_pid>` in a terminal.  
   
 ## Emojis  
-The emotes found in `assets/emojis` folder will be automatically uploaded on boot.  
-It can take some time.
+  
+The emotes found in `assets/emojis` folder will be automatically loaded and uploaded on boot to your bot **Emojis** list.  
+It can take some time, so it's normal if emotes don't display right away at the start.  
   
 > [!IMPORTANT]
-> You're limited to 2000 emojis par application.  
-> You can manage them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> You can add more to the folder if you wish to use them in your own commands, but you're limited to **2000** emojis par application.  
+> You can find them on your [dashboard](https://discord.com/developers/applications), under the corresponding application, then **Emojis**.  
+> If you remove an emoji from `assets/emojis`, it'll automatically be deleted from the **Emojis** list on the next boot.  
 
-To use them in the code, you must call the `emote` component `get` method with the emoji name, without its extension.  
+To use them in the code, you must call the `emote` Component `get` method with the emoji name, without its extension.  
 For example, for `fire.png`, call `self.bot.emote.get('fire')`.  
 If you decide to add more emojis for custom commands, make sure they don't have special characters or the upload might fail.  
   
-## Other config.json keys
-`games`: The list of game which will appear in the bot status. Feel free to modify it. **At least one game is required** in the list.  
-  
-`granblue`: The bot has been historically used by the **/gbfg/ Discord Server** and its crews are set here for certain commands (notably the `/gbfg` ones).  
-You are free to remove or change the crews if you want, but don't remove it entirely.  
-  
 ## Debug Mode  
+> [!IMPORTANT]
+> In Debug mode, the bot is unable to write to your Google Drive.  
+> Also, multiplayer game commands will let you play against yourself, for testing purpose (but not all games behave properly in this scenario).  
+> This mode is intended for testing and debugging, on a second, separate, Bot instance.  
+  
 > [!TIP]  
 > You can skip this section if you don't plan to use it.
    
-Using the `-debug` argument requires to set up `config_test.json`.  
+Using the `-d`/`--debug` argument requires to set up `config_test.json`.  
 Same principle, but shorter:  
 ```json
 {
@@ -254,18 +308,16 @@ Same principle, but shorter:
         "drive" : "SAVE_FOLDER_ID",
         "upload" : "",
         "files" : "FILE_FOLDER_ID"
-    },
-    "debug" : null
+    }
 }
 ```  
 For DISCORD_TOKEN, simply create a second application and bot and put its token here.  
-For the folders, either reuse the existing ones or make new ones if you want to use separate data.  
-Do note the bot is unable to write to your Google Drive in this mode.  
+For the folders, either reuse the existing ones (recommended if you wish to load an existing save file) or make new ones if you want to use separate data.  
   
 ## Updating  
   
 First and foremost, if you want to run some sort of automation on this repo to always have the latest version, **DON'T**.  
-While I test the bot before pushing changes to this repository, I'm alone on this project and can't guarantee some mistakes haven't slipped in.  
+While I test the bot before pushing changes to this repository, I'm alone on this project and can't guarantee some bugs or mistakes haven't slipped in.  
 So here's my recommendations:  
 1. Run and update your own copy. It can be a fork, a manual download, etc... Whatever you prefer.  
 2. Read the [commit list](https://github.com/MizaGBF/Rosetta-Public/commits/main/). If I just pushed a new version a few hours ago, maybe wait tomorrow. If it's a bugfix, it might be fine. The project is fairly mature, there shouldn't be a need to hurry to a new version.  
@@ -276,7 +328,15 @@ So here's my recommendations:
 7. If you developped your own Custom Cogs, you'll have to read the code and make sure no breaking changes got introduced. Major enough changes are usually when the first or second version number is increased (for example, `1.0.0` to `2.0.0` or `1.0.0` to `1.1.0`).  
   
 > [!TIP]  
-> If you're new to Github, you can see, on the page, when each files got modified for the last time on the right.  
+> If you're new to Github, you can see, on the page, when each files got modified for the last time on the right of their names.  
+  
+### Migrating from v11 to v12  
+  
+If you plan to update Rosetta from version `11.X.X` to version `12.X.X`, here are a few things to care for:  
+* Don't blindly overwrite your previous version with the new one. Instead, get a clean copy and copy over your JSON files (`config.json`, `save.json`, `service-secrets.json`, etc...), SQL files (`GW.sql`, `GW_old.sql`...), your custom Cogs and codes (if any), custom Emojis (if any) and custom avatars (if any).  
+* Cogs and Views developped for a version `11.X.X` should work fine on version `12.X.X`.  
+* `config.json` has been slimed down consiberably. Check out [Creating config.json](#creating-config.json) to see what keys remain. You can remove the ones not here anymore (unless you use them in a custom Cog or View).  
+* `config_test.json` has also lost the `"debug"` key. You can remove it, if you were using the [Debug Mode](#debug-mode).  
   
 ## Additional Informations  
   
@@ -290,7 +350,7 @@ Here's a quick overview of the sub command groups:
 * `/owner maintenance`: Commands to manually set or clear a GBF maintenance date.  
 * `/owner stream`: Commands to manually set a GBF upcoming stream date and infos.  
 * `/owner schedule`: Commands to manually edit the GBF schedule or to force an update.  
-* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this.  
+* `/owner account`: Commands to set a GBF account on the bot. I won't provide any help with this and the commands are self-explanatory.  
 * `/owner db`: Commands to manually set a Dread Barrage event.  
 * `/owner gw`: Commands to manually set and edit an Unite and Fight event.  
 * `/owner buff`: Commands to debug the GW buff data used by my crew. I haven't used it in a long while.  
@@ -299,7 +359,136 @@ Here's a quick overview of the sub command groups:
 > [!WARNING]  
 > I rarely use most of those commands, there is a small chance they might be hiding some bugs.  
   
-If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the "files" drive folder.  
+If you want a GW.sql file for the ranking commands, you can go grab the most recent one [here](https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2), rename it to `GW.sql` and put it in the `"files"` drive folder.  
   
-The `cogs/youcrew.py` Command Cog contains commands for my own crew. If you don't need them, you can simply delete the file.  
+## Customize  
   
+> [!TIP]  
+> The following sections are for customizing the bots with your own Command Cogs, and so on.  
+> You can skip if you don't plan to do so.  
+  
+### Adding a new Command Cog  
+  
+> [!TIP]  
+> Check existing cogs if you need examples of more advanced behaviors.  
+  
+The following is a template to make your own Command Cog, with comments:  
+```python
+from __future__ import annotations # used for Type Hints
+import disnake
+from disnake.ext import commands
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: # used for Type Hints
+    from ..bot import DiscordBot
+
+class Example(commands.Cog):
+    """The cog description"""
+    COLOR : int = 0xffffff # The color used by the Embed in this cog commands and in the online help
+
+    def __init__(self : Example, bot : DiscordBot) -> None:
+        self.bot = bot
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def helloworld(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True) # good practice to always defer first. Ephemeral flag is if you want your command to only show to the user
+        # This command will be usable by doing /helloworld
+        #
+        # Do stuff...
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the hello world command!", description="Hello world!", color=self.COLOR)
+
+    @commands.slash_command()
+    @commands.default_member_permissions(send_messages=True, read_messages=True)
+    async def group(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
+        """Command Group"""
+        pass
+
+    @group.sub_command()
+    async def subcommand(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
+        """This is this command description"""
+        await inter.response.defer(ephemeral=True)
+        # This command will be usable by doing /group subcommand
+        #
+        # Do stuff...
+        #
+        await inter.edit_original_message(embed=self.bot.embed(title="This is the sub command!", description="You called me using `/group subcommand`!", color=self.COLOR)
+```  
+  
+* For command descriptions to be parsed properly by the `/help` command and the [Online Help](https://mizagbf.github.io/discordbot.html), make sure to put them under the command definition, as a single line docstring, between `"""`.  
+* Commands whose Interaction are from the type `disnake.GuildCommandInteraction` will only be usable in guilds (i.e. Discord Servers).  
+* Commands whose Interaction are from the type `disnake.ApplicationCommandInteraction` will be usable in guilds (i.e. Discord Servers) **and** Direct Messages. Be sure to check if `inter.guild is None` if you plan to do guild specific things within a command usable in DMs.  
+* A sub command interaction type is determined by its parent or grandparent. If `subcommand` is a guild command but its parent `group` is usable in both guilds and DMs, then `/group subcommand` will work in both guilds and DMs.  
+  
+Once your Cog is ready, place it in the `cogs` folder.  
+Run `python bot.py -t` to test if the bot boots and the Cog loads.  
+If it doesn't, fix any error, else you're good to go!  
+Errors might still pop-up later during runtime but nothing which will should cause an actual crash. Rosetta will report all errors to you.  
+  
+### Tasks  
+  
+Tasks are functions running in the background, periodically executing some code to achieve some purpose.  
+It uses [asyncio.create_task](https://docs.python.org/3/library/asyncio-task.html#creating-tasks) under the hood, hence the name.  
+Realistically, a Task can be located anywhere in the codebase but, for consistency, they are located in their respective Cogs or Components.  
+  
+Here's an example of how to write a Task:  
+  
+```python
+    async def mytask(self : Example) -> None:
+        while True:
+            try:
+                await self.bot.send('debug', "Hello world from the task!")
+                await asyncio.sleep(300)
+            except asyncio.CancelledError:
+                self.bot.logger.push("[TASK] 'mytask' Task Cancelled")
+                #
+                # Do stuff related to cancellation here
+                #
+                return
+            except Exception as e:
+                self.bot.logger.pushError("[TASK] 'mytask' Task Error:", e)
+                #
+                # Do error handling here
+                #
+                return # you don't have to return if you want your task to keep running
+```  
+  
+In this example, we add a simple Task to our `Example` Cog from above.  
+It'll run forever (`while True:`), send a message to the Debug server channel saying `Hello world from the task!` and then sleep for 5 minutes before repeating.  
+If it encounters an error or if it gets cancelled, the Task will stop.  
+  
+Now to have a Task run automatically on the bot startup:  
+* Check if the Cog or Component has a `startTasks` function and add it if it doesn't:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        pass
+```  
+  
+Then, call `runTask` with the given name of your choice and your Task function to start it:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        self.bot.runTask('mytask!', self.mytask)
+```  
+  
+If you wish to not execute the Task in Debug mode, use `isProduction()`:  
+  
+```python
+    def startTasks(self : Example) -> None:
+        if self.bot.isProduction():
+            self.bot.runTask('mytask!', self.mytask)
+```  
+  
+Finally, if, at some point, you want to cancel a Task, use `cancelTask` in whatever place you wish, with the name of your task:  
+  
+```python
+        self.bot.cancelTask('mytask!')
+```  
+  
+It will trigger the `asyncio.CancelledError` exception seen above and remove the Task from the bot Task list.  
+  
+> [!IMPORTANT]  
+> If you heavily customized the bot and added your own Component(s) with Tasks inside, these Components must be added to the list in `bot.py, startTasks()`, for their respective `startTasks` functions to be called.  
+> Cogs don't have this limitation.  

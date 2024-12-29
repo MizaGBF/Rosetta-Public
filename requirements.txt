@@ -1,4 +1,4 @@
-disnake==2.9.2
+disnake==2.10.0
 pydrive2==1.21.3
 psutil==6.1.0
 beautifulsoup4==4.12.3

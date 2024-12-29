@@ -1,9 +1,18 @@
-﻿import disnake
+﻿from __future__ import annotations
+import disnake
 import asyncio
-from typing import Optional, Union, Callable, Any, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
 from datetime import datetime, timedelta, timezone
+from typing import Any, TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.network import RequestResult
+    # Type Aliases
+    import types
+    BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
+    BotCommandSearch : types.GenericAlias = list[None|int|str]
+    JSON : types.GenericAlias = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
 import psutil
+import platform
 import os
 import sys
 import html
@@ -11,20 +20,22 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 # Utility Component
 # ----------------------------------------------------------------------------------------------------------------
-# Feature a lot of utility functions
+# Feature a lot of utility functions and classes
 # ----------------------------------------------------------------------------------------------------------------
 
 class Util():
-    JSTDIFF = 32400
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
-        self.emote = None
-        self.starttime = self.UTC() # used to check the uptime
-        self.process = psutil.Process(os.getpid())
+    JSTDIFF : int = 32400 # JST <-> UTC difference in seconds
+    MULTIPLIER_1000 : dict[str, int] = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
+
+    def __init__(self : Util, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        self.starttime : datetime = self.UTC() # used to check the bot uptime
+        # bot process
+        self.process : psutil.Process = psutil.Process(os.getpid())
         self.process.cpu_percent() # called once to initialize
 
-    def init(self) -> None:
-        self.emote = self.bot.emote
+    def init(self : Util) -> None:
+        pass
 
     """json_deserial_array()
     Deserialize a list (used for our json files)
@@ -37,17 +48,17 @@ class Util():
     --------
     list: Deserialized list
     """
-    def json_deserial_array(self, array : list) -> list:
-        a = []
-        for v in array:
-            match v:
+    def json_deserial_array(self : Util, array : list) -> list:
+        a : list = []
+        for v in array: # go over entries
+            match v: # check type
                 case list():
                     a.append(self.json_deserial_array(v))
                 case dict():
                     a.append(self.json_deserial_dict(list(v.items())))
                 case str():
-                    try:
-                        a.append(datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")) # needed for datetimes
+                    try: # try to convert it to datetime
+                        a.append(datetime.strptime(v, "%Y-%m-%dT%H:%M:%S"))
                     except ValueError:
                         a.append(v)
                 case _:
@@ -65,20 +76,21 @@ class Util():
     --------
     dict: Deserialized Dict
     """
-    def json_deserial_dict(self, pairs : dict) -> dict: # deserialize a dict from a json
-        d = {}
-        for k, v in pairs:
-            if isinstance(v, list):
-                d[k] = self.json_deserial_array(v)
-            elif isinstance(v, dict):
-                d[k] = self.json_deserial_dict(list(v.items()))
-            elif isinstance(v, str):
-                try:
-                    d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S") # needed for datetimes
-                except ValueError:
+    def json_deserial_dict(self : Util, pairs : dict) -> dict: # deserialize a dict from a json
+        d : dict = {}
+        for k, v in pairs: # go over entries
+            match v: # check type
+                case list():
+                    d[k] = self.json_deserial_array(v)
+                case dict():
+                    d[k] = self.json_deserial_dict(list(v.items()))
+                case str():
+                    try: # try to convert it to datetime
+                        d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S") # needed for datetimes
+                    except ValueError:
+                        d[k] = v
+                case _:
                     d[k] = v
-            else:
-                d[k] = v
         return d
 
     """json_serial()
@@ -96,8 +108,8 @@ class Util():
     --------
     unknown: Serialized object
     """
-    def json_serial(self, obj : Any) -> Any: # serialize everything including datetime objects
-        if isinstance(obj, datetime):
+    def json_serial(self : Util, obj : Any) -> Any: # serialize everything including datetime objects
+        if isinstance(obj, datetime): # convert datetimes to string isoformat
             return obj.replace(microsecond=0).isoformat()
         raise TypeError ("Type %s not serializable" % type(obj))
 
@@ -108,8 +120,8 @@ class Util():
     --------
     datetime: Current time
     """
-    def UTC(self) -> datetime:
-        return datetime.now(timezone.utc).replace(tzinfo=None)
+    def UTC(self : Util) -> datetime:
+        return datetime.now(timezone.utc).replace(tzinfo=None) # we don't use timezone data to avoid headaches
 
     """JST()
     Return the current time, JST timezone
@@ -122,9 +134,12 @@ class Util():
     --------
     datetime: Current time
     """
-    def JST(self, delay : bool = True) -> datetime:
-        if delay: return self.UTC() + timedelta(seconds=self.JSTDIFF) - timedelta(seconds=30)
-        else: return self.UTC() + timedelta(seconds=self.JSTDIFF)
+    def JST(self : Util, delay : bool = True) -> datetime:
+        # we apply a delay by default to be sure some functions are sure to get the content at certain time
+        if delay:
+            return self.UTC() + timedelta(seconds=self.JSTDIFF) - timedelta(seconds=30)
+        else:
+            return self.UTC() + timedelta(seconds=self.JSTDIFF)
 
     """time()
     Format a timestamp or datetime object
@@ -141,17 +156,19 @@ class Util():
     --------
     str: Formatted time
     """
-    def time(self, to_convert : Optional[datetime] = None, style : list = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
-        if to_convert is None: to_convert = self.UTC()
-        msg = ""
-        if removejst:
+    def time(self : Util, to_convert : datetime|None = None, style : list[str] = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
+        if to_convert is None: # if no datetime isn't passed, we get the current time, as UTC
+            to_convert = self.UTC()
+        msgs : list[str] = []
+        if removejst: # remove JST time difference
             to_convert -= timedelta(seconds=self.JSTDIFF)
+        # additional timezone checks
         if naivecheck and (to_convert.tzinfo is None or to_convert.tzinfo.utcoffset(to_convert)):
             to_convert = to_convert.replace(tzinfo=timezone.utc)
+        # apply discord styles
         for c in style:
-            msg += disnake.utils.format_dt(to_convert, c)
-            msg += " "
-        return msg[:-1]
+            msgs.append(disnake.utils.format_dt(to_convert, c))
+        return " ".join(msgs)
 
     """uptime()
     Return the bot uptime
@@ -164,10 +181,13 @@ class Util():
     --------
     timedelta: Bot uptime
     """
-    def uptime(self, as_string : bool = True) -> Union[str, timedelta]: # get the uptime
-        delta = self.UTC() - self.starttime
-        if as_string: return "{}".format(self.delta2str(delta, 3))
-        else: return delta
+    def uptime(self : Util, as_string : bool = True) -> str|timedelta: # get the uptime
+        # get elapsed time between now and the start
+        delta : timedelta = self.UTC() - self.starttime
+        if as_string:
+            return "{}".format(self.delta2str(delta, 3))
+        else:
+            return delta
 
     """delta2str()
     Convert a timedelta object to a string (format: XdXhXmXs)
@@ -185,12 +205,16 @@ class Util():
     --------
     str: Resulting string
     """
-    def delta2str(self, delta : timedelta, mode : int = 1) -> str:
-        match mode:
-            case 3: return "{}d{}h{}m{}s".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60, delta.seconds % 60)
-            case 2: return "{}d{}h{}m".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60)
-            case 1: return "{}h{}m".format(delta.seconds // 3600, (delta.seconds // 60) % 60)
-            case _: return "{}m".format(delta.seconds // 60)
+    def delta2str(self : Util, delta : timedelta, mode : int = 1) -> str:
+        match mode: # convert a timedelta into a string. different modes possible:
+            case 3:
+                return "{}d{}h{}m{}s".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60, delta.seconds % 60)
+            case 2:
+                return "{}d{}h{}m".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60)
+            case 1:
+                return "{}h{}m".format(delta.seconds // 3600, (delta.seconds // 60) % 60)
+            case _:
+                return "{}m".format(delta.seconds // 60)
 
     """str2delta()
     Convert string to a a timedelta object (format: XdXhXmXs)
@@ -201,30 +225,33 @@ class Util():
     
     Returns
     --------
-    timedelta: Resulting timedelta object
+    timedelta: Resulting timedelta object or None if error
     """
-    def str2delta(self, d : str) -> Optional[timedelta]: # return None if error
-        flags = {'d':False,'h':False,'m':False,'s':False}
-        tmp = 0 # buffer
-        sum = 0 # delta in seconds
-        for c in d:
-            if c.isdigit():
+    def str2delta(self : Util, d : str) -> timedelta|None: # return None if error
+        flags : dict[str, bool] = {'d':False,'h':False,'m':False,'s':False} # expected string parts
+        tmp : int = 0 # buffer
+        sum : int = 0 # delta in seconds
+        c : str
+        for c in d: # go character by character
+            if c.isdigit(): # digit
                 tmp = (tmp * 10) + int(c)
-            elif c.lower() in flags:
-                if flags[c.lower()]:
+            elif c.lower() in flags: # one of the flags
+                if flags[c.lower()]: # flag has already been used
                     return None
-                if tmp < 0:
+                if tmp < 0: # negative number in the buffer
                     return None
-                flags[c.lower()] = True
-                match c:
+                flags[c.lower()] = True # raise flag
+                match c: # add buffer value to total sum
                     case 'd': sum += tmp * 86400
                     case 'h': sum += tmp * 3600
                     case 'm': sum += tmp * 60
                     case 's': sum += tmp
                 tmp = 0
-            else:
+            else: # error, return None
                 return None
-        if tmp != 0: return None
+        if tmp != 0: # didn't end properly
+            return None
+        # create timedelta
         return timedelta(days=sum//86400, seconds=sum%86400)
 
     """status()
@@ -234,16 +261,17 @@ class Util():
     --------
     dict: Dict of string
     """
-    def status(self) -> dict:
+    def status(self : Util) -> dict[str, str]:
         return {
-            "Version": self.bot.VERSION,
-            "Python": "{}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
             "Uptime": self.uptime(),
+            "Version": self.bot.VERSION,
+            "Python": "{}, v{}.{}.{}".format(platform.python_implementation(), sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
+            "OS": platform.platform(),
             "CPU": "{:.2f}%".format(self.process.cpu_percent()),
             "Memory": "{:.1f}MB ({:.2f}%)".format(self.process.memory_full_info().uss / 1048576, self.process.memory_percent()).replace(".0M", "M").replace(".00%", "%").replace("0%", "%"),
             "Save": ("**Pending**" if self.bot.data.pending else "Ok"),
             "GBF Update": ("**Pending**" if self.bot.data.save['gbfupdate'] else "Ok"),
-            "Task Count": str(len(asyncio.all_tasks())),
+            "Task Count": str(len(self.bot.tasks)),
             "Server Count": str(len(self.bot.guilds)),
             "Cogs Loaded": "{}/{}".format(len(self.bot.cogs), self.bot.cogn) if (len(self.bot.cogs) == self.bot.cogn) else "**{}**/{}".format(len(self.bot.cogs), self.bot.cogn)
         }
@@ -255,12 +283,17 @@ class Util():
     --------
     str: Status string
     """
-    def statusString(self) -> str:
-        status = self.status()
-        msg = ""
+    def statusString(self : Util) -> str:
+        status : dict[str, str] = self.status()
+        msgs : list[str] = []
+        # make a string from the status dict
         for k in status:
-            msg += "**{}**▫️{}\n".format(k, status[k])
-        return msg
+            msgs.append("**")
+            msgs.append(k)
+            msgs.append("**▫️")
+            msgs.append(status[k])
+            msgs.append("\n")
+        return "".join(msgs)
 
     """react()
     React to a message with an emoji
@@ -274,9 +307,9 @@ class Util():
     --------
     bool: True if success, False if not
     """
-    async def react(self, msg : disnake.Message, key : str) -> bool:
+    async def react(self : Util, msg : disnake.Message, key : str) -> bool:
         try:
-            await msg.add_reaction(self.emote.get(key))
+            await msg.add_reaction(self.bot.emote.get(key)) # add reaction to given message
             return True
         except Exception as e:
             if str(e) != "404 Not Found (error code: 10008): Unknown Message":
@@ -295,43 +328,13 @@ class Util():
     --------
     bool: True if success, False if not
     """
-    async def unreact(self, msg : disnake.Message, key : str) -> bool:
+    async def unreact(self : Util, msg : disnake.Message, key : str) -> bool:
         try:
-            await msg.remove_reaction(self.emote.get(key), msg.guild.me)
+            await msg.remove_reaction(self.bot.emote.get(key), msg.guild.me) # remove reaction to given message
             return True
         except Exception as e:
             if str(e) != "404 Not Found (error code: 10008): Unknown Message":
                 self.bot.logger.pushError("[UTIL] 'unreact' error:", e)
-            return False
-
-    """clean()
-    Delete a bot command message after X amount of time.
-    A white check mark is added in reaction to the original command after deletion
-    
-    Parameters
-    ----------
-    target: Tuple of a Disnake Context and Message OR a Disnake Interaction
-    delay: Time in second before deletion
-    all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
-    """
-    async def clean(self, target : Union[tuple, disnake.Message, disnake.ApplicationCommandInteraction], delay : Optional[Union[int, float]] = None, all : bool = False) -> None:
-        try:
-            if isinstance(target, tuple): # unused, legacy of old version
-                if all or not self.bot.isAuthorized(target[0]):
-                    await target[1].delete(delay=delay)
-                    try: await self.react(target[0].message, '✅') # white check mark
-                    except: pass
-            elif isinstance(target, disnake.ApplicationCommandInteraction) or isinstance(target, disnake.ModalInteraction):
-                if all or not self.bot.isAuthorized(target):
-                    if delay is not None: await asyncio.sleep(delay)
-                    await target.edit_original_message(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
-            elif isinstance(target, disnake.Message):
-                if all or not self.bot.isAuthorized(target):
-                    if delay is not None: await asyncio.sleep(delay)
-                    await target.edit(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
-        except Exception as e:
-            if "Unknown Message" not in str(e):
-                self.bot.logger.pushError("[UTIL] 'clean' error:", e)
             return False
 
     """formatName()
@@ -345,23 +348,51 @@ class Util():
     --------
     str: The resulting name
     """
-    def shortenName(self, name : str) -> str:
-        name = html.unescape(name)
-        arabic = 0
-        rlo = []
-        for i, c in enumerate(name):
-            o = ord(c)
+    def shortenName(self : Util, name : str) -> str:
+        name : str = html.unescape(name) # unescape html special characters
+        arabic : int = 0 # arabic characters
+        rlo : list[int] = [] # rlo characters
+        i : int
+        c : str
+        for i, c in enumerate(name): # iterate over string
+            o : int = ord(c)
             if o == 0x202E:
                 rlo.append(i - len(rlo))
             elif o >= 0xFB50 and o <= 0xFDFF:
                 arabic += 1
-        name = list(name)
-        for i in rlo:
-            name.pop(i)
-        name = "".join(name)
-        if len(name) == 0: name = "?"
-        if arabic > 1: return name[0] + "..."
-        else: return name
+        namel : list[str] = list(name)
+        for i in rlo: # remove rlo characters
+            namel.pop(i)
+        name = "".join(namel)
+        if len(name) == 0: # resulting name is empty
+            name = "?" # return question mark
+        if arabic > 1: # there are arabic characters
+            return name[0] + "..." # only return first one + 3 dots, to avoid display issues
+        else:
+            return name # return name
+
+    """breakdownHTML()
+    Take a string containing HTML tags and break it down in a list.
+    Odd elements should be the tags, even should be the text in between.
+    
+    Parameters
+    ----------
+    content: String, the string to breakdown
+    
+    Returns
+    --------
+    list: The resulting list
+    """
+    def breakdownHTML(self : Util, content : str) -> list[str]:
+        firstsplit : list[str] = content.replace('\n', '').replace('    ','').split('<') # split string by <
+        result : list[str] = [firstsplit[0]]
+        for i in range(1, len(firstsplit)):
+            result.extend(firstsplit[i].split('>', 1)) # additional split by >
+        # The split works shit way:
+        # TEXT < TAG > TEXT ... TEXT < TAG > etc...
+        # Result contains:
+        # TEXT, TAG, TEXT, TAG ... etc...
+        return result
 
     """str2gbfid()
     Convert a string to a GBF profile ID.
@@ -379,45 +410,33 @@ class Util():
     --------
     int or str: The GBF ID or an error string if an error happened
     """
-    async def str2gbfid(self, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> Union[int, str]:
-        if memberTarget is not None:
-            if str(memberTarget.id) not in self.bot.data.save['gbfids']:
+    async def str2gbfid(self : Util, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> int|str:
+        tid : int|str
+        if memberTarget is not None: # memberTarget is valid
+            if str(memberTarget.id) not in self.bot.data.save['gbfids']: # check if their id is linked
                 return "`{}` didn't set its GBF profile ID.".format(memberTarget.display_name)
-            tid = self.bot.data.save['gbfids'][str(memberTarget.id)]
-        elif target == "":
-            if str(inter.author.id) not in self.bot.data.save['gbfids']:
+            tid = self.bot.data.save['gbfids'][str(memberTarget.id)] # return GBF ID
+        elif target == "": # empty target string
+            if str(inter.author.id) not in self.bot.data.save['gbfids']: # check if their id is linked
                 return "You didn't set your GBF profile ID.\nUse {} to link it with your Discord ID.".format(self.command2mention('gbf profile set'))
-            tid = self.bot.data.save['gbfids'][str(inter.author.id)]
-        elif target.startswith('<@') and target.endswith('>'):
+            tid = self.bot.data.save['gbfids'][str(inter.author.id)] # return GBF ID
+        elif target.startswith('<@') and target.endswith('>'): # mention
             try:
-                if target[2] == "!": target = str(int(target[3:-1]))
-                else: target = str(int(target[2:-1]))
-                if target not in self.bot.data.save['gbfids']:
+                if target[2] == "!":
+                    target = str(int(target[3:-1])) # parse to retrieve member id
+                else:
+                    target = str(int(target[2:-1]))
+                if target not in self.bot.data.save['gbfids']: # check if their id is linked
                     return "This member didn't set its profile ID.\nTry to use {} to search the GW Database instead".format(self.command2mention('gw find player'))
-                tid = self.bot.data.save['gbfids'][target]
+                tid = self.bot.data.save['gbfids'][target] # return gbf id
             except:
                 return "An error occured: Invalid parameter {} -> {}.".format(target, type(target))
-        else:
-            try: tid = int(target)
+        else: # maybe a number?
+            try: tid = int(target) # check
             except: return "`{}` isn't a valid target.\nUse {} if it's for yourself.\nOr either input a valid GBF ID or a Discord Mention of someone with a set ID.".format(target, self.command2mention('gbf profile set'))
-        if tid < 0 or tid >= 100000000:
+        if tid < 0 or tid >= 100000000: # check if the id looks legit
             return "Invalid ID range (ID must be between 0 and 100 000 000)."
         return tid
-
-    """gbfgstr2crewid()
-    Take a string as an input and attempt to match it to a crew ID registered in config.json
-    
-    Parameters
-    ----------
-    target: String, can be a crew id or a crew name registered in config.json
-    
-    Returns
-    --------
-    str: The crew ID or the original string if no match is found
-    """
-    def gbfgstr2crewid(self, target : str) -> str:
-        crew_id_list = {**(self.bot.data.config['granblue']['gbfgcrew']), **(self.bot.data.config['granblue'].get('othercrew', {}))}
-        return crew_id_list.get(target.lower(), target)
 
     """formatElement()
     Format the unite&fight/dread barrage element into a string containing the superior and inferior elements
@@ -430,7 +449,8 @@ class Util():
     --------
     str: Formatted string
     """
-    def formatElement(self, elem : str) -> str:
+    def formatElement(self : Util, elem : str) -> str:
+        # left is the advantaged element, right is the disadvantaged
         return "{}⚔️{}".format(self.bot.emote.get(elem), self.bot.emote.get({'fire':'wind', 'water':'fire', 'earth':'water', 'wind':'earth', 'light':'dark', 'dark':'light'}.get(elem)))
 
     """strToInt()
@@ -444,14 +464,13 @@ class Util():
     --------
     int: Converted value
     """
-    def strToInt(self, s : str) -> int:
+    def strToInt(self : Util, s : str) -> int:
         try:
-            return int(s)
-        except:
-            n = float(s[:-1]) # float to support for example 1.2B
-            m = s[-1].lower()
-            l = {'k':1000, 'm':1000000, 'b':1000000000, 't':1000000000000}
-            return int(n * l[m])
+            return int(s) # try to convert to int
+        except: # error, there are characters
+            n : float = float(s[:-1]) # convert to float, except the last character (to support for example something like 1.2B)
+            m : str = s[-1].lower() # get last character
+            return int(n * self.MULTIPLIER_1000[m]) # if m isn't in MULTIPLIER_1000, trigger an exception
 
     """valToStr()
     Convert an int or float to str and shorten it with T, B, M, K
@@ -466,11 +485,15 @@ class Util():
     --------
     str: Converted string
     """
-    def valToStr(self, s : Union[int, float], p : int = 1) -> str:
-        if s is None: return "n/a"
-        if isinstance(s, int): s = float(s)
-        bs = abs(s)
-        match p:
+    def valToStr(self : Util, s : int|float, p : int = 1) -> str:
+        if s is None: # value is None
+            return "n/a"
+        if isinstance(s, int): # convert int to float
+            s = float(s)
+        bs : int|float = abs(s) # bs is the unsigned version
+        b : str
+        rs : str
+        match p: # float precision
             case 2:
                 b = "{:,.2f}"
                 rs = ".00"
@@ -480,16 +503,14 @@ class Util():
             case _:
                 b = "{:,.1f}"
                 rs = ".0"
-        if bs >= 1000000000000:
-            return b.format(s/1000000000000).replace(rs, '') + "T"
-        elif bs >= 1000000000:
-            return b.format(s/1000000000).replace(rs, '') + "B"
-        elif bs >= 1000000:
-            return b.format(s/1000000).replace(rs, '') + "M"
-        elif bs >= 1000:
-            return b.format(s/1000).replace(rs, '') + "K"
-        else:
-            return b.format(s).replace(rs, '')
+        # go over string formats
+        chara : str
+        value : int
+        for chara, value in self.MULTIPLIER_1000.items():
+            if bs >= value: # greater, so we divive by value, format and add the character
+                return b.format(s/value).replace(rs, '') + chara.upper()
+        # else return the number
+        return b.format(s).replace(rs, '')
 
     """players2mentions()
     Take a list of users and return a string mentionning all of them.
@@ -503,15 +524,14 @@ class Util():
     --------
     str: resulting string
     """
-    def players2mentions(self, players : list) -> str:
-        s = ""
+    def players2mentions(self : Util, players : list) -> str:
+        s : list[str] = []
         for p in players:
-            s += p.mention + " "
-        if len(s) > 0: s = s[:-1]
-        return s
+            s.append(p.mention)
+        return " ".join(s)
 
     """search_wiki_for_id()
-    Search the wiki for a weapon/character/summon id
+    Search the wiki cargo table for a weapon/character/summon id
     
     Parameters
     ----------
@@ -525,18 +545,20 @@ class Util():
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self, name : str, category : str, from_gacha : bool = False, element : Optional[str] = None, proficiency : Optional[str] = None) -> Optional[str]:
+    async def search_wiki_for_id(self : Util, name : str, category : str, from_gacha : bool = False, element : str|None = None, proficiency : str|None = None) -> str|None:
         try:
-            addition = []
-            extra_fields = ""
-            if from_gacha:
+            addition : list[str] = []
+            extra_fields : str = ""
+            if from_gacha: # add check to be sure it's a gacha weapon
                 addition.append('AND (obtain LIKE "%normal%" OR obtain LIKE "%premium%" OR obtain LIKE "%gala%")')
-            if element is not None:
+            if element is not None: # add element check
                 addition.append('AND element = "{}"'.format(element))
-            if proficiency is not None and category == "weapons":
+            if proficiency is not None and category == "weapons": # add proficiency check
                 addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
-            data = (await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True))
+            # make request
+            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True)
+            # return result id
             return str(data[0]['id'])
         except:
             return None
@@ -550,11 +572,13 @@ class Util():
     
     Returns
     ----------
-    list: [full name, id, description]
+    list: Contains [full name, id, description]
     """
-    def process_command(self, cmd : Union[disnake.APISlashCommand, disnake.APIUserCommand, disnake.APIMessageCommand]) -> list:
-        has_sub = False
-        results = []
+    def process_command(self : Util, cmd : BotCommand) -> list[BotCommandSearch]:
+        has_sub : bool = False
+        results : list[BotCommandSearch] = []
+        opt : disnake.app_commands.Option
+        # check if command has sub command(s)
         try:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
@@ -562,20 +586,23 @@ class Util():
                     break
         except:
             pass
+        # if it has sub command(s)
         if has_sub:
             for opt in cmd.options:
                 if opt.type == disnake.OptionType.sub_command_group or opt.type == disnake.OptionType.sub_command:
-                    rs = self.process_command(opt)
-                    for r in rs:
+                    rs : list[BotCommandSearch] = self.process_command(opt) # recursive call for that child
+                    for r in rs: # process result
                         r[0] = cmd.name + " " + r[0]
                         try:
                             if r[1] is None:
                                 r[1] = cmd.id
                         except:
                             pass
-                    results += rs
+                    # add results to our
+                    results.extend(rs)
             return results
         else:
+            # return command details (2 possibilities depending if it got an id)
             try: return [[cmd.name, cmd.id, cmd.description]]
             except: return [[cmd.name, None, cmd.description]]
 
@@ -590,18 +617,22 @@ class Util():
     ----------
     str: mention or base_command_name if failed
     """
-    def command2mention(self, base_command_name : str) -> str:
-        global_slash_commands = self.bot.global_slash_commands
+    def command2mention(self : Util, base_command_name : str) -> str:
+        global_slash_commands : list[disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand] = self.bot.global_slash_commands
+        # retrieve command name
+        cmd_name : str
         if base_command_name.startswith('/'):
             cmd_name = base_command_name[1:].lower()
         else:
             cmd_name = base_command_name.lower()
-
+        # look for that command in the list
+        command : disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
         for command in global_slash_commands:
-            rs = self.process_command(command)
+            rs : list[BotCommandSearch] = self.process_command(command) # child command check
+            r : BotCommandSearch
             for r in rs:
-                if cmd_name.lower() == r[0].lower():
-                    return '</{}:{}>'.format(r[0], r[1])
+                if cmd_name.lower() == r[0].lower(): # good match
+                    return '</{}:{}>'.format(r[0], r[1]) # make and return the mention (format: </command_name:command_id> )
         return base_command_name
 
     """version2str()
@@ -615,41 +646,8 @@ class Util():
     ----------
     str: Timestamp string
     """
-    def version2str(self, version_number : Union[str, int]) -> str: # convert gbf version number to its timestamp
-        try: return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # JST
-        except: return ""
-
-    """send_modal()
-    Create and manage a modal interaction
-    
-    Parameters
-    ----------
-    inter: base interaction
-    custom_id : modal id
-    title: modal title
-    components: list of disnake ui components
-    callback: the function to be called if the modal is submitted
-    
-    Returns
-    ----------
-    disnake.ModalInteraction: The modal, else None if failed/cancelled
-    """
-    async def send_modal(self, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list, extra : str = None) -> disnake.ModalInteraction:
-        await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
-
-"""CustomModal
-A Modal class where you can set your own callback
-"""
-class CustomModal(disnake.ui.Modal):
-    def __init__(self, bot : 'DiscordBot', title : str, custom_id : str, components : list, callback : Callable, extra : str = None) -> None:
-        super().__init__(title=title, custom_id=custom_id, components=components)
-        self.bot = bot
-        self.custom_callback = callback
-        self.extra = extra
-
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction) -> None:
-        await inter.response.send_message(embed=self.bot.embed(title="Error", description="An unexpected error occured, my owner has been notified"))
-        self.bot.logger.pushError("[MODAL] 'on_error' event:", error)
-
-    async def callback(self, inter: disnake.ModalInteraction) -> None:
-        await self.custom_callback(self, inter)
+    def version2str(self : Util, version_number : str|int) -> str: # convert gbf version number to its timestamp
+        try:
+            return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # add JST
+        except:
+            return ""

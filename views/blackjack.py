@@ -1,7 +1,14 @@
+from __future__ import annotations
 from . import BaseView
 import disnake
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.singleton import GameCard
+    # Type Aliases
+    import types
+    CardList : types.GenericAlias = list[GameCard]
+    Hand : types.GenericAlias = list[int|CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -11,6 +18,13 @@ import random
 # ----------------------------------------------------------------------------------------------------------------
 
 class Blackjack(BaseView):
+    # player states
+    PLAYING : int = 0
+    STOPPED : int = 1
+    BLACKJACK : int = 2
+    TWENTYONE : int = 3
+    LOST : int = 4
+
     """__init__()
     Constructor
     
@@ -20,52 +34,63 @@ class Blackjack(BaseView):
     players: list of Players
     embed: disnake.Embed to edit
     """
-    def __init__(self, bot : 'DiscordBot', players : list, embed : disnake.Embed) -> None:
+    def __init__(self : Blackjack, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed) -> None:
         super().__init__(bot, timeout=240)
-        self.state = 0
-        self.players = players
-        if len(self.players) < 6: self.players.append(self.bot.user)
+        # game state
+        self.state : int = 0
+        # player list
+        self.players : list[disnake.User|disnake.Member] = players
+        # add bot to the player list if there are space
+        if len(self.players) < 6:
+            self.players.append(self.bot.user)
+        # shuffle player order
         random.shuffle(self.players)
-        self.embed = embed
-        kind = ["D", "S", "H", "C"]
-        self.deck = ['{}{}'.format((i % 13) + 1, kind[i // 13]) for i in range(51)]
+        # the view embed
+        self.embed : disnake.Embed = embed
+        # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
+        self.deck : CardList = [self.bot.singleton.get_GameCard((i % 13) + 1, i // 13) for i in range(51)]
+        # shuffle the deck
         random.shuffle(self.deck)
-        self.hands = [[0, [self.deck.pop()]] for i in range(len(self.players))] # playing state, cards
+        # make hands and give one card to each player
+        self.hands : list[Hand] = [[self.PLAYING, [self.deck.pop()]] for i in range(len(self.players))] # player state, cards
+        # Start
+        # If the player to start is the bot, call play ai
         if self.players[self.state].id == self.bot.user.id:
             self.playai()
-        self.notification = "Turn of **{}**".format(self.players[self.state].display_name)
+        # Then the player in slot 0 will play
+        self.notification : str = "Turn of **{}**".format(self.players[self.state].display_name)
 
-    """formatHand()
+    """renderHand()
     Generate a Hand string for the given hand
     
     Parameters
     ----------
-    hand: one item from self.hands
+    hand: one list of card from self.hands
     playing: boolean, True if it's the currently playing user
     
     Returns
     ----------
-    str: resulting string
+    list: resulting list of strings to add to a message list
     """
-    def formatHand(self, hand : list, playing : bool) -> str:
-        msg = ""
-        score = 0
-        for card in hand[1]:
-            msg += "{}, ".format(card.replace("D", "\♦️").replace("S", "\♠️").replace("H", "\♥️").replace("C", "\♣️").replace("11", "J").replace("12", "Q").replace("13", "K").replace("10", "tmp").replace("1", "A").replace("tmp", "10"))
-            if card[:-1] == "1" and score < 11: score += 11
-            elif int(card[:-1]) >= 10: score += 10
-            else: score += int(card[:-1])
-        msg = msg[:-2]
-        if playing:
-            msg += ", 🎴"
-        msg += " ▫️"
+    def renderHand(self : Blackjack, hand : Hand, playing : bool) -> str:
+        msgs : list[str] = []
+        score : int = self.computeScore(hand[1])
+        for card in hand[1]: # display each card
+            msgs.append(str(card))
+            msgs.append(", ")
+        if playing: # if the player is playing
+            msgs.append("🎴") # add hidden card
+        else:
+            msgs.pop(-1) # remove last comma
+        # add score to message
+        msgs.append(" ▫️")
         match hand[0]:
-            case 0: msg += " Score is **{}**".format(score)
-            case 1: msg += " Stopped at **{}**".format(score)
-            case 2: msg += " **Blackjack**"
-            case 3: msg += " Reached **21**"
-            case 4: msg += " **Lost**"
-        return msg
+            case self.PLAYING: msgs.append(" Score is **{}**".format(score))
+            case self.STOPPED: msgs.append(" Stopped at **{}**".format(score))
+            case self.BLACKJACK: msgs.append(" **Blackjack**")
+            case self.TWENTYONE: msgs.append(" Reached **21**")
+            case self.LOST: msgs.append(" **Lost**")
+        return msgs
 
     """getWinner()
     Generate a string indicating who won the game
@@ -74,34 +99,35 @@ class Blackjack(BaseView):
     ----------
     str: resulting string
     """
-    def getWinner(self) -> str:
-        winner = []
-        best = 0
+    def getWinner(self : Blackjack) -> str:
+        winner : list[disnake.User|disnake.Member] = []
+        best : int = 0
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
-            if self.hands[i][0] == 4:
+            if self.hands[i][0] == self.LOST: # this player lost anyway, skip
                 continue
             else:
-                score = 0
-                for card in self.hands[i][1]:
-                    if card[:-1] == "1" and score < 11: score += 11
-                    elif int(card[:-1]) >= 10: score += 10
-                    else: score += int(card[:-1])
-                if score == 21 and len(self.hands[i][1]) == 2: score = 22
-                if score == best:
-                    winner.append(p)
-                elif score > best:
-                    winner = [p]
-                    best = score
+                score : int = self.computeScore(self.hands[i][1])
+                if score == 21 and len(self.hands[i][1]) == 2:
+                    score = 22 # blackjack, set to 22 to ensure it's considered higher than regular 21
+                if score == best: # if it's equal to the best score
+                    winner.append(p) # add player to winner list
+                elif score > best: # else if it's greater than the best score
+                    winner = [p] # set the winner list to this player
+                    best = score # and the best score to this player
+        # process winner list
         match len(winner):
-            case 0:
+            case 0: # no winners
                 return "No one won"
-            case 1:
+            case 1: # one winner
                 return "**{}** is the winner".format(winner[0].display_name)
-            case _:
-                msg = "It's a **draw** between "
+            case _: # multiple winners
+                msgs : list[str] = ["It's a **draw** between "]
                 for p in winner:
-                    msg += "{}, ".format(p.display_name)
-                return msg[:-2]
+                    msgs.append(p.display_name)
+                    msgs.append(", ")
+                return "".join(msgs[:-1])
 
     """update()
     Update the embed
@@ -111,35 +137,71 @@ class Blackjack(BaseView):
     inter: an interaction
     init: if True, it uses a different method (only used from the command call itself)
     """
-    async def update(self, inter : disnake.Interaction, init : bool = False) -> None:
-        self.embed.description = ""
+    async def update(self : Blackjack, inter : disnake.Interaction, init : bool = False) -> None:
+        desc : list[str] = []
+        # iterate over player
+        i : int
+        p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
-            self.embed.description += "{} {} ▫️ {}\n".format(self.bot.emote.get(str(i+1)), (p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "..."), self.formatHand(self.hands[i], (i == self.state)))
-        self.embed.description += self.notification
-        if init: await inter.edit_original_message(embed=self.embed, view=self)
-        elif self.state >= 0: await inter.response.edit_message(embed=self.embed, view=self)
-        else: await inter.response.edit_message(embed=self.embed, view=None)
+            # and display their hand and score
+            desc.append(str(self.bot.emote.get(str(i+1))))
+            desc.append(" ")
+            desc.append(p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...")
+            desc.append(" ▫️ ")
+            desc.extend(self.renderHand(self.hands[i], (i == self.state)))
+            desc.append("\n")
+        # add notification line
+        desc.append(self.notification)
+        # update embed
+        self.embed.description = "".join(desc)
+        # set message
+        if init:
+            await inter.edit_original_message(embed=self.embed, view=self) # init is true, we edit
+        elif self.state >= 0:
+            await inter.response.edit_message(embed=self.embed, view=self) # game is on going
+        else:
+            await inter.response.edit_message(embed=self.embed, view=None) # game is over, remove the view
+
+    """computeScore()
+    Calculate the score of the given hand
+    
+    Parameters
+    ----------
+    cards: List, a list of card tuples
+    
+    Returns
+    ----------
+    int: The score
+    """
+    def computeScore(self : Blackjack, cards : CardList) -> int:
+        score : int = 0
+        card: GameCard
+        for card in cards:
+            if card.value == 1 and score < 11: # ace
+                score += 11
+            elif card.value >= 10: # head
+                score += 10
+            else:
+                score += card.value
+        return score
 
     """playai()
-    The AI
+    The logic for the bot to play the game
     """
-    def playai(self) -> None:
-        score = 0
-        for card in self.hands[self.state][1]:
-            if card[:-1] == "1" and score < 11: score += 11
-            elif int(card[:-1]) >= 10: score += 10
-            else: score += int(card[:-1])
-        if score < 12:
-            self.play(False)
+    def playai(self : Blackjack) -> None:
+        score : int = self.computeScore(self.hands[self.state][1])
+        # act depending on score
+        if score < 12: # score is 11 or less
+            self.play(False) # keep playing
         else:
-            if score >= 19:
-                self.play(True)
-            if score >= 17:
-                self.play(random.randint(1, 100) < 10)
-            elif score >= 15:
-                self.play(random.randint(1, 100) < 40)
-            else:
-                self.play(random.randint(1, 100) < 80)
+            if score >= 19: # score is 19~20
+                self.play(True) # stop
+            if score >= 17: # score is 17~18
+                self.play(random.randint(1, 100) > 10) # 10% chance to continue
+            elif score >= 15: # score is 15~16
+                self.play(random.randint(1, 100) > 40) # 40% chance to continue
+            else: # score is 12~14
+                self.play(random.randint(1, 100) > 80) # 80% chance to continue
 
     """play()
     Allow the player to make a move
@@ -148,31 +210,45 @@ class Blackjack(BaseView):
     ----------
     stop: boolean, True for the player to stop, False to draw a card
     """
-    def play(self, stop : bool) -> None:
-        if self.state == -1: return
-        if stop:
-            self.hands[self.state][0] = 1
-        else:
+    def play(self : Blackjack, stop : bool) -> None:
+        if self.state == -1: # check if game is over
+            return
+        if stop: # set player as stopped
+            self.hands[self.state][0] = self.STOPPED
+        else: # continue
+            # draw card
             self.hands[self.state][1].append(self.deck.pop())
-            score = 0
-            for card in self.hands[self.state][1]:
-                if card[:-1] == "1" and score < 11: score += 11
-                elif int(card[:-1]) >= 10: score += 10
-                else: score += int(card[:-1])
-            if score == 21:
-                if len(self.hands[self.state][1]) == 2: self.hands[self.state][0] = 2
-                else: self.hands[self.state][0] = 3
-            elif score > 21: self.hands[self.state][0] = 4
-        current_state = self.state
-        while True:
-            self.state = (self.state + 1) % len(self.players)
-            if self.hands[self.state][0] == 0:
-                break
-            elif current_state == self.state:
-                self.state = -1
-                break
-        if self.state >= 0 and self.players[self.state].id == self.bot.user.id and self.hands[self.state][0] == 0:
+            # compute score
+            score : int = self.computeScore(self.hands[self.state][1])
+            # game over checks
+            if score == 21: # reached max
+                if len(self.hands[self.state][1]) == 2: # only 2 cards, blackjack
+                    self.hands[self.state][0] = self.BLACKJACK
+                else:
+                    self.hands[self.state][0] = self.TWENTYONE # reached 21 state
+            elif score > 21: # over max
+                self.hands[self.state][0] = self.LOST # lost
+        # look for next player
+        self.lookupNextPlayerTurn()
+        # check if we're still playing AND if it's the bot turn to play
+        if self.state >= 0 and self.players[self.state].id == self.bot.user.id and self.hands[self.state][0] == self.PLAYING:
             self.playai()
+
+    """lookupNextPlayerTurn()
+    Cycle over the players until the next one in line able to play, to update the game state
+    Stop the game if no players can play.
+    """
+    def lookupNextPlayerTurn(self : Blackjack) -> None:
+        current_state : int = self.state
+        while True:
+            # go to next player
+            self.state = (self.state + 1) % len(self.players)
+            # check player state
+            if self.hands[self.state][0] == self.PLAYING: # is playing, good
+                return
+            elif current_state == self.state: # it's the player we started with and they can't play, this means we did a full loop without finding a player able to play, i.e. GAME IS OVER
+                self.state = -1 # game over
+                return
 
     """buttoncallback()
     Callback for buttons
@@ -182,14 +258,16 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     action: boolean used for self.play()
     """
-    async def buttoncallback(self, interaction: disnake.Interaction, action: bool) -> None:
-        if self.state >= 0 and self.players[self.state].id == interaction.user.id:
-            self.play(action)
+    async def buttoncallback(self : Blackjack, interaction: disnake.Interaction, action: bool) -> None:
+        if self.state >= 0 and self.players[self.state].id == interaction.user.id: # check if the game is on going and if the interaction author is the current player
+            self.play(action) # do the action corresponding to the button (True = stop, False = draw)
+            # Check if the game is over and print status accordingly
             if self.state >= 0:
                 self.notification = "Turn of **{}**".format(self.players[self.state].display_name)
             else:
                 self.notification = self.getWinner()
                 self.stopall()
+            # update display
             await self.update(interaction)
         else:
             await interaction.response.send_message("It's not your turn to play or you aren't the player", ephemeral=True)
@@ -204,7 +282,7 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='Draw Card', style=disnake.ButtonStyle.success)
-    async def draw(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def draw(self : Blackjack, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.buttoncallback(interaction, False)
 
     """giveup()
@@ -217,5 +295,5 @@ class Blackjack(BaseView):
     interaction: a Discord interaction
     """
     @disnake.ui.button(label='Stop', style=disnake.ButtonStyle.danger)
-    async def giveup(self, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
+    async def giveup(self : Blackjack, button: disnake.ui.Button, interaction: disnake.Interaction) -> None:
         await self.buttoncallback(interaction, True)

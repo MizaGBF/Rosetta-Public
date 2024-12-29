@@ -1,92 +1,90 @@
+from __future__ import annotations
 import asyncio
-from typing import Optional, TYPE_CHECKING
-if TYPE_CHECKING: from ..bot import DiscordBot
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..bot import DiscordBot
+    from components.singleton import Score, GWDB
+    from components.util import JSON
+    from components.network import RequestResult
+    from components.sql import Database
+    from cogs.gw import GuildWar
+    from cogs.youcrew import YouCrew
+    # Type Aliases
+    import types
+    GWDBList : types.GenericAlias = list[Score]
+    GWDBInfo : types.GenericAlias = list[GWDB|None]
+    GWDBSearchResult : types.GenericAlias = list[None|GWDBList, None|GWDBList, GWDBInfo]
+    CrewDataEntry : types.GenericAlias = tuple[int, int, str, int, int, int, int, int, float, float]
+    InfoData : types.GenericAlias = list[int]
+    RankingData : types.GenericAlias = list[dict[str, int]]
+    PlayerDataEntry : types.GenericAlias = tuple[int, int, str, int]
 from datetime import timedelta, datetime
 from collections import deque
 from bs4 import BeautifulSoup
+from bs4 import element as bs4element
 import sqlite3
 
 # ----------------------------------------------------------------------------------------------------------------
 # Ranking Component
 # ----------------------------------------------------------------------------------------------------------------
 # Manage the Unite and Fight rankings (access, DB update, etc...)
-# Provide Score instances when searching the ranking
 # ----------------------------------------------------------------------------------------------------------------
 
-class Score():
-    def __init__(self, type : Optional[int] = None, ver : Optional[int] = None, gw : Optional[int] = None):
-        self.type = type
-        self.ver = ver
-        self.gw = gw
-        self.ranking = None
-        self.id = None
-        self.name = None
-        self.current = None
-        self.current_day = None
-        self.day = None
-        self.preliminaries = None
-        self.day1 = None
-        self.total1 = None
-        self.day2 = None
-        self.total2 = None
-        self.day3 = None
-        self.total3 = None
-        self.day4 = None
-        self.total4 = None
-        self.top_speed = None
-        self.current_speed = None
-
-    def __repr__(self) -> str:
-        return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)
-
-    def __str__(self) -> str:
-        return "GW{}, v{}, {}, {}, {}".format(self.gw, self.ver, 'crew' if self.type else 'player', self.name, self.current)
-
-class GWDB():
-    def __init__(self, data : Optional[list] = None):
-        try:
-            self.gw = int(data[0])
-        except:
-            self.gw = None
-            self.ver = 0
-            self.timestamp = None
-            return
-        try:
-            self.ver = int(data[1])
-        except: 
-            self.ver = 1
-        try:
-            self.timestamp = datetime.utcfromtimestamp(data[2])
-        except: 
-            self.timestamp = None
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __str__(self) -> str:
-        return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)
-
 class Ranking():
-    TIER_CREWS_PRELIM = [300, 1000, 2500, 8000, 19000, 36000]
-    TIER_CREWS_FINAL = [2500, 5500, 9000, 14000, 18000, 30000]
-    TIER_PLAYERS = [2000, 90000, 140000, 180000, 270000, 370000]
-    MAX_TASK = 15
-    DB_VERSION = 5
+    # The Ranking component
+    
+    # Ranking tiers
+    TIER_CREWS_PRELIM : list[int] = [300, 1000, 2500, 8000, 19000, 36000]
+    TIER_CREWS_FINAL : list[int] = [2500, 5500, 9000, 14000, 18000, 30000]
+    TIER_PLAYERS : list[int] = [2000, 90000, 140000, 180000, 270000, 370000]
+    # Max ranking scrapping tasks
+    MAX_TASK : list[int] = 15
+    # DB File version
+    DB_VERSION : list[int] = 5
+    # others
+    DB_FILES : list[str] = ["GW_old.sql", "GW.sql"]
+    REVERSE_DAYS : list[str] = ['Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
+    REVERSE_DAYS_FULL : list[str] = REVERSE_DAYS+['Interlude', 'Preliminaries']
 
-    def __init__(self, bot : 'DiscordBot') -> None:
-        self.bot = bot
+    def __init__(self : Ranking, bot : DiscordBot) -> None:
+        self.bot : DiscordBot = bot
+        # crew from config.json
+        self.gbfgcrews : dict[str, str] = {}
+        self.othercrews : dict[str, str] = {}
+        self.allconfigcrews : dict[str, str] = {}
+        self.gbfgcrews_id : list[str] = []
+        self.othercrews_id : list[str] = []
         # stuff related to retrieving the ranking
-        self.getrank_mode = False
-        self.getrank_count = 0
-        self.getrank_update_time = None
-        self.rankingtempdata = []
-        self.stoprankupdate = False
+        self.getrank_mode : bool = False
+        self.getrank_count : int = 0
+        self.getrank_update_time : datetime|None = None
+        self.rankingtempdata : RankingData = []
+        self.stoprankupdate : bool = False
         # gw databases
-        self.dbstate = [True, True] # indicate if dbs are available on the drive, True by default
-        self.dblock = asyncio.Lock()
+        self.dbstate : list[bool] = [True, True] # indicate if dbs are available on the drive, True by default
+        self.dblock : asyncio.Lock = asyncio.Lock()
 
-    def init(self) -> None:
-        pass
+    def init(self : Ranking) -> None:
+        self.gbfgcrews = self.bot.data.config.get('granblue', {}).get('gbfgcrew', {})
+        self.othercrews = self.bot.data.config.get('granblue', {}).get('othercrew', {})
+        self.allconfigcrews = self.gbfgcrews | self.othercrews
+        for v in self.allconfigcrews.values():
+            if not isinstance(v, str):
+                raise TypeError
+        self.gbfgcrews_id = list(set(self.gbfgcrews.values()))
+        self.othercrews_id = list(set(self.othercrews.values()))
+        i : int = 0 # remove dupes
+        while i < len(self.othercrews_id):
+            if self.othercrews_id[i] in self.gbfgcrews_id:
+                self.othercrews_id.pop(i)
+            else:
+                i += 1
+        self.gbfgcrews_id.sort()
+        self.othercrews_id.sort()
+
+    def startTasks(self : Ranking) -> None:
+        if self.bot.isProduction():
+            self.bot.runTask('ranking:check', self.checkGWRanking)
 
     """requestRanking()
     Request a page from the GW ranking
@@ -99,22 +97,24 @@ class Ranking():
     
     Returns
     --------
-    dict: JSON data
+    dict: JSON Data from the request
     """
-    async def requestRanking(self, page : int, mode : int = 0) -> dict: # get gw ranking data
+    async def requestRanking(self : Ranking, page : int, mode : int = 0) -> RequestResult:
+        # Check if gw is on going
         if self.bot.data.save['gw']['state'] is False or self.bot.util.JST() <= self.bot.data.save['gw']['dates']["Preliminaries"]:
             return None
+        res : RequestResult
         match mode:
-            case 0: # crew
+            case 0: # crew ranking
                 res = await self.bot.net.requestGBF("teamraid{}/rest/ranking/totalguild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), expect_JSON=True)
-            case 1: # prelim crew
+            case 1: # prelim crew ranking
                 res = await self.bot.net.requestGBF("teamraid{}/rest/ranking/guild/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), expect_JSON=True)
-            case 2: # player
+            case 2: # player ranking
                 res = await self.bot.net.requestGBF("teamraid{}/rest_ranking_user/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), expect_JSON=True)
         return res
 
     """updateRankingTask()
-    Update the cutoff data
+    Update the cutoff data for the given rank and ranking
     
     Parameters
     ----------
@@ -123,21 +123,32 @@ class Ranking():
     mode: Integer, requestRanking() mode value
     rank: Integer, ranking value to check
     """
-    async def updateRankingTask(self, diff : int, iscrew : bool, mode : int, rank : int) -> None:
-        r = None
-        errc = 0
+    async def updateRankingTask(self : Ranking, diff : int, iscrew : bool, mode : int, rank : int) -> None:
+        r : RequestResult = None
+        errc : int = 0
+        # Note: rankingtempdata format:
+        # [
+        #     {"rank":int(score)}, # crew ranking
+        #     {"rank":int(score)}, # player ranking
+        #     {"rank":int(score)}, # crew speed delta
+        #     {"rank":int(score)} # player speed delta
+        # ]
         try:
-            while errc < 5 and (r is None or 'list' not in r):
+            while errc < 5 and (r is None or 'list' not in r): # we try 5 times
                 if iscrew:
-                    r = await self.requestRanking(rank // 10, mode)
+                    r = await self.requestRanking(rank // 10, mode) # get rank score
+                    # check score validity
                     if r is not None and 'list' in r and len(r['list']) > 0:
-                        self.rankingtempdata[0][str(rank)] = int(r['list'][-1]['point'])
+                        self.rankingtempdata[0][str(rank)] = int(r['list'][-1]['point']) # add to our ranking
+                        # calculate delta
                         if diff > 0 and self.bot.data.save['gw']['ranking'] is not None and str(rank) in self.bot.data.save['gw']['ranking'][0]:
                             self.rankingtempdata[2][str(rank)] = (self.rankingtempdata[0][str(rank)] - self.bot.data.save['gw']['ranking'][0][str(rank)]) / diff
                 else:
-                    r = await self.requestRanking(rank // 10, 2)
+                    r = await self.requestRanking(rank // 10, 2) # get rank score
+                    # check score validity
                     if r is not None and 'list' in r and len(r['list']) > 0:
-                        self.rankingtempdata[1][str(rank)] = int(r['list'][-1]['point'])
+                        self.rankingtempdata[1][str(rank)] = int(r['list'][-1]['point']) # add to our ranking
+                        # calculate delta
                         if diff > 0 and self.bot.data.save['gw']['ranking'] is not None and str(rank) in self.bot.data.save['gw']['ranking'][1]:
                             self.rankingtempdata[3][str(rank)] = (self.rankingtempdata[1][str(rank)] - self.bot.data.save['gw']['ranking'][1][str(rank)]) / diff
                 if r is None:
@@ -149,15 +160,15 @@ class Ranking():
     """checkGWRanking()
     Bot task to update the ranking data. Only needed once every 20 minutes
     """
-    async def checkGWRanking(self) -> None:
-        cog = self.bot.get_cog('GuildWar')
+    async def checkGWRanking(self : Ranking) -> None:
+        cog : GuildWar = self.bot.get_cog('GuildWar') # retrieve cog
         if cog is None:
             return
 
         while True:
             cog.getGWState() # refresh gw state
             try:
-                current_time = self.bot.util.JST()
+                current_time : datetime = self.bot.util.JST()
                 # check the gw state
                 if self.bot.data.save['gw']['state'] is False: # is set ?
                     if 'ranking' not in self.bot.data.save['gw'] or self.bot.data.save['gw']['ranking'] is not None:
@@ -168,28 +179,30 @@ class Ranking():
                     if 'ranking' not in self.bot.data.save['gw'] or self.bot.data.save['gw']['ranking'] is not None:
                         self.bot.data.save['gw']['ranking'] = None
                         self.bot.data.pending = True
-                    d = self.bot.data.save['gw']['dates']["Preliminaries"] - current_time
-                    if d >= timedelta(days=1):
+                    delta : timedelta = self.bot.data.save['gw']['dates']["Preliminaries"] - current_time
+                    # wait until the start before checking again
+                    if delta >= timedelta(days=1):
                         await asyncio.sleep(86400)
                     else:
-                        await asyncio.sleep(d.seconds + 1)
+                        await asyncio.sleep(delta.seconds + 1)
                 elif current_time > self.bot.data.save['gw']['dates']["Day 5"] - timedelta(seconds=21600): # day 4 is over?
-                    await asyncio.sleep(3600)
+                    await asyncio.sleep(3600) # just sleep
                 else: # on going
                     # retrieve estimation from wiki
                     if 'estimation' not in self.bot.data.save['gw']:
                         await self.init_estimation()
                     # retrieve ranking
                     if await self.bot.net.gbf_available():
-                        m = current_time.minute
-                        h = current_time.hour
-                        skip = False
+                        m : int = current_time.minute
+                        h : int = current_time.hour
+                        skip : bool = False
                         # check current day and if we should get the ranking
+                        d : int
                         for d in ["End", "Day 5", "Day 4", "Day 3", "Day 2", "Day 1", "Interlude", "Preliminaries"]:
                             if current_time < self.bot.data.save['gw']['dates'][d]:
                                 continue
                             if d == "Preliminaries":
-                                diff = current_time - self.bot.data.save['gw']['dates'][d]
+                                diff : timedelta = current_time - self.bot.data.save['gw']['dates'][d]
                                 if diff.days == 1 and diff.seconds >= 25200:
                                     skip = True
                             elif ((d.startswith("Day") and h < 7 and h >= 2) or d == "Day 5"):
@@ -197,42 +210,51 @@ class Ranking():
                             break
                         # taking action or not
                         if skip:
-                            await asyncio.sleep(600)
+                            await asyncio.sleep(600) # we sleep 10min if we skip
                         elif m in [3, 4, 23, 24, 43, 44]: # minute to update
-                            update_time = current_time.replace(minute=20 * (current_time.minute // 20), second=1, microsecond=0) # calculate this 20 minutes period time
+                            update_time : datetime = current_time.replace(minute=20 * (current_time.minute // 20), second=1, microsecond=0) # calculate this 20 minutes period time
+                            # START THE UPDATE
                             if await self.update_ranking(update_time, (0 if d.startswith("Day ") else 1), (self.TIER_CREWS_FINAL if d.startswith("Day ") else self.TIER_CREWS_PRELIM), self.TIER_PLAYERS):
+                                # retrieve the whole ranking if it went well
                                 await self.retrieve_ranking(update_time)
-                            await asyncio.sleep(180)
+                            await asyncio.sleep(180) # wait 3 minutes
                         else:
                             await asyncio.sleep(25)
                     else:
-                        await asyncio.sleep(60)
+                        await asyncio.sleep(60) # wait a minute
             except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'check_ranking' Task Cancelled")
+                self.bot.logger.push("[TASK] 'gw:ranking' Task Cancelled")
                 return
             except Exception as e:
-                self.bot.logger.pushError("[TASK] 'check_ranking' Task Error:", e)
+                self.bot.logger.pushError("[TASK] 'gw:ranking' Task Error:", e)
                 return
 
     """init_estimation()
     Coroutine to retrieve the previous GW data from the wiki
     """
-    async def init_estimation(self) -> None:
-        cnt = await self.bot.net.requestWiki("User:Neofaucheur/Unite_and_Fight_Data", allow_redirects=True)
+    async def init_estimation(self : Ranking) -> None:
+        cnt : RequestResult = await self.bot.net.requestWiki("User:Neofaucheur/Unite_and_Fight_Data", allow_redirects=True)
+        # We use Neofaucheur's past GW data for /gw estimation
+        # The data is embedded in the html, so it's a "simple" matter to parse and extract the past gw datas
         if cnt is not None:
             try: cnt = cnt.decode('utf-8')
-            except: cnt = cnt.decode('iso-8859-1')
-            soup = BeautifulSoup(cnt, 'html.parser') # parse the html
-            content = soup.find_all("div", id="mw-content-text")
-            if len(content) == 0: return
+            except: cnt = cnt.decode('iso-8859-1') # rare encoding used on the wiki
+            soup : BeautifulSoup = BeautifulSoup(cnt, 'html.parser') # parse the html
+            # look for the content
+            content : bs4element.ResultSet = soup.find_all("div", id="mw-content-text")
+            if len(content) == 0:
+                return
             content = content[0].findChildren("div", class_="mw-parser-output", recursive=False)
-            if len(content) == 0: return
-            crew = None
-            data = [{}, {}]
-            xaxis = {str((i+1)*1200):i for i in range(0, 447)}
+            if len(content) == 0:
+                return
+            # variables
+            crew : int|None = None
+            data : list[dict[str, list[int|None]]] = [{}, {}]
+            xaxis : dict[str, int] = {str((i+1)*1200):i for i in range(0, 447)} # the x plot is always the same: a big array of each timestamp. The ranking being updated every 20min, the array contains all multiples of 1200 (20min) to cover the whole duration of the gw
             # read the page
+            children : bs4element.Tag
             for children in content[0].findChildren(recursive=False):
-                div = None
+                div : bs4element.Tag|None = None
                 if crew is None: # undefined
                     if children.name == "h2":
                         if children.text == "Individual":
@@ -262,9 +284,10 @@ class Ranking():
                         except:
                             pass
                 if div is not None: # if div found
-                    tops = div.findChildren("span", class_="mw-headline", recursive=True)
+                    tops : bs4element.ResultSet = div.findChildren("span", class_="mw-headline", recursive=True)
                     if len(tops) > 0:
                         try:
+                            rank : str
                             if tops[0].text == '"Unite and Fight Hero"':
                                 rank = "2000"
                             elif tops[0].text.startswith('Top '):
@@ -281,16 +304,19 @@ class Ranking():
                                         rank = str(self.TIER_PLAYERS[rank])
                                     else:
                                         rank = str(self.TIER_CREWS_FINAL[rank-1])
-                            spans = div.findChildren("span", recursive=True)
+                            spans : bs4element.ResultSet = div.findChildren("span", recursive=True)
                             # bracket change end
+                            span : bs4element.tag
                             for span in spans:
                                 if span.has_attr("data-series-label") and span["data-series-label"].startswith('U&F') and int(span["data-series-label"].replace('U&F', '')) == self.bot.data.save['gw']['id'] - 1:
                                     data[crew][rank] = [None] * len(xaxis.keys())
-                                    temp_x = span["data-series-x"].split(',')
-                                    temp_y = span["data-series-y"].split(',')
+                                    temp_x : list[str] = span["data-series-x"].split(',')
+                                    temp_y : list[str] = span["data-series-y"].split(',')
+                                    i : int
+                                    v : str
                                     for i, v in enumerate(temp_y):
                                         data[crew][rank][xaxis[temp_x[i]]] = int(v)
-                                    last = None
+                                    last : int|None = None
                                     for i in range(len(data[crew][rank])):
                                         if data[crew][rank][i] is None:
                                             data[crew][rank][i] = last
@@ -319,25 +345,30 @@ class Ranking():
     --------
     bool: True if success, False if not
     """
-    async def update_ranking(self, update_time : datetime, mode : int, crews : list, players : list) -> bool:
+    async def update_ranking(self : Ranking, update_time : datetime, mode : int, crews : list, players : list) -> bool:
         self.bot.logger.push("[RANKING] Updating Main Ranking...", send_to_discord=False)
         # update $ranking and $estimation
         try:
             self.rankingtempdata = [{}, {}, {}, {}, update_time] # crew, player, speed crew, player speed, update_time
+            diff : float
             if self.bot.data.save['gw']['ranking'] is not None:
-                diff = self.rankingtempdata[4] - self.bot.data.save['gw']['ranking'][4]
-                diff = round(diff.total_seconds() / 60.0)
+                diff = round((self.rankingtempdata[4] - self.bot.data.save['gw']['ranking'][4]).total_seconds() / 60.0)
             else:
-                diff = 0
+                diff = 0.0
             
-            tasks_crew = [self.updateRankingTask(diff, True, mode, c) for c in crews]
-            tasks_player = [self.updateRankingTask(diff, False, 2, p) for p in players]
+            # we run the updates in the parallel
+            tasks_crew : list[types.CoroutineType] = [self.updateRankingTask(diff, True, mode, c) for c in crews]
+            tasks_player : list[types.CoroutineType] = [self.updateRankingTask(diff, False, 2, p) for p in players]
             await asyncio.gather(*tasks_crew, *tasks_player)
 
+            # sort the result
+            i : int
             for i in range(0, 4):
                 self.rankingtempdata[i] = dict(sorted(self.rankingtempdata[i].items(), reverse=True, key=lambda item: int(item[1])))
 
-            if len(self.rankingtempdata[0]) + len(self.rankingtempdata[1]) > 0: # only update if we got data (NOTE: check how it affects estimations)
+            # check if the result contains data
+            if len(self.rankingtempdata[0]) + len(self.rankingtempdata[1]) > 0:
+                # and save it if it does
                 self.bot.data.save['gw']['ranking'] = self.rankingtempdata
                 self.bot.data.pending = True
                 self.bot.logger.push("[RANKING] Main Ranking done with success", send_to_discord=False)
@@ -345,7 +376,7 @@ class Ranking():
             self.bot.logger.push("[RANKING] Main Ranking aborted: No data to retrieve", send_to_discord=False, level=self.bot.logger.WARNING)
             return False
         except Exception as ex:
-            self.bot.logger.pushError("[TASK] 'check_ranking (Sub)' Task Error:", ex)
+            self.bot.logger.pushError("[TASK] 'gw:ranking' Task Error:", ex)
             self.bot.data.save['gw']['ranking'] = None
             self.bot.data.pending = True
             return False
@@ -358,33 +389,46 @@ class Ranking():
     update_time: Datetime, current time period of 20min
     force: True to force regardless of time and day (only for debug/test purpose)
     """
-    async def retrieve_ranking(self, update_time : datetime, force : bool = False) -> None:
-        getrankout = await self.gwgetrank(update_time, force)
-        if getrankout == "":
-            data = await self.GWDB()
+    async def retrieve_ranking(self : Ranking, update_time : datetime, force : bool = False) -> None:
+        # retrieve the ranking
+        getrankout : str = await self.gwgetrank(update_time, force)
+        # check the result message
+        if getrankout == "": # no news, good news
+            data : GWDBInfo = await self.getGWDB() # retrieve current databases
             async with self.dblock:
                 if data is not None and data[1] is not None:
-                    if self.bot.data.save['gw']['id'] != data[1].gw: # different gw, we move
-                        if data[0] is not None: # backup old gw if it exists
+                    # compare if current gw is the same gw as we just retrieved
+                    if self.bot.data.save['gw']['id'] != data[1].gw:
+                        # different gw
+                        # Now, check if the past gw database exists
+                        if data[0] is not None:
+                            # then create a backup
                             self.bot.drive.mvFile("GW_old.sql", self.bot.data.config['tokens']['files'], "GW{}_backup.sql".format(data[0].gw))
                             await asyncio.sleep(5)
+                        # Move current gw to past gw
                         self.bot.drive.mvFile("GW.sql", self.bot.data.config['tokens']['files'], "GW_old.sql")
-                        await self.bot.sql.remove_list(["GW_old.sql", "GW.sql"])
+                        await self.bot.sql.remove_list(self.DB_FILES) # Clean databases in memory
                         self.bot.file.mv("GW.sql", "GW_old.sql")
-                for err in range(5): # try to upload 5 times
+                # Upload our new database
+                err : int
+                for err in range(5): # try to upload 5 times in case of issues
                     await asyncio.sleep(5)
                     if self.bot.drive.overwriteFile("temp.sql", "application/sql", "GW.sql", self.bot.data.config['tokens']['files']) is False: # upload
                         if err == 4:
                             self.bot.logger.pushError("[RANKING] 'retrieve_ranking' error, upload failed")
                     else:
                         break
+                # remove GW.sql in memory
                 await self.bot.sql.remove("GW.sql")
+                # rename temp.sql to GW.sql
                 self.bot.file.mv('temp.sql', "GW.sql")
+                # refresh database states without redownloading
                 self.dbstate = [False, False]
-                fs = ["GW_old.sql", "GW.sql"]
-                for i in [0, 1]:
-                    await self.bot.sql.remove(fs[i])
-                    if await self.bot.sql.add(fs[i]) is not None:
+                i : int
+                fs : str
+                for i, fs in enumerate(self.DB_FILES):
+                    await self.bot.sql.remove(fs)
+                    if await self.bot.sql.add(fs) is not None:
                         self.dbstate[i] = True
                 await asyncio.sleep(0)
         elif getrankout != "Invalid day" and getrankout != "Skipped":
@@ -397,26 +441,38 @@ class Ranking():
     
     Parameters
     ----------
-    status: Thread shared status and data
+    status: Task shared status and data
     """
-    async def getrankProcess(self, status : list) -> None: # thread for ranking
+    async def getrankProcess(self : Ranking, status : list[int|deque]) -> None:
+        # status format:
+        # [
+        #     count task finished,
+        #     input queue, queue the pages to retrieve,
+        #     output queue, queue what we already retrieved on the first page
+        # ]
         while True:
+            # if the input queue is empty of certain flags are raised/unraised
             if len(status[1]) == 0 or not self.bot.running or self.stoprankupdate:
-                if status[0] == 0: self.bot.logger.push("[RANKING] Ranking download ended", send_to_discord=False)
+                # the download ended
+                if status[0] == 0:  # the first task put a log message
+                    self.bot.logger.push("[RANKING] Ranking download ended", send_to_discord=False)
+                # increase counter
                 status[0] += 1
                 return
-            try:
-                page = status[1].popleft()
-            except:
+            try: # retrieve an element
+                page : int = status[1].popleft()
+            except: # error, go back to start of loop (shouldn't happen...)
                 continue
-            data = None
-            while data is None:
+            data : RequestResult = None
+            while data is None: # attempt to download the page until we get a positive result
                 data = await self.requestRanking(page, (0 if self.getrank_mode else 2)) # request the page
+                # check if process has been stopped in the meantime
                 if (self.bot.data.save['maintenance']['state'] and self.bot.data.save['maintenance']["duration"] == 0) or self.stoprankupdate:
-                    status[0] += 1
+                    status[0] += 1 # increase counter
                     return
-            await asyncio.sleep(0)
-            for item in data['list']: # put the entries in the list
+            await asyncio.sleep(0) # sleep 0 to leave other tasks do their things
+            item : JSON
+            for item in data['list']: # put the entries in the output queue
                 status[2].append(item)
 
     """getCurrentGWDayID()
@@ -430,69 +486,85 @@ class Ranking():
         25: Final rally or end
         None: Undefined
     """
-    def getCurrentGWDayID(self) -> Optional[int]:
-        if self.bot.data.save['gw']['state'] is False: return None
-        current_time = self.bot.util.JST()
-        if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]:
+    def getCurrentGWDayID(self : Ranking) -> int|None:
+        if self.bot.data.save['gw']['state'] is False: # gw isn't on going
             return None
-        elif current_time >= self.bot.data.save['gw']['dates']["End"]:
+        current_time : datetime = self.bot.util.JST()
+        d : timedelta
+        if current_time < self.bot.data.save['gw']['dates']["Preliminaries"]: # prelims
+            return None
+        elif current_time >= self.bot.data.save['gw']['dates']["End"]: # ended
             return 25
-        elif current_time >= self.bot.data.save['gw']['dates']["Day 5"]:
+        elif current_time >= self.bot.data.save['gw']['dates']["Day 5"]: # final rally
             return 25
-        elif current_time >= self.bot.data.save['gw']['dates']["Day 1"]:
-            it = ['Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
-            for i in range(1, len(it)): # loop to not copy paste this 5 more times
-                if current_time >= self.bot.data.save['gw']['dates'][it[i]]:
-                    d = self.bot.data.save['gw']['dates'][it[i-1]] - current_time
-                    if d < timedelta(seconds=18000): return 16 - i
-                    else: return 6 - i
-        elif current_time > self.bot.data.save['gw']['dates']["Interlude"]:
+        elif current_time >= self.bot.data.save['gw']['dates']["Day 1"]: # day
+            i : int
+            for i in range(1, len(self.REVERSE_DAYS)): # loop to not copy paste this 5 more times
+                if current_time >= self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i]]:
+                    d = self.bot.data.save['gw']['dates'][self.REVERSE_DAYS[i-1]] - current_time
+                    if d < timedelta(seconds=18000):
+                        return 16 - i # day has ended
+                    else:
+                        return 6 - i # day on going
+        elif current_time > self.bot.data.save['gw']['dates']["Interlude"]: # interlude
             return 1
-        elif current_time > self.bot.data.save['gw']['dates']["Preliminaries"]:
+        elif current_time > self.bot.data.save['gw']['dates']["Preliminaries"]: # prelims
             d = self.bot.data.save['gw']['dates']['Interlude'] - current_time
-            if d < timedelta(seconds=18000): return 10
-            else: return 0
-        else:
-            return None
+            if d < timedelta(seconds=18000):
+                return 10
+            else:
+                return 0
+        # undefined
+        return None
 
     """gwdbbuilder()
     Coroutine to build the GW database from getrankProcess output
     
     Parameters
     ----------
-    status: Threading status
+    status: Task status
     day: Integer, current day (0 being prelim, 1 being interlude, 2 = day 1, etc...)
+    
+    Returns
+    ----------
+    str: Empty string if success, error message otherwise
     """
-    async def gwdbbuilder(self, status : list, day : int):
+    async def gwdbbuilder(self : Ranking, status : list[int|deque], day : int) -> str:
         try:
-            conn = sqlite3.connect('temp.sql', isolation_level=None) # open temp.sql
-            c = conn.cursor()
+            # open/create temp.sql
+            conn : sqlite3.Connection = sqlite3.connect('temp.sql', isolation_level=None)
+            c : sqlite3.Cursor = conn.cursor()
             c.execute("PRAGMA synchronous = normal")
             c.execute("PRAGMA locking_mode = exclusive")
             c.execute("PRAGMA journal_mode = OFF")
             c.execute("BEGIN") # no autocommit
-            await asyncio.sleep(30)
+            await asyncio.sleep(30) # wait a bit, downloads need to start anyway
             self.bot.logger.push("[RANKING] Starting to fill temp.sql...", send_to_discord=False)
-            diff = None
-            timestamp = None
-            new_timestamp = int(self.getrank_update_time.timestamp())
+            diff : float|None = None
+            timestamp : int|None = None
+            new_timestamp : int = int(self.getrank_update_time.timestamp())
 
-            c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='info'") # create info table if it doesn't exist (contains gw id and db version)
+            c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='info'") # retrieve the info table if it exists
             await asyncio.sleep(0)
-            if c.fetchone()[0] < 1:
+            if c.fetchone()[0] < 1: # it doesn't, create it
                 c.execute('CREATE TABLE info (gw int, ver int, date int)')
                 c.execute('INSERT INTO info VALUES ({}, {}, {})'.format(self.bot.data.save['gw']['id'], self.DB_VERSION, new_timestamp))
                 await asyncio.sleep(0)
-            else:
+            else: # it does...
                 c.execute("SELECT * FROM info")
                 await asyncio.sleep(0)
-                x = c.fetchone()
+                x : InfoData = c.fetchone()
+                # retrieve last update timestamp
                 timestamp = x[2]
-                diff = self.getrank_update_time - datetime.utcfromtimestamp(timestamp)
-                diff = diff.seconds / 60
+                # and compute the timedelta
+                diffdelta : timedelta = self.getrank_update_time - datetime.utcfromtimestamp(timestamp)
+                diff = diffdelta.seconds / 60
+                # update the timestamp
                 c.execute("UPDATE info SET date = {} WHERE ver = {}".format(new_timestamp, self.DB_VERSION))
                 await asyncio.sleep(0)
 
+            # create a ranking table
+            crews : dict[str, CrewDataEntry]
             if self.getrank_mode: # crew table creation (fetch existing data, delete an existing one, we want the file to keep a small size)
                 c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='crews'")
                 await asyncio.sleep(0)
@@ -514,15 +586,17 @@ class Ranking():
                     await asyncio.sleep(0)
                 c.execute('CREATE TABLE players (ranking int, id int, name text, current_total int)')
                 await asyncio.sleep(0)
-            i = 0
-            c.execute("COMMIT")
+            c.execute("COMMIT") # commit changes until now
             c.execute("BEGIN")
             await asyncio.sleep(0)
-            inserts = []
-            while i < self.getrank_count: # count is the number of entries to process
-                if not self.bot.running or (self.bot.data.save['maintenance']['state'] and self.bot.data.save['maintenance']['duration'] == 0) or self.stoprankupdate or (self.bot.util.JST() - self.getrank_update_time > timedelta(seconds=1100)): # stop if the bot is stopping
-                    self.stoprankupdate = True # send the stop signal
-                    try:
+            # now we'll read the output queue
+            inserts : list[CrewDataEntry|PlayerDataEntry] = [] # will contain entries to insert in the database. we add them 1000 by 1000
+            i : int = 0
+            while i < self.getrank_count: # count is the number of ranking entries we're expected to process
+                # check if the bot ordered to stop
+                if not self.bot.running or (self.bot.data.save['maintenance']['state'] and self.bot.data.save['maintenance']['duration'] == 0) or self.stoprankupdate or (self.bot.util.JST() - self.getrank_update_time > timedelta(seconds=1100)):
+                    self.stoprankupdate = True # send the stop signal to other tasks
+                    try: # close cleanly
                         c.execute("COMMIT")
                         c.close()
                         conn.close()
@@ -530,41 +604,56 @@ class Ranking():
                     except:
                         pass
                     status[0] += 1
+                    # error message
                     return "Forced stop\nCrew Mode: {}\nCount: {}/{}\nQueue: {}".format(self.getrank_mode, i, self.getrank_count, len(status[2]))
+                # access the output queue
                 try:
-                    item = status[2].popleft() # retrieve an item
+                    item : RequestResult = status[2].popleft() # retrieve an entry
                 except:
                     await asyncio.sleep(2)
-                    continue # skip if error or no item in the queue
+                    continue # wait and skip if the queue is empty
 
-                if self.getrank_mode: # if crew, update the existing crew (if it exists) or create a new entry
-                    x = crews.get(int(item['id']), [None, int(item['id']), None, None, None, None, None, None, None, None])
-                    last_val = x[3+day]
+                if self.getrank_mode:
+                    # if crew, update the existing crew (if it exists) or create a new entry
+                    x : CrewDataEntry = crews.get(int(item['id']), [None, int(item['id']), None, None, None, None, None, None, None, None]) # retrieve old entry
+                    last_val : int|None = x[3+day] # get last score of today
+                    # if last score exists and delta is valid
                     if diff is not None and last_val is not None and last_val != int(item['point']) and new_timestamp != timestamp:
-                        speed = (int(item['point']) - last_val) / diff
+                        # compute speed
+                        speed : float = (int(item['point']) - last_val) / diff
+                        # update top speed
                         x[8] = (speed if (x[8] is None or speed > x[8]) else x[8])
+                        # and store it
                         x[9] = speed
-                    else:
+                    else: # else reset the current speed to unknown
                         x[9] = None
+                    # set the updated infos
                     x[0] = int(item['ranking'])
                     x[2] = item['name'].replace("'", "''")
+                    # set the current day total
                     x[3+day] = item['point']
+                    # replace None by 'NULL'
+                    j : int
                     for j in range(len(x)):
                         if x[j] is None: x[j] = 'NULL'
+                    # add entry to lines to insert in the file
                     inserts.append("({},{},'{}',{},{},{},{},{},{},{})".format(*x))
-                else: # if player, just add to the table
+                else:
+                    # if player, it's simple, we just add the infos in the new table. No other fancy calculations
                     inserts.append("({},{},'{}',{})".format(int(item['rank']), int(item['user_id']), item['name'].replace("'", "''"), int(item['point'])))
                 await asyncio.sleep(0)
                 i += 1
+                # if the inserts queue is full or the ranking is fully processed
                 if len(inserts) == 1000 or i == self.getrank_count:
-                    c.execute("INSERT INTO {} VALUES {}".format("crews" if self.getrank_mode else "players", ",".join(inserts)))
-                    c.execute("COMMIT")
-                    if i == self.getrank_count:
+                    if len(inserts) > 0: # insert entries in the file
+                        c.execute("INSERT INTO {} VALUES {}".format("crews" if self.getrank_mode else "players", ",".join(inserts)))
+                        c.execute("COMMIT")
+                        inserts = []
+                    if i == self.getrank_count: # if we reached the end, we close the file
                         c.close()
                         conn.close()
-                    else:
+                    else: # else we prepare the next commit
                         c.execute("BEGIN")
-                    inserts = []
                     await asyncio.sleep(0.001)
             status[0] += 1
             return ""
@@ -579,7 +668,7 @@ class Ranking():
             return 'gwdbbuilder() exception:\n' + self.bot.pexc(err)
 
     """gwgetrank()
-    Setup and manage the multithreading to retrieve the ranking
+    Setup and manage the retrieval the ranking
     
     Parameters
     ----------
@@ -590,19 +679,20 @@ class Ranking():
     --------
     str: empty string if success, error message if not
     """
-    async def gwgetrank(self, update_time : datetime, force : bool) -> str:
+    async def gwgetrank(self : Ranking, update_time : datetime, force : bool) -> str:
         try:
-            state = "" # return value
+            state : str = "" # return value
             self.getrank_update_time = update_time
-            it = ['Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1', 'Interlude', 'Preliminaries']
-            skip_mode = 0
-            for i, itd in enumerate(it): # loop to not copy paste this 5 more times
+            skip_mode : int = 0
+            i : int
+            itd : str
+            for i, itd in enumerate(self.REVERSE_DAYS_FULL): # loop to not copy paste this 5 more times
                 if update_time > self.bot.data.save['gw']['dates'][itd]:
                     match itd:
                         case 'Preliminaries':
                             if update_time - self.bot.data.save['gw']['dates'][itd] < timedelta(days=0, seconds=3600): # first hour of gw
                                 skip_mode = 1 # skip all
-                            elif self.bot.data.save['gw']['dates'][it[i-1]] - update_time < timedelta(days=0, seconds=18800):
+                            elif self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i-1]] - update_time < timedelta(days=0, seconds=18800):
                                 skip_mode = 1 # skip all
                         case 'Interlude':
                             if update_time.minute > 10: # only update players hourly
@@ -614,18 +704,21 @@ class Ranking():
                         case _:
                             if update_time - self.bot.data.save['gw']['dates'][itd] < timedelta(days=0, seconds=7200): # skip players at the start of rounds
                                 skip_mode = 3 # skip player
-                            elif self.bot.data.save['gw']['dates'][it[i-1]] - update_time < timedelta(days=0, seconds=18800): # skip during break
+                            elif self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i-1]] - update_time < timedelta(days=0, seconds=18800): # skip during break
                                 skip_mode = 1 # skip all
                     break
-            if force: skip_mode = 0
-            if skip_mode == 1: return 'Skipped'
+            if force:
+                skip_mode = 0
+            if skip_mode == 1:
+                return 'Skipped'
             await asyncio.sleep(0)
-            day = self.getCurrentGWDayID() # check which day it is (0 being prelim, 1 being interlude, 2 = day 1, etc...)
+            day : int|None = self.getCurrentGWDayID() # check which day it is (0 being prelim, 1 being interlude, 2 = day 1, etc...)
             if day is None or day >= 10:
                 return "Invalid day"
-            if day > 0: day -= 1 # interlude is put into prelims
+            if day > 0:
+                day -= 1 # interlude is put into prelims
             self.bot.logger.push("[RANKING] Updating Database (mode={}, day={})...".format(skip_mode, day), send_to_discord=False)
-            n = await self.GWDB()
+            n : GWDBInfo = await self.getGWDB()
             await asyncio.sleep(0)
             if n[1] is None or n[1].gw != self.bot.data.save['gw']['id'] or n[1].ver != self.DB_VERSION:
                 self.bot.logger.push("[RANKING] Invalid 'GW.sql'. A new 'GW.sql' file will be created", send_to_discord=False)
@@ -635,42 +728,52 @@ class Ranking():
                     self.bot.file.cpy('GW.sql', 'temp.sql')
                 self.bot.logger.push("[RANKING] Existing 'GW.sql' file will be updated", send_to_discord=False)
 
+            n : int
             for n in [0, 1]: # n == 0 (crews) or 1 (players)
-                if skip_mode == 2 and n == 0: continue
-                elif skip_mode == 3 and n == 1: continue
+                # check if we should get this ranking
+                if skip_mode == 2 and n == 0:
+                    continue
+                elif skip_mode == 3 and n == 1:
+                    continue
                 await asyncio.sleep(0)
                 self.bot.logger.push("[RANKING] {} Step...".format('CREW' if n == 0 else 'PLAYER'), send_to_discord=False)
                 self.getrank_mode = (n == 0)
-                data = await self.requestRanking(1, (0 if self.getrank_mode else 2)) # get the first page
+                # get the first page of the ranking
+                data : RequestResult = await self.requestRanking(1, (0 if self.getrank_mode else 2))
                 if data is None or data['count'] is False:
                     return "gwgetrank() can't access the ranking"
+                # read obtained data
                 self.getrank_count = int(data['count']) # number of crews/players
-                last = data['last'] # number of pages
+                last : JSON = data['last'] # number of pages
                 self.bot.logger.push("[RANKING] {} pages to download for {} {}...".format(last, self.getrank_count, 'crews' if n == 0 else 'players'), send_to_discord=False)
                 # run in tasks
-                self.stoprankupdate = False # if true, this flag will stop the threads
-                status = [
-                    0, # count thread finished
+                self.stoprankupdate = False # if true, this flag will stop the tasks
+                status : list[int|deque] = [
+                    0, # count task finished
                     deque([i for i in range(2, last+1)], last-1), # input queue, queue the pages to retrieve
                     deque(data['list'], self.getrank_count) # output queue, queue what we already retrieved on the first page
                 ]
                 await asyncio.sleep(0)
-                coroutines = [self.getrankProcess(status) for i in range(self.MAX_TASK)]
+                # prepare tasks
+                coroutines : list[types.CoroutineType] = [self.getrankProcess(status) for i in range(self.MAX_TASK)]
                 self.bot.logger.push("[RANKING] Download started...", send_to_discord=False)
-                results = await asyncio.gather(self.gwdbbuilder(status, day), *coroutines)
-                self.stoprankupdate = True # to be safe
-                for r in results:
+                # start them and wait for result
+                results : list[str|None] = await asyncio.gather(self.gwdbbuilder(status, day), *coroutines)
+                self.stoprankupdate = True # all tasks should have ended but to be safe...
+                r : str|None
+                for r in results: # check if any returned an error
                     if r is not None: state = r
                 self.bot.logger.push("[RANKING] {} Step Done".format('CREW' if n == 0 else 'PLAYER'), send_to_discord=False)
                 if state != "":
                     self.bot.logger.pushError("[RANKING] Database update finished with an error", send_to_discord=False)
                     return state
-                    
-                if self.getrank_mode and day > 0 and day < 10: # update crew tracker
+                
+                # if we are during day 1 to 4 and we just processed crews...
+                if self.getrank_mode and day > 0 and day < 10: # then update (You) crew tracker
                     try:
-                        c = self.bot.get_cog("YouCrew")
+                        c : YouCrew = self.bot.get_cog("YouCrew") # get the cog
                         if c is not None:
-                            await c.updateTracker(update_time, day)
+                            await c.updateTracker(update_time, day) # and pass infos
                     except Exception as ue:
                         self.bot.logger.pushError("[RANKING] 'updatetracker' error:", ue)
             self.bot.logger.push("[RANKING] Database update finished", send_to_discord=False)
@@ -680,8 +783,8 @@ class Ranking():
             self.stoprankupdate = True
             return "Exception: " + self.bot.pexc(e)
 
-    """GWDB()
-    Return the Unite & fight ranking database infos, after downloading them from the google drive
+    """getGWDB()
+    Return the Unite & fight ranking database infos, after downloading them from the google drive if needed
     
     Parameters
     ----------
@@ -691,56 +794,68 @@ class Ranking():
     --------
     list: First element is for the old database, second is for the current one
     """
-    async def GWDB(self, force_download : bool = False) -> list:
-        fs = ["GW_old.sql", "GW.sql"]
-        res = [None, None]
+    async def getGWDB(self : Ranking, force_download : bool = False) -> GWDBInfo:
+        res : GWDBInfo = [None, None] # will contain final GWDB() objects
         if force_download:
-            self.dbstate = [True, True] # reset
-        for i in range(2):
-            async with self.dblock:
-                if not force_download:
-                    db = await self.bot.sql.get(fs[i])
-                if force_download or db is None:
-                    if not self.dbstate[i]: continue
+            self.dbstate = [True, True] # force dbstate to True (file exists)
+        i : int
+        fs : str
+        db : Database
+        for i, fs in enumerate(self.DB_FILES):
+            async with self.dblock: # lock
+                if not force_download: # attempt to get the file from the isk
+                    db = await self.bot.sql.get(fs)
+                if force_download or db is None: # if file doesn't exist or force_download is raised, start download
+                    if not self.dbstate[i]:
+                        continue # if dbstate indicates the file doesn't exist, we skip
                     await asyncio.sleep(0)
-                    # download
+                    # clear state
                     try:
-                        self.dbstate[i] = False
-                        await self.bot.sql.remove(fs[i])
+                        self.dbstate[i] = False # now False, meaning we won't try twice in a row
+                        await self.bot.sql.remove(fs)
                     except:
                         pass
-                    for j in range(5): # trying 5 times
+                    # download from the drive
+                    j : int
+                    for j in range(5): # trying 5 times in case of errors
                         try:
-                            if self.bot.drive.dlFile(fs[i], self.bot.data.config['tokens']['files']) is True:
-                                await self.bot.sql.add(fs[i])
-                                self.dbstate[i] = True
+                            if self.bot.drive.dlFile(fs, self.bot.data.config['tokens']['files']) is True:
+                                await self.bot.sql.add(fs) # add downloaded file to sql component
+                                self.dbstate[i] = True # set state to True
                                 break
                             else:
                                 raise Exception()
                         except:
                             if j == 4:
-                                self.bot.logger.pushError("[RANKING] Failed to load database ", fs[i])
+                                self.bot.logger.pushError("[RANKING] Failed to load database ", fs)
                         await asyncio.sleep(1)
-                    if not self.dbstate[i]: continue
-                    # check
-                    db = await self.bot.sql.get(fs[i])
+                    # if file is deemed to not exists
+                    if not self.dbstate[i]:
+                        continue # we skip
+                    # attempt to access database content
+                    db = await self.bot.sql.get(fs)
                     if db is None:
                         continue
-            async with db as c:
-                if c is None: continue
+            async with db as c: # read file
+                if c is None: # an error occured
+                    continue
+                # we create GWDB() elements we'll return at the end
+                x : InfoData
                 try: # current version
                     c.execute("SELECT * FROM info")
                     x = c.fetchone()
-                    if len(x) < 1: raise Exception()
-                    res[i] = GWDB(x)
+                    if len(x) < 1:
+                        raise Exception()
+                    res[i] = self.bot.singleton.make_GWDB(x)
                 except: # old versions
                     try:
                         c.execute("SELECT * FROM GW")
                         x = c.fetchone()
-                        if len(x) < 1: raise Exception()
-                        res[i] = GWDB(x)
+                        if len(x) < 1:
+                            raise Exception()
+                        res[i] = self.bot.singleton.make_GWDB(x)
                     except:
-                        res[i] = GWDB()
+                        res[i] = self.bot.singleton.make_GWDB()
                 await asyncio.sleep(0)
         return res
 
@@ -755,23 +870,25 @@ class Ranking():
     
     Returns
     --------
-    dict: Containing:
+    list: Containing:
         - list: Matches in the past GW
         - list: Matches in the latest GW
         - list: GW DB info data
     """
-    async def searchGWDB(self, terms : str, mode : int) -> dict:
-        v = await self.GWDB() # load and get the version of the database files
+    async def searchGWDB(self : Ranking, terms : str, mode : int) -> None|GWDBSearchResult:
+        v : GWDBInfo = await self.getGWDB() # load and get the version of the database files
         async with self.dblock:
-            data = [None, None, v]
-            dbs = [await self.bot.sql.get("GW_old.sql"), await self.bot.sql.get("GW.sql")] # get access
-            st = 1 if mode >= 10 else 0 # search type (crew or player)
+            data : GWDBSearchResult = [None, None, v]
+            dbs : list[Database] = (await self.bot.sql.get("GW_old.sql"), await self.bot.sql.get("GW.sql")) # get access
+            st : int = 1 if mode >= 10 else 0 # search type (crew or player)
+            n : int
             for n in [0, 1]: # for both database
-                if dbs[n] is None: continue
+                if dbs[n] is None:
+                    continue
                 async with dbs[n] as c:
                     if c is not None and v[n] is not None: # if the data is loaded and alright
                         try:
-                            data[n] = []
+                            data[n] : GWDBList = []
                             # search according to the mode
                             match mode:
                                 case 10: # crew name search
@@ -796,68 +913,9 @@ class Ranking():
                                     c.execute("SELECT * FROM players WHERE id IN "+ terms)
                             results = c.fetchall() # fetch the result
                             await asyncio.sleep(0)
-                            
+                            r : CrewDataEntry|PlayerDataEntry
                             for r in results:
-                                s = Score(type=st, ver=v[n].ver, gw=v[n].gw) # make a Score object
-                                if st == 0: # player
-                                    s.ranking = r[0]
-                                    s.id = r[1]
-                                    s.name = r[2]
-                                    s.current = r[3]
-                                else: # crew
-                                    if s.ver >= 2: # (version 2 and above)
-                                        s.ranking = r[0]
-                                        s.id = r[1]
-                                        s.name = r[2]
-                                        s.preliminaries = r[3]
-                                        s.total1 = r[4]
-                                        s.total2 = r[5]
-                                        s.total3 = r[6]
-                                        s.total4 = r[7]
-                                        if s.total1 is not None and s.preliminaries is not None: s.day1 = s.total1 - s.preliminaries
-                                        if s.total2 is not None and s.total1 is not None: s.day2 = s.total2 - s.total1
-                                        if s.total3 is not None and s.total2 is not None: s.day3 = s.total3 - s.total2
-                                        if s.total4 is not None and s.total3 is not None: s.day4 = s.total4 - s.total3
-                                        if s.ver >= 3:
-                                            s.top_speed = r[8]
-                                        if s.ver >= 4: # and version 6
-                                            s.current_speed = r[9]
-                                    else: # old database format
-                                        s.ranking = r[0]
-                                        s.id = r[1]
-                                        s.name = r[2]
-                                        s.preliminaries = r[3]
-                                        s.day1 = r[4]
-                                        s.total1 = r[5]
-                                        s.day2 = r[6]
-                                        s.total2 = r[7]
-                                        s.day3 = r[8]
-                                        s.total3 = r[9]
-                                        s.day4 = r[10]
-                                        s.total4 = r[11]
-                                    # set the current score, etc
-                                    if s.total4 is not None:
-                                        s.current = s.total4
-                                        s.current_day = s.day4
-                                        s.day = 4
-                                    elif s.total3 is not None:
-                                        s.current = s.total3
-                                        s.current_day = s.day3
-                                        s.day = 3
-                                    elif s.total2 is not None:
-                                        s.current = s.total2
-                                        s.current_day = s.day2
-                                        s.day = 2
-                                    elif s.total1 is not None:
-                                        s.current = s.total1
-                                        s.current_day = s.day1
-                                        s.day = 1
-                                    elif s.preliminaries is not None:
-                                        s.current = s.preliminaries
-                                        s.current_day = s.preliminaries
-                                        s.day = 0
-                                if s.gw is None: s.gw = '' # it's supposed to be the gw id
-                                data[n].append(s) # append to our list
+                                data[n].append(self.bot.singleton.make_Score(st, v[n].ver, v[n].gw, r)) # make a Score object and append to our list
                         except Exception as e:
                             self.bot.logger.pushError("[RANKING] searchGWDB failed (Settings: {}/{}/{}):".format(n, mode, terms), e)
                             data[n] = None
