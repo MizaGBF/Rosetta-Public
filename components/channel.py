@@ -204,7 +204,7 @@ class Channel():
     bool: True if if must be cleaned up, False if not
     """
     def interaction_must_be_cleaned(self : Channel, inter : disnake.Interaction|disnake.Message|commands.Context) -> bool:
-        if inter is None or inter.guild is None:
+        if inter is None or inter.context.bot_dm:
             return False
         settings : CleanupSetting = self.get_cleanup_settings(str(inter.guild.id))
         if settings[0] and inter.channel.id not in settings[1]:

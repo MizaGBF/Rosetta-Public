@@ -161,7 +161,7 @@ class Moderation(commands.Cog):
     """
     async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
         await inter.response.defer(ephemeral=True)
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
             return
         guild : disnake.Guild = inter.guild
@@ -181,6 +181,7 @@ class Moderation(commands.Cog):
         if len(guild.roles) > 0: msgs.append(":scroll: **{}** Roles\n".format(len(guild.roles)))
         if len(guild.emojis) > 0: msgs.append("🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit*2))
         if len(guild.stickers) > 0: msgs.append("🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit))
+        if guild.soundboard_limit > 0: msgs.append(":loud_sound: Up to **{}** Soundboard elements\n".format(guild.soundboard_limit))
         if len(guild.scheduled_events) > 0: msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
         if guild.premium_tier > 0: msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(guild.premium_tier, guild.premium_subscription_count))
         if guild.vanity_url_code: msgs.append(":wave: Has Vanity Invite\n")

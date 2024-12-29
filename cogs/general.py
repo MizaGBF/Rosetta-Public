@@ -337,7 +337,7 @@ class General(commands.Cog):
             t : str = self.bot.net.translate(msg)
             if len(t) > 3800:
                 raise Exception('Message too long')
-            if inter.guild is None:
+            if inter.context.bot_dm:
                 await inter.edit_original_message(embed=self.bot.embed(title="Google Translate", description="[Original Message](https://discord.com/channels/@me/{}/{})\n```\n{}\n```".format(inter.channel.id, message.id, t), color=self.COLOR))
             else:
                 await inter.edit_original_message(embed=self.bot.embed(title="Google Translate", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, t), color=self.COLOR))

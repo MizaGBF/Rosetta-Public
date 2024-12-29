@@ -524,7 +524,7 @@ class Games(commands.Cog):
     async def poker(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, max_round : int = commands.Param(description="Number of rounds to play", ge=1, le=5, default=1)) -> None:
         """Play a poker mini-game with other people (2 to 8 players)"""
         await inter.response.defer()
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title="♠️ Multiplayer Poker ♥️", description="Unavailable in Direct Messages.", color=self.COLOR))
             return
         # creating game
@@ -591,7 +591,7 @@ class Games(commands.Cog):
     async def tictactoe(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Tic Tac Toe (2 players Only)"""
         await inter.response.defer()
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title=":x: Multiplayer Tic Tac Toe :o:", description="Unavailable in Direct Messages.", color=self.COLOR))
             return
         # creating game
@@ -618,7 +618,7 @@ class Games(commands.Cog):
     async def connectfour(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Connect Four (2 players Only)"""
         await inter.response.defer()
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title=":red_circle: Multiplayer Connect Four :yellow_circle:", description="Unavailable in Direct Messages.", color=self.COLOR))
             return
         # creating game
@@ -645,7 +645,7 @@ class Games(commands.Cog):
     async def battleship(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Battle Ship (2 players Only)"""
         await inter.response.defer()
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title=":ship: Multiplayer Battle Ship :cruise_ship:", description="Unavailable in Direct Messages.", color=self.COLOR))
             return
         # creating game
@@ -672,7 +672,7 @@ class Games(commands.Cog):
     async def rockpaperscissor(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, bestof : int = commands.Param(description="How many rounds to win", ge=1, le=10, default=1)) -> None:
         """Play a Rock Paper Scissor mini-game with other people (2 players Only)"""
         await inter.response.defer()
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title="🪨 Multiplayer Rock Paper Scissor ✂️", description="Unavailable in Direct Messages.", color=self.COLOR))
             return
         # creating game
@@ -910,7 +910,7 @@ class Games(commands.Cog):
         if len(msg) == 0 or len(msg) >= 3800:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="This message can't be converted", color=self.COLOR))
         else:
-            if inter.guild is None:
+            if inter.context.bot_dm:
                 await inter.edit_original_message(embed=self.bot.embed(title="UwU", description="[Original Message](https://discord.com/channels/@me/{}/{})\n```\n{}\n```".format(inter.channel.id, message.id, msg), color=self.COLOR))
             else:
                 await inter.edit_original_message(embed=self.bot.embed(title="UwU", description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(inter.guild.id, inter.channel.id, message.id, msg), color=self.COLOR))

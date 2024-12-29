@@ -264,7 +264,7 @@ class Sparking(commands.Cog):
         await inter.response.defer(ephemeral=True)
         aid : str = str(inter.author.id) # author id as a string
         # do various permission checks
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable in Direct Messages", color=self.COLOR))
         elif not inter.channel.permissions_for(inter.me).manage_nicknames:
             await inter.edit_original_message(embed=self.bot.embed(title="Error", description="I lack the Manage Nickname permission for this feature", color=self.COLOR))
@@ -350,7 +350,7 @@ class Sparking(commands.Cog):
         """Show the ranking of everyone saving for a spark in the server"""
         try:
             await inter.response.defer()
-            if inter.guild is None:
+            if inter.context.bot_dm:
                 await inter.edit_original_message(embed=self.bot.embed(title="{} Spark ranking".format(self.bot.emote.get('crown')), color=self.COLOR, description="Unavailable in Direct Messages."))
                 return
             guild : disnake.Guild = inter.guild

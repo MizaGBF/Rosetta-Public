@@ -573,7 +573,7 @@ class DiscordBot(commands.InteractionBot):
     
     Parameters
     ----------
-    inter: Command context or interaction
+    inter: Command interaction
     
     Returns
     --------
@@ -583,10 +583,8 @@ class DiscordBot(commands.InteractionBot):
         try:
             if not self.running:
                 return False # do nothing if the bot is stopped/stopping
-            if inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable): # if No guild and channel is PartialMessageable, the command has been sent via a direct message
+            elif inter.context.bot_dm:
                 return not self.ban.check(str(inter.author.id), self.ban.USE_BOT) # check if the author is banned
-            elif inter.guild is None and isinstance(inter.channel, disnake.PartialMessageable):
-                return False # other cases
             gid : str = str(inter.guild.id)
             if self.ban.check(str(inter.author.id), self.ban.USE_BOT): # check if the author is banned
                 return False

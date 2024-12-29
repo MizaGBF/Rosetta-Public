@@ -418,7 +418,7 @@ class Pinboard():
     msg: Optional message to add in the description
     """
     async def render(self : Pinboard, inter : disnake.Interaction, color : int, msg : str = None) -> None:
-        if inter.guild is None:
+        if inter.context.bot_dm:
             await inter.edit_original_message(embed=self.bot.embed(title="Pinboard settings", description="This command is only usable in a server.", color=color))
             return
         fields : dict[str, str|bool] = []

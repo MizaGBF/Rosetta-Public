@@ -92,7 +92,7 @@ class Emote():
         return False
 
     """get_all_app_emojis()
-    Placeholder for get_all_app_emojis from the upcoming disnake 2.10.
+    Placeholder for get_all_app_emojis from the upcoming disnake 2.10+.
     Return the list of application emojis.
     
     Returns
@@ -103,7 +103,7 @@ class Emote():
         return await self.bot.http.request(disnake.http.Route('GET', '/applications/{app_id}/emojis', app_id=self.bot.user.id))
 
     """create_app_emoji()
-    Placeholder for create_app_emoji from the upcoming disnake 2.10.
+    Placeholder for create_app_emoji from the upcoming disnake 2.10+.
     Create a new application emoji.
     
     Parameters
@@ -115,7 +115,7 @@ class Emote():
         await self.bot.http.request(disnake.http.Route('POST', '/applications/{app_id}/emojis', app_id=self.bot.user.id), json={'name':name, 'image':await disnake.utils._assetbytes_to_base64_data(image)})
 
     """delete_app_emoji()
-    Placeholder for delete_app_emoji from the upcoming disnake 2.10.
+    Placeholder for delete_app_emoji from the upcoming disnake 2.10+.
     Create a new application emoji.
     
     Parameters
@@ -127,7 +127,7 @@ class Emote():
         await self.bot.http.request(disnake.http.Route('DELETE', '/applications/{app_id}/emojis/{emoji_id}', app_id=self.bot.user.id, emoji_id=emoji_id))
 
     """create_emoji_in_cache_from()
-    Placeholder until the upcoming disnake 2.10.
+    Placeholder until the upcoming disnake 2.10+.
     Create a new emoji from an application emoji data and put it in our cache.
     
     Parameters
