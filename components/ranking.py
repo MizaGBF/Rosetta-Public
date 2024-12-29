@@ -10,14 +10,14 @@ if TYPE_CHECKING:
     from cogs.gw import GuildWar
     from cogs.youcrew import YouCrew
     # Type Aliases
-    import types
-    GWDBList : types.GenericAlias = list[Score]
-    GWDBInfo : types.GenericAlias = list[GWDB|None]
-    GWDBSearchResult : types.GenericAlias = list[None|GWDBList, None|GWDBList, GWDBInfo]
-    CrewDataEntry : types.GenericAlias = tuple[int, int, str, int, int, int, int, int, float, float]
-    InfoData : types.GenericAlias = list[int]
-    RankingData : types.GenericAlias = list[dict[str, int]]
-    PlayerDataEntry : types.GenericAlias = tuple[int, int, str, int]
+    type GWDBList = list[Score]
+    type GWDBInfo = list[GWDB|None]
+    type GWDBSearchResult = list[None|GWDBList, None|GWDBList, GWDBInfo]
+    type CrewDataEntry = tuple[int, int, str, int, int, int, int, int, float, float]
+    type InfoData = list[int]
+    type RankingData = list[dict[str, int]]
+    type PlayerDataEntry = tuple[int, int, str, int]
+import types
 from datetime import timedelta, datetime
 from collections import deque
 from bs4 import BeautifulSoup

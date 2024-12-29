@@ -4,9 +4,8 @@ if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.util import JSON
     # Type Aliases
-    import types
-    RequestResult : types.GenericAlias = JSON|bytes|None # cover None, JSON types, bytes
-    GBFAccount : types.GenericAlias = JSON
+    type RequestResult = JSON|bytes|None # cover None, JSON types, bytes
+    type GBFAccount = JSON
 from enum import IntEnum
 from contextlib import asynccontextmanager
 import aiohttp
@@ -22,9 +21,9 @@ from deep_translator import GoogleTranslator
 
 class Network():
     VERSION_REGEX : list[re.Pattern] = [ # possible regex to detect the GBF game version
-        re.compile("\"version\": \"(\d+)\""), # new one
-        re.compile("\\/assets\\/(\d+)\\/"), # alternative/fallback
-        re.compile("Game\.version = \"(\d+)\";") # old one
+        re.compile("\"version\": \"(\\d+)\""), # new one
+        re.compile("\\/assets\\/(\\d+)\\/"), # alternative/fallback
+        re.compile("Game\\.version = \"(\\d+)\";") # old one
     ]
     class Method(IntEnum):
         GET : int = 0

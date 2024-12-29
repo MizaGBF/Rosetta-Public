@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     # Type Aliases
-    import types
-    PageResult : types.GenericAlias = list[tuple[int|str, str]]
-    PageResultList : types.GenericAlias = list[PageResult]
+    type PageResult = list[tuple[int|str, str]]
+    type PageResultList = list[PageResult]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Page View

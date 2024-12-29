@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     # Type Aliases
-    import types
-    CleanupSetting : types.GenericAlias = list[bool|list[int]]
-    AnnouncementSetting : types.GenericAlias = list[int|bool]
+    type CleanupSetting = list[bool|list[int]]
+    type AnnouncementSetting = list[int|bool]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Channel Component

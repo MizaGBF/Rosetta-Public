@@ -26,7 +26,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.0.0-β" # bot version
+    VERSION : str = "12.0.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.9.1** - Updated some `/gw` commands. Added `/gw utility clump`.",
@@ -628,7 +628,7 @@ class DiscordBot(commands.InteractionBot):
             elif '401 Unauthorized' in msg:
                 embed=self.embed(title="HTTP Discord Error", description="The Bot might be unresponsive or laggy.\nWait a bit and try again.", timestamp=self.util.UTC())
             else:
-                msg = self.pexc(error).replace('*', '\*').split('The above exception was the direct cause of the following exception', 1)[0]
+                msg = self.pexc(error).replace('*', '\\*').split('The above exception was the direct cause of the following exception', 1)[0]
                 if len(msg) > 4000:
                     msg = msg[:4000] + "...\n*Too long, check rosetta.log for details*"
                 await self.send('debug', embed=self.embed(title="⚠ Error caused by {}".format(inter.author), description=msg, thumbnail=inter.author.display_avatar, fields=[{"name":"Options", "value":'`{}`'.format(inter.options)}, {"name":"Server", "value":inter.guild.name if inter.guild is not None else "Direct Message"}], footer='{}'.format(inter.author.id), timestamp=self.util.UTC()))

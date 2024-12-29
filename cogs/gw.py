@@ -11,18 +11,17 @@ if TYPE_CHECKING:
     from components.ranking import GWDBSearchResult, GWDBList
     from views.page import PageResult, PageResultList
     # Type Aliases
-    import types
-    PlayerData : types.GenericAlias = dict[str, str|int|None]
-    CrewData : types.GenericAlias = dict[str, str|datetime|bool|list[PlayerData]]
-    ScheduleDay : types.GenericAlias = tuple[str, str, str]
-    ScheduleList : types.GenericAlias = list[ScheduleDay]
-    PlayerData : types.GenericAlias = dict[str, int|str|float|Score|None]
-    PlayerList : types.GenericAlias = list[PlayerData]
-    CrewParameter : types.GenericAlias = datetime|bool|str|int|float|PlayerList|None
-    CrewData : types.GenericAlias = dict[str, CrewParameter]
-    GBFGData : types.GenericAlias = dict[str, list[str|int|list[str|int]]]
-    PlayerEntry : types.GenericAlias = tuple[str, str, int|None, str, int|None]
-    PlayerRanking : types.GenericAlias = list[PlayerEntry]
+    type PlayerData = dict[str, str|int|None]
+    type CrewData = dict[str, str|datetime|bool|list[PlayerData]]
+    type ScheduleDay = tuple[str, str, str]
+    type ScheduleList = list[ScheduleDay]
+    type PlayerData = dict[str, int|str|float|Score|None]
+    type PlayerList = list[PlayerData]
+    type CrewParameter = datetime|bool|str|int|float|PlayerList|None
+    type CrewData = dict[str, CrewParameter]
+    type GBFGData = dict[str, list[str|int|list[str|int]]]
+    type PlayerEntry = tuple[str, str, int|None, str, int|None]
+    type PlayerRanking = list[PlayerEntry]
 from views import BaseView
 from views.page import Page, PageRanking
 import random

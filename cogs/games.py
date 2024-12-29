@@ -8,17 +8,16 @@ if TYPE_CHECKING:
     from components.util import GameCard
     from components.gacha import GachaSimulator
     # Type Aliases
-    import types
-    ScratcherItem : types.GenericAlias = tuple[str, str]
-    ScratcherTierList : types.GenericAlias = list[ScratcherItem]
-    ScratcherLootTable : types.GenericAlias = dict[int, ScratcherTierList]
-    FortuneCardList : types.GenericAlias = list[str]
-    FortuneWinningNumberList : types.GenericAlias = list[str]
-    FortuneWinningNumberPerTier : types.GenericAlias = tuple[FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList]
-    FortuneWinningPattern : types.GenericAlias = tuple[int, int]
-    FortuneWinningPatternPerTier : types.GenericAlias = tuple[FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern]
-    RandomCharacterStrings : types.GenericAlias = tuple[str, str, str]
-    RandomCharacterContainer : types.GenericAlias = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
+    type ScratcherItem = tuple[str, str]
+    type ScratcherTierList = list[ScratcherItem]
+    type ScratcherLootTable = dict[int, ScratcherTierList]
+    type FortuneCardList = list[str]
+    type FortuneWinningNumberList = list[str]
+    type FortuneWinningNumberPerTier = tuple[FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList, FortuneWinningNumberList]
+    type FortuneWinningPattern = tuple[int, int]
+    type FortuneWinningPatternPerTier = tuple[FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern, FortuneWinningPattern]
+    type RandomCharacterStrings = tuple[str, str, str]
+    type RandomCharacterContainer = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
 from datetime import datetime
 import random
 from views.scratcher import Scratcher

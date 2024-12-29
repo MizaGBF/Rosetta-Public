@@ -6,9 +6,8 @@ if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.singleton import GameCard
     # Type Aliases
-    import types
-    CardList : types.GenericAlias = list[GameCard]
-    Hand : types.GenericAlias = list[int|CardList]
+    type CardList = list[GameCard]
+    type Hand = list[int|CardList]
 import random
 
 # ----------------------------------------------------------------------------------------------------------------

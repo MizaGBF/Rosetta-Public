@@ -8,9 +8,8 @@ if TYPE_CHECKING:
     from components.util import JSON
     from components.network import RequestResult
     # Type Aliases
-    import types
-    CurrentGacha : types.GenericAlias = list[timedelta|JSON]
-    CurrentBanner : types.GenericAlias = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
+    type CurrentGacha = list[timedelta|JSON]
+    type CurrentBanner = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
 from enum import IntEnum, StrEnum
 import random
 import time
@@ -570,7 +569,7 @@ class Gacha():
 
 
 # Type Aliases
-GachaRoll : types.GenericAlias = tuple[int, str, bool]
+GachaRoll = tuple[int, str, bool]
 
 class GachaSimulator():
     class Mode(IntEnum): # Simulator modes

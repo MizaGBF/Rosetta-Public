@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     # Type Aliases
-    import types
-    AssignableData : types.GenericAlias = dict[str, dict[str, int]]
+    type AssignableData = dict[str, dict[str, int]]
 from views.page import Page
 
 # ----------------------------------------------------------------------------------------------------------------

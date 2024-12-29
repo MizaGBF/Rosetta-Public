@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     # Type Aliases
-    import types
-    SparkData : types.GenericAlias = list[int|datetime]
+    type SparkData = list[int|datetime]
 import math
 from operator import itemgetter
 import re
@@ -23,7 +22,7 @@ class Sparking(commands.Cog):
     """Track your Granblue Spark."""
     COLOR : int = 0xeba834
     TOP_LIMIT : int = 15
-    NICKNAME_REGEX : re.Pattern = re.compile("(\(\d+\/\d{3}\))")
+    NICKNAME_REGEX : re.Pattern = re.compile("(\\(\\d+\\/\\d{3}\\))")
     # Expected monthly roll gain
     # Roughly estimated from https://docs.google.com/spreadsheets/d/17FxHgTDdKIcIb6IHvLSq6JgG1CqRFoFs7vSPKBy7VKc/edit?gid=1662801985#gid=1662801985
     MONTHLY_MAX : list[int] = [90, 90, 170, 90, 90, 85, 100, 250, 100, 90, 80, 180]

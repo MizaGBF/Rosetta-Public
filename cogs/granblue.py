@@ -10,9 +10,8 @@ if TYPE_CHECKING:
     from components.singleton import Score
     from components.ranking import GWDBSearchResult
     # Type Aliases
-    import types
-    NewsResult : types.GenericAlias = list[str]
-    ExtraDropData : types.GenericAlias = list[None|str]
+    type NewsResult = list[str]
+    type ExtraDropData = list[None|str]
 from views import BaseView
 from views.url_button import UrlButton
 from datetime import datetime, timedelta

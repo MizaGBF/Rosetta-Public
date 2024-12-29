@@ -1,16 +1,14 @@
 ﻿from __future__ import annotations
 import disnake
-import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.network import RequestResult
     # Type Aliases
-    import types
-    BotCommand : types.GenericAlias = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
-    BotCommandSearch : types.GenericAlias = list[None|int|str]
-    JSON : types.GenericAlias = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
+    type BotCommand = disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
+    type BotCommandSearch = list[None|int|str]
+    type JSON = datetime|int|float|str|list['JSON']|dict[str, 'JSON']|None
 import psutil
 import platform
 import os

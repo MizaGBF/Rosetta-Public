@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     # Type Aliases
-    import types
-    ReminderData : types.GenericAlias = list[datetime|str]
-    ReminderList : types.GenericAlias = list[ReminderData]
+    type ReminderData = list[datetime|str]
+    type ReminderList = list[ReminderData]
 
 # ----------------------------------------------------------------------------------------------------------------
 # Reminder Cog
