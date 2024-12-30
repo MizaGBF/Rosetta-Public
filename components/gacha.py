@@ -29,7 +29,7 @@ class Rarity(IntEnum):
 # ----------------------------------------------------------------------------------------------------------------
 
 class Gacha():
-    ZODIAC_WPN : list[str] = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius'] # for the twelve generals detection, gotta update it yearly
+    ZODIAC_WPN : list[str] = ['Ramulus', 'Dormius', 'Gallinarius', 'Canisius', 'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius', 'Leporidius', 'Dracosius', 'Serpentius'] # for the twelve generals detection, gotta update it yearly
     CLASSIC_COUNT : int = 2 # number of classic banners
     # constants
     NO_INFO : str = " "
