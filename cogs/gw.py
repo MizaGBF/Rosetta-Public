@@ -711,7 +711,14 @@ class GuildWar(commands.Cog):
                     case "3": r = "atkace"
                     case "4": r = "deface"
                     case _: r = "ensign"
-                fields[-1]['value'].append('{} [{}](https://game.granbluefantasy.jp/#profile/{})'.format(self.bot.emote.get(r), self.escape(self.bot.util.shortenName(p['name'])), p['id']))
+                fields[-1]['value'].append(str(self.bot.emote.get(r)))
+                fields[-1]['value'].append(" [")
+                fields[-1]['value'].append(self.escape(self.bot.util.shortenName(p['name'])))
+                if len(fields[-1]['value'][-1]) > 6: # to be sure to not hit field value limit, limit player names to 6 characters
+                    fields[-1]['value'][-1] = fields[-1]['value'][-1][:6] + "…"
+                fields[-1]['value'].append("](https://game.granbluefantasy.jp/#profile/")
+                fields[-1]['value'].append(str(p['id']))
+                fields[-1]['value'].append(")")
                 if gwstate:
                     fields[-1]['value'].append(" - {}".format(self.bot.util.valToStr(p['honor'], 2)))
                 else:
@@ -780,8 +787,8 @@ class GuildWar(commands.Cog):
             if await self._crew_sub(inter, crew_id, mode):
                 await self.bot.channel.clean(inter, 60)
         except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A critical error occured, wait for a fix if the error persists", color=self.COLOR))
-            self.bot.logger.pushError("[GW] In 'gw crew' command:", e)
+            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="A critical error occured, wait for a fix or use {}  if the error persists".format(self.bot.util.command2mention('bug_report')), color=self.COLOR))
+            self.bot.logger.pushError("[GW] In 'gw crew' command (Parameter: `{}`):".format(crew_id), e)
             await self.bot.channel.clean(inter, 60)
 
 
