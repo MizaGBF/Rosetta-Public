@@ -216,7 +216,7 @@ class GranblueFantasy(commands.Cog):
     """
     def parse_maintenance_from_news(self : GranblueFantasy, title : str, description : str) -> None:
         # we check for specific titles
-        if title.endswith(' Maintenance Announcement') and description.startswith("Server maintenance is scheduled for "):
+        if title.endswith(' Maintenance Announcement') and description.startswith("Maintenance is scheduled for "):
             try:
                 # extract the dates and parse
                 try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
