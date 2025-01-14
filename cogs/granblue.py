@@ -49,7 +49,6 @@ class GranblueFantasy(commands.Cog):
     Bot Task checking for new content related to GBF
     """
     async def granblue_watcher(self : GranblueFantasy) -> None:
-        acc_check : bool = False
         maint_check : bool = False # False = no maintenance on going, True = maintenance on going
         v : int|None = None
         await asyncio.sleep(30)
@@ -110,13 +109,13 @@ class GranblueFantasy(commands.Cog):
             if maint_check: # stop here if there is a maintenance
                 continue
 
-            # check if our GBF account is usable
-            if not self.bot.net.is_account_valid():
-                if not acc_check:
-                    acc_check = True
-                    self.bot.logger.push("[TASK] 'granblue:watcher' checks will be skipped.\nPossible cause:\n- Game server is down (Check if it works)\n- Account is down (Try to set the cookie anew).\n- GBF Version check failed (See if other logs reported this issue).\n- Other undetermined causes.", level=self.bot.logger.WARNING)
-                continue
-            acc_check = False
+            try: # game news
+                await self.checkGameNews()
+            except asyncio.CancelledError:
+                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
+                return
+            except Exception as e:
+                self.bot.logger.pushError("[TASK] 'granblue:watcher (checkGameNews)' Task Error:", e)
 
             try: # 4koma news
                 await self.check4koma()
@@ -125,14 +124,6 @@ class GranblueFantasy(commands.Cog):
                 return
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'granblue:watcher (4koma)' Task Error:", e)
-
-            try: # game news
-                await self.checkGameNews()
-            except asyncio.CancelledError:
-                self.bot.logger.push("[TASK] 'granblue:watcher' Task Cancelled")
-                return
-            except Exception as e:
-                self.bot.logger.pushError("[TASK] 'granblue:watcher (checkGameNews)' Task Error:", e)
 
     """fix_news_thumbnail()
     Fix a thumbnail url used by checkGameNews()
@@ -297,11 +288,17 @@ class GranblueFantasy(commands.Cog):
         }
         # build a list of id to check
         to_process : list[int] = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
+        # prepare cookies
+        self.bot.net.client.cookie_jar.update_cookies({"ln":"2"})
+        try:
+            await self.bot.net.request("https://game.granbluefantasy.jp/#top") # make a request to set cookies
+        except: # try twice in case of lag
+            await self.bot.net.request("https://game.granbluefantasy.jp/#top")
         # loop over this list
         news : list[int] = []
         for ii in to_process:
             # request news patch
-            data : RequestResult = await self.bot.net.requestGBF("news/news_detail/{}".format(ii), expect_JSON=True)
+            data : RequestResult = await self.bot.net.requestGBF_offline("news/news_detail/{}".format(ii), expect_JSON=True)
             if data is None:
                 continue
             elif data[0]['id'] == str(ii): # check if id matches
@@ -447,29 +444,22 @@ class GranblueFantasy(commands.Cog):
     Check for new GBF grand blues
     """
     async def check4koma(self : GranblueFantasy) -> None:
-        # retrieve gran blues page
-        data : RequestResult = await self.bot.net.requestGBF('comic/list/1', expect_JSON=True)
-        if data is None:
-            return
-        # get last one
-        last : int = data['list'][0]
-        if '4koma' in self.bot.data.save['gbfdata']: # check the one in memory
-            if last is not None and int(last['id']) > int(self.bot.data.save['gbfdata']['4koma']): # last one is newer
-                self.bot.data.save['gbfdata']['4koma'] = last['id'] # we update
-                self.bot.data.pending = True
-                # and post it
-                title : str|None = last['title_en']
-                mtl : bool = False
-                if title == "": # translate title if no english title
-                    try:
-                        title = self.bot.net.translate(last['title'])
-                        mtl = True
-                    except:
-                        title = last['title']
-                await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title=title, url="https://prd-game-a1-granbluefantasy.akamaized.net/assets/img/sp/assets/comic/episode/episode_{}.jpg".format(last['id']), image="https://prd-game-a1-granbluefantasy.akamaized.net/assets/img/sp/assets/comic/thumbnail/thum_{}.png".format(last['id'].zfill(5)), footer="Title from Google Translate" if mtl else "", color=self.COLOR), publish=True)
-        else: # set in memory silently if no data exists
-            self.bot.data.save['gbfdata']['4koma'] = last['id']
+        i : int
+        try:
+            i = self.bot.data.save['gbfdata']['4koma']
+        except:
+            i = 2753
+        i += 1
+        while True:
+            if await self.bot.net.request("https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/thumbnail/thum_{}.png".format(str(i).zfill(5)), rtype=self.bot.net.Method.HEAD) is None:
+                i -= 1
+                break
+            else:
+                i += 1
+        if i > self.bot.data.save['gbfdata']['4koma']:
+            self.bot.data.save['gbfdata']['4koma'] = i
             self.bot.data.pending = True
+            await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Episode " + str(i), url="https://prd-game-a1-granbluefantasy.akamaized.net/assets/img/sp/assets/comic/episode/episode_{}.jpg".format(i), image="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/comic/thumbnail/thum_{}.png".format(str(i).zfill(5)), color=self.COLOR), publish=True)
 
     """checkExtraDrops()
     Check for GBF extra drops

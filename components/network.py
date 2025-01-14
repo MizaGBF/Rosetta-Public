@@ -149,6 +149,8 @@ class Network():
                     return True
                 elif is_json: # JSON, we return it as a JSON object
                     return await response.json()
+                elif response.status == 204:
+                    return True
                 else: # else, binary
                     return await response.read()
         except Exception as e:
@@ -252,11 +254,105 @@ class Network():
                     return True
                 elif is_json: # JSON, we return the json object
                     return await response.json()
+                elif response.status == 204:
+                    return True
                 else: # else the binary
                     return await response.read()
         except Exception as e:
             if str(e) != "":
                 self.bot.logger.pushError("[NET] requestGBF `{}` Error:".format(path), e, send_to_discord=(not silent))
+            return None
+
+    """requestGBF_offline()
+    Coroutine to request Granblue Fantasy without a working account.
+    Only work for some limited content.
+    Note: Might require to set the cookie ln: 2 first, for the english language and to request the main page with request() first to set other cookies.
+    Note²: It uses client, not gbf_client
+    
+    Parameters
+    ----------
+    path: Url path.
+    rtype: Integer (Default is 0 or GET). Set the request type when payload is None. Use the constant GET, POST, HEAD defined in this class.
+    params: Dict. Automatically set when requesting GBF.
+    payload: Dict (Default is None), POST request payload. Set to None to do another request type.
+    allow_redirects: Bool, set to True to follow redirects.
+    expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and the function will return an error if it's not one.
+    _updated_: Boolean, for internal use only.
+    
+    Returns
+    ----------
+    unknown: None if error, else Bytes or JSON object for GET/POST, headers for HEAD
+    """
+    async def requestGBF_offline(self : Network, path : str, *, rtype : int = 0, params : dict = {}, payload : dict|None = None, allow_redirects : bool = False, expect_JSON : bool = False, _updated_ : bool = False) -> RequestResult:
+        try:
+            silent : bool = True
+            # don't proceed if the game is down
+            if await self.gbf_maintenance():
+                return None
+            # build the URL
+            url : str
+            if path[:1] != "/": url = "https://game.granbluefantasy.jp/" + path
+            else: url = "https://game.granbluefantasy.jp" + path
+            # check and retrieve the account info
+            if not self.has_account():
+                raise Exception("No GBF account set")
+            # retrieve the game version
+            ver : JSON = self.bot.data.save['gbfversion']
+            if ver == "Maintenance": # Note: I don't think the version should ever be equal to "Maintenance" but I'm keeping it for safety
+                raise Exception("Maintenance on going")
+            elif ver is None: # If not set, we proceed with a version of 0. Other mechanisms will take care of the rest
+                ver = 0
+            # prepare and set headers
+            headers : dict[str, str] = {'Connection':'keep-alive', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'en', 'Host': 'game.granbluefantasy.jp', 'Origin': 'https://game.granbluefantasy.jp', 'Referer': 'https://game.granbluefantasy.jp/', 'User-Agent':self.user_agent, 'X-Requested-With':'XMLHttpRequest', 'X-VERSION':str(ver)}
+            # set request params
+            ts : int = int(self.bot.util.UTC().timestamp() * 1000)
+            params["_"] = str(ts)
+            params["t"] = str(ts+300) # second timestamp is always a bit further. No idea if a random number would be better
+            params["uid"] = str(0)
+            response : aiohttp.HTTPResponse
+            if payload is None: # call request method with given parameters
+                response = await (self.client_req.get(rtype, self.unknown_req))(url, params=params, headers=headers, allow_redirects=allow_redirects)
+            else: # if we have a payload, it's always a POST request
+                rtype = self.Method.POST
+                # auto set 'user_id' in the payload according to its value
+                if 'user_id' in payload:
+                    match payload['user_id']:
+                        case "ID": payload['user_id'] = 0
+                        case "SID": payload['user_id'] = str(0)
+                        case "IID": payload['user_id'] = int(0)
+                # do the request
+                response = await self.client.post(url, params=params, headers=headers, json=payload, allow_redirects=allow_redirects)
+            # response handling
+            async with response:
+                if response.status >= 400 or response.status < 200: # error if our HTTP code isn't in the 200-399 range
+                    if not _updated_: # if _updated_ isn't raised, it MIGHT be due to an invalid version (in case an update happened)
+                        x : int|str|None = await self.gbf_version() # in that case, we check for an update
+                        if x is not None and not isinstance(x, str) and x >= 2:
+                            # x = 2: our version number in memory wasn't set
+                            # x = 3: an update occured
+                            if x == 3:
+                                _updated_ = True # raise updated flag because an update occured
+                            # we try this request again
+                            return await self.requestGBF_offline(path, rtype, params, payload, allow_redirects, expect_JSON, _updated_)
+                    # else, raise exception
+                    raise Exception()
+                # check content type
+                ct : str = response.headers.get('content-type', '')
+                is_json : bool = 'application/json' in ct
+                if expect_JSON and not is_json: # we expected a json but we didn't receive one
+                    return None
+                # result
+                if rtype == self.Method.HEAD: # HEAD request returns True to signify success
+                    return True
+                elif is_json: # JSON, we return the json object
+                    return await response.json()
+                elif response.status == 204:
+                    return True
+                else: # else the binary
+                    return await response.read()
+        except Exception as e:
+            if str(e) != "":
+                self.bot.logger.pushError("[NET] requestGBF_offline `{}` Error:".format(path), e, send_to_discord=(not silent))
             return None
 
     """requestWiki()
@@ -322,9 +418,9 @@ class Network():
             state : int = self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET)
             last : datetime|None = self.bot.data.save['gbfaccount'].get('last', None)
             # if it's down...
-            if state != self.AccountStatus.DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=1800)):
+            if state != self.AccountStatus.DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=3600)):
                 # attempt a request
-                await self.bot.net.requestGBF("user/user_id/1", expect_JSON=True)
+                await self.bot.net.requestGBF("an/z/14", expect_JSON=True)
 
     """has_account()
     Return if the GBF account is set
@@ -459,6 +555,8 @@ class Network():
     async def gbf_version(self : Network) -> int|str|None: # retrieve the game version
         # simply request the main page
         response : RequestResult = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
+        if response is None: # main page is down
+            response = await self.request('https://game.granbluefantasy.jp/', headers={'Accept-Language':'en', 'Accept-Encoding':'gzip, deflate', 'Host':'game.granbluefantasy.jp', 'Connection':'keep-alive'}, add_user_agent=True, allow_redirects=True)
         if response is None: # main page is down
             return None
         # convert page html to string
