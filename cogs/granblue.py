@@ -1318,12 +1318,10 @@ class GranblueFantasy(commands.Cog):
             msgs.append(v[1])
             msgs.append(")\n")
 
-        # Summer fortune addition
-        msgs.append("**{} days** since the Summer Fortune 2021 results\n".format(self.bot.util.delta2str(c - c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
-        # Nerf of sette addition
-        msgs.append("**{} days** since the Settecide Day\n".format(self.bot.util.delta2str(c - c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), 3).split('d', 1)[0]))
-        # KMR retirement addition
-        msgs.append("**{} days** since {} KMR's retirement\n".format(self.bot.util.delta2str(c - c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), 3).split('d', 1)[0], self.bot.emote.get('kmr')))
+        # Additional texts
+        for v in [(c.replace(year=2021, month=8, day=16, hour=19, minute=0, second=0, microsecond=0), "the Summer Fortune 2021 results\n"), (c.replace(year=2023, month=11, day=9, hour=7, minute=0, second=0, microsecond=0), "the Settecide Day\n"), (c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0), "{} KMR's retirement\n".format(self.bot.emote.get('kmr'))), (c.replace(year=2025, month=1, day=14, hour=21, minute=30, second=0, microsecond=0), "the Mjolnir's nerf\n")]:
+            msgs.append("**{} days** since ".format(self.bot.util.delta2str(c - v[0], 3).split('d', 1)[0]))
+            msgs.append(v[1])
         
         # Grand List (check getGrandList() above)
         try:
