@@ -420,7 +420,8 @@ class Network():
             # if it's down...
             if state != self.AccountStatus.DOWN and (last is None or self.bot.util.JST() - last >= timedelta(seconds=3600)):
                 # attempt a request
-                if await self.bot.net.requestGBF("an/z/14", expect_JSON=True) is None:
+                await self.bot.net.requestGBF("an/z/14", expect_JSON=True)
+                if self.bot.data.save['gbfaccount'].get('state', self.AccountStatus.UNSET) == self.AccountStatus.DOWN:
                     self.bot.logger.push("[TASK] 'admin:status' refresh_account() failed.\nThe Account might be down (Try to set the cookie anew).", level=self.bot.logger.WARNING)
 
     """has_account()
