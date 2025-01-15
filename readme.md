@@ -232,6 +232,22 @@ If you plan to use your bot in your own crew, set the corresponding IDs to the c
 These IDs are mostly used by the [YouCrew Command Cog](https://github.com/MizaGBF/Rosetta-Public/blob/main/cogs/youcrew.py).  
 If you don't plan to use it, you might remove this Cog file from the `cogs` folder, along with the related IDs in `config.json`.  
   
+### Setup the Save File  
+  
+Create a save file named `save.json` which will later be used by the bot.  
+Inside, simply put:  
+```json
+{}
+```  
+and nothing else.  
+Then, go to your Google Drive and put the save file in the save data folder.  
+  
+> [!NOTE]  
+> In shouldn't be needed but, in case the save file isn't recognized in the next step, maybe you need to compress it first.  
+> Go into the `tools` folder, put a copy of `save.json` inside.  
+> Open a terminal/command prompt in this folder and run `python save_lzma.py save.json` to compress it to the lzma format.  
+> Then, put the `save.lzma` file into the Google Drive save data folder instead of the JSON one.  
+  
 ### First Boot
 
 Use whatever method you chose in [Usage](#usage) to run the Bot.  
