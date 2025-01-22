@@ -24,6 +24,7 @@ class BaseView(disnake.ui.View):
     """
     def __init__(self : BaseView, bot : DiscordBot, owner_id : int|None = None, timeout : float = 60.0, enable_timeout_cleanup : bool = True) -> None:
         super().__init__(timeout=timeout)
+        print(self.timeout)
         self.bot : DiscordBot = bot # reference to the bot
         self.owner_id : int|None = owner_id # id of whoever was the cause of this View creation
         self.message : disnake.Message|None = None # used to store messages to display
@@ -48,17 +49,20 @@ class BaseView(disnake.ui.View):
     Called when the view times out
     """
     async def on_timeout(self : BaseView) -> None:
-        self.stopall() # disable all children
-        if self.enable_timeout_cleanup: # if auto cleanup is enabled
-            if self.bot.channel.interaction_must_be_cleaned(self.message): # replace message by Lyria emote if authorized to
-                try: await self.message.edit(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+        try:
+            self.stopall() # disable all children
+            if self.enable_timeout_cleanup: # if auto cleanup is enabled
+                if self.bot.channel.interaction_must_be_cleaned(self.message): # replace message by Lyria emote if authorized to
+                    try: await self.message.edit(content="{}".format(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+                    except: pass
+                else: # else just remove the view
+                    try: await self.message.edit(view=None)
+                    except: pass
+            else: # else simply update the view, to show it as disabled
+                try: await self.message.edit(view=self)
                 except: pass
-            else: # else just remove the view
-                try: await self.message.edit(view=None)
-                except: pass
-        else: # else simply update the view, to show it as disabled
-            try: await self.message.edit(view=self)
-            except: pass
+        except:
+            pass
 
     """stop()
     Override disnake.ui.View.stopall()
