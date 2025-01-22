@@ -1120,7 +1120,7 @@ class GuildWar(commands.Cog):
                                 clump += self.FIGHTS[interlude_fight]["clump_drop"]
                                 total_clump += self.FIGHTS[interlude_fight]["clump_drop"]
                                 daily += self.FIGHTS[interlude_fight]["honor"]
-                                honor[i+1] += self.FIGHTS[interlude_fight]["honor"]
+                                honor[0] += self.FIGHTS[interlude_fight]["honor"]
                         else:
                             clump -= self.FIGHTS[day_nm[i]]["clump_cost"] # enough meat, do NM
                             nm[i] += 1
