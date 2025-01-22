@@ -392,7 +392,7 @@ class GuildWar(commands.Cog):
                             target_index = -1
                         else: # other days
                             d : str
-                            for d in self.DAYS_W_inter :
+                            for d in self.DAYS_W_INTER :
                                 if update_time < self.bot.data.save['gw']['dates'][d]:
                                     current_time_left = self.bot.data.save['gw']['dates'][d] - current_time
                                     target_index = (int((self.bot.data.save['gw']['dates'][d] - self.bot.data.save['gw']['dates']['Preliminaries']).total_seconds()) - 1200) // 1200
