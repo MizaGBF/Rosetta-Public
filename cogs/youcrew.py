@@ -46,11 +46,11 @@ class YouCrew(commands.Cog):
             # add warning in log, just in case
             self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, the 'GuildWar' Cog is missing.", send_to_discord=False, level=self.logger.WARNING)
             return
-        # check if gw is on going
-        self.gwcog.getGWState()
-        if self.bot.data.save['gw']['state'] is False or len(self.bot.data.save['gw']['buffs']) == 0:
-            return # silently cancel if not
         try:
+            # check if gw is on going
+            gwcog.getGWState()
+            if self.bot.data.save['gw']['state'] is False or len(self.bot.data.save['gw']['buffs']) == 0:
+                return # silently cancel if not
             # check if guild set in config.json
             guild : disnake.Guild|None = self.bot.get_guild(self.bot.data.config['ids'].get('you_server', 0))
             if guild is None:
@@ -58,7 +58,7 @@ class YouCrew(commands.Cog):
                 return
             # check if channel set in config.json
             channel : disnake.Channel|None = self.bot.get_channel(self.bot.data.config['ids'].get('you_announcement', 0))
-            if guild is None:
+            if channel is None:
                 self.bot.logger.push("[TASK] 'you:buff' Task Cancelled, no channel 'you_announcement' found")
                 return
             # init skip flag if missing
