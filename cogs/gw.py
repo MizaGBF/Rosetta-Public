@@ -1080,12 +1080,13 @@ class GuildWar(commands.Cog):
             ex : int = 0 # ex+ done
             interlude_fight : str = "NM90" # constant
             interlude_count : int = 0 # interlude fight done
-            day_target : list[float] = [target * 0.15, target * 0.20, target * 0.30, target * 0.35] # honor target for each day (1 to 4)
+            day_target : list[float] = [target * 0.15, target * 0.20, target * 0.32, target * 0.33] # honor target for each day (1 to 4)
             day_nm : list[str] = ["NM100", "NM150", "NM250", "NM250"] # constant, fight for each day
             nm : list[int] = [0, 0, 0, 0] # fight done on each day
             meat : float = 0 # meat available
             total_meat : float = 0 # total meat used
             clump : float = 0 # clump available
+            prelim_clump : float = 0 # clump gathered during prelims/interlude
             total_clump : float = 0 # total clump used
 
             i : int
@@ -1119,6 +1120,7 @@ class GuildWar(commands.Cog):
                                 interlude_count += 1
                                 clump += self.FIGHTS[interlude_fight]["clump_drop"]
                                 total_clump += self.FIGHTS[interlude_fight]["clump_drop"]
+                                prelim_clump += self.FIGHTS[interlude_fight]["clump_drop"]
                                 daily += self.FIGHTS[interlude_fight]["honor"]
                                 honor[0] += self.FIGHTS[interlude_fight]["honor"]
                         else:
@@ -1127,7 +1129,7 @@ class GuildWar(commands.Cog):
                             daily += self.FIGHTS[day_nm[i]]["honor"]
                             honor[i+1] += self.FIGHTS[day_nm[i]]["honor"]
             # make message from the result
-            msgs : list[str] = ["Meat counts ▫️ **{:,}** meats, **{:,}** clumps\nPreliminaries & Interlude ▫️ Around **{:,}** EX+, **{:,}** {}, **{:}** honors".format(math.ceil(total_meat), math.ceil(total_clump), ex, interlude_count, interlude_fight, self.bot.util.valToStr(honor[0], 2))]
+            msgs : list[str] = ["Total used meat counts ▫️ **{:,}** meats, **{:,}** clumps\nPrelim. & Interlude ▫️ Around **{:,}** EX+, **{:,}** {:} for **{:,}** clumps, **{:}** honors".format(math.ceil(total_meat), math.ceil(total_clump), ex, interlude_count, interlude_fight, math.ceil(prelim_clump), self.bot.util.valToStr(honor[0], 2))]
             for i in range(0, len(nm)):
                 msgs.append("Day {:} ▫️ **{:,}** {} (**{:}** honors)".format(i+1, nm[i], day_nm[i], self.bot.util.valToStr(honor[i+1], 2)))
             await inter.edit_original_message(embed=self.bot.embed(title="{} Honor Planning ▫️ {} honors".format(self.bot.emote.get('gw'), self.bot.util.valToStr(target)), description="\n".join(msgs), footer="Assuming {} meats / EX+ on average".format(self.MEAT_PER_BATTLE_AVG), color=self.COLOR))
