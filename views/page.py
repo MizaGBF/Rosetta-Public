@@ -88,7 +88,12 @@ class RankingDropdown(disnake.ui.StringSelect):
     # The drop down
     def __init__(self : RankingDropdown, placeholder : str, search_results : PageResultList) -> None:
         # Define the options that will be presented inside the dropdown
-        options : disnake.SelectOption = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # List of selectable elements
+        self.current_option_count = len(search_results)
+        options : list[disnake.SelectOption]
+        if len(search_results) == 0:
+            options = [disnake.SelectOption(label="None", description="No data")]
+        else:
+            options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # List of selectable elements
         super().__init__(
             placeholder=placeholder,
             min_values=1,
@@ -97,12 +102,19 @@ class RankingDropdown(disnake.ui.StringSelect):
         ) # init the disnake.ui.StringSelect
 
     def update_options(self : RankingDropdown, search_results : PageResultList) -> None:
-        options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # change the list of selectable elements
-        self.options=options # update the disnake.ui.StringSelect
+        self.current_option_count = len(search_results)
+        if len(search_results) == 0:
+            self.options = [disnake.SelectOption(label="None", description="No data")]
+        else:
+            options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results] # change the list of selectable elements
+            self.options = options # update the disnake.ui.StringSelect
 
     async def callback(self : RankingDropdown, inter : disnake.MessageInteraction) -> None:
         # called when a choice is made
         if not self.disabled and self.view.ownership_check(inter): # check if enabled and the view author
+            if self.current_option_count == 0:
+                await inter.response.send_message("No data selectable on this page", ephemeral=True)
+                return
             if len(self.view.embeds) >= 2: # disable previous and next buttons if they exist (i.e. if there are at least 2 pages)
                 self.view.prev_b.disabled=True
                 self.view.prev_b.style=disnake.ButtonStyle.secondary

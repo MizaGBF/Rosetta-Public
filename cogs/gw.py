@@ -1698,12 +1698,13 @@ class GuildWar(commands.Cog):
                 footer : str
                 match sort_mode:
                     case 1: # top speed
-                        footer = "Honor page 1,2, Current Speed page 5, 6"
+                        footer = "← Honor pages, Current Speed pages →"
                     case 2: # current speed
-                        footer = "Honor page 1,2, Top Speed page 3, 4"
+                        footer = "← Honor pages, Top Speed pages →"
                     case _: # default
-                        footer = "Top Speed page 3,4, Current Speed page 5, 6"
+                        footer = "← Top Speed pages, Current Speed pages →"
                 tosort : dict[int, tuple[int, str, float|None, int|None, int|None]] = {}
+                fields : list[dict[str, str|list]] = []
                 for data in cdata[1]:
                     match sort_mode: # get and add data
                         case 1: # top speed
@@ -1718,56 +1719,65 @@ class GuildWar(commands.Cog):
                             if data.current is None or data.day < day:
                                 continue
                             tosort[data.id] = (data.id, data.name, data.current, data.ranking, data.day) # id, name, honor, rank, day
-                    # sorting
-                    await asyncio.sleep(0)
-                    sorted : dict[int, tuple[int, str, float|None, int|None, int|None]] = []
-                    c : tuple[int, str, float|None, int|None, int|None]
-                    for c in tosort:
-                        inserted : bool = False
-                        for i in range(0, len(sorted)):
-                            if tosort[c][2] > sorted[i][2]:
-                                inserted = True
-                                sorted.insert(i, tosort[c])
-                                break
-                        if not inserted:
-                            sorted.append(tosort[c])
-                    await asyncio.sleep(0)
-                    # build embed fields
-                    if gwid is None:
-                        gwid = ""
-                    fields : list[dict[str, str|list]] = []
-                    search_results : PageResultList = []
-                    v : tuple[int, str, float|None, int|None, int|None]
-                    for i, v in enumerate(sorted):
-                        if i % 15 == 0: # add extra at 15
-                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+len(embeds)))), 'value':[]})
-                            search_results.append([])
-                            await asyncio.sleep(0)
-                        fields[-1]['value'].append("#**{}** - {} - **{}".format(self.bot.util.valToStr(v[3]), v[1], self.bot.util.valToStr(v[2], 2)))
-                        search_results[-1].append((v[0], v[1]))
-                        if sort_mode > 0: fields[-1]['value'].append("/min**\n")
-                        else: fields[-1]['value'].append("**\n")
-                # unranked crew message
-                notranked : int = len(self.bot.ranking.gbfgcrews_id) - len(cdata[1])
-                if notranked > 0:
-                    fields[-1]['value'].append("**{}** unranked crew{}".format(notranked, 's' if notranked > 1 else ''))
-                # join field values
-                field : dict[str, str|list]
-                for field in fields:
-                    field['value'] = "".join(field['value'])
-                # finalize this ranking embed
+                # sorting
+                await asyncio.sleep(0)
+                sorted : dict[int, tuple[int, str, float|None, int|None, int|None]] = []
+                c : tuple[int, str, float|None, int|None, int|None]
+                for c in tosort:
+                    inserted : bool = False
+                    for i in range(0, len(sorted)):
+                        if tosort[c][2] > sorted[i][2]:
+                            inserted = True
+                            sorted.insert(i, tosort[c])
+                            break
+                    if not inserted:
+                        sorted.append(tosort[c])
+                await asyncio.sleep(0)
+                # build embed fields
+                if gwid is None:
+                    gwid = ""
+                search_results : PageResultList = []
+                v : tuple[int, str, float|None, int|None, int|None]
+                for i, v in enumerate(sorted):
+                    if i % 15 == 0: # add extra at 15
+                        fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+len(embeds)))), 'value':[]})
+                        search_results.append([])
+                        await asyncio.sleep(0)
+                    fields[-1]['value'].append("#**{}** - {} - **{}".format(self.bot.util.valToStr(v[3]), v[1], self.bot.util.valToStr(v[2], 2)))
+                    search_results[-1].append((v[0], v[1]))
+                    if sort_mode > 0:
+                        fields[-1]['value'].append("/min**\n")
+                    else: 
+                        fields[-1]['value'].append("**\n")
+                # embed content
                 title : str = ["", "Top Speed ", "Current Speed "][sort_mode]
                 desc : str = ""
                 if timestamp is not None:
                     desc = "Updated: **{}** ago".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0))
-                embed : disnake.Embed = self.bot.embed(title="{} /gbfg/ GW{} {}Ranking".format(self.bot.emote.get('gw'), gwid, title), description=desc, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - " + footer)
-                for i in range(len(search_results)):
-                    final_results.append(search_results[i])
+                # creating embed
+                if len(fields) == 0:
+                    embed : disnake.Embed = self.bot.embed(title="{} /gbfg/ GW{} {}Ranking".format(self.bot.emote.get('gw'), gwid, title), description=desc, fields=[{'name':'Page {}'.format(self.bot.emote.get(str(1+len(embeds)))), 'value':"No data currently available"}], inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - " + footer)
+                    final_results.append([])
                     embeds.append(embed)
-                await asyncio.sleep(0)
+                else:
+                    # unranked crew message
+                    notranked : int = len(self.bot.ranking.gbfgcrews_id) - len(cdata[1])
+                    if notranked > 0:
+                        fields[-1]['value'].append("**{}** unranked crew{}".format(notranked, 's' if notranked > 1 else ''))
+                    # join field values
+                    field : dict[str, str|list]
+                    for field in fields:
+                        field['value'] = "".join(field['value'])
+                    # finalize this ranking embed
+                    embed : disnake.Embed = self.bot.embed(title="{} /gbfg/ GW{} {}Ranking".format(self.bot.emote.get('gw'), gwid, title), description=desc, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - " + footer)
+                    for i in range(len(search_results)):
+                        final_results.append(search_results[i])
+                        embeds.append(embed)
+                    await asyncio.sleep(0)
             # return everything
             return embeds, final_results
-        except:
+        except Exception as e:
+            self.bot.logger.pushError("test", e)
             return [], []
 
     @gbfg.sub_command(name="ranking")
