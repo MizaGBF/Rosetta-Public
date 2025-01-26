@@ -236,53 +236,6 @@ class Admin(commands.Cog):
             self.bot.logger.pushError("[OWNER] In 'owner utility leave' command:", e)
             await inter.edit_original_message(embed=self.bot.embed(title="An unexpected error occured", color=self.COLOR))
 
-    """approximate_account()
-    A (sort of) Divide and Conquer algorithm to approximate the total number of GBF accounts.
-    An account existing at the given ID means too low. An account not found means too high.
-    It's a recursive function (up to 30).
-    
-    Parameters
-    --------
-    step: Integer, increase to the current ID. Process stops under 10.
-    current: Integer, current ID
-    count: Integer, step count, limited to 30
-    
-    Returns
-    --------
-    integer: Best ID found, or None
-    """
-    async def approximate_account(self, step : int, current : int, count : int = 0) -> int|None:
-        if count >= 30 or step <= 10: # if we passed 30 calls or our last step was under 10
-            return current
-        # request ID equals to current + step
-        data : RequestResult = await self.bot.net.requestGBF("/profile/content/index/{}".format(current+step), expect_JSON=True)
-        match data:
-            case "Maintenance": # game is down, quit
-                return None
-            case None: # account doesn't exist
-                return await self.approximate_account(step//2, current, count+1) # reduce step by half.
-            case _: # account exists
-                return await self.approximate_account(int(step*1.4), current+step, count+1) # increases step by 40%. Use current existing account as next reference point.
-
-    @utility.sub_command()
-    async def playerbase(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
-        """Get an approximation of the number of accounts on Granblue Fantasy (Owner Only)"""
-        await inter.response.defer(ephemeral=True)
-        if not await self.bot.net.gbf_available(): # check if the game is up
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
-        else:
-            if 'totalplayer' not in self.bot.data.save['gbfdata']: # init data at 38900000 players
-                self.bot.data.save['gbfdata']['totalplayer'] = 38900000
-            # call approximate_account and wait the result
-            result : int|None = await self.approximate_account(100000, self.bot.data.save['gbfdata'].get('totalplayer', 38900000))
-            if result is None: # If None, game is down
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
-            else:
-                self.bot.data.save['gbfdata']['totalplayer'] = result # update save with the result
-                self.bot.data.pending = True
-                # send the result
-                await inter.edit_original_message(embed=self.bot.embed(title="Granblue Fantasy ▫️ Playerbase", description="Total playerbase estimated around **{:,}** accounts *(±10)*".format((result//10)*10), timestamp=self.bot.util.UTC(), color=self.COLOR))
-
     @_owner.sub_command_group()
     async def ban(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
         pass

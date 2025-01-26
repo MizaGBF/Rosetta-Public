@@ -20,7 +20,7 @@ import html
 # ----------------------------------------------------------------------------------------------------------------
 
 class Data():
-    SAVEVERSION : int = 19
+    SAVEVERSION : int = 20
     BASE_SAVE : JSON = {
         'version':SAVEVERSION,
         'banned_guilds': [],
@@ -224,7 +224,7 @@ class Data():
             if 'teamraid_cookie' in data['gbfdata']:
                 data['gbfdata'].pop('teamraid_cookie')
         if ver <= 17:
-            if 'granblue_en' in data['gbfdata']:
+            if 'granblue_en' in data.get('gbfdata', {}):
                 data['gbfdata'].pop("granblue_en")
         if ver <= 18:
             if 'gbfaccounts' in data and len(data['gbfaccounts']) > 0:
@@ -244,6 +244,9 @@ class Data():
                 for k, v in data['announcement'].items():
                     if len(v) > 2:
                         data['announcement'][k] = v[:2]
+        if ver <= 19:
+            if 'totalplayer' in data.get('gbfdata', {}):
+                data['gbfdata'].pop("totalplayer")
         return data
 
     """loadData()
