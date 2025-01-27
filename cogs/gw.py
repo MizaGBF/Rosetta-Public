@@ -554,9 +554,8 @@ class GuildWar(commands.Cog):
                         crew['donator_id'] = get['most_donated_id']
                         crew['donator_amount'] = get['most_donated_lupi']
                         crew['message'] = html.unescape(get['introduction'])
+                        crew['player'] = []
                     else:
-                        if 'player' not in crew:
-                            crew['player'] = []
                         p : dict[str, str|int|float|list|dict|None]
                         for p in get['list']:
                             crew['player'].append({'id':p['id'], 'name':html.unescape(p['name']), 'level':p['level'], 'is_leader':p['is_leader'], 'member_position':p['member_position'], 'honor':None}) # honor is a placeholder
@@ -758,7 +757,7 @@ class GuildWar(commands.Cog):
         players : PlayerList
         title, description, fields, footer, players = await self.processCrewData(crew, mode)
         # prepare embed
-        embed=self.bot.embed(title=title, description=description, fields=fields, inline=True, url="https://game.granbluefantasy.jp/#guild/detail/{}".format(crew['id']), footer=footer, timestamp=crew['timestamp'], color=self.COLOR)
+        embed : disnake.Embed = self.bot.embed(title=title, description=description, fields=fields, inline=True, url="https://game.granbluefantasy.jp/#guild/detail/{}".format(crew['id']), footer=footer, timestamp=crew['timestamp'], color=self.COLOR)
         self_view : bool = False
         if view is None and not crew.get('private', False):
             self_view = True
