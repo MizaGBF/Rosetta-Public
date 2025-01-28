@@ -1162,36 +1162,6 @@ class GranblueFantasy(commands.Cog):
     async def check(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
 
-    @check.sub_command()
-    async def brand(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, target : str = commands.Param(description="Either a valid GBF ID, discord ID or mention", default="")) -> None:
-        """Check if a GBF profile is restricted"""
-        try:
-            await inter.response.defer(ephemeral=True)
-            id : str|int = await self.bot.util.str2gbfid(inter, target)
-            if isinstance(id, str):
-                await inter.edit_original_message(embed=self.bot.embed(title="Error", description=id, color=self.COLOR))
-            else:
-                # use the scout endpoint to check for the brand
-                # IMPORTANT: The GBF account used by Rosetta must be in a crew and with access to the scout menu
-                data : RequestResult = await self.bot.net.requestGBF("forum/search_users_id", expect_JSON=True, payload={"special_token":None,"user_id":int(id)})
-                if data is None:
-                    await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
-                else:
-                    if len(data['user']) == 0: # other scout errors/messages
-                        await inter.edit_original_message(embed=self.bot.embed(title="Profile Error", description="In game message:\n`{}`".format(data['no_member_msg'].replace("<br>", " ")), url="https://game.granbluefantasy.jp/#profile/{}".format(id), color=self.COLOR))
-                    else:
-                        status : str
-                        try:
-                            if data['user']["restriction_flag_list"]["event_point_deny_flag"]: # check for the brand flag
-                                status = "Account is restricted"
-                            else:
-                                status = "Account isn't restricted"
-                        except: # unexpected error
-                            status = "Account doesn't seem restricted"
-                        await inter.edit_original_message(embed=self.bot.embed(title="{} {}".format(self.bot.emote.get('gw'), self.bot.util.shortenName(data['user']['nickname'])), description=status, thumbnail="https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/leader/talk/{}.png".format(data['user']['image']), url="https://game.granbluefantasy.jp/#profile/{}".format(id), color=self.COLOR))
-        except:
-            await inter.edit_original_message(embed=self.bot.embed(title="Error", description="Unavailable", color=self.COLOR))
-
     """getGrandList()
     Request the grand character list from the wiki page and return the list of latest released ones
     

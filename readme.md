@@ -187,22 +187,36 @@ Next, turn on the **Message Content Intent**, below.
 > [!NOTE]  
 > If you ever change the Intents used by your bot instance, you'll also need to update them in `bot.py` at the end of the `_init_()` function, or **it won't take effect**. Refer to the [documentation](https://docs.disnake.dev/en/stable/intents.html) for details.  
   
-### Configuring your Google Service Account  
+### Configuring your Google Service Account and Google Drive  
   
-**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to navigate and use, so I'll only give general steps.**  
+**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to navigate and use, so there might be approximations.**  
   
-* Find a way to create an application.  
-* Go to *Credentials* on the left, create a new **Service account**.  
-* Copy the email associated with this service account (it should be something like `XXX@YYYY.iam.gserviceaccount.com` ).  
-* You might need to give it some permissions (*Permissions* tab, *Grant Access*, use the application email.).  
-* Add a new key (*Key* tab), pick the *JSON* format and accept. Rename this file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
+1. Go to [https://console.cloud.google.com/cloud-resource-manager](https://console.cloud.google.com/cloud-resource-manager), make sure you're logged in.  
+2. Create a project (on top of the page).  
+3. Give it a name.  
+4. Wait for its creation to finish. It might take a minute or so.  
+5. Select the project (via the notifications or a selector near the Google Cloud logo if available).  
+6. In the search bar on top, search for `Google Drive API`.
+7. Enable this API.  
+8. You should be on the `APIs and services` page. If you aren't, find a way to access it.  
+9. On the left, click on `Credentials`.  
+10. Choose `Create Credentials` on top and then `Service Account`.
+11. For the first step of the form, give it a name and then create.  
+12. For the second step, give it the Owner or Editor role (Owner if you want to be sure to have all permissions, I haven't tested if Editor works fully) and continue.  
+13. For the third step, add your gmail account email in the fields, so you have permission to access this account if needed. And click on Done.  
+14. You should be back to the `APIs and services` page. **Copy the email of the service account to a notepad**, you'll need it after.  
+15. Click on the edit button for the newly added service account. 
+16. On the new page, select the `Keys` tab.  
+17. Click on `Add Key`, then Create new key.  
+18. Select the `JSON` format and confirm. Your browser will download a file.  
+19. Rename the file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
   
-Go to your Google Drive and create two folders, one for the bot save data and one for GW related files.  
+Next, go to your Google Drive and create two folders, one for the bot save data and one for GW related files.  
 Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace `SAVE_FOLDER_ID` in `config.json` (don't forget to put it between quotes **"**, it's a string).  
 Do the same thing for the other folder and `FILE_FOLDER_ID`.  
 The third folder ID is currently unused but you are free to create one and set the key in `config.json` too, for possible future uses.  
   
-Then, **for each of those folders**, right click on them and select *Share*. Add your service account (again, using the email you copied) to each of them.  
+Finally, **for each of those folders**, right click on them and select *Share*. Add your service account email (using the email you copied on step **14**) to each of them.  
   
 ### Setup a Server for the Bot and invite it  
   
