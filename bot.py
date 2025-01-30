@@ -26,7 +26,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.0.5" # bot version
+    VERSION : str = "12.0.6" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v11.10.0** - Fixed a bug in `/reminder` commands and added automatic reminders. Make sure your server receives Bot Announcements.",
@@ -37,6 +37,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.0.0** - Updated: `/game scratch`, `/game chestrush`, `/guide defense`.",
         "**v12.0.0** - Reworked: `/gbf wiki`, `/mod cleanup`, `/mod announcement`, `/mod pinboard`.",
         "**v12.0.5** - Removed `/gbf check brand`.",
+        "**v12.0.6** - Added support for 4% banners in the Gacha Simulator.",
     ]
     
     def __init__(self : DiscordBot, test_mode : bool = False, debug_mode : bool = False) -> None:

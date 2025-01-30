@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from components.network import RequestResult
     # Type Aliases
     type CurrentGacha = list[timedelta|JSON]
-    type CurrentBanner = tuple[JSON, list[str], int, bool, dict[str, int]|None, int]
+    type CurrentBanner = tuple[int, JSON, list[str], int, bool, dict[str, int]|None, int]
 from enum import IntEnum, StrEnum
 import random
 import time
@@ -401,6 +401,7 @@ class Gacha():
     Returns
     --------
     tuple: Containing:
+        - The banner ID (after correcting if needed)
         - The whole rate list
         - The banner rate up
         - The ssr rate, in %
@@ -413,10 +414,11 @@ class Gacha():
             data : JSON = (await self.get())[1] # retrieve the rate
             gacha_data : JSON
             if scam is None: # not asking for scam
-                if 0 <= banner < len(data): # access asked banner
+                if 0 <= banner < len(data['banners']): # access asked banner
                     gacha_data = data['banners'][banner]
                 else: # or first banner if invalid index
                     gacha_data = data['banners'][0]
+                    banner = 0
             else:
                 if 'scam' not in data or scam < 0 or scam >= len(data['scam']): # raise error if couldn't get scam
                     raise Exception()
@@ -441,14 +443,15 @@ class Gacha():
             ssrrate : int = int(gacha_data['ratio'][0])
             complete : bool = True
             if scam is not None: # return scam data on top
-                return data, rateups, ssrrate, complete, gacha_data['items'], scam
+                return banner, data, rateups, ssrrate, complete, gacha_data['items'], scam
         except:
             # legacy mode, dummy data
             data = [{"rate": 82.0, "list": {"82": [None]}}, {"rate": 15.0, "list": {"15": [None]}}, {"rate": 3.0, "list": {"3": [None]}}]
             rateups = None
             ssrrate = 3
             complete = False
-        return data, rateups, ssrrate, complete, None, None
+            banner = 0
+        return banner, data, rateups, ssrrate, complete, None, None
 
     """isLegfest()
     Check the provided parameter and the real gacha to determine if we will be using a 6 or 3% SSR rate
@@ -565,7 +568,7 @@ class Gacha():
                     bannerid = 0
                 gachadata = await self.retrieve(banner=bannerid) # retrieve the data
         # create and return a simulator instance
-        return GachaSimulator(self.bot, gachadata, simtype, scamdata, bannerid, color)
+        return GachaSimulator(self.bot, gachadata, simtype, scamdata, color)
 
 
 # Type Aliases
@@ -589,6 +592,7 @@ class GachaSimulator():
         SUPER : int = 15
         MUKKU : int = 9
         GALA : int = 6
+        COLLAB : int = 4
         NORMAL : int = 3
         ALL : int = 100 # guaranted ssr
     
@@ -616,15 +620,16 @@ class GachaSimulator():
     bannerid: integer, banner index
     color: Embed color
     """
-    def __init__(self : GachaSimulator, bot : DiscordBot, gachadata : CurrentBanner, simtype : str, scamdata : CurrentBanner|None, bannerid : int, color : int) -> None:
+    def __init__(self : GachaSimulator, bot : DiscordBot, gachadata : CurrentBanner, simtype : str, scamdata : CurrentBanner|None, color : int) -> None:
         self.bot : DiscordBot = bot
         # unpack the data
-        self.data : JSON = gachadata[0]
-        self.rateups : list[str] = gachadata[1]
-        self.ssrrate : int = gachadata[2]
-        self.complete : bool = gachadata[3] 
+        self.bannerid : int = gachadata[0]
+        self.data : JSON = gachadata[1]
+        self.rateups : list[str] = gachadata[2]
+        self.ssrrate : int = gachadata[3]
+        self.complete : bool = gachadata[4] 
         self.scamdata : CurrentBanner = scamdata # no need to unpack the scam gacha one (assume it might be None too)
-        self.bannerid : int = bannerid
+        self.iscollab : bool = (self.bannerid > self.bot.gacha.CLASSIC_COUNT)
         self.color : int = color
         self.mode : int = self.Mode.UNDEF
         self.changeMode(simtype)
@@ -697,10 +702,20 @@ class GachaSimulator():
     def get_generation_rate_and_modifiers(self : GachaSimulator, legfest : int) -> tuple[int, list[float], list[float]]:
         ssrrate : int
         match self.mode:
-            case self.Mode.ALL: ssrrate = self.SSRRate.ALL
-            case self.Mode.SUPER: ssrrate = self.SSRRate.SUPER
-            case self.Mode.MUKKU: ssrrate = self.SSRRate.MUKKU
-            case _: ssrrate = self.SSRRate.GALA if self.bot.gacha.isLegfest(self.ssrrate, legfest) else self.SSRRate.NORMAL
+            case self.Mode.ALL:
+                ssrrate = self.SSRRate.ALL
+            case self.Mode.SUPER:
+                ssrrate = self.SSRRate.SUPER
+            case self.Mode.MUKKU:
+                ssrrate = self.SSRRate.MUKKU
+            case _:
+                if self.bot.gacha.isLegfest(self.ssrrate, legfest):
+                    ssrrate = self.SSRRate.GALA
+                else:
+                    if self.iscollab:
+                        ssrrate = self.SSRRate.COLLAB
+                    else:
+                        ssrrate = self.SSRRate.NORMAL
         return ssrrate, *self.check_rate(ssrrate)
 
     """retrieve_single_roll_item()
@@ -887,13 +902,14 @@ class GachaSimulator():
         - loot: string, item name
     """
     def scamRoll(self : GachaSimulator) -> tuple[str, str]:
+        _unused_ : int
         data : JSON
         rateups : list[str]
         ssrrate : int
         complete : bool
         items : dict[str, int]|None
         scamindex : int
-        data, rateups, ssrrate, complete, items, scamindex = self.scamdata # no error check, do it before
+        _unused_, data, rateups, ssrrate, complete, items, scamindex = self.scamdata # no error check, do it before
         if items is None:
             items = self.bot.gacha.SCAM_DUMMY
         scam_rate : int = sum(list(items.values()))
