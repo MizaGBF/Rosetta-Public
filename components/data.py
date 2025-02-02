@@ -475,7 +475,7 @@ class Data():
     async def update_schedule(self : Data) -> None:
         try:
             # request the event cargo table of the wiki
-            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
+            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"wiki_page ,enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
             if data is not None:
                 new_events : JSON = {}
                 modified : bool = False
@@ -494,7 +494,10 @@ class Data():
                         else:
                             if current_time >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1): # if we have passed it by one day
                                 continue # event over
-                        new_events[html.unescape(ev['enname'])] = event_times
+                        if ev['wiki page'] is not None and ev['wiki page'] != '':
+                            new_events["[" + html.unescape(ev['enname']) + "](https://gbf.wiki/" + ev['wiki page'].replace(' ', '_') + ")"] = event_times
+                        else:
+                            new_events[html.unescape(ev['enname'])] = event_times
                 # NOTE: Wiki timestamps are in UTC
                 modified : bool
                 if len(new_events) > 0:
