@@ -559,6 +559,8 @@ class GuildWar(commands.Cog):
                         p : dict[str, str|int|float|list|dict|None]
                         for p in get['list']:
                             crew['player'].append({'id':p['id'], 'name':html.unescape(p['name']), 'level':p['level'], 'is_leader':p['is_leader'], 'member_position':p['member_position'], 'honor':None}) # honor is a placeholder
+            if len(crew['player']) == 0:
+                crew['private'] = True
             self.crewcache[tid] = crew
         if mode == 1: # main page data only, simply return
             return crew
