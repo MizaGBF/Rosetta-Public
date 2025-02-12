@@ -210,8 +210,7 @@ class GranblueFantasy(commands.Cog):
         if title.endswith(' Maintenance Announcement') and description.startswith("Maintenance is scheduled for "):
             try:
                 # extract the dates and parse
-                try: description = description.split('. ', 1)[0][len("Server maintenance is scheduled for "):].split(',')
-                except: description = description.split('. ', 1)[0][len("Server maintenance and game updates are scheduled for "):].split(',')
+                description = description.split('. ', 1)[0].split(" is scheduled for ", 1)[1].split(',')
                 # time
                 timestring : str = description[0].split(",", 1)[0]
                 parts : list[str] = timestring.split('–')
