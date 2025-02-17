@@ -382,11 +382,13 @@ class Util():
     list: The resulting list
     """
     def breakdownHTML(self : Util, content : str) -> list[str]:
-        firstsplit : list[str] = content.replace('\n', '').replace('    ','').split('<') # split string by <
-        result : list[str] = [firstsplit[0]]
-        for i in range(1, len(firstsplit)):
-            result.extend(firstsplit[i].split('>', 1)) # additional split by >
+        split : list[str] = content.replace('\n', '').replace('    ','').replace('<!--','<comment>').replace('-->','</comment>').split('<') # split string by <
+        result : list[str] = [split[0]]
+        for i in range(1, len(split)):
+            result.extend(split[i].split('>', 1)) # additional split by >
         # The split works shit way:
+        # Replace <!-- --> by <comment></comment>
+        # then
         # TEXT < TAG > TEXT ... TEXT < TAG > etc...
         # Result contains:
         # TEXT, TAG, TEXT, TAG ... etc...

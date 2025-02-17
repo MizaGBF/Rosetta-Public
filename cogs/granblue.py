@@ -315,24 +315,32 @@ class GranblueFantasy(commands.Cog):
                         thumbnail : str|None = None
                         # Iterate over strings
                         i : int
+                        is_comment : bool = False
                         for i in range(0, len(content)):
                             if i & 1 == 1: # Odd, it's a tag
                                 tag : str = content[i].split(' ', 1)[0]
-                                if tag in tags: # known tag, replace with corresponding string (see 40 lines above)
-                                    elements.append(tags[tag])
-                                else: # not a known tag
-                                    if elements[-1].strip() != "": # last element wasn't empty, we add a space
-                                        elements.append(" ")
-                                    if thumbnail is None and tag == "img": # thumbnail detection
-                                        thumbnail = content[i].split('src="', 1)[1].split('"', 1)[0]
-                                    elif link is None and tag == "a": # url detection
-                                        link = content[i].split('href="', 1)[1].split('"', 1)[0]
-                            else: # even, it's text
-                                tmp : str = content[i].strip()
-                                if i > 0 and tmp == "" and tmp == elements[-1].strip(): # don't insert spaces if the previous string is also empty or possibly containing white spaces
-                                    pass
+                                if is_comment:
+                                    if tag == "/comment":
+                                        is_comment = False
                                 else:
-                                    elements.append(content[i])
+                                    if tag == "comment":
+                                        is_comment = True
+                                    elif tag in tags: # known tag, replace with corresponding string (see 40 lines above)
+                                        elements.append(tags[tag])
+                                    else: # not a known tag
+                                        if elements[-1].strip() != "": # last element wasn't empty, we add a space
+                                            elements.append(" ")
+                                        if thumbnail is None and tag == "img": # thumbnail detection
+                                            thumbnail = content[i].split('src="', 1)[1].split('"', 1)[0]
+                                        elif link is None and tag == "a": # url detection
+                                            link = content[i].split('href="', 1)[1].split('"', 1)[0]
+                            else: # even, it's text
+                                if not is_comment:
+                                    tmp : str = content[i].strip()
+                                    if i > 0 and tmp == "" and tmp == elements[-1].strip(): # don't insert spaces if the previous string is also empty or possibly containing white spaces
+                                        pass
+                                    else:
+                                        elements.append(content[i])
                         # Remove extra new lines
                         i = 0
                         counter : int = 0

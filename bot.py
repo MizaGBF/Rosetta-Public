@@ -26,7 +26,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.0.7" # bot version
+    VERSION : str = "12.0.8" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v12.0.0** - Removed: Unused commands/cogs, the vxtwitter feature.",
