@@ -981,7 +981,7 @@ class GachaSimulator():
             case self.Mode.MEMEB:
                 footer.append(" ▫️ until rate up")
             case self.Mode.SCAM:
-                footer.append(" ▫️ Selected Scam #{}".format(self.scamdata[5]+1))
+                footer.append(" ▫️ Selected Scam #{}".format(self.scamdata[6]+1))
             case _:
                 pass
         return "".join(self.bannerIDtoFooter(footer))
