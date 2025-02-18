@@ -728,7 +728,7 @@ class GranblueFantasy(commands.Cog):
             await inter.edit_original_message(embed=self.bot.embed(title="No schedule available", color=self.COLOR))
         else:
             # add extra infos at the bottom
-            msgs.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), current_time.strftime("%I:%M %p")))
+            msgs.append("{} Japan Time is **{}\n**".format(self.bot.emote.get('clock'), self.bot.util.JST().strftime("%I:%M %p")))
             if next is not None:
                 next_str : str
                 if next[1].startswith("Update"):
