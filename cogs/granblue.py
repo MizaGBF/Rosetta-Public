@@ -283,7 +283,10 @@ class GranblueFantasy(commands.Cog):
             "/u":"__",
             "tr":"\n",
             "div":"\n",
-            "/div":"\n"
+            "/div":"\n",
+            "li":"- ",
+            "/li":"\n",
+            "/ul":"\n",
         }
         # build a list of id to check
         to_process : list[int] = [i for i in range(ii, ii + ncheck) if i not in self.bot.data.save['gbfdata']['game_news']]
@@ -366,7 +369,10 @@ class GranblueFantasy(commands.Cog):
                             description.append(e)
                             length += len(description[-1]) + 1
                             if length >= limit:
-                                description.append("[...]")
+                                if len(description) > 0:
+                                    if description[-1] == "- " or description[-1] == "\n":
+                                        description.pop()
+                                description.append(" [...]")
                                 break
                         if len(description) == 0:
                             description.append("")
