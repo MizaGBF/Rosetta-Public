@@ -163,9 +163,9 @@ class GranblueFantasy(commands.Cog):
             if link == "":
                 link = None
             elif link[0] == "/":
-                link = "https://granbluefantasy.jp" + link
+                link = "https://game.granbluefantasy.jp" + link
             else:
-                link = "https://granbluefantasy.jp/" + link
+                link = "https://game.granbluefantasy.jp/" + link
         return link
 
     """compute_news_description_character_limit()
