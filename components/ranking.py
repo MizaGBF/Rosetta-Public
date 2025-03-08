@@ -36,7 +36,7 @@ class Ranking():
     # Ranking tiers
     TIER_CREWS_PRELIM : list[int] = [300, 1000, 2500, 8000, 19000, 36000]
     TIER_CREWS_FINAL : list[int] = [2500, 5500, 9000, 14000, 18000, 30000]
-    TIER_PLAYERS : list[int] = [2000, 90000, 140000, 180000, 270000, 370000]
+    TIER_PLAYERS : list[int] = [2000, 100000, 150000, 200000, 270000, 370000]
     # Max ranking scrapping tasks
     MAX_TASK : list[int] = 15
     # DB File version
