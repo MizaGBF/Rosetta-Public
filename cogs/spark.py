@@ -25,8 +25,8 @@ class Sparking(commands.Cog):
     NICKNAME_REGEX : re.Pattern = re.compile("(\\(\\d+\\/\\d{3}\\))")
     # Expected monthly roll gain
     # Roughly estimated from https://docs.google.com/spreadsheets/d/17FxHgTDdKIcIb6IHvLSq6JgG1CqRFoFs7vSPKBy7VKc/edit?gid=1662801985#gid=1662801985
-    MONTHLY_MAX : list[int] = [90, 90, 170, 90, 90, 85, 100, 250, 100, 90, 80, 180]
-    MONTHLY_MIN : list[int] = [80, 70, 130, 80, 70, 75, 80, 200, 80, 50, 70, 130]
+    MONTHLY_MAX : list[int] = [90, 90, 140, 100, 80, 85, 110, 170, 100, 90, 90, 130]
+    MONTHLY_MIN : list[int] = [80, 70, 110, 80, 60, 75, 90, 150, 80, 50, 70, 110]
     # Days per month (as floats)
     MONTHLY_DAY : list[float] = [31.0, 28.25, 31.0, 30.0, 31.0, 30.0, 31.0, 31.0, 30.0, 31.0, 30.0, 31.0]
 
