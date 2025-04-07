@@ -915,23 +915,18 @@ class GuildWar(commands.Cog):
             self.bot.data.save['gw']['gbfgdata'] = {}
             self.bot.data.pending = True
 
-        if force_update or len(self.bot.ranking.gbfgcrews_id) != len(self.bot.data.save['gw']['gbfgdata']):
-            cdata : GBFGData = {}
-            c : str
-            for c in self.bot.ranking.gbfgcrews_id:
-                if c in self.bot.data.save['gw']['gbfgdata']:
-                    cdata[str(c)] = self.bot.data.save['gw']['gbfgdata'][str(c)]
-                    if not force_update:
-                        continue
-                crew : CrewData = await self.getCrewData(c, 0)
-                if 'error' in crew or crew['private']:
-                    crew = await self.getCrewData(c, 1)
-                    if str(c) not in cdata:
-                        cdata[str(c)] = [crew['name'], crew['leader'], int(crew['leader_id']), []]
-                    continue
-                cdata[str(c)] = [crew['name'], crew['leader'], int(crew['leader_id']), []]
-                cdata[str(c)][-1] = [p['id'] for p in crew['player']]
-            self.bot.data.save['gw']['gbfgdata'] = cdata
+        c : str
+        for c in self.bot.ranking.gbfgcrews_id:
+            if c in self.bot.data.save['gw']['gbfgdata'] and len(self.bot.data.save['gw']['gbfgdata'][c][3]) > 0 and not force_update:
+                continue
+            crew : CrewData = await self.getCrewData(c, 0)
+            if 'error' in crew or crew['private']:
+                crew = await self.getCrewData(c, 1)
+                if str(c) not in self.bot.data.save['gw']['gbfgdata']:
+                    self.bot.data.save['gw']['gbfgdata'][str(c)] = [crew['name'], crew['leader'], int(crew['leader_id']), []]
+                continue
+            self.bot.data.save['gw']['gbfgdata'][str(c)] = [crew['name'], crew['leader'], int(crew['leader_id']), []]
+            self.bot.data.save['gw']['gbfgdata'][str(c)][-1] = [p['id'] for p in crew['player']]
             self.bot.data.pending = True
         return self.bot.data.save['gw']['gbfgdata']
 
