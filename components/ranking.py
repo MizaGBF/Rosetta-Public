@@ -22,6 +22,7 @@ from datetime import timedelta, datetime
 from collections import deque
 from bs4 import BeautifulSoup
 from bs4 import element as bs4element
+from urllib.parse import unquote
 import sqlite3
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -34,9 +35,11 @@ class Ranking():
     # The Ranking component
     
     # Ranking tiers
-    TIER_CREWS_PRELIM : list[int] = [300, 1000, 2500, 9000, 19000, 36000]
     TIER_CREWS_FINAL : list[int] = [2500, 5500, 9000, 14000, 18000, 30000]
     TIER_PLAYERS : list[int] = [2000, 100000, 150000, 200000, 270000, 370000]
+    UNF_HERO : str = "2000"
+    TIER_A : str = "9000"
+    TIER_B : str = "19000"
     # Max ranking scrapping tasks
     MAX_TASK : list[int] = 15
     # DB File version
@@ -113,50 +116,6 @@ class Ranking():
                 res = await self.bot.net.requestGBF("teamraid{}/rest_ranking_user/detail/{}/0".format(str(self.bot.data.save['gw']['id']).zfill(3), page), expect_JSON=True)
         return res
 
-    """updateRankingTask()
-    Update the cutoff data for the given rank and ranking
-    
-    Parameters
-    ----------
-    diff: Integer, difference in minute from the last update (0 if undefined)
-    iscrew: Boolean, True if it's for crew, False for players
-    mode: Integer, requestRanking() mode value
-    rank: Integer, ranking value to check
-    """
-    async def updateRankingTask(self : Ranking, diff : int, iscrew : bool, mode : int, rank : int) -> None:
-        r : RequestResult = None
-        errc : int = 0
-        # Note: rankingtempdata format:
-        # [
-        #     {"rank":int(score)}, # crew ranking
-        #     {"rank":int(score)}, # player ranking
-        #     {"rank":int(score)}, # crew speed delta
-        #     {"rank":int(score)} # player speed delta
-        # ]
-        try:
-            while errc < 5 and (r is None or 'list' not in r): # we try 5 times
-                if iscrew:
-                    r = await self.requestRanking(rank // 10, mode) # get rank score
-                    # check score validity
-                    if r is not None and 'list' in r and len(r['list']) > 0:
-                        self.rankingtempdata[0][str(rank)] = int(r['list'][-1]['point']) # add to our ranking
-                        # calculate delta
-                        if diff > 0 and self.bot.data.save['gw']['ranking'] is not None and str(rank) in self.bot.data.save['gw']['ranking'][0]:
-                            self.rankingtempdata[2][str(rank)] = (self.rankingtempdata[0][str(rank)] - self.bot.data.save['gw']['ranking'][0][str(rank)]) / diff
-                else:
-                    r = await self.requestRanking(rank // 10, 2) # get rank score
-                    # check score validity
-                    if r is not None and 'list' in r and len(r['list']) > 0:
-                        self.rankingtempdata[1][str(rank)] = int(r['list'][-1]['point']) # add to our ranking
-                        # calculate delta
-                        if diff > 0 and self.bot.data.save['gw']['ranking'] is not None and str(rank) in self.bot.data.save['gw']['ranking'][1]:
-                            self.rankingtempdata[3][str(rank)] = (self.rankingtempdata[1][str(rank)] - self.bot.data.save['gw']['ranking'][1][str(rank)]) / diff
-                if r is None:
-                    errc += 1
-                    await asyncio.sleep(1)
-        except:
-            pass
-
     """checkGWRanking()
     Bot task to update the ranking data. Only needed once every 20 minutes
     """
@@ -214,7 +173,7 @@ class Ranking():
                         elif m in [3, 4, 23, 24, 43, 44]: # minute to update
                             update_time : datetime = current_time.replace(minute=20 * (current_time.minute // 20), second=1, microsecond=0) # calculate this 20 minutes period time
                             # START THE UPDATE
-                            if await self.update_ranking(update_time, (0 if d.startswith("Day ") else 1), (self.TIER_CREWS_FINAL if d.startswith("Day ") else self.TIER_CREWS_PRELIM), self.TIER_PLAYERS):
+                            if await self.update_ranking(update_time, d == "Preliminaries"):
                                 # retrieve the whole ranking if it went well
                                 await self.retrieve_ranking(update_time)
                             await asyncio.sleep(180) # wait 3 minutes
@@ -289,21 +248,21 @@ class Ranking():
                         try:
                             rank : str
                             if tops[0].text == '"Unite and Fight Hero"':
-                                rank = "2000"
+                                rank = self.UNF_HERO
                             elif tops[0].text.startswith('Top '):
                                 rank = str(int(tops[0].text.replace('Top ', '').replace(',', '')))
                             elif tops[0].text.startswith('Tier '):
                                 if crew == 0 and tops[0].text in ["Tier A", "Tier B"]:
                                     if tops[0].text[-1] == "A":
-                                        rank = str(self.TIER_CREWS_PRELIM[-3]) # tier A
+                                        rank = self.TIER_A
                                     else:
-                                        rank = str(self.TIER_CREWS_PRELIM[-2]) # tier B
+                                        rank = self.TIER_B
                                 else:
                                     rank = int(tops[0].text.replace('Tier ', '').replace(',', ''))
                                     if crew == 1:
                                         rank = str(self.TIER_PLAYERS[rank])
                                     else:
-                                        rank = str(self.TIER_CREWS_FINAL[rank-1])
+                                        rank = str(self.TIER_CREWS[rank-1])
                             spans : bs4element.ResultSet = div.findChildren("span", recursive=True)
                             # bracket change end
                             span : bs4element.tag
@@ -337,15 +296,13 @@ class Ranking():
     Parameters
     --------
     update_time: Datetime, current time period of 20min
-    mode: Integer, 0 for prelims, 1 for others
-    crews: List of crew ranks to update
-    players: List of player ranks to update
+    is_prelim: Boolean, set to True if we check the prelims page
     
     Returns
     --------
     bool: True if success, False if not
     """
-    async def update_ranking(self : Ranking, update_time : datetime, mode : int, crews : list, players : list) -> bool:
+    async def update_ranking(self : Ranking, update_time : datetime, is_prelim : bool) -> bool:
         self.bot.logger.push("[RANKING] Updating Main Ranking...", send_to_discord=False)
         # update $ranking and $estimation
         try:
@@ -356,10 +313,27 @@ class Ranking():
             else:
                 diff = 0.0
             
-            # we run the updates in the parallel
-            tasks_crew : list[types.CoroutineType] = [self.updateRankingTask(diff, True, mode, c) for c in crews]
-            tasks_player : list[types.CoroutineType] = [self.updateRankingTask(diff, False, 2, p) for p in players]
-            await asyncio.gather(*tasks_crew, *tasks_player)
+            for uri, prelim_uri, is_player in [("teamraid{}/ranking/content/guild", True, False), ("teamraid{}/ranking/content/totalguild", False, False), ("teamraid{}/ranking/content/user", False, True)]:
+                if not is_prelim and prelim_uri:
+                    continue
+                data = unquote((await self.bot.net.requestGBF(uri.format(str(self.bot.data.save['gw']['id']).zfill(3)), expect_JSON=True))["data"])
+                soup : BeautifulSoup = BeautifulSoup(data, 'html.parser')
+                tags : bs4element.ResultSet = soup.find_all("div", class_="lis-ranking")
+                table : dict[str, int] = {}
+                speed : dict[str, float]= {}
+                for entry in tags:
+                    try:
+                        rank : str = entry.findChildren("div", class_="ico-rank-digits")[0].text.replace("#", "").replace(",", "")
+                        if is_player:
+                            table[rank] = int(entry.findChildren("div", class_="prt-point honors", recursive=True)[0].findChildren("div", class_="txt-total-record")[0].text.replace(",", ""))
+                        else:
+                            table[rank] = int(entry.findChildren("div", class_="txt-total-record", recursive=True)[0].text.replace(",", ""))
+                        if diff > 0 and self.bot.data.save['gw']['ranking'] is not None and rank in self.bot.data.save['gw']['ranking'][0]:
+                            speed[rank] = (table[rank] - self.bot.data.save['gw']['ranking'][0][rank]) / diff
+                    except:
+                        pass
+                self.rankingtempdata[1 if is_player else 0] = self.rankingtempdata[1 if is_player else 0] | table # merge this one, for prelims
+                self.rankingtempdata[3 if is_player else 2] = speed
 
             # sort the result
             i : int
