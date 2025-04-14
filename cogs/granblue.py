@@ -275,7 +275,7 @@ class GranblueFantasy(commands.Cog):
                 self.bot.data.save['maintenance']['state'] = True
                 self.bot.data.pending = True
             except Exception as se:
-                self.bot.logger.pushError("[PRIVATE] 'checkGameNews (Maintenance)' Error:", se)
+                self.bot.logger.pushError("[Granblue] 'checkGameNews (Maintenance)' Error:", se)
 
     """checkGameNews()
     Coroutine checking for new in-game news, to post them in announcement channels
@@ -405,7 +405,7 @@ class GranblueFantasy(commands.Cog):
                         # detect maintenance to automatically set the date
                         self.parse_maintenance_from_news(data[0]['title'], description)
                 except Exception as e:
-                    self.bot.logger.pushError("[PRIVATE] 'checkGameNews' Error:", e)
+                    self.bot.logger.pushError("[Granblue] 'checkGameNews' Error:", e)
                     return
         if len(news) > 0: # add processed news
             self.bot.data.save['gbfdata']['game_news'] = self.bot.data.save['gbfdata']['game_news'] + news

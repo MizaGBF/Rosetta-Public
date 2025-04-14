@@ -26,7 +26,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.0.9" # bot version
+    VERSION : str = "12.0.10" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         "Please use `/bug_report`, open an [issue](https://github.com/MizaGBF/Rosetta-Public) or check the [help](https://mizagbf.github.io/discordbot.html) if you have a problem.",
         "**v12.0.0** - Removed: Unused commands/cogs, the vxtwitter feature.",
@@ -35,6 +35,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.0.5** - Removed `/gbf check brand`.",
         "**v12.0.6** - Added support for 4% banners in the Gacha Simulator.",
         "**v12.0.7** - Added event links to `/gbf schedule`.",
+        "**v12.0.10** - Added `/gw rosetta`.",
     ]
     
     def __init__(self : DiscordBot, test_mode : bool = False, debug_mode : bool = False) -> None:

@@ -1530,7 +1530,6 @@ class GuildWar(commands.Cog):
             final_results : PageResultList = []
             player_ranking : PlayerRanking = []
             dancho_ranking : PlayerRanking = []
-            ranking : PlayerRanking
             players : dict[str, str] = {} # player list
             danchos : dict[str, tuple[str, str]] = {} # captain list
             private : int = 0
@@ -1572,71 +1571,98 @@ class GuildWar(commands.Cog):
             v : tuple[str, str]
             for k, v in danchos.items(): # add n/a dancho
                 dancho_ranking.append((v[0], v[1], None, k, None))
-            dancho_list : list[int|None] = [k[3] for k in dancho_ranking] # build dancho list (for emote)
+            dancho_list : set[int] = set([k[3] for k in dancho_ranking if k[3] is not None]) # build dancho list (for emote)
             await asyncio.sleep(0)
-            captain : int
+            if gwid is None:
+                gwid = ""
             for captain in range(2):
-                title_string = ("Captain" if captain == 1 else "Player")
-                # build ranking
-                if captain == 0:
-                    ranking = player_ranking
-                else:
-                    ranking = dancho_ranking
-                # sorting
-                i : int
-                j : int
-                for i in range(len(ranking)):
-                    for j in range(i+1, len(ranking)):
-                        if ranking[j][2] is not None and (ranking[i][2] is None or ranking[i][2] < ranking[j][2]):
-                            ranking[i], ranking[j] = ranking[j], ranking[i]
-                await asyncio.sleep(0)
-                if len(ranking) == 0:
-                    continue
-                else:
-                    if gwid is None:
-                        gwid = ""
-                    fields : list[dict[str, str|list]] = []
-                    search_results : PageResult = []
-                    # create field embeds
-                    element : PlayerEntry
-                    for i, element in enumerate(ranking):
-                        if i == 30:
-                            break
-                        elif i % 15 == 0:
-                            fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+captain*2))), 'value':[]})
-                            search_results.append([])
-                            await asyncio.sleep(0)
-                        rt : str # rank
-                        ht : str # honor
-                        ct : str # separator
-                        if element[4] is not None:
-                            if element[4] >= 100000:
-                                rt = "#**{}K**".format(element[4]//1000)
-                            else:
-                                rt = "#**{}**".format(self.bot.util.valToStr(element[4]))
-                            ht = " **{}**".format(self.bot.util.valToStr(element[2], 2))
-                        else:
-                            rt = "**n/a** "
-                            ht = ""
-                        ct = ' - ' if element[3] not in dancho_list else str(self.bot.emote.get('captain'))
-                        fields[-1]['value'].append(rt)
-                        fields[-1]['value'].append(ct)
-                        fields[-1]['value'].append(element[1]) # name
-                        fields[-1]['value'].append(" *")
-                        fields[-1]['value'].append(element[0]) # crew
-                        fields[-1]['value'].append("*")
-                        fields[-1]['value'].append(ht)
-                        fields[-1]['value'].append("\n")
-                        search_results[-1].append((element[3], element[1])) # id name
-                    field : dict[str, str|list]
-                    for field in fields:
-                        field['value'] = "".join(field['value'])
-                    embed : disnake.Embed = self.bot.embed(title="{} /gbfg/ GW{} Top {} Ranking".format(self.bot.emote.get('gw'), gwid, title_string), description=desc, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds - {} on page {}, {}".format(("Players" if captain == 1 else "Captains"), (captain * 2 + 2) % 4 + 1, (captain * 2 + 2) % 4 + 2))
-                    embeds.extend([embed for i in range(len(search_results))])
-                    final_results.extend(search_results)
+                er : list[disnake.Embed]
+                fr : PageResultList
+                er, fr = await self.generate_player_ranking_embed(
+                    (dancho_ranking if captain == 1 else player_ranking),
+                    dancho_list,
+                    "{} /gbfg/ GW{} Top {} Ranking".format(self.bot.emote.get('gw'), gwid, ("Captain" if captain == 1 else "Player")),
+                    desc,
+                    captain*2,
+                    " - {} on page {}, {}".format(("Players" if captain == 1 else "Captains"), (captain * 2 + 2) % 4 + 1, (captain * 2 + 2) % 4 + 2)
+                )
+                embeds.extend(er)
+                final_results.extend(fr)
             return embeds, final_results
         except:
             return [], []
+
+    """generate_player_ranking_embed()
+    Coroutine to generate embeds from a PlayerRanking
+    
+    Parameters
+    --------
+    ranking: PlayerRanking, a list of player infos
+    dancho_list: A set containing ID of captains. Pass empty set to ignore.
+    title_string: The title used by embeds
+    description: The description used by embeds
+    page_offset: (Optional) Integer, offset added to the page
+    footer_extra: (Optional) String appended to the embeds
+    
+    Returns
+    --------
+    Tuple:
+        - embeds: List of embeds
+        - final_results: List of results for each page
+    """
+    async def generate_player_ranking_embed(self : GuildWar, ranking : PlayerRanking, dancho_list : set[int], title_string : str, description : str, page_offset : int = 0, footer_extra : str = "") -> tuple[list[disnake.Embed], PageResultList]:
+        embeds : list[disnake.Embed] = []
+        final_results : PageResultList = []
+        # sorting
+        i : int
+        j : int
+        for i in range(len(ranking)):
+            for j in range(i+1, len(ranking)):
+                if ranking[j][2] is not None and (ranking[i][2] is None or ranking[i][2] < ranking[j][2]):
+                    ranking[i], ranking[j] = ranking[j], ranking[i]
+        await asyncio.sleep(0)
+        if len(ranking) >= 0:
+            fields : list[dict[str, str|list]] = []
+            search_results : PageResult = []
+            # create field embeds
+            element : PlayerEntry
+            for i, element in enumerate(ranking):
+                if i == 30:
+                    break
+                elif i % 15 == 0:
+                    fields.append({'name':'Page {}'.format(self.bot.emote.get(str(len(fields)+1+page_offset))), 'value':[]})
+                    search_results.append([])
+                    await asyncio.sleep(0)
+                rt : str # rank
+                ht : str # honor
+                ct : str # separator
+                if element[4] is not None:
+                    if element[4] >= 100000:
+                        rt = "#**{}K**".format(element[4]//1000)
+                    else:
+                        rt = "#**{}**".format(self.bot.util.valToStr(element[4]))
+                    ht = " **{}**".format(self.bot.util.valToStr(element[2], 2))
+                else:
+                    rt = "**n/a** "
+                    ht = ""
+                ct = ' - ' if element[3] not in dancho_list else str(self.bot.emote.get('captain'))
+                fields[-1]['value'].append(rt)
+                fields[-1]['value'].append(ct)
+                fields[-1]['value'].append(element[1]) # name
+                if element[0] is not None:
+                    fields[-1]['value'].append(" *")
+                    fields[-1]['value'].append(element[0]) # crew
+                    fields[-1]['value'].append("*")
+                fields[-1]['value'].append(ht)
+                fields[-1]['value'].append("\n")
+                search_results[-1].append((element[3], element[1])) # id name
+            field : dict[str, str|list]
+            for field in fields:
+                field['value'] = "".join(field['value'])
+            embed : disnake.Embed = self.bot.embed(title=title_string, description=description, fields=fields, inline=True, color=self.COLOR, footer="Buttons expire in 100 seconds" + footer_extra)
+            embeds.extend([embed for i in range(len(search_results))])
+            final_results.extend(search_results)
+        return embeds, final_results
 
     @gbfg.sub_command()
     async def players(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -1788,5 +1814,62 @@ class GuildWar(commands.Cog):
             await self.bot.channel.clean(inter, 40)
         else:
             view : PageRanking = PageRanking(self.bot, owner_id=inter.author.id, embeds=embeds, search_results=final_results, color=self.COLOR, stype=True, timeout=100, enable_timeout_cleanup=True)
+            await inter.edit_original_message(embed=embeds[0], view=view)
+            view.message = await inter.original_message()
+
+    """_supercrew()
+    Retrieve the ranking data from all players registered in Rosetta and build embeds for the /gw rosetta command
+    
+    Returns
+    --------
+    Tuple:
+        - embeds: List of embeds
+        - final_results: List of results for each page
+    """
+    async def _supercrew(self : GuildWar) -> tuple[list[disnake.Embed], PageResultList]:
+        try:
+            player_ranking : PlayerRanking = []
+            players : dict[str, str] = {} # player list
+            gwid : int|str|None
+            # build player id list
+            players : list[str] = [str(v) for v in self.bot.data.save["gbfids"].values()]
+            await asyncio.sleep(0)
+            # query
+            data : GWDBSearchResult|None = await self.bot.ranking.searchGWDB("(" + ",".join(players) + ")", 4)
+            desc : str = ""
+            # store result
+            if data is not None and data[1] is not None:
+                if data[2][1] is not None: # add timestamp if it exists
+                    timestamp : datetime|None = data[2][1].timestamp
+                    if timestamp is not None:
+                        desc = "Updated: **{}** ago\n".format(self.bot.util.delta2str(self.bot.util.JST()-timestamp, 0)) + desc
+                if len(data[1]) > 0:
+                    gwid = data[1][0].gw
+                    res : Score
+                    for res in data[1]:
+                        player_ranking.append([None, res.name, res.current, res.id, res.ranking])
+            desc += "-# Use {} to be added to the list".format(self.bot.util.command2mention("gbf profile set"))
+            await asyncio.sleep(0)
+            if gwid is None:
+                gwid = ""
+            return await self.generate_player_ranking_embed(player_ranking, set(), "{} Rosetta GW{} Top Player Ranking".format(self.bot.emote.get('gw'), gwid), desc)
+        except:
+            return [], []
+
+    @gw.sub_command()
+    async def rosetta(self, inter: disnake.GuildCommandInteraction):
+        """Post the Top 30 Players registered in Rosetta per contribution"""
+        await inter.response.defer()
+        embeds : list[disnake.Embed]
+        final_results : PageResultList
+        embeds, final_results = await self._supercrew()
+        if not self.isGWRunning():
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Rosetta Ranking".format(self.bot.emote.get('gw')), description="This command is only available during Guild War", color=self.COLOR))
+            await self.bot.channel.clean(inter, 40)
+        elif len(embeds) == 0:
+            await inter.edit_original_message(embed=self.bot.embed(title="{} Rosetta Ranking".format(self.bot.emote.get('gw')), description="No players in the ranking", color=self.COLOR))
+            await self.bot.channel.clean(inter, 40)
+        else:
+            view = PageRanking(self.bot, owner_id=inter.author.id, embeds=embeds, search_results=final_results, color=self.COLOR, stype=False, timeout=100, enable_timeout_cleanup=True)
             await inter.edit_original_message(embed=embeds[0], view=view)
             view.message = await inter.original_message()
