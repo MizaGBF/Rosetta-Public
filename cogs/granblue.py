@@ -209,47 +209,69 @@ class GranblueFantasy(commands.Cog):
         # we check for specific titles
         if title.endswith(' Maintenance Announcement') and "aintenance is scheduled for " in description:
             try:
-                # extract the dates and parse
-                description = description.split('. ', 1)[0].split(" is scheduled for ", 1)[1].split(',')
-                # time
-                timestring : str = description[0].split(",", 1)[0]
-                parts : list[str] = timestring.split('–')
+                # break down the first line by words
+                words : list[str] = description.split(' (JST)', 1)[0].split(" ")
+                state : bool = False
                 sections : list[list[str]] = []
-                el : int
-                for el in range(len(parts)):
-                    if 'noon' in parts[el]:
-                        parts[el] = '12 p.m.'
-                    elif 'midnight' in parts[el]:
-                        parts[el] = '0'
-                    sections.append(parts[el].split(' '))
-                hour_start = int(sections[0][0]) % 12
-                if len(sections[0]) > 1 and sections[0][1] == 'p.m.':
-                    hour_start += 12
-                hour_end = int(sections[1][0]) % 12
-                if len(sections[1]) > 1 and sections[1][1] == 'p.m.':
-                    hour_end += 12
-                parts = description[1].strip().split(" ")
-                # date
-                day = int(parts[1])
-                match parts[0].lower():
-                    case 'jan': month = 1
-                    case 'feb': month = 2
-                    case 'mar': month = 3
-                    case 'apr': month = 4
-                    case 'may': month = 5
-                    case 'jun': month = 6
-                    case 'jul': month = 7
-                    case 'aug': month = 8
-                    case 'sep': month = 9
-                    case 'oct': month = 10
-                    case 'nov': month = 11
-                    case 'dec': month = 12
-                    case _: raise Exception("Month Error")
-                parts = description[2].strip().split(" ")
-                year = int(parts[0])
+                # read the words we look for (the dates)
+                w : str
+                for w in words:
+                    if not state:
+                        if w.isdigit() or w in ("noon", "midnight"):
+                            state = True
+                            sections.append(w)
+                    elif state:
+                        if "-" in w:
+                            sections.extend(w.split("-"))
+                        elif "–" in w:
+                            sections.extend(w.split("–"))
+                        else:
+                            sections.append(w.replace(',', ''))
+                # parse the start and end hour
+                i : int = 0
+                hours : list[int]= [0, 0]
+                for j in range(2):
+                    match sections[i]:
+                        case "noon":
+                            hours[j] = 12
+                        case "midnight":
+                            hours[j] = 0
+                        case _:
+                            hours[j] = int(sections[i])
+                            if sections[1] == "p.m.":
+                                hours[j] += 12
+                                i += 1
+                            elif sections[1] == "a.m.":
+                                i += 1
+                    i += 1
+                # parse the day, month and year
+                day : int = 0
+                month : int = 0
+                year : int = 0
+                for j in range(i, i+3):
+                    if sections[j].isdigit():
+                        if len(sections[j]) == 4:
+                            year = int(sections[j])
+                        else:
+                            day = int(sections[j])
+                    else:
+                        match sections[j].lower():
+                            case 'jan': month = 1
+                            case 'feb': month = 2
+                            case 'mar': month = 3
+                            case 'apr': month = 4
+                            case 'may': month = 5
+                            case 'jun': month = 6
+                            case 'jul': month = 7
+                            case 'aug': month = 8
+                            case 'sep': month = 9
+                            case 'oct': month = 10
+                            case 'nov': month = 11
+                            case 'dec': month = 12
+                            case _: raise Exception("Month Error for '{}'".format(sections[j]))
                 # set in memory
-                self.bot.data.save['maintenance']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hour_start, minute=0, second=0, microsecond=0)
-                self.bot.data.save['maintenance']['duration'] = hour_end-hour_start
+                self.bot.data.save['maintenance']['time'] = datetime.now().replace(year=year, month=month, day=day, hour=hours[0], minute=0, second=0, microsecond=0)
+                self.bot.data.save['maintenance']['duration'] = hours[1]-hours[0]
                 self.bot.data.save['maintenance']['state'] = True
                 self.bot.data.pending = True
             except Exception as se:
