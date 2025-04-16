@@ -6,33 +6,36 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.util import GameCard
+    from . import User
     # Type Aliases
     type CardList = list[GameCard]
     type Hand = list[int|CardList]
 from enum import IntEnum
 import random
 
+
 # General enum
 class Constant(IntEnum):
     CARD_1_HOLD : int = 0b001
     CARD_2_HOLD : int = 0b010
     CONFIRMED   : int = 0b100
-    
+
     BUTTON_CONFIRM : int = 0
     BUTTON_CARD_1 : int = 1
     BUTTON_CARD_2 : int = 2
 
-# ----------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
 # Poker View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # View class used to play Poker
 # PokerSub is for ephemeral messages
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class PokerSub(BaseView):
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -44,7 +47,7 @@ class PokerSub(BaseView):
 
     """do()
     Coroutine called by buttons
-    
+
     Parameters
     ----------
     interaction: the button interaction
@@ -73,7 +76,8 @@ class PokerSub(BaseView):
                 await interaction.response.edit_message(embed=self.parent.subembeds[i], view=None)
                 # check if all players confirmed
                 for h in self.parent.hands:
-                    if h[0] & Constant.CONFIRMED == 0: return # one hasn't, stop here
+                    if h[0] & Constant.CONFIRMED == 0:
+                        return # if one hasn't, stop
                 # all confirmed, disable this sub view and change parent to state 1
                 self.stopall()
                 self.parent.stopall()
@@ -112,6 +116,7 @@ class PokerSub(BaseView):
         else:
             await interaction.response.send_message("The game is over", ephemeral=True)
 
+
 class Poker(BaseView):
     ROYAL_FLUSH_SET : set[str] = set(["10", "11", "12", "13", "14"])
     STRAIGTH_SET : set[str] = set(["14", "2", "3", "4", "5"])
@@ -119,10 +124,10 @@ class Poker(BaseView):
     FOUR_KIND_SET : set[int] = set([1,4])
     THREE_KIND_SET : set[int] = set([1,3])
     DOUBLE_PAIR_LIST : list[int] = [1,2,2]
-    
+
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -130,10 +135,16 @@ class Poker(BaseView):
     embed: disnake.Embed to edit
     remaining: integer, remaining number of rounds, put 0 to ignore the round system
     """
-    def __init__(self : Poker, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed, remaining : int = 0) -> None:
+    def __init__(
+        self : Poker,
+        bot : DiscordBot,
+        players : list[User],
+        embed : disnake.Embed,
+        remaining : int = 0
+    ) -> None:
         super().__init__(bot, timeout=120)
         self.state : int = 0 # game state, -1 = over, 0~N player turn
-        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.players : list[User] = players # player list
         self.embed : disnake.Embed = embed # embed to updae
         # build a deck (A card is a tuple: (Card strength[1-13], Card suit[0-4])
         self.deck : CardList = [self.bot.singleton.get_GameCard((i % 13) + 2, i // 13) for i in range(51)]
@@ -144,7 +155,12 @@ class Poker(BaseView):
         # get dealer minimum hand value
         self.min_value : int = Poker.calculateMinValue(self.dealer) # dealer hand value
         # set player hands
-        self.hands : list[Hand] = [[Constant.CARD_1_HOLD | Constant.CARD_2_HOLD, [self.deck.pop(), self.deck.pop()]] for i in range(len(self.players))] # state, hand (currently 2 cards)
+        # Format is: state, hand (currently 2 cards)
+        self.hands : list[Hand] = [
+            [
+                Constant.CARD_1_HOLD | Constant.CARD_2_HOLD,
+                [self.deck.pop(), self.deck.pop()]
+            ] for i in range(len(self.players))]
         # set sub view to select cards
         self.sub : PokerSub = PokerSub(self.bot, self)
         # set sub embeds
@@ -152,7 +168,13 @@ class Poker(BaseView):
         i : int
         p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
-            self.subembeds.append(self.bot.embed(title="♠️ {}'s hand ♥".format(p.display_name), description="Initialization", color=self.embed.color))
+            self.subembeds.append(
+                self.bot.embed(
+                    title="♠️ {}'s hand ♥".format(p.display_name),
+                    description="Initialization",
+                    color=self.embed.color
+                )
+            )
             self.updateSubEmbed(i)
         # the max number of cards to draw
         self.max_state : int = 3 + len(self.players) * 2 # 3 from dealer, 2 for each player
@@ -163,7 +185,7 @@ class Poker(BaseView):
 
     """update()
     Update the embed
-    
+
     Parameters
     ----------
     inter: an interaction
@@ -198,7 +220,11 @@ class Poker(BaseView):
         self.embed.description = "".join(desc)
         if init:
             # Note: ping players
-            self.message = await inter.followup.send(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self) # init is true, we edit
+            self.message = await inter.followup.send(
+                content=self.bot.util.players2mentions(self.players),
+                embed=self.embed,
+                view=self
+            ) # init is true, we edit
         elif self.state >= 0:
             await self.message.edit(embed=self.embed, view=None) # game is on going
         else:
@@ -206,7 +232,7 @@ class Poker(BaseView):
 
     """renderTable()
     Render the table (dealer and player hands) according to the game state
-    
+
     Returns
     ----------
     list: List of strings for the embed description
@@ -226,18 +252,18 @@ class Poker(BaseView):
         else:
             desc.append(str(self.dealer[2]))
             desc.append("\n")
-        
+
         s : int = self.state - 3 # state WITHOUT the dealer draw steps
         self.winners = [] # list of winners
         best : int = 0
         i : int
         p : disnake.User|disnake.Member
         for i, p in enumerate(self.players): # write a line for each player
-            desc.append(str(self.bot.emote.get(str(i+1)))) # number
+            desc.append(str(self.bot.emote.get(str(i + 1)))) # number
             desc.append(" ")
             desc.append(p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...") # name
             desc.append(" ▫️ ")
-            
+
             if s < 0: # dealer draw stage
                 desc.append("🎴, 🎴\n") # nothing revealed
             elif s == 0: # 1st card revealed
@@ -271,7 +297,7 @@ class Poker(BaseView):
     """control()
     The button making the PokerSub view appears.
     Allow the player to manage their cards.
-    
+
     Parameters
     ----------
     button: the Discord button
@@ -293,7 +319,7 @@ class Poker(BaseView):
 
     """updateSubEmbed()
     Update an user embed
-    
+
     Parameters
     ----------
     index: Player index
@@ -346,11 +372,11 @@ class Poker(BaseView):
 
     """calculateMinValue()
     Returns the value of the dealt cards
-    
+
     Parameters
     ----------
     dealer: List of card to check
-    
+
     Returns
     --------
     int : Strength value
@@ -368,11 +394,11 @@ class Poker(BaseView):
     """checkPokerHand()
     Static function
     Check a poker hand strength
-    
+
     Parameters
     ----------
     hand: List of card to check
-    
+
     Returns
     --------
     tuple:
@@ -396,7 +422,9 @@ class Poker(BaseView):
         # checks happen in strength order, from highest to lowest
         if flush and set(values) == Poker.ROYAL_FLUSH_SET: # flush and royal flush set match
             return 1000, "**Royal Straight Flush**"
-        elif flush and ((len(counts_set) == 1 and (value_range==4)) or set(values) == Poker.STRAIGTH_SET): # flush and ((all values are unique and the range between highest and lowest is 4) or it matches STRAIGTH_SET)
+        elif flush and ((len(counts_set) == 1 and (value_range == 4)) or set(values) == Poker.STRAIGTH_SET):
+            # flush and ((all values are unique and the range between highest and lowest is 4)
+            # or it matches STRAIGTH_SET)
             return "**Straight Flush, high {}**".format(highest_card.getStringValue())
         elif counts_set == Poker.FOUR_KIND_SET:
             card = Poker.highestCardForOccurence(hand, value_counts, 4)
@@ -405,12 +433,14 @@ class Poker(BaseView):
             return 600 + int(highest_card), "**Full House, high {}**".format(highest_card.getStringValue())
         elif flush:
             return 500 + int(highest_card), "**Flush, high {}**".format(highest_card.getStringValue())
-        elif (len(counts_set) == 1 and (value_range==4)) or set(values) == Poker.STRAIGTH_SET: # (all values are unique and the range between highest and lowest is 4) or it matches STRAIGTH_SET
+        elif (len(counts_set) == 1 and (value_range == 4)) or set(values) == Poker.STRAIGTH_SET:
+            # (all values are unique and the range between highest and lowest is 4)
+            # or it matches STRAIGTH_SET
             return 400 + int(highest_card), "**Straight, high {}**".format(highest_card.getStringValue())
         elif counts_set == Poker.THREE_KIND_SET:
             card = Poker.highestCardForOccurence(hand, value_counts, 3)
             return 300 + int(card), "**Three of a Kind of {}**".format(card.getStringValue())
-        elif sorted_values==Poker.DOUBLE_PAIR_LIST:
+        elif sorted_values == Poker.DOUBLE_PAIR_LIST:
             card = Poker.highestCardForOccurence(hand, value_counts, 2)
             return 200 + int(card), "**Two Pairs, high {}**".format(card.getStringValue())
         elif 2 in counts_set:
@@ -422,13 +452,13 @@ class Poker(BaseView):
     """highestCardForOccurence()
     Static function
     Look for a card which is present N number of time in the selection
-    
+
     Parameters
     ----------
     selection: List of cards to check
     occurences: Dict, a dictionary of pair (card value: occurence of this value)
     occurence: Integer, the occurence to check for
-    
+
     Returns
     --------
     GameCard: A matching card or None if none is found
@@ -452,11 +482,11 @@ class Poker(BaseView):
     """highestCard()
     Static function
     Return the highest card in the list
-    
+
     Parameters
     ----------
     selection: List of cards to check
-    
+
     Returns
     --------
     GameCard: Highest card

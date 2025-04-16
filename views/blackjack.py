@@ -5,16 +5,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.singleton import GameCard
+    from . import User
     # Type Aliases
     type CardList = list[GameCard]
     type Hand = list[int|CardList]
 import random
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Blackjack View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # View class used for the blackjack minigame
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Blackjack(BaseView):
     # player states
@@ -26,19 +28,24 @@ class Blackjack(BaseView):
 
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
     players: list of Players
     embed: disnake.Embed to edit
     """
-    def __init__(self : Blackjack, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed) -> None:
+    def __init__(
+        self : Blackjack,
+        bot : DiscordBot,
+        players : list[User],
+        embed : disnake.Embed
+    ) -> None:
         super().__init__(bot, timeout=240)
         # game state
         self.state : int = 0
         # player list
-        self.players : list[disnake.User|disnake.Member] = players
+        self.players : list[User] = players
         # add bot to the player list if there are space
         if len(self.players) < 6:
             self.players.append(self.bot.user)
@@ -51,7 +58,10 @@ class Blackjack(BaseView):
         # shuffle the deck
         random.shuffle(self.deck)
         # make hands and give one card to each player
-        self.hands : list[Hand] = [[self.PLAYING, [self.deck.pop()]] for i in range(len(self.players))] # player state, cards
+        self.hands : list[Hand] = [
+            [self.PLAYING, [self.deck.pop()]]
+            for i in range(len(self.players))
+        ] # player state, cards
         # Start
         # If the player to start is the bot, call play ai
         if self.players[self.state].id == self.bot.user.id:
@@ -61,12 +71,12 @@ class Blackjack(BaseView):
 
     """renderHand()
     Generate a Hand string for the given hand
-    
+
     Parameters
     ----------
     hand: one list of card from self.hands
     playing: boolean, True if it's the currently playing user
-    
+
     Returns
     ----------
     list: resulting list of strings to add to a message list
@@ -130,7 +140,7 @@ class Blackjack(BaseView):
 
     """update()
     Update the embed
-    
+
     Parameters
     ----------
     inter: an interaction
@@ -143,7 +153,7 @@ class Blackjack(BaseView):
         p : disnake.User|disnake.Member
         for i, p in enumerate(self.players):
             # and display their hand and score
-            desc.append(str(self.bot.emote.get(str(i+1))))
+            desc.append(str(self.bot.emote.get(str(i + 1))))
             desc.append(" ")
             desc.append(p.display_name if len(p.display_name) <= 10 else p.display_name[:10] + "...")
             desc.append(" ▫️ ")
@@ -163,11 +173,11 @@ class Blackjack(BaseView):
 
     """computeScore()
     Calculate the score of the given hand
-    
+
     Parameters
     ----------
     cards: List, a list of card tuples
-    
+
     Returns
     ----------
     int: The score
@@ -204,7 +214,7 @@ class Blackjack(BaseView):
 
     """play()
     Allow the player to make a move
-    
+
     Parameters
     ----------
     stop: boolean, True for the player to stop, False to draw a card
@@ -230,7 +240,9 @@ class Blackjack(BaseView):
         # look for next player
         self.lookupNextPlayerTurn()
         # check if we're still playing AND if it's the bot turn to play
-        if self.state >= 0 and self.players[self.state].id == self.bot.user.id and self.hands[self.state][0] == self.PLAYING:
+        if (self.state >= 0
+                and self.players[self.state].id == self.bot.user.id
+                and self.hands[self.state][0] == self.PLAYING):
             self.playai()
 
     """lookupNextPlayerTurn()
@@ -245,20 +257,24 @@ class Blackjack(BaseView):
             # check player state
             if self.hands[self.state][0] == self.PLAYING: # is playing, good
                 return
-            elif current_state == self.state: # it's the player we started with and they can't play, this means we did a full loop without finding a player able to play, i.e. GAME IS OVER
+            elif current_state == self.state:
+                # it's the player we started with and they can't play,
+                # this means we did a full loop without finding a player able to play,
+                # i.e. GAME IS OVER
                 self.state = -1 # game over
                 return
 
     """buttoncallback()
     Callback for buttons
-    
+
     Parameters
     ----------
     interaction: a Discord interaction
     action: boolean used for self.play()
     """
     async def buttoncallback(self : Blackjack, interaction: disnake.Interaction, action: bool) -> None:
-        if self.state >= 0 and self.players[self.state].id == interaction.user.id: # check if the game is on going and if the interaction author is the current player
+        # check if the game is on going and if the interaction author is the current player
+        if self.state >= 0 and self.players[self.state].id == interaction.user.id:
             self.play(action) # do the action corresponding to the button (True = stop, False = draw)
             # Check if the game is over and print status accordingly
             if self.state >= 0:
@@ -269,12 +285,15 @@ class Blackjack(BaseView):
             # update display
             await self.update(interaction)
         else:
-            await interaction.response.send_message("It's not your turn to play or you aren't the player", ephemeral=True)
+            await interaction.response.send_message(
+                "It's not your turn to play or you aren't the player",
+                ephemeral=True
+            )
 
     """draw()
     The draw button coroutine callback.
     Allow the player to draw a card.
-    
+
     Parameters
     ----------
     button: the Discord button
@@ -287,7 +306,7 @@ class Blackjack(BaseView):
     """giveup()
     The stop button coroutine callback.
     Allow the player to stop.
-    
+
     Parameters
     ----------
     button: the Discord button

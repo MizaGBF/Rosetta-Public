@@ -3,11 +3,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Ban Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Manage Banned users
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Ban():
     # ban flags (binary number)
@@ -24,7 +25,7 @@ class Ban():
 
     """set()
     Ban an user for different bot functions. Also update existing bans
-    
+
     Parameters
     ----------
     uid: User discord id
@@ -40,7 +41,7 @@ class Ban():
 
     """unset()
     Unban an user
-    
+
     Parameters
     ----------
     uid: User discord id
@@ -60,12 +61,12 @@ class Ban():
 
     """check()
     Return if the user is banned or not
-    
+
     Parameters
     ----------
     uid: User discord id
     flag: Bit Mask to compare
-    
+
     Returns
     ----------
     bool: True if banned, False if not
@@ -78,11 +79,11 @@ class Ban():
 
     """get()
     Return the user bitmask
-    
+
     Parameters
     ----------
     uid: User discord id
-    
+
     Returns
     ----------
     int: Bitmask

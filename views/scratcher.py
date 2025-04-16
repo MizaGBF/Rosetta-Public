@@ -4,17 +4,22 @@ import disnake
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
+    # Type Aliases
+    type Grid = list[tuple[str, str]]
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Scratcher View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Scratcher class and its button used by the scratcher game
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class ScratcherButton(disnake.ui.Button):
+    ENDPOINT = 'https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/'
+
     """__init__()
     Button Constructor
-    
+
     Parameters
     ----------
     item: a tuple, containing two strings (item name and thumbnail) representing the gbf item hidden behind the button
@@ -22,7 +27,13 @@ class ScratcherButton(disnake.ui.Button):
     label: the default string label on the button
     style: the default Discord button style
     """
-    def __init__(self : ScratcherButton, item: tuple[str, str], row : int, label : str = '???', style : disnake.ButtonStyle = disnake.ButtonStyle.secondary) -> None:
+    def __init__(
+        self : ScratcherButton,
+        item: tuple[str, str],
+        row : int,
+        label : str = '???',
+        style : disnake.ButtonStyle = disnake.ButtonStyle.secondary
+    ) -> None:
         super().__init__(style=style, label='\u200b', row=row)
         self.item : tuple[str, str] = item
         self.label : str = label
@@ -30,7 +41,7 @@ class ScratcherButton(disnake.ui.Button):
     """callback()
     Coroutine callback called when the button is called
     Stop the view when the game is won
-    
+
     Parameters
     ----------
     interaction: a Discord interaction
@@ -42,17 +53,29 @@ class ScratcherButton(disnake.ui.Button):
             self.style = disnake.ButtonStyle.primary
             if self.view.check_status(self.item):
                 self.view.stopall()
-                await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} scratched".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, description="You won **{}**".format(self.item[0]), thumbnail='https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/' + self.item[1], footer=self.view.footer, color=self.view.color), view=self.view)
+                await interaction.response.edit_message(
+                    embed=self.view.bot.embed(
+                        author={
+                            'name':"{} scratched".format(interaction.user.display_name),
+                            'icon_url':interaction.user.display_avatar
+                        },
+                        description="You won **{}**".format(self.item[0]),
+                        thumbnail=self.ENDPOINT + self.item[1],
+                        footer=self.view.footer,
+                        color=self.view.color
+                    ),
+                    view=self.view)
                 await self.view.bot.channel.clean(interaction, 70)
             else:
                 await interaction.response.edit_message(view=self.view)
         else:
             await interaction.response.send_message("You can't press this button", ephemeral=True)
 
+
 class Scratcher(BaseView):
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -61,9 +84,9 @@ class Scratcher(BaseView):
     color: the color to be used for the message embed
     footer: the footer to be used for the message embed
     """
-    def __init__(self : Scratcher, bot : DiscordBot, owner_id : int, grid : list[tuple[str, str]], color : int, footer : str) -> None:
+    def __init__(self : Scratcher, bot : DiscordBot, owner_id : int, grid : Grid, color : int, footer : str) -> None:
         super().__init__(bot, owner_id=owner_id, timeout=120.0, enable_timeout_cleanup=False)
-        self.grid : list[tuple[str, str]] = grid
+        self.grid : Grid = grid
         self.color : int = color
         self.footer : str = footer
         self.state : dict[tuple[str, str], int] = {}
@@ -74,11 +97,11 @@ class Scratcher(BaseView):
 
     """check_status()
     Function to check the game state
-    
+
     Parameters
     ----------
     item: the last item revealed behind a button
-    
+
     Returns
     --------
     bool: True if the game is over, False if not

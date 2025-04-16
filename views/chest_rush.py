@@ -6,16 +6,17 @@ if TYPE_CHECKING:
     from ..bot import DiscordBot
 import random
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Chest Rush View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Chest Rush class and its button used by the chest rush game
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class ChestRushButton(disnake.ui.Button):
     """__init__()
     Button Constructor
-    
+
     Parameters
     ----------
     grid: the list of remaining winnable items
@@ -29,13 +30,17 @@ class ChestRushButton(disnake.ui.Button):
     """callback()
     Coroutine callback called when the button is called
     Stop the view when the game is won
-    
+
     Parameters
     ----------
     interaction: a Discord interaction
     """
-    async def callback(self : ChestRushButton, interaction: disnake.Interaction) -> None:
-        if not self.disabled and self.view.ownership_check(interaction): # check if the button is enabled and the interaction author is the player
+    async def callback(
+        self : ChestRushButton,
+        interaction: disnake.Interaction
+    ) -> None:
+        # check if the button is enabled and the interaction author is the player
+        if not self.disabled and self.view.ownership_check(interaction):
             # disable this button
             self.disabled = True
             # retrieve the item from the grid
@@ -48,17 +53,28 @@ class ChestRushButton(disnake.ui.Button):
             # check the game status
             if self.view.check_status(): # if game is over
                 self.view.stopall()
-                await interaction.response.edit_message(embed=self.view.bot.embed(author={'name':"{} opened the chests".format(interaction.user.display_name), 'icon_url':interaction.user.display_avatar}, description="Here's the collected loot.", color=self.view.color), view=self.view)
+                await interaction.response.edit_message(
+                    embed=self.view.bot.embed(
+                        author={
+                            'name':"{} opened the chests".format(interaction.user.display_name),
+                            'icon_url':interaction.user.display_avatar
+                        },
+                        description="Here's the collected loot.",
+                        color=self.view.color
+                    ),
+                    view=self.view
+                )
                 await self.view.bot.channel.clean(interaction, 70)
             else: # game continues
                 await interaction.response.edit_message(view=self.view)
         else:
             await interaction.response.send_message("You can't press this button", ephemeral=True)
 
+
 class ChestRush(BaseView):
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -72,18 +88,20 @@ class ChestRush(BaseView):
         self.grid : list[str] = grid
         self.color : int = color
         # Create 9 buttons (one for each theorical grid space)
-        # The buttons aren't directly linked to a particular grid space, we just create the illusion of random placement. They will simply take the next grid item
+        # The buttons aren't directly linked to a particular grid space,
+        # we just create the illusion of random placement.
+        # The game simply take the next grid item in order
         i : int
         for i in range(9):
             self.add_item(ChestRushButton(self.grid, i // 3)) # second parameter is the row the button is on
 
     """check_status()
     Function to check the game state
-    
+
     Parameters
     ----------
     item: the last item revealed behind a button
-    
+
     Returns
     --------
     bool: True if the game is over, False if not

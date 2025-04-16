@@ -11,13 +11,14 @@ from io import BytesIO
 from datetime import datetime, timedelta
 import html
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Data Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # This component manages the save data file (save.json) and handle the loading of config.json (once at startup).
 # It also provides functions to maintain and clean up the save data.
 # Works in tandem with the Drive component.
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Data():
     SAVEVERSION : int = 20
@@ -49,7 +50,15 @@ class Data():
         'ids',
         'games'
     ]
-    
+    SPECIAL_EVT : tuple[str, ...] = (
+        "update",
+        "maintenance",
+        "granblue fes",
+        "summer stream",
+        "christmas stream",
+        "anniversary stream"
+    )
+
     def __init__(self : Data, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.debug : bool = bot.debug_mode or bot.test_mode
@@ -67,7 +76,7 @@ class Data():
 
     """loadConfig()
     Read config.json. Only called once during boot
-    
+
     Returns
     --------
     bool: True on success, False on failure
@@ -99,12 +108,12 @@ class Data():
 
     """convertData()
     Convert outdated save data from a .json file to the current version.
-    
+
     Returns
     --------
     data: Dict, the save data
     ver: Integer, the data version
-    
+
     Returns
     --------
     dict: Reference to data
@@ -114,17 +123,25 @@ class Data():
             if 'newserver' in data:
                 newserver : JSON = data.pop('newserver', None)
                 if 'guilds' not in data:
-                    data['guilds'] = {"owners": newserver.get('owners', []), "pending": newserver.get('pending', {}), "banned": newserver.get('servers', [])}
+                    data['guilds'] = {
+                        "owners":newserver.get('owners', []),
+                        "pending":newserver.get('pending', {}),
+                        "banned":newserver.get('servers', [])
+                    }
             rid : JSON
             for rid in data.get('reminders', {}):
                 r : JSON
                 for r in data['reminders'][rid]:
                     if len(r) == 2:
                         r.append("")
-            try: data['gbfdata'].pop('new_ticket', None)
-            except: pass
-            try: data['gbfdata'].pop('count', None)
-            except: pass
+            try:
+                data['gbfdata'].pop('new_ticket', None)
+            except:
+                pass
+            try:
+                data['gbfdata'].pop('count', None)
+            except:
+                pass
         if ver <= 1:
             data['ban'] : JSON = {}
             if 'guilds' in data:
@@ -194,7 +211,11 @@ class Data():
                         c[2] = 0
                 data['announcement'][k] = c
         if ver <= 9:
-            data['twitter'] = {'Granblue_GW': ['1623613232329158657', '1623606530988994560', '1623605270466428929', '1623601636634677252', '1623596821217165314', '1623593798738788355', '1623593466604421120', '1623592932849885185', '1623619936873742337'], 'granblue_en': ['1623599382036873217', '1623596794948235267', '1623594220580933632', '1623594634449666049', '1623595035454484480', '1623595590289588224', '1623593806678626310', '1623593523525332993', '1623592943356608512', '1623592823940587521'], 'granbluefantasy': ['1623592576849952770', '1623592567119175683']}
+            data['twitter'] = {
+                'Granblue_GW': [],
+                'granblue_en': [],
+                'granbluefantasy': []
+            }
         if ver <= 10:
             i : int
             acc : JSON
@@ -228,9 +249,17 @@ class Data():
                 data['gbfdata'].pop("granblue_en")
         if ver <= 18:
             if 'gbfaccounts' in data and len(data['gbfaccounts']) > 0:
-                data['gbfaccount'] = {'id':data['gbfaccounts'][0][0], 'ck':data['gbfaccounts'][0][1], 'ua':data['gbfaccounts'][0][2], 'state':data['gbfaccounts'][0][3], 'last':data['gbfaccounts'][0][4]}
+                data['gbfaccount'] = {
+                    'id':data['gbfaccounts'][0][0],
+                    'ck':data['gbfaccounts'][0][1],
+                    'ua':data['gbfaccounts'][0][2],
+                    'state':data['gbfaccounts'][0][3],
+                    'last':data['gbfaccounts'][0][4]
+                }
                 if len(data['gbfaccounts']) > 1:
-                    self.bot.logger.push("[DATA] Only the first GBF account was kept during the save data conversion to **v19**.")
+                    self.bot.logger.push(
+                        "[DATA] Only the first GBF account was kept during the save data conversion to **v19**."
+                    )
                 data.pop("gbfaccounts")
             if 'valiant' in data:
                 data['dread'] = data['valiant']
@@ -252,7 +281,7 @@ class Data():
     """loadData()
     Read save.json.
     Assure the retrocompatibility with older save files.
-    
+
     Returns
     --------
     bool: True on success, False on failure
@@ -260,7 +289,7 @@ class Data():
     def loadData(self : Data) -> bool:
         try:
             with open('save.json', mode="r", encoding="utf-8") as f:
-                data : JSON = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict) # add deserializer here
+                data : JSON = json.load(f, object_pairs_hook=self.bot.util.json_deserial_dict)
                 ver : int|None
                 if any(data): # check if it contains something
                     ver = data.get('version', None)
@@ -285,7 +314,7 @@ class Data():
 
     """saveData()
     Write save.json.
-    
+
     Returns
     --------
     bool: True on success, False on failure
@@ -301,7 +330,12 @@ class Data():
             return False # return to not upload a corrupt file
         # Now save remotely
         try:
-            if self.bot.drive.save(json.dumps(self.save, separators=(',', ':'), default=self.bot.util.json_serial)) is not True: # sending to the google drive
+            if self.bot.drive.save(
+                json.dumps(
+                    self.save, separators=(',', ':'),
+                    default=self.bot.util.json_serial
+                )
+            ) is not True: # sending to the google drive
                 raise Exception("Couldn't save to google drive")
             return True
         except Exception as e:
@@ -311,16 +345,16 @@ class Data():
 
     """checkData()
     Fill the save data with missing keys, if any
-    
+
     Parameters
     --------
     dict: Save data
-    
+
     Returns
     --------
     dict: Updated data (not a copy)
     """
-    def checkData(self : Data, data : JSON) -> JSON: # used to initialize missing data or remove useless data from the save file
+    def checkData(self : Data, data : JSON) -> JSON:
         k : str
         for k in list(data.keys()): # remove useless keys not present in BASE_SAVE
             if k not in self.BASE_SAVE:
@@ -333,7 +367,7 @@ class Data():
     """autosave()
     Write save.json. Called periodically by statustask()
     The file is also sent to the google drive or to discord if it failed
-    
+
     Parameters
     --------
     discordDump: If True, save.json will be sent to discord even on success
@@ -355,7 +389,13 @@ class Data():
             discordDump = True
         if discordDump: # if this is raised, we send a copy of the save file to discord, in the debug channel
             try:
-                with BytesIO(json.dumps(self.save, separators=(',', ':'), default=self.bot.util.json_serial).encode('utf-8')) as infile:
+                with BytesIO(
+                    json.dumps(
+                        self.save,
+                        separators=(',', ':'),
+                        default=self.bot.util.json_serial
+                    ).encode('utf-8')
+                ) as infile:
                     with self.bot.file.discord(infile, filename="save.json") as df:
                         await self.bot.send('debug', file=df)
             except Exception as e:
@@ -381,7 +421,6 @@ class Data():
             return
         except Exception as e:
             self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error:", e)
-        
         # loop
         while True:
             try:
@@ -392,7 +431,6 @@ class Data():
                     continue
                 target_time += timedelta(days=1) # move target_time to next day
                 self.bot.logger.push("[TASK] 'data:maintenance': Daily cleanup started", send_to_discord=False)
-                
                 # empty GW crew cache
                 if not first_loop:
                     try:
@@ -400,7 +438,6 @@ class Data():
                     except Exception as xe:
                         self.bot.logger.pushError("[TASK] 'data:maintenance (Crew Cache)' Task Error:", xe)
                 first_loop = False
-                
                 # update user agent (only on first day of month)
                 if current_time.day == 1:
                     await self.bot.net.update_user_agent()
@@ -423,40 +460,53 @@ class Data():
                         if target.month == 12:
                             target = (target + timedelta(days=31)).replace(day=1)
                         else:
-                            target = target.replace(month=target.month+1)
-                        remindcog.addBotReminder(target, "**A new month started!**\nDon't forget to check out the various shops (Casino, FP, pendant, login, Prisms...).")
+                            target = target.replace(month=target.month + 1)
+                        remindcog.addBotReminder(
+                            target,
+                            (
+                                "**A new month started!**\n"
+                                "Don't forget to check out the various shops"
+                                "(Casino, FP, pendant, login, Prisms...)."
+                            )
+                        )
                     except Exception as se:
-                         self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Monthly reminder):", se)
+                        self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Monthly reminder):", se)
                 try: # GW
                     if self.bot.get_cog('GuildWar').isGWRunning():
                         target = self.bot.data.save['gw']['dates']["End"] - timedelta(seconds=25200)
-                        remindcog.addBotReminder(target, "**The Final Rally is ending soon!**\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(
+                            target,
+                            "**The Final Rally is ending soon!**\nDon't forget to claim your loot and use your tokens."
+                        )
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your GW Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (GW reminders):", se)
+                    self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (GW reminders):", se)
                 try: # DB
                     if self.bot.get_cog('DreadBarrage').isDBRunning():
                         target = self.bot.data.save['dread']['dates']["End"] - timedelta(seconds=25200)
-                        remindcog.addBotReminder(target, "**Dread Barrage is ending soon!**\nDon't forget to claim your loot and use your tokens.")
+                        remindcog.addBotReminder(
+                            target,
+                            "**Dread Barrage is ending soon!**\nDon't forget to claim your loot and use your tokens."
+                        )
                         target = target + timedelta(days=5)
                         remindcog.addBotReminder(target, "You have little time left to use your DB Tokens!")
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (DB reminders):", se)
+                    self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (DB reminders):", se)
                 # cog clean up
                 try:
                     await self.bot.get_cog('Sparking').clean_data() # clean up spark data
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
+                    self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
                 try:
                     await self.bot.get_cog('Roles').clean_data() # clean up spark data
                 except Exception as se:
-                     self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
+                    self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Clean Spark):", se)
                 # update the schedule
                 await self.update_schedule()
                 # component clean up
                 await self.bot.pinboard.clean_data() # clean unused pinboard
-                await self.bot.channel.clean_data() # clean auto cleanup and announcement 
+                await self.bot.channel.clean_data() # clean auto cleanup and announcement
                 # various clean up
                 await self.clean_stream() # clean stream datasettings
                 await self.clean_extra_data() # clean up extra data
@@ -475,7 +525,17 @@ class Data():
     async def update_schedule(self : Data) -> None:
         try:
             # request the event cargo table of the wiki
-            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":"event_history", "fields":"wiki_page ,enname,time_start,time_end,time_known,utc_start,utc_end", "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP", "format":"json", "order by":"time_start"})
+            data : RequestResult = await self.bot.net.requestWiki(
+                "index.php",
+                params={
+                    "title":"Special:CargoExport",
+                    "tables":"event_history",
+                    "fields":"wiki_page,enname,time_start,time_end,time_known,utc_start,utc_end",
+                    "where":"time_start > CURRENT_TIMESTAMP OR time_end > CURRENT_TIMESTAMP",
+                    "format":"json",
+                    "order by":"time_start"
+                }
+            )
             if data is not None:
                 new_events : JSON = {}
                 modified : bool = False
@@ -492,10 +552,17 @@ class Data():
                             else:
                                 continue # event over
                         else:
-                            if current_time >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1): # if we have passed it by one day
+                            if current_time >= datetime.utcfromtimestamp(ev['utc']) + timedelta(days=1):
+                                # if we have passed it by one day
                                 continue # event over
                         if ev['wiki page'] is not None and ev['wiki page'] != '':
-                            new_events["[" + html.unescape(ev['enname']) + "](https://gbf.wiki/" + ev['wiki page'].replace(' ', '_') + ")"] = event_times
+                            new_events[
+                                "["
+                                + html.unescape(ev['enname'])
+                                + "](https://gbf.wiki/"
+                                + ev['wiki page'].replace(' ', '_')
+                                + ")"
+                            ] = event_times
                         else:
                             new_events[html.unescape(ev['enname'])] = event_times
                 # NOTE: Wiki timestamps are in UTC
@@ -504,7 +571,7 @@ class Data():
                     # add manual entry starting with specific keywords
                     for evstr in self.save['schedule']:
                         evl : str = evstr.lower()
-                        if evl.startswith("update") or evl.startswith("maintenance") or evl.startswith("granblue fes") or evl.startswith("summer stream") or evl.startswith("christmas stream") or evl.startswith("anniversary stream"):
+                        if evl.startswith(self.SPECIAl_EVT):
                             new_events[evstr] = self.save['schedule'][evstr]
                     # verify for changes
                     akeys : list[str] = list(new_events.keys())
@@ -527,7 +594,11 @@ class Data():
                 # remove events which ended
                 keys = list(self.save['schedule'].keys())
                 for evstr in keys:
-                    if (len(self.save['schedule'][evstr]) == 2 and current_time > datetime.utcfromtimestamp(self.save['schedule'][evstr][1])) or (len(self.save['schedule'][evstr]) == 1 and current_time > datetime.utcfromtimestamp(self.save['schedule'][evstr][0]) + timedelta(days=1)):
+                    if ((len(self.save['schedule'][evstr]) == 2
+                            and current_time > datetime.utcfromtimestamp(self.save['schedule'][evstr][1]))
+                            or (len(self.save['schedule'][evstr]) == 1
+                                and current_time > datetime.utcfromtimestamp(self.save['schedule'][evstr][0])
+                                + timedelta(days=1))):
                         self.save['schedule'].pop(evstr, None)
                         modified = True
                 if modified:
@@ -542,7 +613,9 @@ class Data():
     async def clean_stream(self : Data) -> None:
         await asyncio.sleep(1)
         # delete if stream exists and it's 4 days old or more
-        if self.save['stream'] is not None and self.save['stream'].get('time', None) is not None and self.bot.util.UTC() - self.save['stream']['time'] >= timedelta(days=4):
+        if (self.save['stream'] is not None
+                and self.save['stream'].get('time', None) is not None
+                and self.bot.util.UTC() - self.save['stream']['time'] >= timedelta(days=4)):
             self.save['stream'] = None
             self.pending = True
             self.bot.logger.push("[DATA] clean_stream:\nCleaned the Stream data")
@@ -559,7 +632,7 @@ class Data():
         for uid in keys:
             found : bool = False
             for g in self.bot.guilds: # check if the user is in any guild the bot is present in
-                 if await g.get_or_fetch_member(int(uid)) is not None:
+                if await g.get_or_fetch_member(int(uid)) is not None:
                     found = True
                     break
             if not found: # if the user hasn't been found

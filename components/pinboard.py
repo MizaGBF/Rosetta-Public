@@ -7,14 +7,23 @@ if TYPE_CHECKING:
     from components.util import JSON
 from views.url_button import UrlButton
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Pinboard Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Enable the pinboard system ("extra pinned messages") in specific server
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Pinboard():
     COLOR : int = 0xf20252
+    IMG_EXT : list[str] = [
+        '.png', '.jpeg', '.jpg', '.gif',
+        '.webp', 'jpg:thumb', 'jpg:small', 'jpg:medium',
+        'jpg:large', 'jpg:orig', 'png:thumb', 'png:small',
+        'png:medium', 'png:large', 'png:orig'
+    ]
+    IMG_EXT_TUPLE : tuple[str, ...] = tuple(IMG_EXT)
+
     def __init__(self : Pinboard, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.bot.reaction_hooks['pinboard'] = self.pin # hook pin function
@@ -25,11 +34,11 @@ class Pinboard():
 
     """pin()
     Check the payload received from on_raw_reaction_add() and if it triggers a pin
-    
+
     Parameters
     ----------
     payload: Raw Message Payload
-    
+
     Returns
     --------
     bool: True if success, False if failure
@@ -73,7 +82,7 @@ class Pinboard():
             me : disnake.Member = message.guild.me
             count : int = 0
             reaction : disnake.Reaction
-            for reaction in reactions: # iterate over reactions and look for the one matching the emji setting 
+            for reaction in reactions: # iterate over reactions and look for the one matching the emji setting
                 if str(reaction.emoji) == self.bot.data.save['pinboard'][idx]['emoji']:
                     users : list[disnake.User] = await reaction.users().flatten() # get who reacted with that emoji
                     count : int = len(users) # get the number of user which reacted
@@ -90,8 +99,9 @@ class Pinboard():
                     u : disnake.User
                     for u in users:
                         if self.bot.data.save['pinboard'][idx]['mod_bypass']: # if the mod bypass is enabled
-                            m : disnake.Member = await guild.get_or_fetch_member(u.id) # and that user is deemed to be a moderator
-                            if m.guild_permissions.manage_messages: 
+                            m : disnake.Member = await guild.get_or_fetch_member(u.id)
+                            # and that user is deemed to be a moderator
+                            if m.guild_permissions.manage_messages:
                                 isMod = True # raise isMod flag and stop the loop here
                                 break
                             else: # else, increase the count
@@ -110,13 +120,14 @@ class Pinboard():
                     # Clean old cache entries if needed
                     if len(self.cache) > 20:
                         self.cache = self.cache.pop(0) # limited to 20 entries
-                    
+
                     # Rosetta now react on this message with the setting emoji
                     await message.add_reaction(self.bot.data.save['pinboard'][idx]['emoji'])
 
                     # Prepare the pin
                     try:
-                        user : disnake.Member = await message.guild.get_or_fetch_member(message.author.id) # get the full user to get their full name
+                        # get the full user to get their full name
+                        user : disnake.Member = await message.guild.get_or_fetch_member(message.author.id)
                         if user is None: # in case of issues, fallback to message.author
                             message.author
                         # prepare a dict we'll convert to a disnake.Embed
@@ -125,7 +136,7 @@ class Pinboard():
                         embed_dict['footer'] = {'text':"#{}".format(origin_channel_name), 'url':None} # channel name
                         embed_dict['title'] = user.display_name + " - @" + str(message.author) # user name and handle
                         # add message content in description
-                        if len(content) > 0: 
+                        if len(content) > 0:
                             if len(content) > 1900: # if the message is too big
                                 embed_dict['description'] = content[:1900] + "...\n\n" # truncate
                             else:
@@ -141,11 +152,24 @@ class Pinboard():
                             file : disnake.Attachment
                             for file in message.attachments: # check attached files
                                 if file.is_spoiler(): # file is a spoiler, simply put the url
-                                    embed_dict['fields'].append({'inline': True, 'name':'Attachment', 'value':f'[{file.filename}]({file.url})'})
-                                elif file.url.lower().split("?", 1)[0].endswith(('.png', '.jpeg', '.jpg', '.gif', '.webp', 'jpg:thumb', 'jpg:small', 'jpg:medium', 'jpg:large', 'jpg:orig', 'png:thumb', 'png:small', 'png:medium', 'png:large', 'png:orig')) and 'image' not in embed_dict: # file is an image...
+                                    embed_dict['fields'].append(
+                                        {
+                                            'inline':True,
+                                            'name':'Attachment',
+                                            'value':f'[{file.filename}]({file.url})'
+                                        }
+                                    )
+                                elif (file.url.lower().split("?", 1)[0].endswith(self.IMG_EXT_TUPLE)
+                                        and 'image' not in embed_dict): # file is an image...
                                     embed_dict['image'] = {'url':file.url} # so set it directly as the embed image
                                 else: # else put it simply as an url
-                                    embed_dict['fields'].append({'inline': True, 'name':'Attachment', 'value':f'[{file.filename}]({file.url})'})
+                                    embed_dict['fields'].append(
+                                        {
+                                            'inline':True,
+                                            'name':'Attachment',
+                                            'value':f'[{file.filename}]({file.url})'
+                                        }
+                                    )
                         # search for image url if we haven't set one yet
                         if 'image' not in embed_dict:
                             s : int = content.find("http://")
@@ -155,48 +179,89 @@ class Pinboard():
                                 # iterate over possible extensions
                                 ext : str
                                 e : int = -1
-                                for ext in ['.png', '.jpeg', '.jpg', '.gif', '.webp', 'jpg:thumb', 'jpg:small', 'jpg:medium', 'jpg:large', 'jpg:orig', 'png:thumb', 'png:small', 'png:medium', 'png:large', 'png:orig']:
+                                for ext in self.IMG_EXT:
                                     e = content.find(ext, s)
                                     if e != -1:
                                         e += len(ext)
                                         break
                                 # if we found one, set it as the image url
-                                if e!= -1 and content.find(' ', s, e) == -1:
+                                if e != -1 and content.find(' ', s, e) == -1:
                                     embed_dict['image'] = {'url':content[s:e]}
                         # finally check the message embeds
                         if len(message.embeds) > 0: # we will ONLY check the first embed
-                            if message.embeds[0].description is not None and len(message.embeds[0].description) > 0: # if it got stuff in its description, we add it in a field
+                            # if it got stuff in its description, we add it in a field
+                            if message.embeds[0].description is not None and len(message.embeds[0].description) > 0:
                                 if len(message.embeds[0].description) > 1000: # truncate if too big
-                                    embed_dict['fields'] = [{'inline': True, 'name':'Content', 'value':message.embeds[0].description[:1000] + '\n...'}] + embed_dict['fields']
+                                    embed_dict['fields'] = [
+                                        {
+                                            'inline':True,
+                                            'name':'Content',
+                                            'value':message.embeds[0].description[:1000] + '\n...'
+                                        }
+                                    ] + embed_dict['fields']
                                 else:
-                                    embed_dict['fields'] = [{'inline': True, 'name':'Content', 'value':message.embeds[0].description}] + embed_dict['fields']
+                                    embed_dict['fields'] = [
+                                        {
+                                            'inline':True,
+                                            'name':'Content',
+                                            'value':message.embeds[0].description
+                                        }
+                                    ] + embed_dict['fields']
                             # add the embed image if we haven't set one
                             if 'image' not in embed_dict and message.embeds[0].image.url is not None:
                                 embed_dict['image'] = {'url':message.embeds[0].image.url}
                             # and next...
-                            if message.embeds[0].title is not None and len(message.embeds[0].title) > 0: # update our embed title field using this embed title
+                            if (message.embeds[0].title is not None
+                                    and len(message.embeds[0].title) > 0):
+                                # update our embed title field using this embed title...
                                 embed_dict['title'] += " ▫️ " + message.embeds[0].title
-                            elif message.embeds[0].author is not None and message.embeds[0].author.name is not None: # or its author field
+                            elif (message.embeds[0].author is not None
+                                    and message.embeds[0].author.name is not None):
+                                # or its author field
                                 embed_dict['title'] += " ▫️ " + message.embeds[0].author.name
                         # add link to original message using a view
-                        view : UrlButton = UrlButton(self.bot, [('Original Message', 'https://discordapp.com/channels/{}/{}/{}'.format(message.guild.id, message.channel.id, message.id))])
+                        view : UrlButton = UrlButton(
+                            self.bot,
+                            [
+                                (
+                                    'Original Message',
+                                    'https://discordapp.com/channels/{}/{}/{}'.format(
+                                        message.guild.id,
+                                        message.channel.id,
+                                        message.id
+                                    )
+                                )
+                            ]
+                        )
                         # Fix: remove image from dict if it's set to None
                         if 'image' in embed_dict and embed_dict['image'] is None:
                             embed_dict.pop('image')
                         # Create the embedd
                         embed : disnake.Embed = disnake.Embed.from_dict(embed_dict)
                         # Set the timestamp to the message timestamp
-                        embed.timestamp=message.created_at
+                        embed.timestamp = message.created_at
                         # Get channel
-                        ch : disnake.Channel|None = self.bot.get_channel(self.bot.data.save['pinboard'][idx]['output'])
+                        ch : disnake.Channel|None = self.bot.get_channel(
+                            self.bot.data.save['pinboard'][idx]['output']
+                        )
                         # And send!
                         await ch.send(embed=embed, view=view)
                         return True
                     except Exception as x:
-                        if 'Missing Access' in str(x) or 'Missing Permissions' in str(x): # in case of missing permissions
+                        # in case of missing permissions
+                        if 'Missing Access' in str(x) or 'Missing Permissions' in str(x):
                             try:
-                                c : disnake.Channel|None = await self.bot.get_channel(message.channel_id) # post in the original message channel to inform people, if possible
-                                await c.send(embed=self.bot.embed(title="Pinboard error", description="Note to the moderators: I'm not permitted to post in the pinboard channel"))
+                                # post in the original message channel to inform people, if possible
+                                c : disnake.Channel|None = await self.bot.get_channel(message.channel_id)
+                                await c.send(
+                                    embed=self.bot.embed(
+                                        title="Pinboard error",
+                                        description=(
+                                            "Note to the moderators: I'm not permitted"
+                                            "to post in the pinboard channel"
+                                        )
+                                    )
+                                )
                             except:
                                 pass
                         else:
@@ -226,7 +291,9 @@ class Pinboard():
                         count += 1
                     else:
                         i += 1
-                if self.bot.data.save['pinboard'][gid]['output'] is not None and self.bot.get_channel(self.bot.data.save['pinboard'][gid]['output']) is None: # remove data if empty
+                if (self.bot.data.save['pinboard'][gid]['output'] is not None
+                        and self.bot.get_channel(self.bot.data.save['pinboard'][gid]['output']) is None):
+                    # remove data if empty
                     self.bot.data.save['pinboard'][gid]['output'] = None
                     count += 1
         if count > 0:
@@ -234,21 +301,24 @@ class Pinboard():
 
     """is_enabled()
     Return True if the pinboard is enabled
-    
+
     Parameters
     ----------
     server_id: Guild ID, in string format
-    
+
     Returns
     ----------
     bool: True if enabled, False otherwise
     """
     def is_enabled(self : Pinboard, server_id : str) -> bool:
-        return server_id in self.bot.data.save['pinboard'] and 'disabled' not in self.bot.data.save['pinboard'][server_id]
+        return (
+            server_id in self.bot.data.save['pinboard']
+            and 'disabled' not in self.bot.data.save['pinboard'][server_id]
+        )
 
     """reset()
     Reset the settings for a guild
-    
+
     Parameters
     ----------
     inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
@@ -266,7 +336,7 @@ class Pinboard():
 
     """toggle()
     Toggle the system for a guild, if it exists
-    
+
     Parameters
     ----------
     inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
@@ -290,11 +360,11 @@ class Pinboard():
 
     """get()
     Retrieve the settings for a guild
-    
+
     Parameters
     ----------
     server_id: Guild ID, in string format
-    
+
     Returns
     ----------
     dict: Stored settings, None if unavailable
@@ -304,25 +374,31 @@ class Pinboard():
 
     """initialize()
     Initialize pinboard data for a guild if it doesn't exist
-    
+
     Parameters
     ----------
     server_id: Guild ID, in string format
-    
+
     Returns
     ----------
     bool: True if data has been initialized, False otherwise
     """
     def initialize(self : Pinboard, server_id : str) -> bool:
         if server_id not in self.bot.data.save['pinboard']:
-            self.bot.data.save['pinboard'][server_id] = {'tracked' : [], 'emoji': '⭐', 'mod_bypass':False, 'threshold':3, 'output': None}
+            self.bot.data.save['pinboard'][server_id] = {
+                'tracked':[],
+                'emoji':'⭐',
+                'mod_bypass':False,
+                'threshold':3,
+                'output':None
+            }
             self.bot.data.pending = True
             return True
         return False
 
     """set()
     Set updated settings for a guild, if it exists
-    
+
     Parameters
     ----------
     inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
@@ -365,7 +441,7 @@ class Pinboard():
 
     """track_toggle()
     Toggle given channel tracking for a guild
-    
+
     Parameters
     ----------
     inter: A valid disnake.GuildCommandInteraction. Must be deferred beforehand.
@@ -392,14 +468,14 @@ class Pinboard():
             # channel isn't set, so we attempt to track
             # check the channel type
             if isinstance(inter.channel, disnake.TextChannel):
-                self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id) 
+                self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id)
                 self.bot.data.pending = True
                 msg = "This channel is now tracked"
             elif isinstance(inter.channel, disnake.Thread): # only allow tracking threads from forums
                 try:
                     if not isinstance(inter.channel.parent, disnake.ForumChannel):
                         raise Exception()
-                    self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id) 
+                    self.bot.data.save['pinboard'][server_id]['tracked'].append(channel_id)
                     self.bot.data.pending = True
                     msg = "This channel is now tracked"
                 except:
@@ -410,7 +486,7 @@ class Pinboard():
 
     """render()
     Output settings to an interaction
-    
+
     Parameters
     ----------
     inter: Interaction, must have been deferred beforehand
@@ -419,7 +495,13 @@ class Pinboard():
     """
     async def render(self : Pinboard, inter : disnake.Interaction, color : int, msg : str = None) -> None:
         if inter.context.bot_dm:
-            await inter.edit_original_message(embed=self.bot.embed(title="Pinboard settings", description="This command is only usable in a server.", color=color))
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="Pinboard settings",
+                    description="This command is only usable in a server.",
+                    color=color
+                )
+            )
             return
         fields : dict[str, str|bool] = []
         settings = self.bot.pinboard.get(str(inter.guild.id))
@@ -489,8 +571,12 @@ class Pinboard():
                     settings['output'] = None
                     self.bot.data.pending = True
                 else:
-                    fields[-1]['value'] = '[#{}](https://discord.com/channels/{}/{})'.format(c.name, inter.guild.id, c.id)
-            #disabled
+                    fields[-1]['value'] = '[#{}](https://discord.com/channels/{}/{})'.format(
+                        c.name,
+                        inter.guild.id,
+                        c.id
+                    )
+            # disabled
             if 'disabled' in settings:
                 fields.append({
                     'name':'Warning',
@@ -498,6 +584,19 @@ class Pinboard():
                     'inline': True
                 })
         icon : str|None
-        try: icon = inter.guild.icon.url
-        except: icon = None
-        await inter.edit_original_message(embed=self.bot.embed(author={'name':"{}'s Pinboard settings".format(inter.guild.name), 'icon_url':icon}, description=msg, fields=fields, inline=True, color=color))
+        try:
+            icon = inter.guild.icon.url
+        except:
+            icon = None
+        await inter.edit_original_message(
+            embed=self.bot.embed(
+                author={
+                    'name':"{}'s Pinboard settings".format(inter.guild.name),
+                    'icon_url':icon
+                },
+                description=msg,
+                fields=fields,
+                inline=True,
+                color=color
+            )
+        )

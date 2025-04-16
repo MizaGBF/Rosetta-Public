@@ -79,6 +79,17 @@ The `tools` folder contains a few standalone pieces of code which might help you
   
 * `avatar_to_gif.py` was used to generate the GIF versions of the bot avatars, in the assets folder. It's a bit rudimentary but not hard to use, if you wish. Add a [Gifsicle](https://github.com/kohler/gifsicle) executable in the same folder for a better result.  
   
+### Coding Style  
+  
+For maintainability and readability, the coding style is partially [PEP 8](https://peps.python.org/pep-0008/) compliant.  
+[flake8](https://flake8.pycqa.org/en/latest/) has been used to automate the checks with the following settings:  
+```console
+flake8 --ignore E203,E261,E227,E231,W503,E722 --max-line-length 120 bot.py cogs components views
+```  
+  
+Any pull requests will have to pass this check.  
+More efforts will be done in the future to improve the code readability.  
+  
 ## Usage  
   
 ### Method 1:  

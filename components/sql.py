@@ -6,18 +6,19 @@ if TYPE_CHECKING:
     from ..bot import DiscordBot
 import sqlite3
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # SQL Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Manage Database objects
 # Database objects are simple wrapper over a sqlite3 connection and cursor with a multithreading protection
 # It's made in a way to simplify the way it was used in the previous bot versions
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Database():
     def __init__(self : Database, filename : str) -> None:
         self.filename : str = filename
-        self.conn :  sqlite3.Connection|None = None # connection
+        self.conn : sqlite3.Connection|None = None # connection
         self.cursor : sqlite3.Cursor|None = None # cursor
         self.lock : asyncio.Lock = asyncio.Lock()
 
@@ -35,17 +36,27 @@ class Database():
         except:
             self.lock.release() # error, unlock
             return None
-    
-    async def __aexit__(self : Database, exc_type : Type[BaseException]|None, exc_val : BaseException|None, exc_tb : traceback|None) -> bool|None: # closing
+
+    async def __aexit__(
+        self : Database,
+        exc_type : Type[BaseException]|None,
+        exc_val : BaseException|None,
+        exc_tb : traceback|None
+    ) -> bool|None: # closing
         # close the handles
-        try: self.cursor.close()
-        except: pass
-        try: self.conn.close()
-        except: pass
+        try:
+            self.cursor.close()
+        except:
+            pass
+        try:
+            self.conn.close()
+        except:
+            pass
         self.conn = None
         self.cursor = None
         # unlock
         self.lock.release()
+
 
 class SQL():
     def __init__(self : SQL, bot : DiscordBot) -> None:
@@ -58,7 +69,7 @@ class SQL():
 
     """remove()
     Remove the Database object from the cache
-    
+
     Parameters
     ----------
     filename: SQL file name
@@ -72,7 +83,7 @@ class SQL():
 
     """remove_list()
     Remove the Database object from the cache
-    
+
     Parameters
     ----------
     filename: SQL file name
@@ -89,11 +100,11 @@ class SQL():
     """add()
     Add a new Database object to the cache (Remove the previous one if any).
     The file must exist to avoid future errors
-    
+
     Parameters
     ----------
     filename: SQL file name
-    
+
     Returns
     --------
     Database: The new Database object. None if the file doesn't exist
@@ -101,18 +112,18 @@ class SQL():
     async def add(self, filename : str) -> Database|None:
         async with self.lock:
             if self.bot.file.exist(filename): # create Database instance in memory if file exists
-                    self.db[filename] = Database(filename)
-                    return self.db[filename]
+                self.db[filename] = Database(filename)
+                return self.db[filename]
             else:
                 return None
 
     """get()
     Retrieve a Database object from the cache
-    
+
     Parameters
     ----------
     filename: SQL file name
-    
+
     Returns
     --------
     Database: The Database object. None if it doesn't exist

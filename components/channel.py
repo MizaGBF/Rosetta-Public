@@ -9,12 +9,13 @@ if TYPE_CHECKING:
     type CleanupSetting = list[bool|list[int]]
     type AnnouncementSetting = list[int|bool]
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Channel Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # This component lets you register channels with a keyword to be later used by the send() function of the bot
 # It also manages settings related to channels (auto message cleanup, announcement channel...)
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Channel():
     def __init__(self : Channel, bot : DiscordBot) -> None:
@@ -43,11 +44,11 @@ class Channel():
 
     """can_publish()
     Check if the channel id is in auto_publish
-    
+
     Parameters
     ----------
     channel_id: The channel id
-    
+
     Returns
     ----------
     bool: True if it is, False otherwise
@@ -57,7 +58,7 @@ class Channel():
 
     """set()
     Register a channel with a name
-    
+
     Parameters
     ----------
     name: Channel name
@@ -67,7 +68,8 @@ class Channel():
         try:
             if name in self.cache:
                 raise Exception("Name already used")
-            c : disnake.Channel|None = self.bot.get_channel(self.bot.data.config['ids'][id_key]) # retrieve channel for given config.json id
+            # retrieve channel for given config.json id
+            c : disnake.Channel|None = self.bot.get_channel(self.bot.data.config['ids'][id_key])
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
@@ -77,7 +79,7 @@ class Channel():
 
     """setID()
     Register a channel with a name
-    
+
     Parameters
     ----------
     name: Channel name
@@ -97,7 +99,7 @@ class Channel():
 
     """setMultiple()
     Register multiple channels
-    
+
     Parameters
     ----------
     channel_list: List of pair [name, id_key or id]
@@ -113,11 +115,11 @@ class Channel():
 
     """has()
     Get a registered channel
-    
+
     Parameters
     ----------
     name: Channel name. Can also pass directly a Channel ID if the channel isn't registered.
-    
+
     Returns
     ----------
     bool: True if the channel name is cached
@@ -127,11 +129,11 @@ class Channel():
 
     """get()
     Get a registered channel
-    
+
     Parameters
     ----------
     name: Channel name. Can also pass directly a Channel ID if the channel isn't registered.
-    
+
     Returns
     ----------
     discord.Channel: Discord Channel, None if error
@@ -149,12 +151,16 @@ class Channel():
         gid : str
         # cleanup
         for gid in list(self.bot.data.save['cleanup'].keys()):
-            if gid not in guild_ids or (not self.bot.data.save['cleanup'][gid][0] and len(self.bot.data.save['cleanup'][gid][1]) == 0):
+            if (gid not in guild_ids
+                    or (not self.bot.data.save['cleanup'][gid][0]
+                        and len(self.bot.data.save['cleanup'][gid][1]) == 0)):
                 self.bot.data.save['cleanup'].pop(gid)
                 self.bot.data.pending = True
         # announcement
         for gid in list(self.bot.data.save['announcement'].keys()):
-            if gid not in guild_ids or (self.bot.get_channel(self.bot.data.save['announcement'][gid][0]) is None and not self.save['announcement'][gid][1]):
+            if (gid not in guild_ids
+                    or (self.bot.get_channel(self.bot.data.save['announcement'][gid][0]) is None
+                        and not self.save['announcement'][gid][1])):
                 self.bot.data.save['announcement'].pop(gid)
                 self.bot.data.pending = True
         # update announcement channels
@@ -163,14 +169,20 @@ class Channel():
     """clean()
     Delete a bot command message after X amount of time depending on the
     The lyria emote will be used to replace the message.
-    
+
     Parameters
     ----------
     target: A Disnake Context and Message OR a Disnake Interaction
     delay: Time in second before deletion
-    all: if True, the message will be deleted, if False, the message is deleted it it was posted in an unauthorized channel
+    all: if True, the message will be deleted, if False,
+        the message is deleted it it was posted in an unauthorized channel
     """
-    async def clean(self : Channel, target : disnake.Message|disnake.ApplicationCommandInteraction, delay : int|float|None = None, all : bool = False) -> None:
+    async def clean(
+        self : Channel,
+        target : disnake.Message|disnake.ApplicationCommandInteraction,
+        delay : int|float|None = None,
+        all : bool = False
+    ) -> None:
         try:
             match target:
                 case disnake.ApplicationCommandInteraction()|disnake.ModalInteraction(): # interactions
@@ -178,13 +190,23 @@ class Channel():
                         if delay is not None:
                             await asyncio.sleep(delay) # delete message after delay
                         # edit message with lyria emote
-                        await target.edit_original_message(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+                        await target.edit_original_message(
+                            content=str(self.bot.emote.get('lyria')),
+                            embed=None,
+                            view=None,
+                            attachments=[]
+                        )
                 case disnake.Message(): # message
                     if all or not self.interaction_must_be_cleaned(target): # cleanup check
                         if delay is not None:
                             await asyncio.sleep(delay) # delete message after delay
                         # edit message with lyria emote
-                        await target.edit(content=str(self.bot.emote.get('lyria')), embed=None, view=None, attachments=[])
+                        await target.edit(
+                            content=str(self.bot.emote.get('lyria')),
+                            embed=None,
+                            view=None,
+                            attachments=[]
+                        )
         except Exception as e:
             if "Unknown Message" not in str(e):
                 self.bot.logger.pushError("[UTIL] 'clean' error:", e)
@@ -193,16 +215,19 @@ class Channel():
     """interaction_must_be_cleaned()
     Take an interaction (or similar) and determine if cleanup must be invoked based on server settings.
     Will always return False when invoked in DMs.
-    
+
     Parameters
     ----------
     inter: Interaction or also Command context, message...
-    
+
     Returns
     --------
     bool: True if if must be cleaned up, False if not
     """
-    def interaction_must_be_cleaned(self : Channel, inter : disnake.Interaction|disnake.Message|commands.Context) -> bool:
+    def interaction_must_be_cleaned(
+        self : Channel,
+        inter : disnake.Interaction|disnake.Message|commands.Context
+    ) -> bool:
         if inter is None or not hasattr(inter, 'context') or inter.context.bot_dm:
             return False
         settings : CleanupSetting = self.get_cleanup_settings(str(inter.guild.id))
@@ -212,7 +237,7 @@ class Channel():
 
     """toggle_cleanup()
     Toggle the server cleanup settings
-    
+
     Parameters
     ----------
     gid: String, guild id
@@ -226,7 +251,7 @@ class Channel():
 
     """reset_cleanup()
     Reset the server cleanup settings
-    
+
     Parameters
     ----------
     gid: String, guild id
@@ -238,7 +263,7 @@ class Channel():
 
     """toggle_cleanup_channel()
     Toggle this server channel exception for the auto cleanup
-    
+
     Parameters
     ----------
     gid: String, guild id
@@ -262,11 +287,11 @@ class Channel():
 
     """get_cleanup_settings()
     Return the server cleanup settings
-    
+
     Parameters
     ----------
     gid: String, guild id
-    
+
     Returns
     ----------
     list: Containing Enable flag (bool) and the list of excluded channels (list[int])
@@ -276,7 +301,7 @@ class Channel():
 
     """render_cleanup_settings()
     Output the server cleanup settings
-    
+
     Parameters
     --------
     inter: A command interaction. Must have been deferred beforehand.
@@ -303,15 +328,22 @@ class Channel():
         descs.append("\nTo toggle a channel exception: ")
         descs.append(self.bot.util.command2mention('mod cleanup channel'))
         descs.append(" in the channel.")
-        await inter.edit_original_message(embed=self.bot.embed(title="{} Auto Cleanup settings".format(self.bot.emote.get('lyria')), description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
+        await inter.edit_original_message(
+            embed=self.bot.embed(
+                title="{} Auto Cleanup settings".format(self.bot.emote.get('lyria')),
+                description="".join(descs),
+                footer=inter.guild.name + " ▫️ " + gid,
+                color=color
+            )
+        )
 
     """get_announcement_settings()
     Return the server announcement settings
-    
+
     Parameters
     ----------
     gid: String, guild id
-    
+
     Returns
     ----------
     list: Containing the announcement channel id (int) and the auto publish flag (bool)
@@ -321,7 +353,7 @@ class Channel():
 
     """toggle_announcement()
     Toggle this server announcement setting for the given channel
-    
+
     Parameters
     ----------
     gid: String, guild id
@@ -342,7 +374,7 @@ class Channel():
 
     """toggle_announcement_publish()
     Toggle this server announcement auto-publish setting
-    
+
     Parameters
     ----------
     gid: String, guild id
@@ -359,13 +391,17 @@ class Channel():
 
     """render_announcement_settings()
     Output the server announcement settings
-    
+
     Parameters
     --------
     inter: A command interaction. Must have been deferred beforehand.
     color: Integer, embed color to use.
     """
-    async def render_announcement_settings(self : Channel, inter : disnake.GuildCommandInteraction, color : int) -> None:
+    async def render_announcement_settings(
+        self : Channel,
+        inter : disnake.GuildCommandInteraction,
+        color : int
+    ) -> None:
         gid : str = str(inter.guild.id)
         settings : AnnouncementSetting = self.get_announcement_settings(gid)
         c : disnake.Channel|None = self.bot.get_channel(settings[0])
@@ -374,11 +410,23 @@ class Channel():
         if c is None:
             descs.append("\nTo enable, use in the desired channel: ")
         else:
-            descs.append("\n- Announcements are sent to [#{}](https://discord.com/channels/{}/{})\nTo set another or disable this one: ".format(c.name, inter.guild.id, c.id))
+            descs.append(
+                (
+                    "\n- Announcements are sent to [#{}](https://discord.com/channels/{}/{})\n"
+                    "To set another or disable this one: "
+                ).format(c.name, inter.guild.id, c.id)
+            )
         descs.append(self.bot.util.command2mention("mod announcement channel"))
         descs.append("\n- Auto-Publish ▫️ ")
         descs.append("**Enabled**" if settings[1] else "**Disabled**")
         descs.append("\nTo toggle, use: ")
         descs.append(self.bot.util.command2mention("mod announcement publish"))
         descs.append("\n*The channel must be a News channel for it to take effect*")
-        await inter.edit_original_message(embed=self.bot.embed(title="Announcement settings", description="".join(descs), footer=inter.guild.name + " ▫️ " + gid, color=color))
+        await inter.edit_original_message(
+            embed=self.bot.embed(
+                title="Announcement settings",
+                description="".join(descs),
+                footer=inter.guild.name + " ▫️ " + gid,
+                color=color
+            )
+        )

@@ -8,11 +8,12 @@ from dataclasses import dataclass
 from datetime import datetime
 import math
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Singleton Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # This component manages singletons found in this file
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Singleton():
     def __init__(self : Singleton, bot : DiscordBot) -> None:
@@ -24,7 +25,7 @@ class Singleton():
 
     """make_and_send_modal()
     Create and manage a modal interaction
-    
+
     Parameters
     ----------
     inter: base interaction
@@ -32,23 +33,40 @@ class Singleton():
     title: modal title
     components: list of disnake ui components
     callback: the function to be called if the modal is submitted
-    
+
     Returns
     ----------
     disnake.ModalInteraction: The modal, else None if failed/cancelled
     """
-    async def make_and_send_modal(self : Singleton, inter : disnake.Interaction, custom_id : str, title : str, callback : Callable, components : list[disnake.ui.Component], extra : str|None = None) -> CustomModal:
+    async def make_and_send_modal(
+        self : Singleton,
+        inter : disnake.Interaction,
+        custom_id : str,
+        title : str,
+        callback : Callable,
+        components : list[disnake.ui.Component],
+        extra : str|None = None
+    ) -> CustomModal:
         # see below for the custom modal class
-        await inter.response.send_modal(modal=CustomModal(bot=self.bot, title=title,custom_id=custom_id,components=components, callback=callback, extra=extra))
+        await inter.response.send_modal(
+            modal=CustomModal(
+                bot=self.bot,
+                title=title,
+                custom_id=custom_id,
+                components=components,
+                callback=callback,
+                extra=extra
+            )
+        )
 
     """get_GameCard()
     Create a GameCard to use for a game
-    
+
     Parameters
     ----------
     value: Integer, 1 (ace) to 14 (high ace)
     suit: 0 to 3
-    
+
     Returns
     ----------
     GameCard: The generated card
@@ -65,29 +83,35 @@ class Singleton():
 
     """make_Score()
     Initialize and return a Score instance
-    
+
     Parameters
     ----------
     type: Integer, 0 (crew) or 1 (player)
     ver: Integer, Database version used
     gw: Integer, GW id
-    
+
     Returns
     ----------
     Score: The generated card
     """
-    def make_Score(self : Singleton, type : int|None, ver : int|None, gw : int|None, data : CrewDataEntry|PlayerDataEntry) -> Score:
+    def make_Score(
+        self : Singleton,
+        type : int|None,
+        ver : int|None,
+        gw : int|None,
+        data : CrewDataEntry|PlayerDataEntry
+    ) -> Score:
         return Score.make_score(type, ver, gw, data)
 
     """make_GWDB()
     Initialize and return a GWDB instance
-    
+
     Parameters
     ----------
     type: Integer, 0 (crew) or 1 (player)
     ver: Integer, Database version used
     gw: Integer, GW id
-    
+
     Returns
     ----------
     Score: The generated card
@@ -97,13 +121,13 @@ class Singleton():
 
     """make_calc()
     Initialize a Calculator instance and return a calcul result
-    
+
     Parameters
     ----------
     type: Integer, 0 (crew) or 1 (player)
     ver: Integer, Database version used
     gw: Integer, GW id
-    
+
     Returns
     ----------
     Score: The generated card
@@ -111,30 +135,51 @@ class Singleton():
     def make_calc(self : Singleton, expression : str = "", vars : dict = {}) -> int|float:
         return Calc().evaluate(expression, vars)
 
-# ----------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
 # Below are the singletons
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 """CustomModal
 A Modal class where you can set your own callback
 """
+
+
 class CustomModal(disnake.ui.Modal):
-    def __init__(self : CustomModal, bot : DiscordBot, title : str, custom_id : str, components : list, callback : Callable, extra : str|None = None) -> None:
+    def __init__(
+        self : CustomModal,
+        bot : DiscordBot,
+        title : str,
+        custom_id : str,
+        components : list,
+        callback : Callable,
+        extra : str|None = None
+    ) -> None:
         super().__init__(title=title, custom_id=custom_id, components=components)
         self.bot : DiscordBot = bot # bot reference
         self.custom_callback : Callable = callback # our callback
-        self.extra : str = extra # any extra info we can pass here. will be accessible from the interaction in the callback
+        # any extra info we can pass here.
+        # will be accessible from the interaction in the callback
+        self.extra : str = extra
 
     async def on_error(self : CustomModal, error: Exception, inter : disnake.ModalInteraction) -> None:
-        await inter.response.send_message(embed=self.bot.embed(title="Error", description="An unexpected error occured, my owner has been notified"))
+        await inter.response.send_message(
+            embed=self.bot.embed(
+                title="Error",
+                description="An unexpected error occured, my owner has been notified"
+            )
+        )
         self.bot.logger.pushError("[MODAL] 'on_error' event:", error)
 
     async def callback(self : CustomModal, inter : disnake.ModalInteraction) -> None:
         await self.custom_callback(self, inter) # trigger the callback
 
+
 """GameCard
 Standard card representation for card games
 """
+
+
 @dataclass(frozen=True, slots=True)
 class GameCard():
     value : int
@@ -156,14 +201,14 @@ class GameCard():
             case _: _strings_[0] = str(value)
         # suit
         match suit:
-            case 0: _strings_[1] = "\♦️"
-            case 1: _strings_[1] = "\♠"
-            case 2: _strings_[1] = "\♥️"
-            case 3: _strings_[1] = "\♣️"
+            case 0: _strings_[1] = "\\♦️"
+            case 1: _strings_[1] = "\\♠"
+            case 2: _strings_[1] = "\\♥️"
+            case 3: _strings_[1] = "\\♣️"
         _strings_[2] = "".join(_strings_[:2])
         return cls(value, suit, _strings_)
 
-    def __repr__(self : GameCard) -> str: 
+    def __repr__(self : GameCard) -> str:
         return self._strings_[2]
 
     def __str__(self : GameCard) -> str:
@@ -173,7 +218,7 @@ class GameCard():
         return self.value
 
     def __lt__(self : GameCard, other : GameCard) -> bool:
-         return self.value < other.value
+        return self.value < other.value
 
     def getStringValue(self : GameCard) -> str:
         return self._strings_[0]
@@ -181,9 +226,12 @@ class GameCard():
     def getStringSuit(self : GameCard) -> str:
         return self._strings_[1]
 
+
 """Score
 Store a score for a Guild War participant/crew
 """
+
+
 @dataclass(frozen=True, slots=True)
 class Score(): # GW Score structure
     type : int|None # crew or player
@@ -208,9 +256,15 @@ class Score(): # GW Score structure
     # speed
     top_speed : float|None
     current_speed : float|None
-    
+
     @classmethod
-    def make_score(cls : Score, type : int|None, ver : int|None, gw : int|None, data : CrewDataEntry|PlayerDataEntry) -> None:
+    def make_score(
+        cls : Score,
+        type : int|None,
+        ver : int|None,
+        gw : int|None,
+        data : CrewDataEntry|PlayerDataEntry
+    ) -> None:
         # init
         ranking : int|None = None
         id : int|None = None
@@ -229,7 +283,7 @@ class Score(): # GW Score structure
         total4 : int|None = None
         top_speed : float|None = None
         current_speed : float|None = None
-        
+
         if type == 0: # player
             ranking = data[0]
             id = data[1]
@@ -245,10 +299,14 @@ class Score(): # GW Score structure
                 total2 = data[5]
                 total3 = data[6]
                 total4 = data[7]
-                if total1 is not None and preliminaries is not None: day1 = total1 - preliminaries
-                if total2 is not None and total1 is not None: day2 = total2 - total1
-                if total3 is not None and total2 is not None: day3 = total3 - total2
-                if total4 is not None and total3 is not None: day4 = total4 - total3
+                if total1 is not None and preliminaries is not None:
+                    day1 = total1 - preliminaries
+                if total2 is not None and total1 is not None:
+                    day2 = total2 - total1
+                if total3 is not None and total2 is not None:
+                    day3 = total3 - total2
+                if total4 is not None and total3 is not None:
+                    day4 = total4 - total3
                 if ver >= 3:
                     top_speed = data[8]
                 if ver >= 4: # and version 6
@@ -287,19 +345,55 @@ class Score(): # GW Score structure
                 current = preliminaries
                 current_day = preliminaries
                 day = 0
-        
-        return cls(type, ver, gw, ranking, id, name, current, current_day, day, preliminaries, day1, total1, day2, total2, day3, total3, day4, total4, top_speed, current_speed)
+
+        return cls(
+            type,
+            ver,
+            gw,
+            ranking,
+            id,
+            name,
+            current,
+            current_day,
+            day,
+            preliminaries,
+            day1,
+            total1,
+            day2,
+            total2,
+            day3,
+            total3,
+            day4,
+            total4,
+            top_speed,
+            current_speed
+        )
 
     def __repr__(self : Score) -> str: # used for debug
-        return "Score({}, {}, {}, {}, {})".format(self.gw,self.ver,self.type,self.name,self.current)
+        return "Score({}, {}, {}, {}, {})".format(
+            self.gw,
+            self.ver,
+            self.type,
+            self.name,
+            self.current
+        )
 
     def __str__(self : Score) -> str: # used for debug
-        return "GW{}, v{}, {}, {}, {}".format(self.gw, self.ver, 'crew' if self.type else 'player', self.name, self.current)
+        return "GW{}, v{}, {}, {}, {}".format(
+            self.gw,
+            self.ver,
+            'crew' if self.type else 'player',
+            self.name,
+            self.current
+        )
+
 
 """GWDB
 Handle a Guild War Database
 Contain a database general infos, such which GW is it for, its version, etc...
 """
+
+
 @dataclass(frozen=True, slots=True)
 class GWDB():
     gw : int|None
@@ -321,11 +415,11 @@ class GWDB():
             return cls(gw, ver, timestamp)
         try:
             ver = int(data[1])
-        except: 
+        except:
             ver = 1
         try:
             timestamp = datetime.utcfromtimestamp(data[2])
-        except: 
+        except:
             timestamp = None
         return cls(gw, ver, timestamp)
 
@@ -335,12 +429,42 @@ class GWDB():
     def __str__(self : GWDB) -> str: # used for debug
         return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)
 
+
 """Calculator
 Simple class to make complicated calculations
 Used by the $calc command
 """
+
+
 class Calc():
-    FUNCS : list[str] = ['cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh', 'exp', 'ceil', 'abs', 'factorial', 'floor', 'round', 'trunc', 'log', 'log2', 'log10', 'sqrt', 'rad', 'deg'] # supported functions
+    # supported functions
+    FUNCS : list[str] = [
+        'cos',
+        'sin',
+        'tan',
+        'acos',
+        'asin',
+        'atan',
+        'cosh',
+        'sinh',
+        'tanh',
+        'acosh',
+        'asinh',
+        'atanh',
+        'exp',
+        'ceil',
+        'abs',
+        'factorial',
+        'floor',
+        'round',
+        'trunc',
+        'log',
+        'log2',
+        'log10',
+        'sqrt',
+        'rad',
+        'deg'
+    ]
 
     def __init__(self : Calc) -> None:
         self.expression : str = ""
@@ -352,16 +476,16 @@ class Calc():
 
     """evaluate()
     Evaluate a mathematical expression and return the result
-    
+
     Parameters
     ----------
     expression: Math expression
     vars: Variable
-    
+
     Raises
     ------
     Exception: For any errors
-    
+
     Returns
     --------
     float or int: Result
@@ -372,7 +496,8 @@ class Calc():
         # store variables
         self.vars = self.vars | vars
         for func in self.FUNCS: # check variable names for dupes with function names
-            if func in self.vars: raise Exception("Variable name '{}' can't be used".format(func))
+            if func in self.vars:
+                raise Exception("Variable name '{}' can't be used".format(func))
         # parse expression and get the result
         value : float = float(self.parse())
         # interruption check
@@ -390,7 +515,7 @@ class Calc():
 
     """isNotDone()
     Return True if the evaluation isn't finished
-    
+
     Returns
     --------
     bool: True if the evaluation isn't finished, False if it is
@@ -400,7 +525,7 @@ class Calc():
 
     """peek()
     Get the next element
-    
+
     Returns
     --------
     str: Next element to be parsed
@@ -410,7 +535,7 @@ class Calc():
 
     """parse()
     Parse the next elements
-    
+
     Returns
     --------
     float or int: Result
@@ -421,22 +546,24 @@ class Calc():
             c : str = self.peek() # get next character
             if c in ['+', '-']: # as long as it's a + or - operator
                 self.index += 1
-                if c == '-': values.append(- self.multiply()) # if -, minus multiply
-                else: values.append(self.multiply()) # else just multiply
+                if c == '-':
+                    values.append(- self.multiply()) # if -, minus multiply
+                else:
+                    values.append(self.multiply()) # else just multiply
             else:
                 break
         return sum(values) # addition all values
 
     """multiply()
     Multiply the next elements
-    
+
     Returns
     --------
     float or int: Result
     """
     def multiply(self : Calc) -> int|float:
         values : list[float] = [self.parenthesis()] # call parenthesis first
-        denominator : int|float 
+        denominator : int|float
         while True:
             c : str = self.peek() # check operator
             if c in ['*', 'x']: # multiply
@@ -473,11 +600,11 @@ class Calc():
 
     """parenthesis()
     Parse the elements in the parenthesis
-    
+
     Raises
     ------
     Exception: Missing parenthesis
-    
+
     Returns
     --------
     float or int: Result
@@ -495,7 +622,7 @@ class Calc():
 
     """negative()
     Get the negative of the value
-    
+
     Returns
     --------
     float or int: Result
@@ -509,7 +636,7 @@ class Calc():
 
     """value()
     Get the value of the next element
-    
+
     Returns
     --------
     float or int: Result
@@ -522,11 +649,11 @@ class Calc():
 
     """variable_or_function()
     Get the result of a variable or a function
-    
+
     Raises
     ------
     Exception: Error during the parsing
-    
+
     Returns
     --------
     float or int: Result
@@ -540,9 +667,9 @@ class Calc():
                 self.index += 1
             else:
                 break
-        
+
         value : float|None = self.vars.get(var, None) # check if variable
-        if value == None: # it's not
+        if value is None: # it's not
             # check if function
             if var not in self.FUNCS:
                 raise Exception("Unrecognized variable '{}'".format(var))
@@ -569,13 +696,16 @@ class Calc():
                     case 'abs': value = math.fabs(param)
                     case 'trunc': value = math.trunc(param)
                     case 'log':
-                        if param <= 0: raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                        if param <= 0:
+                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
                         value = math.log(param)
                     case 'log2':
-                        if param <= 0: raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                        if param <= 0:
+                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
                         value = math.log2(param)
                     case 'log10':
-                        if param <= 0: raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                        if param <= 0:
+                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
                         value = math.log10(param)
                     case 'sqrt': value = math.sqrt(param)
                     case 'rad': value = math.radians(param)
@@ -586,11 +716,11 @@ class Calc():
 
     """number()
     Return a numerical value
-    
+
     Raises
     ------
     Exception: Error during the parsing
-    
+
     Returns
     --------
     float or int: Result
@@ -614,6 +744,16 @@ class Calc():
             self.index += 1
         # error check
         if len(strValue) == 0:
-            if c == '': raise Exception("Unexpected end found\nDid you perhaps forget a bracket?\nExample: `log(20)` not `log 20`")
-            else: raise Exception("Unexpected end found\nA value was expectedat position {}".format(self.index))
+            if c == '':
+                raise Exception(
+                    "Unexpected end found\n"
+                    "Did you perhaps forget a bracket?\n"
+                    "Example: `log(20)` not `log 20`")
+            else:
+                raise Exception(
+                    (
+                        "Unexpected end found\n"
+                        "A value was expectedat position {}"
+                    ).format(self.index)
+                )
         return float("".join(strValue))

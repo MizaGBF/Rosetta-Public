@@ -11,16 +11,17 @@ import gzip
 import lzma
 import os
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Drive Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # This component manages the save data file (save.json) over Google Drive
 # It also lets you send and retrieve files from Google Drive for whatever application you might need
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Drive():
     ZIP_CHUNK : int = 8192
-    
+
     def __init__(self : Drive, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.debug : bool = bot.debug_mode or bot.test_mode
@@ -28,19 +29,25 @@ class Drive():
         self.gdrive : GoogleDrive|None = None
         try:
             # Set GoogleAuth with service-secrets.json
-            self.gauth = GoogleAuth(settings={
-                        "client_config_backend": "service",
-                        "service_config": {
-                            "client_json_file_path": "service-secrets.json",
-                        }
-                    })
+            self.gauth = GoogleAuth(
+                settings={
+                    "client_config_backend": "service",
+                    "service_config": {
+                        "client_json_file_path": "service-secrets.json",
+                    }
+                }
+            )
             # Authenticate
             self.gauth.ServiceAuth()
             self.gdrive = GoogleDrive(self.gauth)
         except OSError as e:
             self.gauth = None
             self.gdrive = None
-            self.bot.logger.pushError("[DRIVE] Failed to initialize Drive component, couldn't open service-secrets.json:", e, send_to_discord=False)
+            self.bot.logger.pushError(
+                "[DRIVE] Failed to initialize Drive component, couldn't open service-secrets.json:",
+                e,
+                send_to_discord=False
+            )
             raise e
         except Exception as e:
             self.gauth = None
@@ -55,11 +62,11 @@ class Drive():
     """decompressJSON_gzip()
     Decompress the given byte array (which must be valid compressed gzip data) and return the decoded text (utf-8).
     Legacy code for compatibility with very old MizaBOT saves. It shoudn't be needed anymore.
-    
+
     Parameters
     --------
     inputBytes: data to decompress
-    
+
     Returns
     --------
     str: Decompressed string
@@ -80,11 +87,11 @@ class Drive():
 
     """decompressJSON()
     Decompress the given byte array (which must be valid compressed lzma data) and return the decoded text (utf-8).
-    
+
     Parameters
     --------
     inputBytes: data to decompress
-    
+
     Returns
     --------
     str: Decompressed string
@@ -94,9 +101,13 @@ class Drive():
             with io.BytesIO(inputBytes) as stream:
                 decompressor = lzma.LZMADecompressor()
                 while not decompressor.eof:
-                    chunk : bytes = decompressor.decompress(stream.read(self.ZIP_CHUNK), max_length=self.ZIP_CHUNK) # decompress the next chunk
+                    chunk : bytes = decompressor.decompress(
+                        stream.read(self.ZIP_CHUNK),
+                        max_length=self.ZIP_CHUNK
+                    ) # decompress the next chunk
                     if decompressor.eof: # we reached EOF
-                        if len(chunk) > 0: bio.write(chunk)
+                        if len(chunk) > 0:
+                            bio.write(chunk)
                         bio.seek(0) # go back to BytesIO beginning
                         return bio.read().decode("utf-8") # read its content, decode and return
                     # write decompressed chunk to BytesIO
@@ -106,11 +117,11 @@ class Drive():
     """compressJSON()
     Read the given string, encode it in utf-8, compress the data and return it as a byte array.
     json.dumps() must have been used before this function.
-    
+
     Parameters
     --------
     inputString: data to compress
-    
+
     Returns
     --------
     bytes: Compressed string
@@ -136,7 +147,9 @@ class Drive():
     """
     def load(self : Drive) -> bool:
         try:
-            file_list : list[GoogleDriveFile] = self.gdrive.ListFile({'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}).GetList() # get the file list in our folder
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}
+            ).GetList() # get the file list in our folder
             # search the save file
             s : GoogleDriveFile
             for s in file_list: # iterate until we find a compressed save
@@ -182,18 +195,31 @@ class Drive():
             return None
         try:
             # get file list
-            file_list : list[GoogleDriveFile] = self.gdrive.ListFile({'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}).GetList()
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}
+            ).GetList()
             f : GoogleDriveFile
             if len(file_list) > 9: # delete if we have too many backups
                 for f in file_list:
                     if f['title'].startswith('backup'):
                         f.Delete()
             # list the previous save(s)
-            prev : list[GoogleDriveFile] = [f for f in file_list if f['title'] in ["save.json", "save.gzip", "save.lzma"]]
+            prev : list[GoogleDriveFile] = [
+                f for f in file_list
+                if f['title'] in ["save.json", "save.gzip", "save.lzma"]
+            ]
             # compress the one passed as a parameter
             cdata : bytes = self.compressJSON(data)
             # create file
-            s : GoogleDriveFile = self.gdrive.CreateFile({'title':'save.lzma', 'mimeType':'application/x-lzma', "parents": [{"kind": "drive#file", "id": self.bot.data.config['tokens']['drive']}]})
+            s : GoogleDriveFile = self.gdrive.CreateFile(
+                {
+                    'title':'save.lzma',
+                    'mimeType':'application/x-lzma',
+                    "parents": [
+                        {"kind": "drive#file", "id": self.bot.data.config['tokens']['drive']}
+                    ]
+                }
+            )
             with io.BytesIO(cdata) as stream:
                 s.content = stream
                 s.Upload() # upload
@@ -208,22 +234,25 @@ class Drive():
 
     """saveDiskFile()
     Upload a file to a specified folder
-    
+
     Parameters
     ----------
     target: File to save
     mile: File mime type
     name: File name
     folder: Google Drive Folder ID
-    
+
     Returns
     --------
     bool: True if success, False if failure, None if debug
     """
     def saveDiskFile(self : Drive, target : str, mime : str, name : str, folder : str) -> bool|None:
-        if self.debug: return None
+        if self.debug:
+            return None
         try:
-            s : GoogleDriveFile = self.gdrive.CreateFile({'title':name, 'mimeType':mime, "parents": [{"kind": "drive#file", "id": folder}]})
+            s : GoogleDriveFile = self.gdrive.CreateFile(
+                {'title':name, 'mimeType':mime, "parents": [{"kind": "drive#file", "id": folder}]}
+            )
             with open(target, "rb") as stream: # open file
                 s.content = stream
                 s.Upload() # and upload
@@ -234,23 +263,26 @@ class Drive():
 
     """overwriteFile()
     Upload a file to a specified folder, overwrite an existing file if it exists
-    
+
     Parameters
     ----------
     target: File to save
     mile: File mime type
     name: File name
     folder: Google Drive Folder ID
-    
+
     Returns
     --------
     bool: True if success, False if failure, None if debug
     """
     def overwriteFile(self : Drive, target : str, mime : str, name : str, folder : str) -> bool|None:
-        if self.debug: return None
+        if self.debug:
+            return None
         try:
             # get file list
-            file_list : list[GoogleDriveFile] = self.gdrive.ListFile({'q': "'" + folder + "' in parents and trashed=false"}).GetList()
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + folder + "' in parents and trashed=false"}
+            ).GetList()
             s : GoogleDriveFile
             for s in file_list:
                 if s['title'] == name: # if our file is found
@@ -266,22 +298,25 @@ class Drive():
 
     """mvFile()
     Rename a file in a folder
-    
+
     Parameters
     ----------
     name: File name
     folder: Google Drive Folder ID
     name: New File name
-    
+
     Returns
     --------
     bool: True if success, False if failure, None if debug
     """
     def mvFile(self : Drive, name : str, folder : str, new : str) -> bool|None:
-        if self.debug: return None
+        if self.debug:
+            return None
         try:
             # get file list
-            file_list : list[GoogleDriveFile] = self.gdrive.ListFile({'q': "'" + folder + "' in parents and trashed=false"}).GetList()
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + folder + "' in parents and trashed=false"}
+            ).GetList()
             s : GoogleDriveFile
             for s in file_list:
                 if s['title'] == name: # the file is found
@@ -304,10 +339,12 @@ class Drive():
     --------
     bool: True if success, False if failure, None if doesn't exist
     """
-    def dlFile(self : Drive, name : str, folder : str, destination : str|None = None)-> bool|None:
+    def dlFile(self : Drive, name : str, folder : str, destination : str|None = None) -> bool|None:
         try:
             # get file list
-            file_list : list[GoogleDriveFile] = self.gdrive.ListFile({'q': "'" + folder + "' in parents and trashed=false"}).GetList() # get the file list in our folder
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + folder + "' in parents and trashed=false"}
+            ).GetList() # get the file list in our folder
             s : GoogleDriveFile
             for s in file_list:
                 if s['title'] == name: # our file is found

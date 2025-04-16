@@ -10,11 +10,12 @@ if TYPE_CHECKING:
     type ReminderData = list[datetime|str]
     type ReminderList = list[ReminderData]
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Reminder Cog
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Let users setup and manage "reminders" for later
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Reminder(commands.Cog):
     """Set Reminders."""
@@ -31,7 +32,7 @@ class Reminder(commands.Cog):
     """checkReminders()
     Check the reminders ready to send.
     Update the save datas if the reminders are set in the old format.
-    
+
     Returns
     --------
     dict: Reminders to send
@@ -39,7 +40,8 @@ class Reminder(commands.Cog):
     async def checkReminders(self : Reminder) -> dict[str, str]:
         try:
             send : dict[str, str] = {}
-            c : datetime = self.bot.util.JST() + timedelta(seconds=30) # current time, half a minute ahead to account for network delays and such (better remind early than late)
+            # current time, half a minute ahead to account for network delays and such
+            c : datetime = self.bot.util.JST() + timedelta(seconds=30)
             k : str
             v : list[ReminderList]
             for k, v in list(self.bot.data.save['reminders'].items()): # iterate over (user , reminder) pairs
@@ -49,7 +51,8 @@ class Reminder(commands.Cog):
                     if c >= r[0]: # check if c (current time) is greater or equal than the r[0] (targeted date)
                         if k not in send: # create array of message to send for that user if not created
                             send[k] = []
-                        send[k].append(r[1][:1900]) # add reminder to list of messages to send (limited to 1900 characters)
+                        # add reminder to list of messages to send (limited to 1900 characters)
+                        send[k].append(r[1][:1900])
                         self.bot.data.save['reminders'][k].pop(i) # remove reminder
                         self.bot.data.pending = True
                         await asyncio.sleep(0)
@@ -74,7 +77,20 @@ class Reminder(commands.Cog):
                 for mid in messages: # for each user id
                     if int(mid) == self.bot.user.id: # this is the bot, so we're dealing with bot reminders
                         for m in messages[mid]: # send each reminders to every announcement channels
-                            await self.bot.sendMulti(self.bot.channel.announcements, embed=self.bot.embed(title="Reminder", description=m, timestamp=self.bot.util.UTC(), thumbnail="https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png", color=self.COLOR), publish=True)
+                            await self.bot.sendMulti(
+                                self.bot.channel.announcements,
+                                embed=self.bot.embed(
+                                    title="Reminder",
+                                    description=m,
+                                    timestamp=self.bot.util.UTC(),
+                                    thumbnail=(
+                                        "https://prd-game-a-granbluefantasy.akamaized.net"
+                                        "/assets_en/img/sp/touch_icon.png"
+                                    ),
+                                    color=self.COLOR
+                                ),
+                                publish=True
+                            )
                     else: # this is a normal user
                         u : disnake.User|None = await self.bot.get_or_fetch_user(int(mid)) # retrieve it
                         m : str
@@ -82,7 +98,13 @@ class Reminder(commands.Cog):
                             try:
                                 await u.send(embed=self.bot.embed(title="Reminder", description=m))
                             except Exception as e:
-                                self.bot.logger.pushError("[TASK] 'reminder:task' Task Error:\nUser: {}\nReminder: {}".format(u.name, m), e)
+                                self.bot.logger.pushError(
+                                    "[TASK] 'reminder:task' Task Error:\nUser: {}\nReminder: {}".format(
+                                        u.name,
+                                        m
+                                    ),
+                                    e
+                                )
                                 break
                 await asyncio.sleep(50) # wait 50s before checking again
             except asyncio.CancelledError:
@@ -94,7 +116,7 @@ class Reminder(commands.Cog):
 
     """addBotReminder()
     Internal use only, add server wide reminders
-    
+
     Parameters
     --------
     date: Date at which the reminder is fired
@@ -103,7 +125,8 @@ class Reminder(commands.Cog):
     def addBotReminder(self : Reminder, date : datetime, msg : str):
         if str(self.bot.user.id) not in self.bot.data.save['reminders']: # add list for the bot user
             self.bot.data.save['reminders'][str(self.bot.user.id)] = []
-        for m in self.bot.data.save['reminders'][str(self.bot.user.id)]: # check if the message already exists (to not add a dupe)
+        for m in self.bot.data.save['reminders'][str(self.bot.user.id)]:
+            # check if the message already exists (to not add a dupe)
             if m[0] == date and m[1] == msg:
                 return
         self.bot.data.save['reminders'][str(self.bot.user.id)].append([date, msg]) # add it
@@ -111,13 +134,17 @@ class Reminder(commands.Cog):
 
     """render()
     Display the interaction author's reminder list
-    
+
     Parameters
     --------
     inter: A deferred disnake.ApplicationCommandInteraction
     description: String, the embed description. The reminder count will be appended to it.
     """
-    async def render(self : Reminder, inter : disnake.ApplicationCommandInteraction, description : str) -> None:
+    async def render(
+        self : Reminder,
+        inter : disnake.ApplicationCommandInteraction,
+        description : str
+    ) -> None:
         aid : str = str(inter.author.id)
         # set description
         append : str
@@ -132,17 +159,41 @@ class Reminder(commands.Cog):
         else:
             description += append
         # display list
-        if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0: # no reminder for this user
-            await inter.edit_original_message(embed=self.bot.embed(title="{}'s reminder list".format(inter.author.display_name), description=description, color=self.COLOR))
+        if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0:
+            # no reminder for this user
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="{}'s reminder list".format(
+                        inter.author.display_name
+                    ),
+                    description=description,
+                    color=self.COLOR
+                )
+            )
         else:
-            embed : disnake.Embed = disnake.Embed(title="{}'s reminder list".format(inter.author.display_name).format(inter.author.display_name), description=description, color=self.COLOR)
+            embed : disnake.Embed = disnake.Embed(
+                title="{}'s reminder list".format(inter.author.display_name).format(inter.author.display_name),
+                description=description,
+                color=self.COLOR
+            )
             embed.set_thumbnail(url=inter.author.display_avatar)
             i : int
             v : ReminderList
             for i, v in enumerate(self.bot.data.save['reminders'][aid]): # list all reminders
                 if i >= 25: # field limit
                     break
-                embed.add_field(name="#{} ▫️ {}".format(i, self.bot.util.time(v[0], style=['d','t'], removejst=True)), value=v[1], inline=False)
+                embed.add_field(
+                    name="#{} ▫️ {}".format(
+                        i,
+                        self.bot.util.time(
+                            v[0],
+                            style=['d','t'],
+                            removejst=True
+                        )
+                    ),
+                    value=v[1],
+                    inline=False
+                )
             await inter.edit_original_message(embed=embed)
 
     @commands.slash_command()
@@ -155,7 +206,7 @@ class Reminder(commands.Cog):
 
     """_add()
     Subroutine to add a reminder to memory
-    
+
     Parameters
     ----------
     inter: A disnake.ApplicationCommandInteraction interaction object
@@ -164,14 +215,17 @@ class Reminder(commands.Cog):
     """
     async def _add(self : Reminder, inter : disnake.ApplicationCommandInteraction, delta : timedelta, msg : str):
         aid : str = str(inter.author.id)
-        if aid not in self.bot.data.save['reminders']: # Add reminder list for this user
+        if aid not in self.bot.data.save['reminders']:
+            # Add reminder list for this user
             self.bot.data.save['reminders'][aid] = []
         # Check if the user reached its reminder limit
         description : str
-        if len(self.bot.data.save['reminders'][aid]) >= self.REMINDER_LIMIT and inter.author.id != self.bot.owner.id: # Owner isn't limited
+        if len(self.bot.data.save['reminders'][aid]) >= self.REMINDER_LIMIT and inter.author.id != self.bot.owner.id:
+            # Owner isn't limited
             description = "Error, you've reached the **limit**"
         else:
-            now : datetime = self.bot.util.JST(delay=False).replace(microsecond=0) # we keep dates in JST as most of the bot uses it
+            # we keep dates in JST as most of the bot uses it
+            now : datetime = self.bot.util.JST(delay=False).replace(microsecond=0)
             target : datetime = now + delta
             if target - now >= timedelta(days=500):
                 description = "Error, you can't set a reminder **further than 500 days** in the  future"
@@ -190,44 +244,91 @@ class Reminder(commands.Cog):
         await self.render(inter, description)
 
     @remind.sub_command()
-    async def add(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, duration : str = commands.Param(description="Format: XdXhXmXs"), msg : str = commands.Param(description="Content of the reminder")) -> None:
+    async def add(
+        self : commands.SubCommand,
+        inter : disnake.ApplicationCommandInteraction,
+        duration : str = commands.Param(description="Format: XdXhXmXs"),
+        msg : str = commands.Param(description="Content of the reminder")
+    ) -> None:
         """Remind you of something at the specified time (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
             d : timedelta = self.bot.util.str2delta(duration)
-            if d is None: raise Exception()
+            if d is None:
+                raise Exception()
         except:
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Invalid duration string `{}`, format is `NdNhNm`".format(duration), color=self.COLOR))
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="Reminder Error",
+                    description="Invalid duration string `{}`, format is `NdNhNm`".format(duration),
+                    color=self.COLOR
+                )
+            )
             return
         await self._add(inter, d, msg)
 
     @remind.sub_command()
-    async def event(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12), year : int = commands.Param(description="UTC Timezone", ge=2022), hour : int = commands.Param(description="UTC Timezone", ge=0, le=23), minute : int = commands.Param(description="UTC Timezone", ge=0, le=59)) -> None:
+    async def event(
+        self : commands.SubCommand,
+        inter : disnake.ApplicationCommandInteraction,
+        msg : str = commands.Param(description="Content of the reminder"),
+        day : int = commands.Param(description="UTC Timezone", ge=1, le=31),
+        month : int = commands.Param(description="UTC Timezone", ge=1, le=12),
+        year : int = commands.Param(description="UTC Timezone", ge=2022),
+        hour : int = commands.Param(description="UTC Timezone", ge=0, le=23),
+        minute : int = commands.Param(description="UTC Timezone", ge=0, le=59)
+    ) -> None:
         """Remind you of something at the specified time (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
             now : datetime = self.bot.util.UTC().replace(microsecond=0)
-            date : datetime = now.replace(year=year, month=month, day=day, hour=hour, minute=minute, second=0, microsecond=0)
+            date : datetime = now.replace(
+                year=year,
+                month=month,
+                day=day,
+                hour=hour,
+                minute=minute,
+                second=0,
+                microsecond=0
+            )
             if date <= now:
                 raise Exception("The date you set is in the past")
             d : timedelta = date - now # calculate delta between now and desired date
         except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Invalid date: `{}`".format(e), color=self.COLOR))
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="Reminder Error",
+                    description="Invalid date: `{}`".format(e),
+                    color=self.COLOR
+                )
+            )
             return
         await self._add(inter, d, msg)
 
     @remind.sub_command()
-    async def birthday(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, msg : str = commands.Param(description="Content of the reminder"), day : int = commands.Param(description="UTC Timezone", ge=1, le=31), month : int = commands.Param(description="UTC Timezone", ge=1, le=12)) -> None:
+    async def birthday(
+        self : commands.SubCommand,
+        inter : disnake.ApplicationCommandInteraction,
+        msg : str = commands.Param(description="Content of the reminder"),
+        day : int = commands.Param(description="UTC Timezone", ge=1, le=31),
+        month : int = commands.Param(description="UTC Timezone", ge=1, le=12)
+    ) -> None:
         """Remind you of something at the next specified date (±30 seconds precision)"""
         await inter.response.defer(ephemeral=True)
         try:
             now : datetime = self.bot.util.UTC().replace(microsecond=0)
             date : datetime = now.replace(month=month, day=day, hour=0, minute=0, second=0, microsecond=0)
             if date < now:
-                date = date.replace(year=date.year+1)
+                date = date.replace(year=date.year + 1)
             d : timedelta = date - now # calculate delta between now and desired date
         except Exception as e:
-            await inter.edit_original_message(embed=self.bot.embed(title="Reminder Error", description="Invalid date: `{}`".format(e), color=self.COLOR))
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="Reminder Error",
+                    description="Invalid date: `{}`".format(e),
+                    color=self.COLOR
+                )
+            )
             return
         await self._add(inter, d, "Happy Birthday:\n" + msg)
 
@@ -238,12 +339,18 @@ class Reminder(commands.Cog):
         await self.render(inter, "")
 
     @remind.sub_command(name="remove")
-    async def reminddel(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction, rid : int = commands.Param(description="Number of the reminder to delete", ge=0)) -> None:
+    async def reminddel(
+        self : commands.SubCommand,
+        inter : disnake.ApplicationCommandInteraction,
+        rid : int = commands.Param(description="Number of the reminder to delete", ge=0)
+    ) -> None:
         """Delete one of your reminders"""
         await inter.response.defer(ephemeral=True)
-        aid: str  = str(inter.author.id)
+        aid : str = str(inter.author.id)
         description : str
-        if aid not in self.bot.data.save['reminders'] or len(self.bot.data.save['reminders'][aid]) == 0: # no reminder for this user
+        if (aid not in self.bot.data.save['reminders']
+                or len(self.bot.data.save['reminders'][aid]) == 0):
+            # no reminder for this user
             description = "Error, you don't have any reminders"
         else:
             if rid < 0 or rid >= len(self.bot.data.save['reminders'][aid]): # check if given reminder index is valid

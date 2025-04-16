@@ -7,11 +7,12 @@ from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Logger Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Store error messages and send them to Discord
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Logger():
     # shortcut to these constants
@@ -29,6 +30,7 @@ class Logger():
         INFO : 0x3eba25,
         DEBUG : 0xc7e046
     }
+
     def __init__(self : Logger, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.discord_queue : list[list[datetime|str|int]] = []
@@ -41,8 +43,24 @@ class Logger():
             discord_logger : logging.Logger = logging.getLogger('disnake')
             discord_logger.setLevel(logging.WARNING)
             if not debug: # plus rotary files in normal mode
-                self.logger.addHandler(RotatingFileHandler(filename="rosetta.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=1))
-                discord_logger.addHandler(RotatingFileHandler(filename="disnake.log", encoding='utf-8', mode='w', maxBytes=51200, backupCount=1))
+                self.logger.addHandler(
+                    RotatingFileHandler(
+                        filename="rosetta.log",
+                        encoding='utf-8',
+                        mode='w',
+                        maxBytes=51200,
+                        backupCount=1
+                    )
+                )
+                discord_logger.addHandler(
+                    RotatingFileHandler(
+                        filename="disnake.log",
+                        encoding='utf-8',
+                        mode='w',
+                        maxBytes=51200,
+                        backupCount=1
+                    )
+                )
             # we disable these logs
             for log_name in ['oauth2client', 'oauth2client.transport', 'oauth2client.client', 'oauth2client.crypt']:
                 l : logging.Logger = logging.getLogger(log_name)
@@ -56,11 +74,11 @@ class Logger():
 
     """color()
     Return an embed color according to the given level
-    
+
     Parameters
     ----------
     level: Integer
-    
+
     Returns
     ----------
     int: Color
@@ -82,7 +100,16 @@ class Logger():
                         if len(msg[1]) > 4000: # if too long, truncate
                             msg[1] = msg[1][:4000] + "...\n*Too long, check rosetta.log for details*"
                         # send the message to the debug channel
-                        await self.bot.send('debug', embed=self.bot.embed(title="Rosetta Log", description="### " + msg[1], footer=("Occured {} times".format(msg[2]) if msg[2] > 1 else ''), timestamp=msg[0], color=self.color(msg[3])))
+                        await self.bot.send(
+                            'debug',
+                            embed=self.bot.embed(
+                                title="Rosetta Log",
+                                description="### " + msg[1],
+                                footer=("Occured {} times".format(msg[2]) if msg[2] > 1 else ''),
+                                timestamp=msg[0],
+                                color=self.color(msg[3])
+                            )
+                        )
                     self.discord_queue = [] # and clear
             except asyncio.CancelledError:
                 self.bot.logger.push("[TASK] 'bot:log' Task Cancelled")
@@ -94,7 +121,7 @@ class Logger():
     """push()
     Push a message to the log stack.
     If the message is identical to the previous one, it increases its occurence stack instead
-    
+
     Parameters
     ----------
     msg: A string
@@ -104,7 +131,8 @@ class Logger():
     def push(self : Logger, msg : str, send_to_discord : bool = True, level : int = logging.INFO) -> None:
         now : datetime = self.bot.util.UTC()
         if send_to_discord: # if this flag is on
-            if len(self.discord_queue) > 0 and self.discord_queue[-1][1] == msg: # if the last message in the log is the same
+            # if the last message in the log is the same
+            if len(self.discord_queue) > 0 and self.discord_queue[-1][1] == msg:
                 self.discord_queue[-1][2] += 1 # we simply increase its occurence counter
             else: # else we add it to the queue
                 self.discord_queue.append([now, msg, 1, level])
@@ -116,7 +144,7 @@ class Logger():
 
     """pushError()
     Wrapper around push() to send an exception
-    
+
     Parameters
     ----------
     msg: A string
@@ -124,7 +152,13 @@ class Logger():
     send_to_discord: If true, it will be stored in the save data to be processed later
     level: Integer, logging level used by log()
     """
-    def pushError(self : Logger, msg : str, exception : Exception|None = None, send_to_discord : bool = True, level : int = logging.ERROR) -> None:
+    def pushError(
+        self : Logger,
+        msg : str,
+        exception : Exception|None = None,
+        send_to_discord : bool = True,
+        level : int = logging.ERROR
+    ) -> None:
         if 'Session is closed' in str(exception): # Don't send these errors to discord
             send_to_discord = False
         if exception is not None: # add full exception traceback to message

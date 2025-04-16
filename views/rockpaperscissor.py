@@ -4,13 +4,15 @@ import disnake
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
+    from . import User
 import random
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # RPS View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # View class used to play Rock Paper Scissor
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class RPS(BaseView):
     # Picks
@@ -29,20 +31,20 @@ class RPS(BaseView):
     PLAYER_2 : int = 1
     # Pick combinations and results
     WIN_STATES : dict[int, int] = {
-        ROCK*10+ROCK : DRAW,
-        PAPER*10+ROCK : PLAYER_1,
-        SCISSOR*10+ROCK : PLAYER_2,
-        ROCK*10+PAPER : PLAYER_2,
-        PAPER*10+PAPER : DRAW,
-        SCISSOR*10+PAPER : PLAYER_1,
-        ROCK*10+SCISSOR : PLAYER_1,
-        PAPER*10+SCISSOR : PLAYER_2,
-        SCISSOR*10+SCISSOR : DRAW
+        ROCK * 10 + ROCK : DRAW,
+        PAPER * 10 + ROCK : PLAYER_1,
+        SCISSOR * 10 + ROCK : PLAYER_2,
+        ROCK * 10 + PAPER : PLAYER_2,
+        PAPER * 10 + PAPER : DRAW,
+        SCISSOR * 10 + PAPER : PLAYER_1,
+        ROCK * 10 + SCISSOR : PLAYER_1,
+        PAPER * 10 + SCISSOR : PLAYER_2,
+        SCISSOR * 10 + SCISSOR : DRAW
     }
-    
+
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -51,9 +53,15 @@ class RPS(BaseView):
     scores: list, current player scores
     target: number of round won to win
     """
-    def __init__(self : RPS, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed, scores : list[int], target : int) -> None:
+    def __init__(
+        self : RPS, bot : DiscordBot,
+        players : list[User],
+        embed : disnake.Embed,
+        scores : list[int],
+        target : int
+    ) -> None:
         super().__init__(bot, timeout=60)
-        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.players : list[User] = players # player list
         self.embed : disnake.Embed = embed # embed to update
         self.scores : list[int] = scores # global score
         self.target : int = target # best of X wins
@@ -62,7 +70,7 @@ class RPS(BaseView):
 
     """update()
     Update the embed
-    
+
     Parameters
     ----------
     inter: an interaction
@@ -71,7 +79,8 @@ class RPS(BaseView):
     async def update(self : RPS, inter : disnake.Interaction, init : bool = False) -> None:
         if not self.won: # if the game is on going
             desc : list[str] = []
-            if self.state[self.PLAYER_1] == -1 or self.state[self.PLAYER_2] == -1: # at least one player hasn't picked a choice yet
+            # at least one player hasn't picked a choice yet
+            if self.state[self.PLAYER_1] == -1 or self.state[self.PLAYER_2] == -1:
                 # display pending state
                 for i in range(len(self.players)):
                     desc.extend(self.renderPlayer(i, True))
@@ -118,7 +127,11 @@ class RPS(BaseView):
                 self.embed.description = "".join(desc)
                 self.stopall()
         if init: # initialization
-            await inter.edit_original_message(content=self.bot.util.players2mentions(self.players), embed=self.embed, view=self) # ping players
+            await inter.edit_original_message(
+                content=self.bot.util.players2mentions(self.players), # ping players
+                embed=self.embed,
+                view=self
+            )
             self.message = await inter.original_message()
         elif not self.won: # game is on going
             await self.message.edit(embed=self.embed, view=self)
@@ -127,7 +140,7 @@ class RPS(BaseView):
 
     """renderPlayer()
     Render the given player state
-    
+
     Parameters
     ----------
     index: Integer, player index in self.players
@@ -149,7 +162,7 @@ class RPS(BaseView):
 
     """timeoutCheck()
     Force a result if the view timedout
-    
+
     Parameters
     ----------
     inter: a Discord interaction
@@ -166,7 +179,7 @@ class RPS(BaseView):
 
     """callback()
     Callback for the various buttons
-    
+
     Parameters
     ----------
     interaction: a Discord interaction

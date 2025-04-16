@@ -4,39 +4,47 @@ import disnake
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
+    from . import User
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # ConnectFour View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # View class used to play Connect Four
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class ConnectFourButton(disnake.ui.Button):
     """__init__()
     Button Constructor
     A button to place a piece in one column
-    
+
     Parameters
     ----------
     column: Corresponding column in the grid (0 - 6)
     """
     def __init__(self : ConnectFourButton, column : int) -> None:
-        super().__init__(style=disnake.ButtonStyle.primary, label='{}'.format(column+1))
+        super().__init__(style=disnake.ButtonStyle.primary, label='{}'.format(column + 1))
         self.column : int = column # column this button is linked to
 
     """callback()
     Coroutine callback called when the button is called
     Stop the view when the game is won
-    
+
     Parameters
     ----------
     interaction: a disnake interaction
     """
     async def callback(self : ConnectFourButton, interaction: disnake.Interaction) -> None:
-        if self.view.state >= 0 and self.view.players[self.view.state].id == interaction.user.id and self.view.grid[self.column] == 0: # check if the game is on going and interaction author is the current player
+        # check if the game is on going and interaction author is the current player
+        if (self.view.state >= 0
+                and self.view.players[self.view.state].id == interaction.user.id
+                and self.view.grid[self.column] == 0):
             # insert in that column
             self.view.insert(self.column)
-            self.view.notification = "{} played in column **{}**\n".format(self.view.players[self.view.state].display_name, self.column+1)
+            self.view.notification = "{} played in column **{}**\n".format(
+                self.view.players[self.view.state].display_name,
+                self.column + 1
+            )
             # check if the game is won
             if self.view.checkWin():
                 self.view.notification += "**{}** is the winner".format(self.view.players[self.view.state].display_name)
@@ -54,7 +62,11 @@ class ConnectFourButton(disnake.ui.Button):
                 self.disabled = True
             await self.view.update(interaction)
         else:
-            await interaction.response.send_message("It's not your turn to play or you aren't the player", ephemeral=True)
+            await interaction.response.send_message(
+                "It's not your turn to play or you aren't the player",
+                ephemeral=True
+            )
+
 
 class ConnectFour(BaseView):
     # Directions used for the win check
@@ -67,21 +79,26 @@ class ConnectFour(BaseView):
     # Grid size
     ROW : int = 6
     COLUMN : int = 7
-    
+
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
     players: list of Players
     embed: disnake.Embed to edit
     """
-    def __init__(self : ConnectFour, bot : DiscordBot, players : list[disnake.User|disnake.Member], embed : disnake.Embed) -> None:
+    def __init__(
+        self : ConnectFour,
+        bot : DiscordBot,
+        players : list[User],
+        embed : disnake.Embed
+    ) -> None:
         super().__init__(bot, timeout=480)
-        self.grid : list[int] = [0 for i in range(self.ROW*self.COLUMN)]
+        self.grid : list[int] = [0 for i in range(self.ROW * self.COLUMN)]
         self.state : int = 0 # game state
-        self.players : list[disnake.User|disnake.Member] = players # player list
+        self.players : list[User] = players # player list
         # message embed to update
         self.embed : disnake.Embed = embed
         # create button
@@ -92,7 +109,7 @@ class ConnectFour(BaseView):
 
     """update()
     Update the embed
-    
+
     Parameters
     ----------
     inter: an interaction
@@ -102,7 +119,15 @@ class ConnectFour(BaseView):
         # show player names
         # the game state (notification)
         # and the grid (render() call)
-        self.embed.description : list[str] = [":red_circle: ", self.players[0].display_name, " :yellow_circle: ", self.players[1].display_name, "\n", self.notification, "\n"]
+        self.embed.description : list[str] = [
+            ":red_circle: ",
+            self.players[0].display_name,
+            " :yellow_circle: ",
+            self.players[1].display_name,
+            "\n",
+            self.notification,
+            "\n"
+        ]
         self.embed.description.extend(self.render())
         self.embed.description = "".join(self.embed.description)
         # set message
@@ -115,7 +140,7 @@ class ConnectFour(BaseView):
 
     """insert()
     Insert a piece in the grid
-    
+
     Parameters
     ----------
     col: Column to insert to (note: it must have been checked previously for empty spaces)
@@ -135,7 +160,7 @@ class ConnectFour(BaseView):
 
     """checkWin()
     Check if the current player won
-    
+
     Return
     ----------
     bool: True if won, False if not
@@ -149,12 +174,16 @@ class ConnectFour(BaseView):
                 # check if the piece in this space is owned by this player
                 if self.grid[c + r * self.COLUMN] == piece:
                     for dc, dr in self.DIRECTIONS: # for each possible directions
-                        if all([ # check if the 3 next pieces in that direction are also from that player
-                            0 <= r + dr * i < self.ROW and 
-                            0 <= c + dc * i < self.COLUMN and 
-                            self.grid[(c + dc * i) + (r + dr * i) * self.COLUMN] == piece
-                            for i in range(1, 4)
-                        ]):
+                        if all(
+                            [ # check if the 3 next pieces in that direction are also from that player
+                                (
+                                    0 <= r + dr * i < self.ROW
+                                    and 0 <= c + dc * i < self.COLUMN
+                                    and self.grid[(c + dc * i) + (r + dr * i) * self.COLUMN] == piece
+                                )
+                                for i in range(1, 4)
+                            ]
+                        ):
                             # this player won
                             # mark these pieces as the winning move
                             i : int
@@ -165,7 +194,7 @@ class ConnectFour(BaseView):
 
     """render()
     Render the grid into a string
-    
+
     Return
     ----------
     list: resulting list of strings

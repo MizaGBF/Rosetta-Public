@@ -5,17 +5,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..bot import DiscordBot
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Tap View
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # View class used by gacha simulations
 # It merely adds a "TAP" button which blocks execution until its clicked by the author
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Tap(BaseView):
     """__init__()
     Constructor
-    
+
     Parameters
     ----------
     bot: a pointer to the bot for ease of access
@@ -28,7 +29,7 @@ class Tap(BaseView):
     """tap()
     The tap button coroutine callback.
     Stop the view when called by the owner.
-    
+
     Parameters
     ----------
     button: the Discord button

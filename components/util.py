@@ -15,15 +15,21 @@ import os
 import sys
 import html
 
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Utility Component
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Feature a lot of utility functions and classes
-# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 
 class Util():
     JSTDIFF : int = 32400 # JST <-> UTC difference in seconds
-    MULTIPLIER_1000 : dict[str, int] = {'t':1000000000000, 'b':1000000000, 'm':1000000, 'k':1000} # thousand multipliers (Note: ORDER Is important)
+    MULTIPLIER_1000 : dict[str, int] = {
+        't':1000000000000,
+        'b':1000000000,
+        'm':1000000,
+        'k':1000
+    } # thousand multipliers (Note: ORDER Is important)
 
     def __init__(self : Util, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
@@ -37,11 +43,11 @@ class Util():
 
     """json_deserial_array()
     Deserialize a list (used for our json files)
-    
+
     Parameters
     ----------
     array: List
-    
+
     Returns
     --------
     list: Deserialized list
@@ -65,11 +71,11 @@ class Util():
 
     """json_deserial_dict()
     Deserialize a dict (used for our json files)
-    
+
     Parameters
     ----------
     pairs: dict
-    
+
     Returns
     --------
     dict: Deserialized Dict
@@ -93,15 +99,15 @@ class Util():
 
     """json_serial()
     Serialize a datetime instance (used for our json files)
-    
+
     Parameters
     ----------
     obj: datetime instance
-    
+
     Raises
     ------
     TypeError: obj isn't a datetime
-    
+
     Returns
     --------
     unknown: Serialized object
@@ -109,7 +115,7 @@ class Util():
     def json_serial(self : Util, obj : Any) -> Any: # serialize everything including datetime objects
         if isinstance(obj, datetime): # convert datetimes to string isoformat
             return obj.replace(microsecond=0).isoformat()
-        raise TypeError ("Type %s not serializable" % type(obj))
+        raise TypeError("Type %s not serializable" % type(obj))
 
     """UTC()
     Return the current time, UTC timezone
@@ -154,7 +160,13 @@ class Util():
     --------
     str: Formatted time
     """
-    def time(self : Util, to_convert : datetime|None = None, style : list[str] = ['f'], removejst : bool = False, naivecheck : bool = True) -> str:
+    def time(
+        self : Util,
+        to_convert : datetime|None = None,
+        style : list[str] = ['f'],
+        removejst : bool = False,
+        naivecheck : bool = True
+    ) -> str:
         if to_convert is None: # if no datetime isn't passed, we get the current time, as UTC
             to_convert = self.UTC()
         msgs : list[str] = []
@@ -170,11 +182,11 @@ class Util():
 
     """uptime()
     Return the bot uptime
-    
+
     Parameters
     ----------
     as_string: If true, the uptime is returned as a string
-    
+
     Returns
     --------
     timedelta: Bot uptime
@@ -189,7 +201,7 @@ class Util():
 
     """delta2str()
     Convert a timedelta object to a string (format: XdXhXmXs)
-    
+
     Parameters
     ----------
     delta: Timedelta object
@@ -198,7 +210,7 @@ class Util():
         2: Days, Hours and Minutes
         3: Days, Hours, Minutes and Seconds
         Anything else: Minutes
-    
+
     Returns
     --------
     str: Resulting string
@@ -206,21 +218,35 @@ class Util():
     def delta2str(self : Util, delta : timedelta, mode : int = 1) -> str:
         match mode: # convert a timedelta into a string. different modes possible:
             case 3:
-                return "{}d{}h{}m{}s".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60, delta.seconds % 60)
+                return "{}d{}h{}m{}s".format(
+                    delta.days,
+                    delta.seconds // 3600,
+                    (delta.seconds // 60) % 60,
+                    delta.seconds % 60
+                )
             case 2:
-                return "{}d{}h{}m".format(delta.days, delta.seconds // 3600, (delta.seconds // 60) % 60)
+                return "{}d{}h{}m".format(
+                    delta.days,
+                    delta.seconds // 3600,
+                    (delta.seconds // 60) % 60
+                )
             case 1:
-                return "{}h{}m".format(delta.seconds // 3600, (delta.seconds // 60) % 60)
+                return "{}h{}m".format(
+                    delta.seconds // 3600,
+                    (delta.seconds // 60) % 60
+                )
             case _:
-                return "{}m".format(delta.seconds // 60)
+                return "{}m".format(
+                    delta.seconds // 60
+                )
 
     """str2delta()
     Convert string to a a timedelta object (format: XdXhXmXs)
-    
+
     Parameters
     ----------
     d: The string to convert
-    
+
     Returns
     --------
     timedelta: Resulting timedelta object or None if error
@@ -250,11 +276,11 @@ class Util():
         if tmp != 0: # didn't end properly
             return None
         # create timedelta
-        return timedelta(days=sum//86400, seconds=sum%86400)
+        return timedelta(days=sum // 86400, seconds=sum % 86400)
 
     """status()
     Return the bot status
-    
+
     Returns
     --------
     dict: Dict of string
@@ -263,20 +289,38 @@ class Util():
         return {
             "Uptime": self.uptime(),
             "Version": self.bot.VERSION,
-            "Python": "{}, v{}.{}.{}".format(platform.python_implementation(), sys.version_info.major, sys.version_info.minor, sys.version_info.micro),
+            "Python": "{}, v{}.{}.{}".format(
+                platform.python_implementation(),
+                sys.version_info.major,
+                sys.version_info.minor,
+                sys.version_info.micro
+            ),
             "OS": platform.platform(),
             "CPU": "{:.2f}%".format(self.process.cpu_percent()),
-            "Memory": "{:.1f}MB ({:.2f}%)".format(self.process.memory_full_info().uss / 1048576, self.process.memory_percent()).replace(".0M", "M").replace(".00%", "%").replace("0%", "%"),
+            "Memory": "{:.1f}MB ({:.2f}%)".format(
+                self.process.memory_full_info().uss / 1048576,
+                self.process.memory_percent()
+            ).replace(
+                ".0M", "M"
+            ).replace(
+                ".00%", "%"
+            ).replace(
+                "0%", "%"
+            ),
             "Save": ("**Pending**" if self.bot.data.pending else "Ok"),
             "GBF Update": ("**Pending**" if self.bot.data.save['gbfupdate'] else "Ok"),
             "Task Count": str(len(self.bot.tasks)),
             "Server Count": str(len(self.bot.guilds)),
-            "Cogs Loaded": "{}/{}".format(len(self.bot.cogs), self.bot.cogn) if (len(self.bot.cogs) == self.bot.cogn) else "**{}**/{}".format(len(self.bot.cogs), self.bot.cogn)
+            "Cogs Loaded": (
+                "{}/{}".format(len(self.bot.cogs), self.bot.cogn)
+                if (len(self.bot.cogs) == self.bot.cogn)
+                else "**{}**/{}".format(len(self.bot.cogs), self.bot.cogn)
+            )
         }
 
     """statusString()
     Return the bot status as a single string (call status() )
-    
+
     Returns
     --------
     str: Status string
@@ -295,7 +339,7 @@ class Util():
 
     """react()
     React to a message with an emoji
-    
+
     Parameters
     ----------
     msg: disnake.Message object
@@ -316,7 +360,7 @@ class Util():
 
     """unreact()
     Remove a bot reaction to a message
-    
+
     Parameters
     ----------
     msg: disnake.Message object
@@ -337,11 +381,11 @@ class Util():
 
     """formatName()
     Shorten and fix player or crew names if they use long or some special characters.
-    
+
     Parameters
     ----------
     name: The player name to shorten
-    
+
     Returns
     --------
     str: The resulting name
@@ -372,17 +416,28 @@ class Util():
     """breakdownHTML()
     Take a string containing HTML tags and break it down in a list.
     Odd elements should be the tags, even should be the text in between.
-    
+
     Parameters
     ----------
     content: String, the string to breakdown
-    
+
     Returns
     --------
     list: The resulting list
     """
     def breakdownHTML(self : Util, content : str) -> list[str]:
-        split : list[str] = content.replace('\n', '').replace('    ','').replace('<!--','<comment>').replace('-->','</comment>').split('<') # split string by <
+        # split string by <tag>
+        split : list[str] = content.replace(
+            '\n', ''
+        ).replace(
+            '    ',''
+        ).replace(
+            '<!--','<comment>'
+        ).replace(
+            '-->','</comment>'
+        ).split(
+            '<'
+        )
         result : list[str] = [split[0]]
         for i in range(1, len(split)):
             result.extend(split[i].split('>', 1)) # additional split by >
@@ -396,7 +451,7 @@ class Util():
 
     """str2gbfid()
     Convert a string to a GBF profile ID.
-    
+
     Parameters
     ----------
     inter: The command interaction
@@ -405,12 +460,16 @@ class Util():
         - Positive integer, representing a GBF ID
         - A Discord Mention (<@discord_id> or <@!discord_id>)
     memberTarget: disnake.Member to search, set to None to ignore
-    
+
     Returns
     --------
     int or str: The GBF ID or an error string if an error happened
     """
-    async def str2gbfid(self : Util, inter : disnake.ApplicationCommandInteraction, target : str, memberTarget: disnake.Member = None) -> int|str:
+    async def str2gbfid(
+        self : Util, inter : disnake.ApplicationCommandInteraction,
+        target : str,
+        memberTarget: disnake.Member = None
+    ) -> int|str:
         tid : int|str
         if memberTarget is not None: # memberTarget is valid
             if str(memberTarget.id) not in self.bot.data.save['gbfids']: # check if their id is linked
@@ -418,7 +477,10 @@ class Util():
             tid = self.bot.data.save['gbfids'][str(memberTarget.id)] # return GBF ID
         elif target == "": # empty target string
             if str(inter.author.id) not in self.bot.data.save['gbfids']: # check if their id is linked
-                return "You didn't set your GBF profile ID.\nUse {} to link it with your Discord ID.".format(self.command2mention('gbf profile set'))
+                return (
+                    "You didn't set your GBF profile ID.\n"
+                    "Use {} to link it with your Discord ID."
+                ).format(self.command2mention('gbf profile set'))
             tid = self.bot.data.save['gbfids'][str(inter.author.id)] # return GBF ID
         elif target.startswith('<@') and target.endswith('>'): # mention
             try:
@@ -427,39 +489,60 @@ class Util():
                 else:
                     target = str(int(target[2:-1]))
                 if target not in self.bot.data.save['gbfids']: # check if their id is linked
-                    return "This member didn't set its profile ID.\nTry to use {} to search the GW Database instead".format(self.command2mention('gw find player'))
+                    return (
+                        "This member didn't set its profile ID.\n"
+                        "Try to use {} to search the GW Database instead"
+                    ).format(self.command2mention('gw find player'))
                 tid = self.bot.data.save['gbfids'][target] # return gbf id
             except:
                 return "An error occured: Invalid parameter {} -> {}.".format(target, type(target))
         else: # maybe a number?
-            try: tid = int(target) # check
-            except: return "`{}` isn't a valid target.\nUse {} if it's for yourself.\nOr either input a valid GBF ID or a Discord Mention of someone with a set ID.".format(target, self.command2mention('gbf profile set'))
+            try:
+                tid = int(target) # check
+            except:
+                return (
+                    "`{}` isn't a valid target.\n"
+                    "Use {} if it's for yourself.\n"
+                    "Or either input a valid GBF ID or a Discord Mention of someone with a set ID."
+                ).format(target, self.command2mention('gbf profile set'))
         if tid < 0 or tid >= 100000000: # check if the id looks legit
             return "Invalid ID range (ID must be between 0 and 100 000 000)."
         return tid
 
     """formatElement()
     Format the unite&fight/dread barrage element into a string containing the superior and inferior elements
-    
+
     Parameters
     ----------
     elem: unite&fight/dread barrage element string
-    
+
     Returns
     --------
     str: Formatted string
     """
     def formatElement(self : Util, elem : str) -> str:
         # left is the advantaged element, right is the disadvantaged
-        return "{}⚔️{}".format(self.bot.emote.get(elem), self.bot.emote.get({'fire':'wind', 'water':'fire', 'earth':'water', 'wind':'earth', 'light':'dark', 'dark':'light'}.get(elem)))
+        return "{}⚔️{}".format(
+            self.bot.emote.get(elem),
+            self.bot.emote.get(
+                {
+                    'fire':'wind',
+                    'water':'fire',
+                    'earth':'water',
+                    'wind':'earth',
+                    'light':'dark',
+                    'dark':'light'
+                }.get(elem)
+            )
+        )
 
     """strToInt()
     Convert string to int, with support for T, B, M and K
-    
+
     Parameters
     ----------
     s: String to convert
-    
+
     Returns
     --------
     int: Converted value
@@ -468,19 +551,21 @@ class Util():
         try:
             return int(s) # try to convert to int
         except: # error, there are characters
-            n : float = float(s[:-1]) # convert to float, except the last character (to support for example something like 1.2B)
+            # convert to float, except the last character
+            # (to support for example something like 1.2B)
+            n : float = float(s[:-1])
             m : str = s[-1].lower() # get last character
             return int(n * self.MULTIPLIER_1000[m]) # if m isn't in MULTIPLIER_1000, trigger an exception
 
     """valToStr()
     Convert an int or float to str and shorten it with T, B, M, K
     If None is sent in parameter, it returns "n/a"
-    
+
     Parameters
     ----------
     s: Value to convert
     p: Integer, select the float precision (Default 1, Max 3)
-    
+
     Returns
     --------
     str: Converted string
@@ -508,18 +593,18 @@ class Util():
         value : int
         for chara, value in self.MULTIPLIER_1000.items():
             if bs >= value: # greater, so we divive by value, format and add the character
-                return b.format(s/value).replace(rs, '') + chara.upper()
+                return b.format(s / value).replace(rs, '') + chara.upper()
         # else return the number
         return b.format(s).replace(rs, '')
 
     """players2mentions()
     Take a list of users and return a string mentionning all of them.
     Used for Games.
-    
+
     Parameters
     ----------
     players: list of disnake.User/Member
-    
+
     Returns
     --------
     str: resulting string
@@ -532,7 +617,7 @@ class Util():
 
     """search_wiki_for_id()
     Search the wiki cargo table for a weapon/character/summon id
-    
+
     Parameters
     ----------
     name: String, target search name
@@ -540,12 +625,19 @@ class Util():
     from_gacha: Boolean, set to True to only except elements from the gacha
     element: String (optional), element of the target
     proficiency: String (optional), weapon type of the target (weapon only)
-    
+
     Returns
     --------
     str: Target ID, None if error/not found
     """
-    async def search_wiki_for_id(self : Util, name : str, category : str, from_gacha : bool = False, element : str|None = None, proficiency : str|None = None) -> str|None:
+    async def search_wiki_for_id(
+        self : Util,
+        name : str,
+        category : str,
+        from_gacha : bool = False,
+        element : str|None = None,
+        proficiency : str|None = None
+    ) -> str|None:
         try:
             addition : list[str] = []
             extra_fields : str = ""
@@ -557,7 +649,18 @@ class Util():
                 addition.append('AND type = "{}"'.format(proficiency))
                 extra_fields = ",type"
             # make request
-            data : RequestResult = await self.bot.net.requestWiki("index.php", params={"title":"Special:CargoExport", "tables":category, "where":'name = "{}"{}'.format(name, ' '.join(addition)), "fields":"name,id,obtain,element{}".format(extra_fields), "format":"json", "limit":"10"}, allow_redirects=True)
+            data : RequestResult = await self.bot.net.requestWiki(
+                "index.php",
+                params={
+                    "title":"Special:CargoExport",
+                    "tables":category,
+                    "where":'name = "{}"{}'.format(name, ' '.join(addition)),
+                    "fields":"name,id,obtain,element{}".format(extra_fields),
+                    "format":"json",
+                    "limit":"10"
+                },
+                allow_redirects=True
+            )
             # return result id
             return str(data[0]['id'])
         except:
@@ -565,11 +668,11 @@ class Util():
 
     """process_command()
     Recursivly search the slash command list
-    
+
     Parameters
     ----------
     cmd: Command or sub command
-    
+
     Returns
     ----------
     list: Contains [full name, id, description]
@@ -603,22 +706,24 @@ class Util():
             return results
         else:
             # return command details (2 possibilities depending if it got an id)
-            try: return [[cmd.name, cmd.id, cmd.description]]
-            except: return [[cmd.name, None, cmd.description]]
+            try:
+                return [[cmd.name, cmd.id, cmd.description]]
+            except:
+                return [[cmd.name, None, cmd.description]]
 
     """command2mention()
     Convert a global slash command name to a mention string
-    
+
     Parameters
     ----------
     base_command_name: Command or sub command full name string
-    
+
     Returns
     ----------
     str: mention or base_command_name if failed
     """
     def command2mention(self : Util, base_command_name : str) -> str:
-        global_slash_commands : list[disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand] = self.bot.global_slash_commands
+        global_slash_commands : list[BotCommand] = self.bot.global_slash_commands
         # retrieve command name
         cmd_name : str
         if base_command_name.startswith('/'):
@@ -626,28 +731,32 @@ class Util():
         else:
             cmd_name = base_command_name.lower()
         # look for that command in the list
-        command : disnake.APISlashCommand|disnake.APIUserCommand|disnake.APIMessageCommand
+        command : BotCommand
         for command in global_slash_commands:
             rs : list[BotCommandSearch] = self.process_command(command) # child command check
             r : BotCommandSearch
             for r in rs:
                 if cmd_name.lower() == r[0].lower(): # good match
-                    return '</{}:{}>'.format(r[0], r[1]) # make and return the mention (format: </command_name:command_id> )
+                    # make and return the mention (format: </command_name:command_id> )
+                    return '</{}:{}>'.format(r[0], r[1])
         return base_command_name
 
     """version2str()
     Convert a GBF version number to its timestamp and date
-    
+
     Parameters
     ----------
     version_number: Number, either an Integer or String
-    
+
     Returns
     ----------
     str: Timestamp string
     """
     def version2str(self : Util, version_number : str|int) -> str: # convert gbf version number to its timestamp
         try:
-            return "{0:%Y/%m/%d %H:%M} JST".format(datetime.utcfromtimestamp(int(version_number)) + timedelta(seconds=self.JSTDIFF)) # add JST
+            return "{0:%Y/%m/%d %H:%M} JST".format(
+                datetime.utcfromtimestamp(int(version_number))
+                + timedelta(seconds=self.JSTDIFF) # add JST
+            )
         except:
             return ""
