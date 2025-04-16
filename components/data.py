@@ -571,7 +571,7 @@ class Data():
                     # add manual entry starting with specific keywords
                     for evstr in self.save['schedule']:
                         evl : str = evstr.lower()
-                        if evl.startswith(self.SPECIAl_EVT):
+                        if evl.startswith(self.SPECIAL_EVT):
                             new_events[evstr] = self.save['schedule'][evstr]
                     # verify for changes
                     akeys : list[str] = list(new_events.keys())
