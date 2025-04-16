@@ -298,29 +298,12 @@ class YouCrew(commands.Cog):
             return None
         tvar : int = maxy
         for i in range(0, 5):
-            d.text((10, 40 + 125 * i), "{:.2f}".format(float(tvar)).replace(
-                '.00', ''
-            ).replace(
-                '.10', '.1'
-            ).replace(
-                '.20', '.2'
-            ).replace(
-                '.30', '.3'
-            ).replace(
-                '.40', '.4'
-            ).replace(
-                '.50', '.5'
-            ).replace(
-                '.60', '.6'
-            ).replace(
-                '.70', '.7'
-            ).replace(
-                '.80', '.8'
-            ).replace(
-                '.90', '.9'
-            ).replace(
-                '.0', ''
-            ).rjust(6), font=font, fill=(0, 0, 0))
+            d.text(
+                (10, 40 + 125 * i),
+                "{:.2f}".format(float(tvar)).rstrip('0').rstrip('.').rjust(6),
+                font=font,
+                fill=(0, 0, 0)
+            )
             tvar -= deltay / 4
         await asyncio.sleep(0)
         # x axis notes

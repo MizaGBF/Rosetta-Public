@@ -376,7 +376,7 @@ class Network():
     Only work for some limited content.
     Note: Might require to set the cookie ln: 2 first,
         for the english language and to request the main page with request() first to set other cookies.
-    Note²: It uses client, not gbf_client
+    Note²: It uses client, not gbf_client and is a lightweight copy paste of request()
 
     Parameters
     ----------

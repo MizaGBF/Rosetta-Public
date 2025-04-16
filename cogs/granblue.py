@@ -62,6 +62,7 @@ class GranblueFantasy(commands.Cog):
         1550000, 1550000, 1600000, 1600000, 1600000, 1600000,
         1600000, 1650000, 1650000, 1650000, 1650000, 0
     ]
+    GBF_ICON : str = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"
 
     def __init__(self : GranblueFantasy, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
@@ -107,10 +108,7 @@ class GranblueFantasy(commands.Cog):
                         embed=self.bot.embed(
                             author={
                                 'name':"Granblue Fantasy",
-                                'icon_url':(
-                                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                                    "assets_en/img/sp/touch_icon.png"
-                                )
+                                'icon_url':self.GBF_ICON
                             },
                             description="[{}]({})".format(
                                 title, n[0]
@@ -156,10 +154,7 @@ class GranblueFantasy(commands.Cog):
                         embed=self.bot.embed(
                             author={
                                 'name':"Granblue Fantasy",
-                                'icon_url':(
-                                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                                    "assets_en/img/sp/touch_icon.png"
-                                )
+                                'icon_url':self.GBF_ICON
                             },
                             description="Game has been updated to version `{} ({})`".format(
                                 v,
@@ -173,10 +168,7 @@ class GranblueFantasy(commands.Cog):
                         embed=self.bot.embed(
                             author={
                                 'name':"Granblue Fantasy",
-                                'icon_url':(
-                                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                                    "assets_en/img/sp/touch_icon.png"
-                                )
+                                'icon_url':self.GBF_ICON
                             },
                             description="Game has been updated",
                             color=self.COLOR
@@ -521,10 +513,7 @@ class GranblueFantasy(commands.Cog):
                                 url=link,
                                 image=thumbnail,
                                 timestamp=self.bot.util.UTC(),
-                                thumbnail=(
-                                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                                    "assets_en/img/sp/touch_icon.png"
-                                ),
+                                thumbnail=self.GBF_ICON,
                                 color=self.COLOR
                             ),
                             publish=True
@@ -769,7 +758,7 @@ class GranblueFantasy(commands.Cog):
             if len(buf) > 0:
                 output.append(buf)
                 output.append(" (")
-                output.append(self.bot.util.command2mention("gw time"))
+                output.append(self.bot.util.command2mention("db time"))
                 output.append(")\n")
         except:
             pass
@@ -907,10 +896,7 @@ class GranblueFantasy(commands.Cog):
             embed=self.bot.embed(
                 author={
                     'name':"Granblue Fantasy",
-                    'icon_url':(
-                        "https://prd-game-a-granbluefantasy.akamaized.net/"
-                        "assets_en/img/sp/touch_icon.png"
-                    )
+                    'icon_url':self.GBF_ICON
                 },
                 description=''.join(description),
                 color=self.COLOR
@@ -929,10 +915,7 @@ class GranblueFantasy(commands.Cog):
                     embed=self.bot.embed(
                         author={
                             'name':"Granblue Fantasy",
-                            'icon_url':(
-                                "https://prd-game-a-granbluefantasy.akamaized.net/"
-                                "assets_en/img/sp/touch_icon.png"
-                            )
+                            'icon_url':self.GBF_ICON
                         },
                         description=description,
                         color=self.COLOR
@@ -1110,7 +1093,7 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     author={
                         'name':"Granblue Fantasy",
-                        'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"
+                        'icon_url':self.GBF_ICON
                     },
                     description=summary[0],
                     thumbnail=summary[1],
@@ -1124,7 +1107,7 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     author={
                         'name':"Granblue Fantasy",
-                        'icon_url':"https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"
+                        'icon_url':self.GBF_ICON
                     },
                     description="Unavailable",
                     color=self.COLOR
@@ -1998,10 +1981,7 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     author={
                         'name':"Granblue Fantasy",
-                        'icon_url':(
-                            "https://prd-game-a-granbluefantasy.akamaized.net/"
-                            "assets_en/img/sp/touch_icon.png"
-                        )
+                        'icon_url':self.GBF_ICON
                     },
                     description="".join(msgs),
                     footer="Source: http://gbf.wiki/",
@@ -2060,10 +2040,7 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     author={
                         'name':"Daily Coop Missions",
-                        'icon_url':(
-                            "https://prd-game-a-granbluefantasy.akamaized.net/"
-                            "assets_en/img/sp/touch_icon.png"
-                        )
+                        'icon_url':self.GBF_ICON
                     },
                     description=''.join(msgs),
                     url="https://game.granbluefantasy.jp/#coopraid",
@@ -2100,10 +2077,7 @@ class GranblueFantasy(commands.Cog):
                     )
                 ),
                 url="https://granbluefantasy.jp/news/index.php",
-                thumbnail=(
-                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                    "assets_en/img/sp/touch_icon.png"
-                ),
+                thumbnail=self.GBF_ICON,
                 color=self.COLOR
             )
         )
@@ -2147,10 +2121,7 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     author={
                         'name':"Latest Granblue Fantasy News",
-                        'icon_url':(
-                            "https://prd-game-a-granbluefantasy.akamaized.net/"
-                            "assets_en/img/sp/touch_icon.png"
-                        )
+                        'icon_url':self.GBF_ICON
                     },
                     description="".join(msgs),
                     image=thumb,

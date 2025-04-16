@@ -578,6 +578,95 @@ class Ranking():
         # undefined
         return None
 
+    """gwdbbuilder_init()
+    Subroutine of gwdbbuilder to init the sql file
+
+    Parameters
+    ----------
+    c: valid sqlite3.Cursor
+    new_timestamp: Integer, the ranking period timestamp
+
+    Returns
+    ----------
+    tuple: Contains:
+        - float, time difference with the previous period, None if not computable
+        - int, previous timestamp, None if it doesn't exist
+    """
+    def gwdbbuilder_init(self : Ranking, c : sqlite3.Cursor, new_timestamp : int) -> tuple[float|None, int|None]:
+        c.execute("PRAGMA synchronous = normal")
+        c.execute("PRAGMA locking_mode = exclusive")
+        c.execute("PRAGMA journal_mode = OFF")
+        c.execute("BEGIN") # no autocommit
+        self.bot.logger.push("[RANKING] Starting to fill temp.sql...", send_to_discord=False)
+        diff : float|None = None
+        timestamp : int|None = None
+        # retrieve the info table if it exists
+        c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='info'")
+        if c.fetchone()[0] < 1: # it doesn't, create it
+            c.execute('CREATE TABLE info (gw int, ver int, date int)')
+            c.execute('INSERT INTO info VALUES ({}, {}, {})'.format(
+                self.bot.data.save['gw']['id'],
+                self.DB_VERSION,
+                new_timestamp
+            ))
+        else: # it does...
+            c.execute("SELECT * FROM info")
+            x : InfoData = c.fetchone()
+            # retrieve last update timestamp
+            timestamp = x[2]
+            # and compute the timedelta
+            diffdelta : timedelta = self.getrank_update_time - datetime.utcfromtimestamp(timestamp)
+            diff = diffdelta.seconds / 60
+            # update the timestamp
+            c.execute("UPDATE info SET date = {} WHERE ver = {}".format(new_timestamp, self.DB_VERSION))
+        return diff, timestamp
+
+    """gwdbbuilder_start()
+    Subroutine of gwdbbuilder to create the sql tables
+
+    Parameters
+    ----------
+    c: valid sqlite3.Cursor
+
+    Returns
+    ----------
+    dict: The crew data (if in crew mode, else it's empty)
+    """
+    async def gwdbbuilder_start(self : Ranking, c : sqlite3.Cursor) -> dict[str, CrewDataEntry]:
+        # create a ranking table
+        crews : dict[str, CrewDataEntry] = {}
+        if self.getrank_mode:
+            # crew table creation
+            # we fetch existing data and delete the existing one to keep a small file size
+            c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='crews'")
+            await asyncio.sleep(0)
+            if c.fetchone()[0] == 1:
+                c.execute("SELECT * FROM crews")
+                await asyncio.sleep(0)
+                crews = {x[1] : list(x) for x in c.fetchall()} # retrieve data
+                c.execute('DROP TABLE crews')
+                await asyncio.sleep(0)
+            c.execute(
+                "CREATE TABLE crews ("
+                "ranking int, id int, name text, preliminaries int,"
+                "total_1 int, total_2 int, total_3 int, total_4 int,"
+                "top_speed float, current_speed float)"
+            )
+            await asyncio.sleep(0)
+        else:
+            # player table creation
+            # we simply replace the existing one, we want the file to keep a small size
+            c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='players'")
+            await asyncio.sleep(0)
+            if c.fetchone()[0] == 1:
+                c.execute('DROP TABLE players')
+                await asyncio.sleep(0)
+            c.execute('CREATE TABLE players (ranking int, id int, name text, current_total int)')
+            await asyncio.sleep(0)
+        c.execute("COMMIT") # commit changes until now
+        c.execute("BEGIN")
+        return crews
+
     """gwdbbuilder()
     Coroutine to build the GW database from getrankProcess output
 
@@ -595,71 +684,13 @@ class Ranking():
             # open/create temp.sql
             conn : sqlite3.Connection = sqlite3.connect('temp.sql', isolation_level=None)
             c : sqlite3.Cursor = conn.cursor()
-            c.execute("PRAGMA synchronous = normal")
-            c.execute("PRAGMA locking_mode = exclusive")
-            c.execute("PRAGMA journal_mode = OFF")
-            c.execute("BEGIN") # no autocommit
-            await asyncio.sleep(30) # wait a bit, downloads need to start anyway
-            self.bot.logger.push("[RANKING] Starting to fill temp.sql...", send_to_discord=False)
-            diff : float|None = None
-            timestamp : int|None = None
             new_timestamp : int = int(self.getrank_update_time.timestamp())
-            # retrieve the info table if it exists
-            c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='info'")
-            await asyncio.sleep(0)
-            if c.fetchone()[0] < 1: # it doesn't, create it
-                c.execute('CREATE TABLE info (gw int, ver int, date int)')
-                c.execute('INSERT INTO info VALUES ({}, {}, {})'.format(
-                    self.bot.data.save['gw']['id'],
-                    self.DB_VERSION,
-                    new_timestamp
-                ))
-                await asyncio.sleep(0)
-            else: # it does...
-                c.execute("SELECT * FROM info")
-                await asyncio.sleep(0)
-                x : InfoData = c.fetchone()
-                # retrieve last update timestamp
-                timestamp = x[2]
-                # and compute the timedelta
-                diffdelta : timedelta = self.getrank_update_time - datetime.utcfromtimestamp(timestamp)
-                diff = diffdelta.seconds / 60
-                # update the timestamp
-                c.execute("UPDATE info SET date = {} WHERE ver = {}".format(new_timestamp, self.DB_VERSION))
-                await asyncio.sleep(0)
-
-            # create a ranking table
-            crews : dict[str, CrewDataEntry]
-            if self.getrank_mode:
-                # crew table creation
-                # we fetch existing data and delete the existing one to keep a small file size
-                c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='crews'")
-                await asyncio.sleep(0)
-                if c.fetchone()[0] == 1:
-                    c.execute("SELECT * FROM crews")
-                    await asyncio.sleep(0)
-                    crews = {x[1] : list(x) for x in c.fetchall()} # retrieve data
-                    c.execute('DROP TABLE crews')
-                    await asyncio.sleep(0)
-                else:
-                    crews = {}
-                c.execute(
-                    "CREATE TABLE crews ("
-                    "ranking int, id int, name text, preliminaries int,"
-                    "total_1 int, total_2 int, total_3 int, total_4 int,"
-                    "top_speed float, current_speed float)"
-                )
-                await asyncio.sleep(0)
-            else: # player table creation (delete an existing one, we want the file to keep a small size)
-                c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='players'")
-                await asyncio.sleep(0)
-                if c.fetchone()[0] == 1:
-                    c.execute('DROP TABLE players')
-                    await asyncio.sleep(0)
-                c.execute('CREATE TABLE players (ranking int, id int, name text, current_total int)')
-                await asyncio.sleep(0)
-            c.execute("COMMIT") # commit changes until now
-            c.execute("BEGIN")
+            await asyncio.sleep(30) # wait a bit, downloads need to start anyway
+            diff : float|None
+            timestamp : int|None
+            diff, timestamp = self.gwdbbuilder_init(c, new_timestamp)
+            await asyncio.sleep(0) # we make pauses, to make sure to not block anything
+            crews : dict[str, CrewDataEntry] = await self.gwdbbuilder_start(c)
             await asyncio.sleep(0)
             # now we'll read the output queue
             # inserts will contain entries to insert in the database. we add them 1000 by 1000
@@ -694,7 +725,7 @@ class Ranking():
                 except:
                     await asyncio.sleep(2)
                     continue # wait and skip if the queue is empty
-
+                # Processing ##################################################
                 if self.getrank_mode:
                     # if crew, update the existing crew (if it exists) or create a new entry
                     x : CrewDataEntry = crews.get( # retrieve old entry
@@ -750,6 +781,7 @@ class Ranking():
                     )
                 await asyncio.sleep(0)
                 i += 1
+                # Insertion ###################################################
                 # if the inserts queue is full or the ranking is fully processed
                 if len(inserts) == 1000 or i == self.getrank_count:
                     if len(inserts) > 0: # insert entries in the file
@@ -779,6 +811,51 @@ class Ranking():
             status[0] += 1
             return 'gwdbbuilder() exception:\n' + self.bot.pexc(err)
 
+    """gwgetrank_get_skip_mode()
+    Subroutine of gwgetrank
+
+    Parameters
+    ----------
+    update_time: time of this ranking interval
+
+    Returns
+    --------
+    int: 0 to fetch both crews and players, 1 to skip all, 2 to skip crews, 3 to skip players
+    """
+    def gwgetrank_get_skip_mode(self : Ranking, update_time : datetime) -> int:
+        skip_mode : int = 0
+        i : int
+        itd : str
+        for i, itd in enumerate(self.REVERSE_DAYS_FULL): # loop to not copy paste this 5 more times
+            if update_time > self.bot.data.save['gw']['dates'][itd]:
+                match itd:
+                    case 'Preliminaries':
+                        # first hour of gw
+                        if (update_time - self.bot.data.save['gw']['dates'][itd]
+                                < timedelta(days=0, seconds=3600)):
+                            skip_mode = 1 # skip all
+                        elif (self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i - 1]]
+                                - update_time
+                                < timedelta(days=0, seconds=18800)):
+                            skip_mode = 1 # skip all
+                    case 'Interlude':
+                        if update_time.minute > 10: # only update players hourly
+                            skip_mode = 1 # skip all
+                        else:
+                            skip_mode = 2 # skip crew
+                    case 'Day 5':
+                        skip_mode = 1 # skip all
+                    case _:
+                        if (update_time - self.bot.data.save['gw']['dates'][itd]
+                                < timedelta(days=0, seconds=7200)): # skip players at the start of rounds
+                            skip_mode = 3 # skip player
+                        elif (self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i - 1]]
+                                - update_time
+                                < timedelta(days=0, seconds=18800)): # skip during break
+                            skip_mode = 1 # skip all
+                break
+        return skip_mode
+
     """gwgetrank()
     Setup and manage the retrieval the ranking
 
@@ -795,39 +872,7 @@ class Ranking():
         try:
             state : str = "" # return value
             self.getrank_update_time = update_time
-            skip_mode : int = 0
-            i : int
-            itd : str
-            for i, itd in enumerate(self.REVERSE_DAYS_FULL): # loop to not copy paste this 5 more times
-                if update_time > self.bot.data.save['gw']['dates'][itd]:
-                    match itd:
-                        case 'Preliminaries':
-                            # first hour of gw
-                            if (update_time - self.bot.data.save['gw']['dates'][itd]
-                                    < timedelta(days=0, seconds=3600)):
-                                skip_mode = 1 # skip all
-                            elif (self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i - 1]]
-                                    - update_time
-                                    < timedelta(days=0, seconds=18800)):
-                                skip_mode = 1 # skip all
-                        case 'Interlude':
-                            if update_time.minute > 10: # only update players hourly
-                                skip_mode = 1 # skip all
-                            else:
-                                skip_mode = 2 # skip crew
-                        case 'Day 5':
-                            skip_mode = 1 # skip all
-                        case _:
-                            if (update_time - self.bot.data.save['gw']['dates'][itd]
-                                    < timedelta(days=0, seconds=7200)): # skip players at the start of rounds
-                                skip_mode = 3 # skip player
-                            elif (self.bot.data.save['gw']['dates'][self.REVERSE_DAYS_FULL[i - 1]]
-                                    - update_time
-                                    < timedelta(days=0, seconds=18800)): # skip during break
-                                skip_mode = 1 # skip all
-                    break
-            if force:
-                skip_mode = 0
+            skip_mode : int = 0 if force else self.gwgetrank_get_skip_mode(update_time)
             if skip_mode == 1:
                 return 'Skipped'
             await asyncio.sleep(0)
