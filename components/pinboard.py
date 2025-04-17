@@ -42,8 +42,8 @@ class Pinboard():
     """
     def pin_addmessage(self : Pinboard, embed_dict : JSON, content : str) -> None:
         if len(content) > 0:
-            if len(content) > 1900: # if the message is too big
-                embed_dict['description'] = content[:1900] + "...\n\n" # truncate
+            if len(content) > 3500: # if the message is too big
+                embed_dict['description'] = content[:3500] + "...\n\n" # truncate
             else:
                 embed_dict['description'] = content + "\n\n"
         else:
