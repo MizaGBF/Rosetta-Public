@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.1.1" # bot version
+    VERSION : str = "12.1.2" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -41,6 +41,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.0.6** - Added support for 4% banners in the Gacha Simulator.",
         "**v12.0.7** - Added event links to `/gbf schedule`.",
         "**v12.0.10** - Added `/gw rosetta`.",
+        "**v12.1.2** - Improved `/gbf maintenance`.",
     ]
 
     def __init__(self : DiscordBot, test_mode : bool = False, debug_mode : bool = False) -> None:

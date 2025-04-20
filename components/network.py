@@ -904,8 +904,7 @@ class Network():
             if (self.bot.data.save['maintenance']['time'] is not None
                     and current_time < self.bot.data.save['maintenance']['time']): # Maintenance hasn't started
                 if self.bot.data.save['maintenance']['duration'] == 0:
-                    return "{} Maintenance at **{}**".format(
-                        self.bot.emote.get('cog'),
+                    return "Maintenance at **{}**".format(
                         self.bot.util.time(
                             self.bot.data.save['maintenance']['time'],
                             style=['d','t'],
@@ -914,10 +913,20 @@ class Network():
                     ), False
                 else:
                     d = self.bot.data.save['maintenance']['time'] - current_time
-                    return "{} Maintenance starts in **{}**, for **{} hour(s)**".format(
-                        self.bot.emote.get('cog'),
+                    return "Maintenance starts in **{}**, for **{} hour{}**, from **{}** to **{}**".format(
                         self.bot.util.delta2str(d, 2),
-                        self.bot.data.save['maintenance']['duration']
+                        self.bot.data.save['maintenance']['duration'],
+                        ("s" if self.bot.data.save['maintenance']['duration'] > 1 else ""),
+                        self.bot.util.time(
+                            self.bot.data.save['maintenance']['time'],
+                            style=['d','t'],
+                            removejst=True
+                        ),
+                        self.bot.util.time(
+                            self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration']),
+                            style=['d','t'],
+                            removejst=True
+                        )
                     ), False
             else:
                 if self.bot.data.save['maintenance']['duration'] <= 0: # No duration, emergency maintenance
@@ -943,9 +952,13 @@ class Network():
                             + timedelta(seconds=3600 * self.bot.data.save['maintenance']['duration'])
                         )
                         d = e - current_time
-                        return "{} Maintenance ends in **{}**".format(
-                            self.bot.emote.get('cog'),
-                            self.bot.util.delta2str(d, 2)
+                        return "Maintenance ends in **{}**, at **{}**".format(
+                            self.bot.util.delta2str(d, 2),
+                            self.bot.util.time(
+                                self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration']),
+                                style=['d','t'],
+                                removejst=True
+                            )
                         ), True
         return "", False
 

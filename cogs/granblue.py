@@ -720,6 +720,8 @@ class GranblueFantasy(commands.Cog):
         try:
             buf : str = (await self.bot.net.gbf_maintenance_status())[0]
             if len(buf) > 0:
+                output.append(str(self.bot.emote.get('cog')))
+                output.append(' ')
                 output.append(buf)
                 output.append('\n')
         except:
