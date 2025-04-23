@@ -125,7 +125,7 @@ def load(bot : DiscordBot) -> tuple[int, int]:
     filename : str
     for filename in os.listdir('cogs/'):
         path_filename = os.path.join('cogs/', filename) # create path
-        if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename):
+        if filename not in ('__init__.py') and filename.endswith('.py') and os.path.isfile(path_filename):
             # search for valid python files
             result = loadCogFile(bot, path_filename, filename, relative=".", package='cogs')
             count += result[0]
@@ -449,7 +449,7 @@ def generateHelp(version : str, path : str = ".") -> None:
         filename : str
         for filename in os.listdir('cogs/'):
             path_filename : str = os.path.join('cogs/', filename) # create path
-            if filename not in ['__init__.py'] and filename.endswith('.py') and os.path.isfile(path_filename):
+            if filename not in ('__init__.py') and filename.endswith('.py') and os.path.isfile(path_filename):
                 # search for valid python files
                 cogs.extend(getCommandList(path_filename, filename, relative=".", package='cogs'))
         # Writing the HTML

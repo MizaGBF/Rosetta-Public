@@ -62,7 +62,7 @@ class Logger():
                     )
                 )
             # we disable these logs
-            for log_name in ['oauth2client', 'oauth2client.transport', 'oauth2client.client', 'oauth2client.crypt']:
+            for log_name in ('oauth2client', 'oauth2client.transport', 'oauth2client.client', 'oauth2client.crypt'):
                 l : logging.Logger = logging.getLogger(log_name)
                 l.setLevel(logging.ERROR)
 

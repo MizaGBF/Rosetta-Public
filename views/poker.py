@@ -118,12 +118,12 @@ class PokerSub(BaseView):
 
 
 class Poker(BaseView):
-    ROYAL_FLUSH_SET : set[str] = set(["10", "11", "12", "13", "14"])
-    STRAIGTH_SET : set[str] = set(["14", "2", "3", "4", "5"])
-    FULL_HOUSE_SET : set[int] = set([2,3])
-    FOUR_KIND_SET : set[int] = set([1,4])
-    THREE_KIND_SET : set[int] = set([1,3])
-    DOUBLE_PAIR_LIST : list[int] = [1,2,2]
+    ROYAL_FLUSH_SET : set[str] = {"10", "11", "12", "13", "14"}
+    STRAIGTH_SET : set[str] = {"14", "2", "3", "4", "5"}
+    FULL_HOUSE_SET : set[int] = {2, 3}
+    FOUR_KIND_SET : set[int] = {1, 4}
+    THREE_KIND_SET : set[int] = {1, 3}
+    DOUBLE_PAIR_LIST : list[int] = [1, 2, 2]
 
     """__init__()
     Constructor
@@ -407,7 +407,7 @@ class Poker(BaseView):
     """
     def checkPokerHand(hand : CardList) -> tuple:
         # flush detection
-        flush : bool = len(set([card.suit for card in hand])) == 1 # if only one suit found in hand
+        flush : bool = len({card.suit for card in hand}) == 1 # if only one suit found in hand
         # variables needed for hand checks
         values : list[int] = [card.value for card in hand] # get card values
         value_counts : dict[int, int] = {}

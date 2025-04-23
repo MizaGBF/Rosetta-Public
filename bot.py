@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.1.2" # bot version
+    VERSION : str = "12.1.3" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -245,7 +245,7 @@ class DiscordBot(commands.InteractionBot):
         # graceful exit setup
         graceful_exit = self.loop.create_task(self.exit_gracefully()) # make a task
         s : signal.SIGNALS
-        for s in [signal.SIGTERM, signal.SIGINT]:
+        for s in (signal.SIGTERM, signal.SIGINT):
             try: # unix
                 self.loop.add_signal_handler(s, graceful_exit.cancel) # call cancel when the signals are called
             except: # windows
@@ -582,14 +582,14 @@ class DiscordBot(commands.InteractionBot):
                 value=field.get('value'),
                 inline=field.pop('inline', inline)
             )
-        if options.get('thumbnail', None) not in [None, '']:
+        if options.get('thumbnail', None) not in (None, ''):
             embed.set_thumbnail(url=options['thumbnail'])
         if options.get('footer', None) is not None:
             embed.set_footer(
                 text=options['footer'],
                 icon_url=options.get('footer_url', None)
             )
-        if options.get('image', None) not in [None, '']:
+        if options.get('image', None) not in (None, ''):
             embed.set_image(url=options['image'])
         if options.get('timestamp', None) is not None:
             embed.timestamp = options['timestamp']

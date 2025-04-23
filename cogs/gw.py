@@ -520,7 +520,7 @@ class GuildWar(commands.Cog):
                     }
                 ]
                 x : int
-                for x in [0, 1]: # crew then player
+                for x in (0, 1): # crew then player
                     rank : str
                     for rank in self.bot.data.save['gw']['ranking'][x]: # go over each entry
                         # different display depending on if the ranking is lesser than 1000,
@@ -634,7 +634,7 @@ class GuildWar(commands.Cog):
                     # a big array of scores for every 20 minutes updates.
                     mods : list[dict[str, float]] = [{}, {}] # modifier container
                     rank : str
-                    for i in [0, 1]: # crew, player
+                    for i in (0, 1): # crew, player
                         for rank in self.bot.data.save['gw']['ranking'][i]: # for each current store stored
                             try:
                                 if rank not in self.bot.data.save['gw']['estimation'][i]:
@@ -649,7 +649,7 @@ class GuildWar(commands.Cog):
                                 pass
                     embeds : list[disnake.Embed] = []
                     final : int
-                    for final in [0, 1]: # current day end, gw end
+                    for final in (0, 1): # current day end, gw end
                         # get the final value of the day/gw (depending on final)
                         # Note: current_time_left is the time left to the target_index
                         # while target_index is the index of the final value in the wiki table
@@ -688,7 +688,7 @@ class GuildWar(commands.Cog):
                                 'value':[]
                             }
                         ]
-                        for i in [0, 1]: # crew, player
+                        for i in (0, 1): # crew, player
                             for rank in mods[i]: # for each rank we have a mod for
                                 # different display depending on if the ranking is lesser than 1000,
                                 # a non-round number (example, 2500 for 2.5k) or above 1000
@@ -1328,7 +1328,7 @@ class GuildWar(commands.Cog):
         desc : list[str] = []
         sid : str
         cid : str|int
-        for sid in [id_crew_1, id_crew_2]:
+        for sid in (id_crew_1, id_crew_2):
             if sid.lower() in self.bot.ranking.allconfigcrews:
                 cid = self.bot.ranking.allconfigcrews[sid.lower()]
             else:
@@ -2704,9 +2704,9 @@ class GuildWar(commands.Cog):
             for k, v in danchos.items(): # add n/a dancho
                 dancho_ranking.append((v[0], v[1], None, k, None))
             # build dancho list (for emote separator)
-            dancho_list : set[int] = set([
+            dancho_list : set[int] = {
                 k[3] for k in dancho_ranking if k[3] is not None
-            ])
+            }
             await asyncio.sleep(0)
             if gwid is None:
                 gwid = ""

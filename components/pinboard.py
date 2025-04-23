@@ -319,7 +319,7 @@ class Pinboard():
     Clean unused data
     """
     async def clean_data(self : Pinboard) -> bool:
-        guild_ids : list[str] = set([str(g.id) for g in self.bot.guilds])
+        guild_ids : list[str] = {str(g.id) for g in self.bot.guilds}
         count : int = 0
         await asyncio.sleep(1)
         gid : str

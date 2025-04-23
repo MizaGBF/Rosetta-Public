@@ -145,7 +145,7 @@ class Channel():
     Clean unused cleanup and announcement settings
     """
     async def clean_data(self : Channel) -> None:
-        guild_ids : set[str] = set([str(g.id) for g in self.bot.guilds])
+        guild_ids : set[str] = {str(g.id) for g in self.bot.guilds}
         await asyncio.sleep(1)
         # Note: data is removed if the bot left the guild or if the data is empty
         gid : str

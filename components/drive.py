@@ -206,7 +206,7 @@ class Drive():
             # list the previous save(s)
             prev : list[GoogleDriveFile] = [
                 f for f in file_list
-                if f['title'] in ["save.json", "save.gzip", "save.lzma"]
+                if f['title'] in ("save.json", "save.gzip", "save.lzma")
             ]
             # compress the one passed as a parameter
             cdata : bytes = self.compressJSON(data)

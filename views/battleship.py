@@ -127,7 +127,7 @@ class BattleShip(BaseView):
         self.input : list[str|None] = [None, None]
         # add letter buttons
         s : str
-        for s in ['A', 'B', 'C', 'D', 'E']:
+        for s in ('A', 'B', 'C', 'D', 'E'):
             self.add_item(BattleShipButton(0, s, 0))
         # add digit buttons
         i : int

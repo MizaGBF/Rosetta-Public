@@ -27,7 +27,7 @@ class Roles(commands.Cog):
     Coroutine to clear role data from the save data
     """
     async def clean_data(self : Roles) -> None:
-        guild_ids : list[str] = set([str(g.id) for g in self.bot.guilds])
+        guild_ids : list[str] = {str(g.id) for g in self.bot.guilds}
         count : int = 0
         await asyncio.sleep(1)
         # Self Assignable Roles

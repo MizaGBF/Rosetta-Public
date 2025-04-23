@@ -544,7 +544,7 @@ class Calc():
         values : list[float] = [self.multiply()] # start by calling multiply
         while True:
             c : str = self.peek() # get next character
-            if c in ['+', '-']: # as long as it's a + or - operator
+            if c in ('+', '-'): # as long as it's a + or - operator
                 self.index += 1
                 if c == '-':
                     values.append(- self.multiply()) # if -, minus multiply
@@ -566,7 +566,7 @@ class Calc():
         denominator : int|float
         while True:
             c : str = self.peek() # check operator
-            if c in ['*', 'x']: # multiply
+            if c in ('*', 'x'): # multiply
                 self.index += 1
                 values.append(self.parenthesis())
             elif c == '/': # divie

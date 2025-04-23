@@ -1728,7 +1728,7 @@ class GranblueFantasy(commands.Cog):
         # iterate over level and counts the exp
         lvl : int
         for lvl in range(start_level + 1, 151):
-            if lvl in [80, 100, 110, 120, 130, 140, 150, end_level]: # add messages at specific thresholds
+            if lvl in (80, 100, 110, 120, 130, 140, 150, end_level): # add messages at specific thresholds
                 msgs.append(
                     "**{:,} XP** for lvl **{:}** ({:} books or {:,} candies)\n".format(
                         xpcount,

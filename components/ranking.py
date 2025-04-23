@@ -177,7 +177,7 @@ class Ranking():
                         skip : bool = False
                         # check current day and if we should get the ranking
                         d : int
-                        for d in ["End", "Day 5", "Day 4", "Day 3", "Day 2", "Day 1", "Interlude", "Preliminaries"]:
+                        for d in ("End", "Day 5", "Day 4", "Day 3", "Day 2", "Day 1", "Interlude", "Preliminaries"):
                             if current_time < self.bot.data.save['gw']['dates'][d]:
                                 continue
                             if d == "Preliminaries":
@@ -190,7 +190,7 @@ class Ranking():
                         # taking action or not
                         if skip:
                             await asyncio.sleep(600) # we sleep 10min if we skip
-                        elif m in [3, 4, 23, 24, 43, 44]: # minute to update
+                        elif m in (3, 4, 23, 24, 43, 44): # minute to update
                             # calculate the start of this 20min period
                             update_time : datetime = current_time.replace(
                                 minute=20 * (current_time.minute // 20),
@@ -289,7 +289,7 @@ class Ranking():
                             elif tops[0].text.startswith('Top '):
                                 rank = str(int(tops[0].text.replace('Top ', '').replace(',', '')))
                             elif tops[0].text.startswith('Tier '):
-                                if crew == 0 and tops[0].text in ["Tier A", "Tier B"]:
+                                if crew == 0 and tops[0].text in ("Tier A", "Tier B"):
                                     if tops[0].text[-1] == "A":
                                         rank = self.TIER_A
                                     else:
@@ -353,10 +353,10 @@ class Ranking():
             else:
                 diff = 0.0
 
-            for uri, prelim_uri, is_player in [
+            for uri, prelim_uri, is_player in (
                     ("teamraid{}/ranking/content/guild", True, False),
                     ("teamraid{}/ranking/content/totalguild", False, False),
-                    ("teamraid{}/ranking/content/user", False, True)]:
+                    ("teamraid{}/ranking/content/user", False, True)):
                 if not is_prelim and prelim_uri:
                     continue
                 data = unquote(
@@ -903,7 +903,7 @@ class Ranking():
                 self.bot.logger.push("[RANKING] Existing 'GW.sql' file will be updated", send_to_discord=False)
 
             n : int
-            for n in [0, 1]: # n == 0 (crews) or 1 (players)
+            for n in (0, 1): # n == 0 (crews) or 1 (players)
                 # check if we should get this ranking
                 if skip_mode == 2 and n == 0:
                     continue
@@ -1085,7 +1085,7 @@ class Ranking():
             dbs : list[Database] = (await self.bot.sql.get("GW_old.sql"), await self.bot.sql.get("GW.sql")) # get access
             st : int = 1 if mode >= 10 else 0 # search type (crew or player)
             n : int
-            for n in [0, 1]: # for both database
+            for n in (0, 1): # for both database
                 if dbs[n] is None:
                     continue
                 async with dbs[n] as c:

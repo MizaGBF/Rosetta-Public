@@ -928,7 +928,7 @@ class Admin(commands.Cog):
             for evname, times in data.items():
                 if not isinstance(times, list):
                     raise Exception("Value of '{}' isn't a list".format(evname))
-                elif len(times) not in [1, 2]:
+                elif len(times) not in (1, 2):
                     raise Exception("Value of '{}' has an invalid length".format(evname))
                 else:
                     ts : int
@@ -1348,7 +1348,7 @@ class Admin(commands.Cog):
         # make a message showing each DB state
         msgs : list[str] = []
         i : int
-        for i in [0, 1]:
+        for i in (0, 1):
             msgs.append("**{}** ▫️ ".format('GW_old.sql' if (i == 0) else 'GW.sql'))
             if vers[i] is None:
                 msgs.append("Not loaded")
