@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class TicTacToeButton(disnake.ui.Button):
+
+    __slots__ = ("pos")
+
     """__init__()
     Button Constructor
 
@@ -75,6 +78,11 @@ class TicTacToe(BaseView):
         [0, 4, 8],
         [2, 4, 6]
     ]
+
+    __slots__ = (
+        "players", "embed", "playing", "playing_index",
+        "grid", "moves", "notification"
+    )
 
     """__init__()
     Constructor

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class ConnectFourButton(disnake.ui.Button):
+
+    __slots__ = ("column")
+
     """__init__()
     Button Constructor
     A button to place a piece in one column
@@ -79,6 +82,8 @@ class ConnectFour(BaseView):
     # Grid size
     ROW : int = 6
     COLUMN : int = 7
+
+    __slots__ = ("grid", "state", "players", "embed", "notification")
 
     """__init__()
     Constructor

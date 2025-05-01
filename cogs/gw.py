@@ -94,6 +94,8 @@ class GuildWar(commands.Cog):
     ]
     DAYS_W_INTER : list[str] = ['Interlude', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']
 
+    __slots__ = ("bot", "day_list", "crewcache")
+
     def __init__(self : GuildWar, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.day_list : ScheduleList|None = None

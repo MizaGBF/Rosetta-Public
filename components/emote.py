@@ -17,6 +17,8 @@ import os
 
 
 class Emote():
+    __slots__ = ("bot", "app_emojis", "unicode_emoji")
+
     def __init__(self : Emote, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.app_emojis : dict[str, disnake.Emoji] = {}

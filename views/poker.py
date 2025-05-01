@@ -33,6 +33,9 @@ class Constant(IntEnum):
 # ----------------------------------------------------------------------
 
 class PokerSub(BaseView):
+
+    __slots__ = ("parent")
+
     """__init__()
     Constructor
 
@@ -124,6 +127,12 @@ class Poker(BaseView):
     FOUR_KIND_SET : set[int] = {1, 4}
     THREE_KIND_SET : set[int] = {1, 3}
     DOUBLE_PAIR_LIST : list[int] = [1, 2, 2]
+
+    __slots__ = (
+        "state", "players", "embed", "color", "deck",
+        "dealer", "min_value", "hands", "sub", "subembeds",
+        "max_state", "winners", "remaining"
+    )
 
     """__init__()
     Constructor

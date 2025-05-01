@@ -32,6 +32,8 @@ class Sparking(commands.Cog):
     # Days per month (as floats)
     MONTHLY_DAY : list[float] = [31.0, 28.25, 31.0, 30.0, 31.0, 30.0, 31.0, 31.0, 30.0, 31.0, 30.0, 31.0]
 
+    __slots__ = ("bot")
+
     def __init__(self : Sparking, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

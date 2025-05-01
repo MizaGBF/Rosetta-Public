@@ -45,6 +45,8 @@ class Network():
         "Chrome/131.0.0.0 Safari/537.36"
     )
 
+    __slots__ = ("bot", "user_agent", "translator", "client", "client_req", "gbf_client", "gbf_client_req")
+
     def __init__(self : Network, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         # default user agent
@@ -919,12 +921,14 @@ class Network():
                         ("s" if self.bot.data.save['maintenance']['duration'] > 1 else ""),
                         self.bot.util.time(
                             self.bot.data.save['maintenance']['time'],
-                            style=['d','t'],
+                            style=['d', 't'],
                             removejst=True
                         ),
                         self.bot.util.time(
-                            self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration']),
-                            style=['d','t'],
+                            self.bot.data.save['maintenance']['time'] + timedelta(
+                                seconds=3600 * self.bot.data.save['maintenance']['duration']
+                            ),
+                            style=['d', 't'],
                             removejst=True
                         )
                     ), False
@@ -955,7 +959,9 @@ class Network():
                         return "Maintenance ends in **{}**, at **{}**".format(
                             self.bot.util.delta2str(d, 2),
                             self.bot.util.time(
-                                self.bot.data.save['maintenance']['time'] + timedelta(seconds=3600*self.bot.data.save['maintenance']['duration']),
+                                self.bot.data.save['maintenance']['time'] + timedelta(
+                                    seconds=3600 * self.bot.data.save['maintenance']['duration']
+                                ),
                                 style=['d','t'],
                                 removejst=True
                             )

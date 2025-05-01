@@ -31,19 +31,21 @@ class Logger():
         DEBUG : 0xc7e046
     }
 
+    __slots__ = ("bot", "discord_queue", "__logger__")
+
     def __init__(self : Logger, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.discord_queue : list[list[datetime|str|int]] = []
         debug : bool = bot.debug_mode or bot.test_mode # check if the bot isn't in normal mode
         logging.basicConfig(level=logging.INFO)
-        self.logger : logging.Logger|None = None # logging object
+        self.__logger__ : logging.Logger|None = None # logging object
         if not self.bot.test_mode: # we still create loggers in debug mode
-            self.logger = logging.getLogger('Rosetta')
-            self.logger.setLevel(logging.NOTSET)
+            self.__logger__ = logging.getLogger('Rosetta')
+            self.__logger__.setLevel(logging.NOTSET)
             discord_logger : logging.Logger = logging.getLogger('disnake')
             discord_logger.setLevel(logging.WARNING)
             if not debug: # plus rotary files in normal mode
-                self.logger.addHandler(
+                self.__logger__.addHandler(
                     RotatingFileHandler(
                         filename="rosetta.log",
                         encoding='utf-8',
@@ -138,7 +140,7 @@ class Logger():
                 self.discord_queue.append([now, msg, 1, level])
         # push the message to the logger
         try:
-            self.logger.log(level, now.strftime("%Y-%m-%d %H:%M:%S | ") + msg)
+            self.__logger__.log(level, now.strftime("%Y-%m-%d %H:%M:%S | ") + msg)
         except: # use this if the logger isn't set yet
             logging.log(level, now.strftime("%Y-%m-%d %H:%M:%S | ") + msg)
 

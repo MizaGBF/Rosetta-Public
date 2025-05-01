@@ -16,6 +16,9 @@ import math
 
 
 class Singleton():
+
+    __slots__ = ("bot", "gamecard_cache")
+
     def __init__(self : Singleton, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.gamecard_cache : dict[int, GameCard] = {}
@@ -146,6 +149,9 @@ A Modal class where you can set your own callback
 
 
 class CustomModal(disnake.ui.Modal):
+
+    __slots__ = ("bot", "custom_callback", "extra")
+
     def __init__(
         self : CustomModal,
         bot : DiscordBot,
@@ -465,6 +471,8 @@ class Calc():
         'rad',
         'deg'
     ]
+
+    __slots__ = ("expression", "index", "vars")
 
     def __init__(self : Calc) -> None:
         self.expression : str = ""

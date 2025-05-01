@@ -64,6 +64,8 @@ class GranblueFantasy(commands.Cog):
     ]
     GBF_ICON : str = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/touch_icon.png"
 
+    __slots__ = ("bot")
+
     def __init__(self : GranblueFantasy, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

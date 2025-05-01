@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 
 class UrlButton(BaseView):
+
+    __slots__ = ()
+
     """__init__()
     Constructor
 

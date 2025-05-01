@@ -24,6 +24,8 @@ class Pinboard():
     ]
     IMG_EXT_TUPLE : tuple[str, ...] = tuple(IMG_EXT)
 
+    __slots__ = ("bot", "cache")
+
     def __init__(self : Pinboard, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.bot.reaction_hooks['pinboard'] = self.pin # hook pin function

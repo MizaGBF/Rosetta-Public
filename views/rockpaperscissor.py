@@ -42,6 +42,11 @@ class RPS(BaseView):
         SCISSOR * 10 + SCISSOR : DRAW
     }
 
+    __slots__ = (
+        "players", "embed", "scores",
+        "target", "state", "won"
+    )
+
     """__init__()
     Constructor
 

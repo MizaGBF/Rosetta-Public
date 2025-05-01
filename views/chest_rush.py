@@ -14,6 +14,9 @@ import random
 
 
 class ChestRushButton(disnake.ui.Button):
+
+    __slots__ = ("grid")
+
     """__init__()
     Button Constructor
 
@@ -72,6 +75,9 @@ class ChestRushButton(disnake.ui.Button):
 
 
 class ChestRush(BaseView):
+
+    __slots__ = ("grid", "color")
+
     """__init__()
     Constructor
 

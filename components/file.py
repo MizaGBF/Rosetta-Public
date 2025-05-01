@@ -16,6 +16,8 @@ from contextlib import contextmanager
 
 
 class File():
+    __slots__ = ("bot")
+
     def __init__(self : File, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

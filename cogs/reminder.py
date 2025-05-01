@@ -22,6 +22,8 @@ class Reminder(commands.Cog):
     COLOR : int = 0x5e17e3
     REMINDER_LIMIT : int = 8
 
+    __slots__ = ("bot")
+
     def __init__(self : Reminder, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

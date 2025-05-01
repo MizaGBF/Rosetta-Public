@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 
 class BaseView(disnake.ui.View):
+
+    __slots__ = ("bot", "owner_id", "message", "enable_timeout_cleanup")
+
     """__init__()
     Constructor
     Base class used for our Bot views.

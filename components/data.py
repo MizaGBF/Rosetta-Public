@@ -59,6 +59,8 @@ class Data():
         "anniversary stream"
     )
 
+    __slots__ = ("bot", "debug", "config", "save", "pending", "autosaving")
+
     def __init__(self : Data, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.debug : bool = bot.debug_mode or bot.test_mode

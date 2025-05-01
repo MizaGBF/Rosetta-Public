@@ -33,6 +33,8 @@ class DreadBarrage(commands.Cog):
         (None, 15000)
     ]
 
+    __slots__ = ("bot")
+
     def __init__(self : DreadBarrage, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

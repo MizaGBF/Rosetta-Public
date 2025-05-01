@@ -32,6 +32,8 @@ class YouCrew(commands.Cog):
         guild_ids = [CREW_SERVER_ID]
     COLOR : int = 0xffce47
 
+    __slots__ = ("bot")
+
     def __init__(self : YouCrew, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

@@ -67,6 +67,8 @@ class Gacha():
     }
     GACHA_IMG_URL : str = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/gacha/{}"
 
+    __slots__ = ("bot")
+
     def __init__(self : Gacha, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 
@@ -777,6 +779,12 @@ class GachaSimulator():
     RarityStrTable = {Rarity.R:'R', Rarity.SR:'SR', Rarity.SSR:'SSR'}
     RPS : list[str] = ['rock', 'paper', 'scissor']
     ROULETTE_DELAY : int = 4
+
+    __slots__ = (
+        "bot", "bannerid", "data", "rateups", "ssrrate", "complete",
+        "scamdata", "iscollab", "color", "mode", "result",
+        "thumbnail", "best", "exception"
+    )
 
     """constructor
 
@@ -1667,6 +1675,14 @@ class Roulette():
         MUKKU : int = 3
         SUPER_MUKKU : int = 4
         BIRTHDAY_ZONE : int = 5
+
+    __slots__ = (
+        "bot", "sim", "fixed_start", "fixed_end", "fixed_start", "forced_3_percent",
+        "forced_rolls", "forced_super_mukku", "enable_200_rolls", "enable_janken",
+        "max_janken", "double_mukku", "realist", "birthday_zone", "running", "state",
+        "current_time", "msgs", "footers", "dice", "rolls", "legfest", "super_mukku",
+        "janken_threshold"
+    )
 
     """__init__()
     Constructor.

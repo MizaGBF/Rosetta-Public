@@ -18,6 +18,8 @@ class General(commands.Cog):
     """Rosetta commands."""
     COLOR : int = 0xd9d927
 
+    __slots__ = ("bot")
+
     def __init__(self : General, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

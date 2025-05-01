@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 
 
 class JoinGame(BaseView):
+
+    __slots__ = ("players", "limit", "min_p", "players", "callback", "timer")
+
     """__init__()
     Constructor
 

@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 
 
 class Page(BaseView):
+
+    __slots__ = ("current", "embeds")
+
     """__init__()
     Constructor
 
@@ -93,21 +96,24 @@ class Page(BaseView):
 # ----------------------------------------------------------------------
 
 class RankingDropdown(disnake.ui.StringSelect):
+
+    __slots__ = ("current_option_count", "options")
+
     # The drop down
     def __init__(self : RankingDropdown, placeholder : str, search_results : PageResultList) -> None:
         # Define the options that will be presented inside the dropdown
         self.current_option_count = len(search_results)
-        options : list[disnake.SelectOption]
+        self.options : list[disnake.SelectOption]
         if len(search_results) == 0:
-            options = [disnake.SelectOption(label="None", description="No data")]
+            self.options = [disnake.SelectOption(label="None", description="No data")]
         else:
             # List of selectable elements
-            options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results]
+            self.options = [disnake.SelectOption(label=s[0], description=str(s[1])) for s in search_results]
         super().__init__(
             placeholder=placeholder,
             min_values=1,
             max_values=1,
-            options=options
+            options=self.options
         ) # init the disnake.ui.StringSelect
 
     def update_options(self : RankingDropdown, search_results : PageResultList) -> None:
@@ -213,6 +219,12 @@ class RankingDropdown(disnake.ui.StringSelect):
 
 
 class PageRanking(BaseView):
+
+    __slots__ = (
+        "current", "embeds", "search_results", "color", "stype",
+        "prev_b", "close_b", "next_b", "dropdown"
+    )
+
     """__init__()
     Constructor
     Note: contrary to its name, it's not an inheritor of the Page class

@@ -17,6 +17,8 @@ class Moderation(commands.Cog):
     """Settings for server moderators."""
     COLOR : int = 0x2eced1
 
+    __slots__ = ("bot")
+
     def __init__(self : Moderation, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

@@ -20,6 +20,8 @@ class Roles(commands.Cog):
     """Self assignable roles."""
     COLOR : int = 0x17e37a
 
+    __slots__ = ("bot")
+
     def __init__(self : Roles, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

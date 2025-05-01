@@ -330,6 +330,8 @@ class Games(commands.Cog):
         'Avatar Omega Anima x3':1000
     }
 
+    __slots__ = ("bot")
+
     def __init__(self : Games, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

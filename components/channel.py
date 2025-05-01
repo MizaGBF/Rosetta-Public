@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class Channel():
+    __slots__ = ("bot", "cache", "announcements", "auto_publish")
+
     def __init__(self : Channel, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.cache : dict[str, disnake.abc.Messageable] = {}

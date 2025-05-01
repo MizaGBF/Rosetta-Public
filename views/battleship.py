@@ -15,6 +15,9 @@ import random
 
 
 class BattleShipButton(disnake.ui.Button):
+
+    __slots__ = ("btype", "target")
+
     """__init__()
     Button Constructor
     A button the user can press
@@ -92,6 +95,9 @@ class BattleShipButton(disnake.ui.Button):
 
 
 class BattleShip(BaseView):
+
+    __slots__ = ("grids", "state", "players", "embed", "input", "notification")
+
     """__init__()
     Constructor
 

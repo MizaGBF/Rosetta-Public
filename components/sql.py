@@ -16,6 +16,9 @@ import sqlite3
 
 
 class Database():
+
+    __slots__ = ("filename", "conn", "cursor", "lock")
+
     def __init__(self : Database, filename : str) -> None:
         self.filename : str = filename
         self.conn : sqlite3.Connection|None = None # connection
@@ -59,6 +62,9 @@ class Database():
 
 
 class SQL():
+
+    __slots__ = ("bot", "db", "lock")
+
     def __init__(self : SQL, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.db : dict[str, Database] = {} # sql files

@@ -22,6 +22,8 @@ import os
 class Drive():
     ZIP_CHUNK : int = 8192
 
+    __slots__ = ("bot", "debug", "gauth", "gdrive")
+
     def __init__(self : Drive, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.debug : bool = bot.debug_mode or bot.test_mode

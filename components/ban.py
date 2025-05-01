@@ -17,6 +17,8 @@ class Ban():
     PROFILE : int = 0b00000100
     USE_BOT : int = 0b10000000
 
+    __slots__ = ("bot")
+
     def __init__(self : Ban, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 

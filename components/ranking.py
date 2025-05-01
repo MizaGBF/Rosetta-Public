@@ -50,6 +50,12 @@ class Ranking():
     REVERSE_DAYS : list[str] = ['Day 5', 'Day 4', 'Day 3', 'Day 2', 'Day 1']
     REVERSE_DAYS_FULL : list[str] = REVERSE_DAYS + ['Interlude', 'Preliminaries']
 
+    __slots__ = (
+        "bot", "gbfgcrews", "othercrews", "allconfigcrews", "gbfgcrews_id",
+        "othercrews_id", "getrank_mode", "getrank_count", "getrank_update_time",
+        "rankingtempdata", "stoprankupdate", "dbstate", "dblock"
+    )
+
     def __init__(self : Ranking, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         # crew from config.json

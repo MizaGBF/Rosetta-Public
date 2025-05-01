@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class Tap(BaseView):
+
+    __slots__ = ()
+
     """__init__()
     Constructor
 

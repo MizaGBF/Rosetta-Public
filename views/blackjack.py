@@ -26,6 +26,8 @@ class Blackjack(BaseView):
     TWENTYONE : int = 3
     LOST : int = 4
 
+    __slots__ = ("state", "players", "embed", "deck", "hands", "notification")
+
     """__init__()
     Constructor
 

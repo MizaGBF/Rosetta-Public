@@ -32,6 +32,8 @@ class Admin(commands.Cog):
         guild_ids = [DEBUG_SERVER_ID]
     COLOR : int = 0x7a1472
 
+    __slots__ = ("bot")
+
     def __init__(self, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
 
