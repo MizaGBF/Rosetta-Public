@@ -94,10 +94,21 @@ class DreadBarrage(commands.Cog):
                         elif current_time < self.bot.data.save['dread']['dates']['NM175']:
                             # add NM175 timer if not passed
                             msgs.append(
-                                "\n{} NM175 & Valiants available in **{}**".format(
+                                "\n{} NM175 available in **{}**".format(
                                     self.bot.emote.get('mark'),
                                     self.bot.util.delta2str(
                                         self.bot.data.save['dread']['dates']['NM175'] - current_time,
+                                        2
+                                    )
+                                )
+                            )
+                        elif current_time < self.bot.data.save['dread']['dates']['NM215']:
+                            # add NM175 timer if not passed
+                            msgs.append(
+                                "\n{} NM215 & Valiants available in **{}**".format(
+                                    self.bot.emote.get('mark'),
+                                    self.bot.util.delta2str(
+                                        self.bot.data.save['dread']['dates']['NM215'] - current_time,
                                         2
                                     )
                                 )
@@ -187,11 +198,20 @@ class DreadBarrage(commands.Cog):
                                 )
                             )
                         )
-                    if current_time < self.bot.data.save['dread']['dates']["Day 6"]:
+                    if current_time < self.bot.data.save['dread']['dates']["Day 5"]:
                         description.append(
-                            "▫️ NM175 & Valiants: **{}**\n".format(
+                            "▫️ NM175: **{}**\n".format(
                                 self.bot.util.time(
                                     self.bot.data.save['dread']['dates']['NM175'],
+                                    removejst=True
+                                )
+                            )
+                        )
+                    if current_time < self.bot.data.save['dread']['dates']["Day 6"]:
+                        description.append(
+                            "▫️ NM215 & Valiants: **{}**\n".format(
+                                self.bot.util.time(
+                                    self.bot.data.save['dread']['dates']['NM215'],
                                     removejst=True
                                 )
                             )

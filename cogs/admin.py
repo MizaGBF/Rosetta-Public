@@ -1256,8 +1256,9 @@ class Admin(commands.Cog):
             self.bot.data.save['dread']['dates']["Day 3"] = self.bot.data.save['dread']['dates']["Day 2"] + ONE_DAY
             self.bot.data.save['dread']['dates']["NM135"] = self.bot.data.save['dread']['dates']["Day 3"]
             self.bot.data.save['dread']['dates']["Day 4"] = self.bot.data.save['dread']['dates']["Day 3"] + ONE_DAY
+            self.bot.data.save['dread']['dates']["NM175"] = self.bot.data.save['dread']['dates']["Day 4"]
             self.bot.data.save['dread']['dates']["Day 5"] = self.bot.data.save['dread']['dates']["Day 4"] + ONE_DAY
-            self.bot.data.save['dread']['dates']["NM175"] = self.bot.data.save['dread']['dates']["Day 5"]
+            self.bot.data.save['dread']['dates']["NM215"] = self.bot.data.save['dread']['dates']["Day 5"]
             self.bot.data.save['dread']['dates']["Day 6"] = self.bot.data.save['dread']['dates']["Day 5"] + ONE_DAY
             last : int = 6
             i : int

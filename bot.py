@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.2.0" # bot version
+    VERSION : str = "12.2.1" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -42,6 +42,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.0.7** - Added event links to `/gbf schedule`.",
         "**v12.0.10** - Added `/gw rosetta`.",
         "**v12.1.2** - Improved `/gbf maintenance`.",
+        "**v12.2.1** - Updated `/db` commands with new schedule.",
     ]
 
     __slots__ = (
