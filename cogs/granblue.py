@@ -1794,7 +1794,7 @@ class GranblueFantasy(commands.Cog):
                 "title":"Special:CargoExport",
                 "tables":"characters",
                 "fields":"series,name,element,release_date",
-                "where":'series = "grand"',
+                "where":'series LIKE "%grand%"',
                 "format":"json",
                 "limit":"200"
             }
@@ -1809,7 +1809,7 @@ class GranblueFantasy(commands.Cog):
         c : dict[str, str|datetime]
         for c in data:
             try:
-                if c['series'] != 'grand':
+                if 'grand' not in c['series']:
                     continue
                 grand : dict[str, str] = c
                 d : list[str] = grand['release date'].split('-')
