@@ -71,13 +71,17 @@ class DreadBarrage(commands.Cog):
                     # check if we have passed this date
                     if (it[i] in self.bot.data.save['dread']['dates']
                             and current_time > self.bot.data.save['dread']['dates'][it[i]]):
+                        next_it : str = it[i - 1]
                         # then check remaining time to next date (i-1)
+                        if next_it not in self.bot.data.save['dread']['dates']:
+                            # Add checks for optional days
+                            next_it = 'End'
                         msgs : list[str] = [
                             "{} Barrage {} is on going (Time left: **{}**)".format(
                                 self.bot.emote.get('mark_a'),
                                 it[i],
                                 self.bot.util.delta2str(
-                                    self.bot.data.save['dread']['dates'][it[i - 1]] - current_time
+                                    self.bot.data.save['dread']['dates'][next_it] - current_time
                                 )
                             )
                         ]
