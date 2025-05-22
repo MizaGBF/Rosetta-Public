@@ -1856,6 +1856,8 @@ class Games(commands.Cog):
 
     @commands.message_command(name="UwU")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(5, 90, commands.BucketType.guild)
     async def uwu(
         self : commands.message_command,

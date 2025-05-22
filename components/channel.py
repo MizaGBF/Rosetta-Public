@@ -230,8 +230,10 @@ class Channel():
         self : Channel,
         inter : disnake.Interaction|disnake.Message|commands.Context
     ) -> bool:
-        if inter is None or not hasattr(inter, 'context') or inter.context.bot_dm  or inter.guild is None:
+        if inter is None or not hasattr(inter, 'context') or inter.context.bot_dm:
             return False
+        if inter.guild is None: # always clean in user context
+            return True
         settings : CleanupSetting = self.get_cleanup_settings(str(inter.guild.id))
         if settings[0] and inter.channel.id not in settings[1]:
             return True

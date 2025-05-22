@@ -600,6 +600,8 @@ class General(commands.Cog):
 
     @commands.message_command(name="Translate to English")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 15, commands.BucketType.guild)
     async def translate_(
         self : commands.message_command,

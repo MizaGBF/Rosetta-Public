@@ -567,6 +567,8 @@ class Sparking(commands.Cog):
 
     @commands.user_command(name="GBF Spark")
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 40, commands.BucketType.user)
     @commands.max_concurrency(4, commands.BucketType.default)
     async def seespark(
