@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     type PlayerEntry = tuple[str, str, int|None, str, int|None]
     type PlayerRanking = list[PlayerEntry]
 from views import BaseView
+from views.url_button import UrlButton
 from views.page import Page, PageRanking
 import random
 import math
@@ -595,6 +596,7 @@ class GuildWar(commands.Cog):
                     color=self.COLOR
                 )
             )
+        await self.bot.channel.clean(inter, 120)
 
     @gw.sub_command()
     async def estimation(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -805,6 +807,7 @@ class GuildWar(commands.Cog):
                             color=self.COLOR
                         )
                     )
+        await self.bot.channel.clean(inter, 120)
 
     """getCrewSummary()
     Get a GBF crew summary (what you see on the main page of a crew)
@@ -2551,6 +2554,21 @@ class GuildWar(commands.Cog):
     async def gbfg(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Command Group"""
         pass
+
+    @gbfg.sub_command()
+    async def leechlist(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
+        """Post a link to /gbfg/ leechlist collection and GW data"""
+        await inter.response.defer()
+        urls : list[tuple[str, str]] = [
+            ('Anon #1 GW26-46', 'https://drive.google.com/open?id=1kfUi2GNcwXobEWnG_sdqPQu2r5YSLNpk'),
+            ('Anon #2 GW47-58', 'https://drive.google.com/drive/folders/1f6DJ-u9D17CubY24ZHl9BtNv3uxTgPnQ'),
+            ('My Data GW47-75 + Databases', 'https://drive.google.com/drive/folders/18ZY2SHsa3CVTpusDHPg-IqNPFuXhYRHw'),
+            ('Rosetta Databases', 'https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2')
+        ]
+        view : UrlButton = UrlButton(self.bot, urls)
+        await inter.edit_original_message('\u200b', view=view)
+        view.stopall()
+        await self.bot.channel.clean(inter, 60)
 
     @gbfg.sub_command()
     async def recruit(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:

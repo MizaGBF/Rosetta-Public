@@ -1085,6 +1085,7 @@ class GranblueFantasy(commands.Cog):
                     footer="source: https://gbf.wiki/"
                 )
             )
+        await self.bot.channel.clean(inter, 120)
 
     @gbf.sub_command()
     async def gacha(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -1119,6 +1120,7 @@ class GranblueFantasy(commands.Cog):
                     color=self.COLOR
                 )
             )
+        await self.bot.channel.clean(inter, 120)
 
     @gbf.sub_command_group()
     async def profile(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -1187,6 +1189,7 @@ class GranblueFantasy(commands.Cog):
                         color=self.COLOR
                     )
                 )
+                await self.bot.channel.clean(inter, 60)
                 return
             # check if account exists
             data : RequestResult
@@ -1269,6 +1272,7 @@ class GranblueFantasy(commands.Cog):
                     color=self.COLOR
                 )
             )
+        await self.bot.channel.clean(inter, 60)
 
     """processProfile()
     Process profile data into discord embed elements
@@ -1632,7 +1636,7 @@ class GranblueFantasy(commands.Cog):
                     )
                 )
             else:
-                await self._profile(inter, pid) # call _profile above
+                await self._profile(inter, pid, clean=False) # call _profile above
         except Exception as e:
             self.bot.logger.pushError("[GBF] In 'gbf profile see' command:", e)
             await inter.edit_original_message(
@@ -1683,21 +1687,6 @@ class GranblueFantasy(commands.Cog):
     @gbf.sub_command_group(name="utility")
     async def _utility(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:
         pass
-
-    @_utility.sub_command()
-    async def leechlist(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
-        """Post a link to /gbfg/ leechlist collection and GW data"""
-        await inter.response.defer()
-        urls : list[tuple[str, str]] = [
-            ('Anon #1 GW26-46', 'https://drive.google.com/open?id=1kfUi2GNcwXobEWnG_sdqPQu2r5YSLNpk'),
-            ('Anon #2 GW47-58', 'https://drive.google.com/drive/folders/1f6DJ-u9D17CubY24ZHl9BtNv3uxTgPnQ'),
-            ('My Data GW47-75 + Databases', 'https://drive.google.com/drive/folders/18ZY2SHsa3CVTpusDHPg-IqNPFuXhYRHw'),
-            ('Rosetta Databases', 'https://drive.google.com/drive/folders/11DcUKeO6Szd5ZEJN9q57MQl772v64_R2')
-        ]
-        view : UrlButton = UrlButton(self.bot, urls)
-        await inter.edit_original_message('\u200b', view=view)
-        view.stopall()
-        await self.bot.channel.clean(inter, 60)
 
     @_utility.sub_command()
     async def spreadsheet(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
