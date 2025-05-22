@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.2.1" # bot version
+    VERSION : str = "12.3.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -743,20 +743,23 @@ class DiscordBot(commands.InteractionBot):
         try:
             if not self.running:
                 return False # do nothing if the bot is stopped/stopping
-            elif inter.context.bot_dm:
-                # check if user is banned
-                return not self.ban.check(str(inter.author.id), self.ban.USE_BOT)
-            gid : str = str(inter.guild.id)
             if self.ban.check(str(inter.author.id), self.ban.USE_BOT):
-                # check if the author is banned
+                # check if user is banned
                 return False
-            elif gid in self.data.save['banned_guilds'] or self.ban.check(str(inter.guild.owner_id), self.ban.OWNER):
-                # check if the guild or guild owner is banned
-                await inter.guild.leave() # leave the server if it is
-                return False
-            elif not inter.channel.permissions_for(inter.me).send_messages:
-                # check if the bot has the permission to send messages
-                return False
+            if inter.guild is not None:
+                # i.e. the bot is present in the guild
+                gid : str = str(inter.guild.id)
+                if self.ban.check(str(inter.author.id), self.ban.USE_BOT):
+                    # check if the author is banned
+                    return False
+                elif (gid in self.data.save['banned_guilds']
+                        or self.ban.check(str(inter.guild.owner_id), self.ban.OWNER)):
+                    # check if the guild or guild owner is banned
+                    await inter.guild.leave() # leave the server if it is
+                    return False
+                elif not inter.channel.permissions_for(inter.me).send_messages:
+                    # check if the bot has the permission to send messages
+                    return False
             return True
         except Exception as e:
             self.logger.pushError("[MAIN] global_check Error:", e)

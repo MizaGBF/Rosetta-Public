@@ -30,6 +30,8 @@ class Moderation(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True, manage_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=False, private_channel=False)
     @commands.max_concurrency(10, commands.BucketType.default)
     async def mod(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:
         """Command Group (Mod Only)"""
@@ -220,11 +222,11 @@ class Moderation(commands.Cog):
     """
     async def _serverinfo(self : Moderation, inter : disnake.UserCommandInteraction, is_mod : bool) -> None:
         await inter.response.defer(ephemeral=True)
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Unavailable in Direct Messages",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )

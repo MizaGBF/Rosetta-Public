@@ -520,7 +520,17 @@ class Admin(commands.Cog):
                     "[Invite](https://discord.com/api/oauth2/"
                     "authorize?client_id={}&permissions=1644905889015"
                     "&scope=bot%20applications.commands)"
+                    "\n"
+                    "[Guild Install Link](https://discord.com/oauth2/"
+                    "authorize?client_id={}"
+                    "&scope=applications.commands&integration_type=0)"
+                    "\n"
+                    "[User Install Link](https://discord.com/oauth2/"
+                    "authorize?client_id={}"
+                    "&scope=applications.commands&integration_type=1)"
                 ).format(
+                    self.bot.user.id,
+                    self.bot.user.id,
                     self.bot.user.id
                 ),
                 thumbnail=inter.guild.me.display_avatar,

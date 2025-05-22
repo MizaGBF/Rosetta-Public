@@ -385,6 +385,8 @@ class GuildWar(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(2, 20, commands.BucketType.user)
     @commands.max_concurrency(16, commands.BucketType.default)
     async def gw(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -2542,6 +2544,8 @@ class GuildWar(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(6, 60, commands.BucketType.guild)
     @commands.max_concurrency(10, commands.BucketType.default)
     async def gbfg(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:

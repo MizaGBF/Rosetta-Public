@@ -49,6 +49,8 @@ class General(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def bug_report(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
         """Send a bug report or feedback to the developer"""
@@ -80,6 +82,8 @@ class General(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def help(
         self : commands.slash_command,
@@ -150,6 +154,8 @@ class General(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(3, 10, commands.BucketType.guild)
     @commands.max_concurrency(6, commands.BucketType.default)
     async def rosetta(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -236,6 +242,8 @@ class General(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(5, 10, commands.BucketType.guild)
     @commands.max_concurrency(8, commands.BucketType.default)
     async def utility(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -615,7 +623,7 @@ class General(commands.Cog):
             t : str = self.bot.net.translate(msg)
             if len(t) > 3800:
                 raise Exception('Message too long')
-            if inter.context.bot_dm:
+            if inter.context.bot_dm or inter.guild is None:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="Google Translate",

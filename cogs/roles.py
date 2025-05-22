@@ -42,6 +42,8 @@ class Roles(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=False, private_channel=False)
     @commands.cooldown(2, 5, commands.BucketType.user)
     @commands.max_concurrency(10, commands.BucketType.default)
     async def role(self : commands.slash_command, inter : disnake.GuildCommandInteraction) -> None:

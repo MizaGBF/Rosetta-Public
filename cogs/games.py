@@ -337,6 +337,8 @@ class Games(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 15, commands.BucketType.user)
     @commands.max_concurrency(10, commands.BucketType.default)
     async def roll(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -580,6 +582,8 @@ class Games(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 40, commands.BucketType.user)
     @commands.max_concurrency(10, commands.BucketType.default)
     async def game(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -1050,11 +1054,11 @@ class Games(commands.Cog):
     ) -> None:
         """Play a poker mini-game with other people (2 to 8 players)"""
         await inter.response.defer()
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="♠️ Multiplayer Poker ♥️",
-                    description="Unavailable in Direct Messages.",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -1165,11 +1169,11 @@ class Games(commands.Cog):
     async def tictactoe(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Tic Tac Toe (2 players Only)"""
         await inter.response.defer()
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title=":x: Multiplayer Tic Tac Toe :o:",
-                    description="Unavailable in Direct Messages.",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -1217,11 +1221,11 @@ class Games(commands.Cog):
     async def connectfour(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Connect Four (2 players Only)"""
         await inter.response.defer()
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title=":red_circle: Multiplayer Connect Four :yellow_circle:",
-                    description="Unavailable in Direct Messages.",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -1268,11 +1272,11 @@ class Games(commands.Cog):
     async def battleship(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Play a game of Battle Ship (2 players Only)"""
         await inter.response.defer()
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title=":ship: Multiplayer Battle Ship :cruise_ship:",
-                    description="Unavailable in Direct Messages.",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -1325,11 +1329,11 @@ class Games(commands.Cog):
     ) -> None:
         """Play a Rock Paper Scissor mini-game with other people (2 players Only)"""
         await inter.response.defer()
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="🪨 Multiplayer Rock Paper Scissor ✂️",
-                    description="Unavailable in Direct Messages.",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -1673,6 +1677,8 @@ class Games(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=False)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(1, 15, commands.BucketType.user)
     @commands.max_concurrency(8, commands.BucketType.default)
     async def ask(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -1928,7 +1934,7 @@ class Games(commands.Cog):
                 )
             )
         else:
-            if inter.context.bot_dm:
+            if inter.context.bot_dm or inter.guild is None:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="UwU",

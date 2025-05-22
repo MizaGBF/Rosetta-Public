@@ -57,6 +57,8 @@ class Sparking(commands.Cog):
 
     @commands.slash_command()
     @commands.default_member_permissions(send_messages=True, read_messages=True)
+    @commands.install_types(guild=True, user=True)
+    @commands.contexts(guild=True, bot_dm=True, private_channel=True)
     @commands.cooldown(2, 10, commands.BucketType.user)
     @commands.max_concurrency(4, commands.BucketType.default)
     async def spark(self : commands.slash_command, inter : disnake.ApplicationCommandInteraction) -> None:
@@ -373,11 +375,11 @@ class Sparking(commands.Cog):
         await inter.response.defer(ephemeral=True)
         aid : str = str(inter.author.id) # author id as a string
         # do various permission checks
-        if inter.context.bot_dm:
+        if inter.context.bot_dm or inter.guild is None:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Unavailable in Direct Messages",
+                    description="This command is only usable when Rosetta is present in the Server.",
                     color=self.COLOR
                 )
             )
@@ -385,7 +387,7 @@ class Sparking(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="I lack the Manage Nickname permission for this feature",
+                    description="I lack the Manage Nickname permission for this feature.",
                     color=self.COLOR
                 )
             )
@@ -393,7 +395,7 @@ class Sparking(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Sorry, administrator nicknames can't be edited",
+                    description="Sorry, administrator nicknames can't be edited.",
                     color=self.COLOR
                 )
             )
@@ -401,7 +403,7 @@ class Sparking(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Sorry, server owner nicknames can't be edited",
+                    description="Sorry, server owner nicknames can't be edited.",
                     color=self.COLOR
                 )
             )
@@ -409,7 +411,7 @@ class Sparking(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="No data in memory, please set your roll count first",
+                    description="No data in memory, please set your roll count first.",
                     color=self.COLOR
                 )
             )
@@ -510,12 +512,12 @@ class Sparking(commands.Cog):
         """Show the ranking of everyone saving for a spark in the server"""
         try:
             await inter.response.defer()
-            if inter.context.bot_dm:
+            if inter.context.bot_dm or inter.guild is None:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="{} Spark ranking".format(self.bot.emote.get('crown')),
                         color=self.COLOR,
-                        description="Unavailable in Direct Messages."
+                        description="This command is only usable when Rosetta is present in the Server."
                     )
                 )
                 return
@@ -526,7 +528,7 @@ class Sparking(commands.Cog):
             if msg is None:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
-                        title="The ranking of this server is empty",
+                        title="The ranking of this server is empty.",
                         color=self.COLOR
                     )
                 )
@@ -555,7 +557,7 @@ class Sparking(commands.Cog):
         except Exception as e:
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="Sorry, something went wrong :bow:",
+                    title="Sorry, something went wrong. :bow:",
                     footer=str(e),
                     color=self.COLOR
                 )
