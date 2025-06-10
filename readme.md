@@ -108,7 +108,7 @@ Open a command prompt (Windows) or terminal (Linux) and run `pip install -r requ
 Then, you can run the bot with `python -O bot.py -r` to start the bot (`-O` is optional).  
   
 Here are the possible usages, taken from the **help** (obtained from `python bot.py -h`):
-```
+```console
 usage: bot.py [-h] [-r] [-d] [-t] [-c] [-g [PATH]]
 
 options:
