@@ -1926,7 +1926,7 @@ class GranblueFantasy(commands.Cog):
         for k, v in (await self.retrieve_wiki_wait_intervals()).items():
             msgs.append("**")
             msgs.append(str((c - v[0]).days))
-            msgs.append("** since the last [")
+            msgs.append("days** since the last [")
             msgs.append(k)
             msgs.append("](https://gbf.wiki/")
             msgs.append(v[1])
