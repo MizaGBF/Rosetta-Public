@@ -863,7 +863,7 @@ class GuildWar(commands.Cog):
     --------
     dict: Crew data, None if error
     """
-    async def getCrewData(self : GuildWar, target : str, mode : int = 0) -> CrewData|None:
+    async def getCrewData(self : GuildWar, target : str, mode : int = 0, *, disable_cache : bool = False) -> CrewData|None:
         if not await self.bot.net.gbf_available(): # check for maintenance
             return {'error':'Game is in maintenance'}
         # check if known id
@@ -897,7 +897,7 @@ class GuildWar(commands.Cog):
             return {'error':'Out of range ID'}
         # retrieve data
         crew : CrewData
-        if tid in self.crewcache: # check if cached
+        if not disable_cache and tid in self.crewcache: # check if cached
             crew = self.crewcache[tid]
         else:
             crew = {'scores':[], 'id':tid}
@@ -1499,9 +1499,9 @@ class GuildWar(commands.Cog):
                     and len(self.bot.data.save['gw']['gbfgdata'][c][3]) > 0
                     and not force_update):
                 continue
-            crew : CrewData = await self.getCrewData(c, 0)
+            crew : CrewData = await self.getCrewData(c, 0, disable_cache=True)
             if 'error' in crew or crew['private']:
-                crew = await self.getCrewData(c, 1)
+                crew = await self.getCrewData(c, 1, disable_cache=True)
                 if str(c) not in self.bot.data.save['gw']['gbfgdata']:
                     self.bot.data.save['gw']['gbfgdata'][str(c)] = [
                         crew['name'],
