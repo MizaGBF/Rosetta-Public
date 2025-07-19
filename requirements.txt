@@ -1,6 +1,6 @@
 disnake==2.10.1
 pydrive2==1.21.3
-psutil==6.1.1
-beautifulsoup4==4.12.3
-pillow==11.1.0
+psutil==7.0.0
+beautifulsoup4==4.13.4
+pillow==11.3.0
 deep-translator==1.11.4
