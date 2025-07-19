@@ -78,7 +78,7 @@ class Admin(commands.Cog):
         if self.bot.data.pending:
             self.bot.data.autosaving = False
             count : int = 0
-            while count < 3:
+            while count < 5:
                 if self.bot.data.saveData():
                     self.bot.logger.push(
                         "[EXIT] Auto-saving successful",
@@ -87,10 +87,11 @@ class Admin(commands.Cog):
                     break
                 else:
                     self.bot.logger.pushError(
-                        "[EXIT] Auto-saving failed (try {}/3)".format(count + 1),
+                        "[EXIT] Auto-saving failed (try {} / 5)".format(count + 1),
                         send_to_discord=False
                     )
                     time.sleep(2)
+                    count += 1
         # disable the bot
         self.bot.running = False
         try:
