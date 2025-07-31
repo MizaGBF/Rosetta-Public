@@ -1926,7 +1926,7 @@ class GranblueFantasy(commands.Cog):
         for k, v in (await self.retrieve_wiki_wait_intervals()).items():
             msgs.append("**")
             msgs.append(str((c - v[0]).days))
-            msgs.append("days** since the last [")
+            msgs.append(" days** since the last [")
             msgs.append(k)
             msgs.append("](https://gbf.wiki/")
             msgs.append(v[1])
@@ -2355,14 +2355,14 @@ class GranblueFantasy(commands.Cog):
 
     @campaign.sub_command()
     async def element(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
-        """Granblue Summer Festival - Skyfarer Assemble 2024"""
+        """Granblue Summer Festival - Skyfarer Assemble 2024/2025"""
         await inter.response.defer()
         try:
             msg : str
             c : datetime = self.bot.util.JST()
             # settings
-            start : datetime = c.replace(year=2024, month=8, day=1, hour=5, minute=0, second=0, microsecond=0)
-            end : datetime = c.replace(year=2024, month=8, day=13, hour=4, minute=59, second=59, microsecond=0)
+            start : datetime = c.replace(year=2025, month=8, day=1, hour=5, minute=0, second=0, microsecond=0)
+            end : datetime = c.replace(year=2025, month=8, day=13, hour=4, minute=59, second=59, microsecond=0)
             # end settings
             footer : str = ""
             if c > end:
