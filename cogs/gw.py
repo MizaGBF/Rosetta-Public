@@ -1797,11 +1797,11 @@ class GuildWar(commands.Cog):
             interlude_count : int = 0 # interlude fight done
             day_target : list[float] = [ # honor target for each day (1 to 4)
                 target * 0.15,
-                target * 0.20,
+                target * 0.25,
                 target * 0.30,
-                target * 0.35
+                target * 0.30
             ]
-            day_nm : list[str] = ["NM100", "NM150", "NM200", "NM250"] # constant, fight for each day
+            day_nm : list[str] = ["NM150", "NM200", "NM250", "NM250"] # constant, fight for each day
             nm : list[int] = [0, 0, 0, 0] # fight done on each day
             meat : float = 0 # meat available
             total_meat : float = 0 # total meat used
