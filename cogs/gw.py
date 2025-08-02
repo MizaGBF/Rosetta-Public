@@ -1797,9 +1797,9 @@ class GuildWar(commands.Cog):
             interlude_count : int = 0 # interlude fight done
             day_target : list[float] = [ # honor target for each day (1 to 4)
                 target * 0.15,
-                target * 0.25,
-                target * 0.30,
-                target * 0.30
+                target * 0.22,
+                target * 0.28,
+                target * 0.35
             ]
             day_nm : list[str] = ["NM150", "NM200", "NM250", "NM250"] # constant, fight for each day
             nm : list[int] = [0, 0, 0, 0] # fight done on each day
