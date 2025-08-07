@@ -345,7 +345,7 @@ class Gacha():
             # it works like the main banner request
             # # classic gacha
             i : int
-            for i in (500021, 501021): # id has to be set manually (for now)
+            for i in (500031, 501031): # id has to be set manually (for now)
                 data : RequestResult = await self.bot.net.requestGBF(
                     "rest/gacha/classic/toppage_data_by_classic_series_id/{}".format(i),
                     expect_JSON=True
