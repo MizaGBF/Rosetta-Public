@@ -1780,48 +1780,63 @@ class GranblueFantasy(commands.Cog):
     dict: Grand per element
     """
     async def getGrandList(self : GranblueFantasy) -> dict[str, None|dict[str, str|datetime]]:
-        # get grand list from cargo table
-        data : RequestResult = await self.bot.net.requestWiki(
-            "index.php",
-            params={
-                "title":"Special:CargoExport",
-                "tables":"characters",
-                "fields":"series,name,element,release_date",
-                "where":'series LIKE "%grand%"',
-                "format":"json",
-                "limit":"200"
+        if "wiki_grand_list" not in self.bot.data.save["gbfdata"]:
+            self.bot.data.save["gbfdata"]["wiki_grand_list"] = {"list":{}, "last":None}
+        forced_check : bool = False
+        current_time : datetime = self.bot.util.JST()
+        if (
+                self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] is None or
+                current_time - self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] > timedelta(days=1)
+                ):
+            forced_check = True
+        if forced_check:
+            # get grand list from cargo table
+            data : RequestResult = await self.bot.net.requestWiki(
+                "index.php",
+                params={
+                    "title":"Special:CargoExport",
+                    "tables":"characters",
+                    "fields":"series,name,element,release_date",
+                    "where":'series LIKE "%grand%"',
+                    "format":"json",
+                    "limit":"200"
+                }
+            )
+            if data is None:
+                return {}
+            grand_list : dict[str, None|dict[str, str|datetime]] = {
+                'fire':None, 'water':None, 'earth':None,
+                'wind':None, 'light':None, 'dark':None
             }
-        )
-        if data is None:
-            return {}
-        grand_list : dict[str, None|dict[str, str|datetime]] = {
-            'fire':None, 'water':None, 'earth':None,
-            'wind':None, 'light':None, 'dark':None
-        }
-        # take note of latest grand for each element
-        c : dict[str, str|datetime]
-        for c in data:
-            try:
-                if 'grand' not in c['series']:
-                    continue
-                grand : dict[str, str] = c
-                d : list[str] = grand['release date'].split('-')
-                grand['release date'] = self.bot.util.UTC().replace( # parse release date
-                    year=int(d[0]),
-                    month=int(d[1]),
-                    day=int(d[2]),
-                    hour=(12 if (int(d[2]) > 25) else 19),
-                    minute=0,
-                    second=0, microsecond=0
-                )
-                grand['element'] = grand['element'].lower()
-                # update grand if more recent
-                if (grand_list[grand['element']] is None
-                        or grand['release date'] > grand_list[grand['element']]['release date']):
-                    grand_list[grand['element']] = grand
-            except:
-                pass
-        return grand_list
+            # take note of latest grand for each element
+            c : dict[str, str|datetime]
+            for c in data:
+                try:
+                    if 'grand' not in c['series']:
+                        continue
+                    grand : dict[str, str] = c
+                    d : list[str] = grand['release date'].split('-')
+                    grand['release date'] = self.bot.util.UTC().replace( # parse release date
+                        year=int(d[0]),
+                        month=int(d[1]),
+                        day=int(d[2]),
+                        hour=(12 if (int(d[2]) > 25) else 19),
+                        minute=0,
+                        second=0, microsecond=0
+                    )
+                    grand['element'] = grand['element'].lower()
+                    # update grand if more recent
+                    if (grand_list[grand['element']] is None
+                            or grand['release date'] > grand_list[grand['element']]['release date']):
+                        grand_list[grand['element']] = grand
+                except:
+                    pass
+            self.bot.data.save["gbfdata"]["wiki_grand_list"]["list"] = grand_list
+            self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] = current_time
+            self.bot.data.pending = True
+            return grand_list
+        else:
+            return self.bot.data.save["gbfdata"]["wiki_grand_list"]["list"]
 
     """retrieve_wiki_wait_intervals()
     Request specific wiki pages to retrieve the latest release dates of these elements
@@ -1831,6 +1846,16 @@ class GranblueFantasy(commands.Cog):
     dict: Pairs of String and Tuple (containing release dates and wiki page names)
     """
     async def retrieve_wiki_wait_intervals(self : GranblueFantasy) -> dict[str, tuple[datetime, str]]:
+        if "wiki_intervals" not in self.bot.data.save["gbfdata"]:
+            self.bot.data.save["gbfdata"]["wiki_intervals"] = {"list":{}, "last":None}
+        current_time : datetime = self.bot.util.JST()
+        forced_check : bool = False
+        if (
+                self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] is None or
+                current_time - self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] > timedelta(days=1)
+                ):
+            forced_check = True
+        
         # targeted pages
         targets : list[tuple[str, str, str|None, dict[int, str], str|None]] = [
             # Format is:
@@ -1847,71 +1872,81 @@ class GranblueFantasy(commands.Cog):
             }, None),
             ("Sephira_Evolite", "WaitInterval", None, {0:"Arcarum Sephira Evolite"}, None)
         ]
-        current_time : datetime = self.bot.util.JST()
         result : dict[str, tuple[datetime, str]] = {}
-        # loop over target
-        t : tuple[str, str, str|None, dict[int, str], str|None]
-        for t in targets: # t is short for target
-            await asyncio.sleep(0.2)
-            # make a wiki API request for the page
-            content = await self.bot.net.requestWiki(
-                "api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&format=json".format(t[0])
-            )
-            if content is None: # return if error
-                continue
-            page_is_done : bool = False # this flag is used to break out of loops
-            # loop over pages...
-            data : dict[str, str|dict|list]
-            for data in content["query"]["pages"].values():
-                rev : dict[str, str|dict|list]
-                for rev in data["revisions"]: # ... and revisions
-                    # 3rd element from target lets you split the page in parts.
-                    # Only used for sunlight stones, as it got 2 wait intervals
-                    codes : list[str]
-                    if t[2] is None:
-                        codes = [rev["slots"]["main"]["*"]]
-                    else:
-                        codes = rev["slots"]["main"]["*"].split(t[2])
-                    # iterate over these parts
-                    i : int
-                    code : str
-                    for i, code in enumerate(codes):
-                        # 5th element from target is to extend the regex to detect event durations.
-                        # Only used by campaigns.
-                        matches : list[str|list[str]]
-                        if t[4] is None:
-                            matches = re.findall("{{" + t[1] + "\\|(\\d{4}-\\d{2}-\\d{2})", code)
+        if forced_check:
+            # loop over target
+            page : str
+            findstr : str
+            splitstr : str|None # to split the page in parts
+            displaystr : dict # string to display in the msg
+            matchstr : str|None # to extend the regex
+            for page, findstr, splitstr, displaystr, matchstr in targets:
+                await asyncio.sleep(0.2)
+                # make a wiki API request for the page
+                content = await self.bot.net.requestWiki(
+                    "api.php?action=query&prop=revisions&titles={}&rvslots=*&rvprop=content&format=json".format(page)
+                )
+                if content is None: # return if error
+                    continue
+                page_is_done : bool = False # this flag is used to break out of loops
+                # loop over pages...
+                data : dict[str, str|dict|list]
+                for data in content["query"]["pages"].values():
+                    rev : dict[str, str|dict|list]
+                    for rev in data["revisions"]: # ... and revisions
+                        codes : list[str]
+                        if splitstr is None:
+                            codes = [rev["slots"]["main"]["*"]]
                         else:
-                            # add the extra regex
-                            matches = re.findall("{{" + t[1] + "\\|(\\d{4}-\\d{2}-\\d{2})" + t[4], code)
-                        highest : datetime|None = None
-                        data : str|list[str]
-                        d : datetime
-                        for date in matches:
-                            if t[4] is None:
-                                d = datetime.strptime(date, "%Y-%m-%d")
-                            else: # extended regex
-                                d = datetime.strptime(date[0], "%Y-%m-%d")
-                                duration : int = 0
-                                j : int
-                                for j in range(1, len(date)): # iterate over extra groups
-                                    if date[j] != "0": # Note: we're expected to find numbers only
-                                        duration = max(duration, int(date[j]))
-                                if current_time > d + timedelta(days=duration):
-                                    d += timedelta(days=duration) # add to date
-                            # check if our date is the highest, i.e. closest to us
-                            if highest is None or d > highest:
-                                highest = d
-                        if highest is not None:
-                            # 4th element from target is to set the string to be displayed
-                            # below is a tuple containing time and page url
-                            result[t[3].get(i, data['title'])] = (highest.replace(hour=12), t[0])
-                            # Note: set to 12 am JST as reference, even if it's not always the case
-                        page_is_done = True # done, raise the flag
+                            codes = rev["slots"]["main"]["*"].split(splitstr)
+                        # iterate over these parts
+                        i : int
+                        code : str
+                        for i, code in enumerate(codes):
+                            matches : list[str|list[str]]
+                            if matchstr is None:
+                                matches = re.findall("{{" + findstr + "\\|(\\d{4}-\\d{2}-\\d{2})", code)
+                            else:
+                                # add the extra regex
+                                matches = re.findall("{{" + findstr + "\\|(\\d{4}-\\d{2}-\\d{2})" + matchstr, code)
+                            highest : datetime|None = None
+                            data : str|list[str]
+                            d : datetime
+                            for date in matches:
+                                if matchstr is None:
+                                    d = datetime.strptime(date, "%Y-%m-%d")
+                                else: # extended regex
+                                    d = datetime.strptime(date[0], "%Y-%m-%d")
+                                    duration : int = 0
+                                    j : int
+                                    for j in range(1, len(date)): # iterate over extra groups
+                                        if date[j] != "0": # Note: we're expected to find numbers only
+                                            duration = max(duration, int(date[j]))
+                                    if current_time > d + timedelta(days=duration):
+                                        d += timedelta(days=duration) # add to date
+                                # check if our date is the highest, i.e. closest to us
+                                if highest is None or d > highest:
+                                    highest = d
+                            if highest is not None:
+                                result[displaystr.get(i, data['title'])] = (highest.replace(hour=12), page)
+                                # Note: set to 12 am JST as reference, even if it's not always the case
+                            page_is_done = True # done, raise the flag
+                        if page_is_done:
+                            break
                     if page_is_done:
                         break
-                if page_is_done:
-                    break
+            self.bot.data.save["gbfdata"]["wiki_intervals"]["list"] = {}
+            k : str
+            v : tuple[datetime, str]
+            for k, v in result.items():
+                self.bot.data.save["gbfdata"]["wiki_intervals"]["list"][k] = list(v)
+            self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] = current_time
+            self.bot.data.pending = True
+        else:
+            k : str
+            v : str|datetime
+            for k, v in self.bot.data.save["gbfdata"]["wiki_intervals"]["list"].items():
+                result[k] = tuple(v)
         return result
 
     @check.sub_command()
