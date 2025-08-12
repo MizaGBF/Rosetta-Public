@@ -745,8 +745,8 @@ class GranblueFantasy(commands.Cog):
                         )
                     )
                 output.append('\n')
-        except Exception as e:
-            print(e)
+        except:
+            pass
         try:
             buf = self.bot.get_cog('GuildWar').getGWState()
             if len(buf) > 0:
