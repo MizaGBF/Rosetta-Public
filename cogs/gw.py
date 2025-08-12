@@ -863,7 +863,13 @@ class GuildWar(commands.Cog):
     --------
     dict: Crew data, None if error
     """
-    async def getCrewData(self : GuildWar, target : str, mode : int = 0, *, disable_cache : bool = False) -> CrewData|None:
+    async def getCrewData(
+        self : GuildWar,
+        target : str,
+        mode : int = 0,
+        *,
+        disable_cache : bool = False
+    ) -> CrewData|None:
         if not await self.bot.net.gbf_available(): # check for maintenance
             return {'error':'Game is in maintenance'}
         # check if known id
