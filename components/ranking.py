@@ -182,7 +182,7 @@ class Ranking():
                         h : int = current_time.hour
                         skip : bool = False
                         # check current day and if we should get the ranking
-                        d : int
+                        d : str
                         for d in ("End", "Day 5", "Day 4", "Day 3", "Day 2", "Day 1", "Interlude", "Preliminaries"):
                             if current_time < self.bot.data.save['gw']['dates'][d]:
                                 continue
@@ -358,13 +358,13 @@ class Ranking():
                 diff = round((self.rankingtempdata[4] - self.bot.data.save['gw']['ranking'][4]).total_seconds() / 60.0)
             else:
                 diff = 0.0
-
             for uri, prelim_uri, is_player in (
                     ("teamraid{}/ranking/content/guild", True, False),
                     ("teamraid{}/ranking/content/totalguild", False, False),
                     ("teamraid{}/ranking/content/user", False, True)):
                 if not is_prelim and prelim_uri:
                     continue
+                idx : int = 1 if is_player else 0
                 data = unquote(
                     (
                         await self.bot.net.requestGBF(
@@ -399,14 +399,14 @@ class Ranking():
                             )[0].text.replace(",", ""))
                         if (diff > 0
                                 and self.bot.data.save['gw']['ranking'] is not None
-                                and rank in self.bot.data.save['gw']['ranking'][0]):
-                            speed[rank] = (table[rank] - self.bot.data.save['gw']['ranking'][0][rank]) / diff
+                                and rank in self.bot.data.save['gw']['ranking'][idx]):
+                            speed[rank] = (table[rank] - self.bot.data.save['gw']['ranking'][idx][rank]) / diff
                     except:
                         pass
-                self.rankingtempdata[1 if is_player else 0] = self.rankingtempdata[
+                self.rankingtempdata[idx] = self.rankingtempdata[
                     1 if is_player else 0
                 ] | table # merge this one, for prelims
-                self.rankingtempdata[3 if is_player else 2] = speed
+                self.rankingtempdata[idx + 2] = speed
 
             # sort the result
             i : int
