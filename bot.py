@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.4.1" # bot version
+    VERSION : str = "12.5.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -418,6 +418,7 @@ class DiscordBot(commands.InteractionBot):
     msg: Text message
     embed: Discord Embed
     file: Discord File
+    components : A list of Modal v2 components
     publish: Boolean. Try to publish the message if set to True.
         Auto publish must be enabled on the channel
 
@@ -428,16 +429,18 @@ class DiscordBot(commands.InteractionBot):
     async def send(
         self : DiscordBot,
         channel_name : str,
-        msg : str = "",
+        *,
+        msg : str = None,
         embed : disnake.Embed = None,
         file : disnake.File = None,
         view : disnake.ui.View = None,
+        components : list[disnake.ui.UIComponent]|None = None,
         publish : bool = False
     ) -> disnake.Message|None:
         try:
             c : disnake.Channel = self.channel.get(channel_name) # retrieve channel from component
             # send to channel and retrieve resulting message
-            message : disnake.Message|None = await c.send(msg, embed=embed, file=file, view=view)
+            message : disnake.Message|None = await c.send(msg, embed=embed, file=file, view=view, components=components)
             try:
                 if publish is True and c.is_news() and self.channel.can_publish(c.id):
                     # publish if enabled and possible
@@ -475,6 +478,7 @@ class DiscordBot(commands.InteractionBot):
     msg: Text message
     embed: Discord Embed
     file: Discord File
+    components : A list of Modal v2 components
     publish: Boolean. Try to publish the message if set to True
 
     Returns
@@ -484,9 +488,11 @@ class DiscordBot(commands.InteractionBot):
     async def sendMulti(
         self : DiscordBot,
         channel_names : list[str],
-        msg : str = "",
+        *,
+        msg : str = None,
         embed : disnake.Embed = None,
         file : disnake.File = None,
+        components : list[disnake.ui.UIComponent]|None = None,
         publish : bool = False
     ) -> list:
         r : list[disnake.Message] = [] # resulting message
@@ -495,7 +501,7 @@ class DiscordBot(commands.InteractionBot):
         c : str
         for c in channel_names:
             try:
-                r.append(await self.send(c, msg, embed, file, None, publish))
+                r.append(await self.send(c, msg=msg, embed=embed, file=file, components=components, publish=publish))
             except Exception as e:
                 ex = e
                 err.append(c)
@@ -607,6 +613,58 @@ class DiscordBot(commands.InteractionBot):
                 icon_url=options['author'].pop('icon_url', None)
             )
         return embed
+
+    """render()
+    Create a disnake.ui.Container and return it in a list,
+    to be used with the send components parameter
+
+    Parameters
+    ----------
+    body: List of components to add in the container
+    title: String, add the text in a disnake.ui.Section
+    thumbnail: String, add a thumbnail in a disnake.ui.Section
+    url: String, make the disnake.ui.Section title clickable
+    description: String, add a disnake.ui.TextDisplay
+    footer: Boolean, add a footer similar to embeds
+    color: Integer, set the container accent color
+
+    Returns
+    --------
+    container: List containing the container
+    """
+    def render(
+        self : DiscordBot,
+        *,
+        body : list[disnake.ui.UIComponent] = [],
+        title : str|None = None,
+        thumbnail : str|None = None,
+        url : str|None = None,
+        description : str|None = None,
+        footer : bool = True,
+        color : int = 16777215
+    ) -> list[disnake.ui.Container]:
+        components : list[disnake.ui.UIComponent] = []
+        if title is not None or thumbnail is not None or url is not None:
+            if title is not None:
+                if url is not None:
+                    title = "## [{}]({})".format(title, url)
+                else:
+                    title = "## " + title
+            else:
+                if url is not None:
+                    title = "## [Link]({})".format(url)
+                else:
+                    title = ""
+            accessory = disnake.ui.Thumbnail(thumbnail) if thumbnail is not None else None
+            components.append(disnake.ui.Section(title, accessory=accessory))
+            components.append(disnake.ui.Separator())
+        if description is not None:
+            components.append(disnake.ui.TextDisplay(description))
+        components.extend(body)
+        if footer:
+            components.append(disnake.ui.Separator(divider=False))
+            components.append(disnake.ui.TextDisplay(self.util.timestamp()))
+        return [disnake.ui.Container(*components, accent_colour=disnake.Colour(color))]
 
     """pexc()
     Convert an exception to a string with the full traceback.

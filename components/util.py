@@ -180,6 +180,16 @@ class Util():
             msgs.append(disnake.utils.format_dt(to_convert, c))
         return " ".join(msgs)
 
+    """timestamp()
+    Return a formatted timestamp
+
+    Returns
+    --------
+    str: Formatted time
+    """
+    def timestamp(self : Util) -> str:
+        return disnake.utils.format_dt(datetime.now(timezone.utc), 'f')
+
     """uptime()
     Return the bot uptime
 
