@@ -655,8 +655,11 @@ class DiscordBot(commands.InteractionBot):
                     title = "## [Link]({})".format(url)
                 else:
                     title = ""
-            accessory = disnake.ui.Thumbnail(thumbnail) if thumbnail is not None else None
-            components.append(disnake.ui.Section(title, accessory=accessory))
+            if thumbnail is not None:
+                accessory = disnake.ui.Thumbnail(thumbnail)
+                components.append(disnake.ui.Section(title, accessory=accessory))
+            else:
+                components.append(disnake.ui.TextDisplay(title))
             components.append(disnake.ui.Separator())
         if description is not None:
             components.append(disnake.ui.TextDisplay(description))
