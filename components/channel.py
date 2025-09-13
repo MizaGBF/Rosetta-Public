@@ -203,12 +203,19 @@ class Channel():
                         if delay is not None:
                             await asyncio.sleep(delay) # delete message after delay
                         # edit message with lyria emote
-                        await target.edit(
-                            content=str(self.bot.emote.get('lyria')),
-                            embed=None,
-                            view=None,
-                            attachments=[]
-                        )
+                        if m.flags.is_components_v2:
+                            await target.edit(
+                                components=[
+                                    disnake.ui.TextDisplay(str(self.bot.emote.get('lyria')))
+                                ]
+                            )
+                        else:
+                            await target.edit(
+                                content=str(self.bot.emote.get('lyria')),
+                                embed=None,
+                                view=None,
+                                attachments=[]
+                            )
         except Exception as e:
             if "Unknown Message" not in str(e):
                 self.bot.logger.pushError("[UTIL] 'clean' error:", e)
