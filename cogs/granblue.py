@@ -35,7 +35,7 @@ class GranblueFantasy(commands.Cog):
     COLOR_NEWS : int = 0x00b07b
     # Constants
     SUMMON_ELEMENTS : list[str] = ['fire','water','earth','wind','light','dark','misc']
-    DEFAULT_NEWS : int = 8335
+    DEFAULT_NEWS : int = 9081
     EXTRA_DROPS_TABLE : dict[str, str] = { # quest : element
         'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water',
         'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'
@@ -371,16 +371,16 @@ class GranblueFantasy(commands.Cog):
     """
     async def checkGameNews(self : GranblueFantasy) -> None:
         ii : int
-        silent : bool
+        initialization : bool
         ncheck : int
         if 'game_news' not in self.bot.data.save['gbfdata']: # init data
             self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
             ii = self.DEFAULT_NEWS
-            silent = True # set silent mode
-            ncheck = 100
+            initialization = True
+            ncheck = 10000
         else:
             ii = self.bot.data.save['gbfdata']['game_news'][0] # ii is the iterator
-            silent = False
+            initialization = False
             # max number of check
             ncheck = 10 + max(
                 self.bot.data.save['gbfdata']['game_news']
@@ -415,6 +415,7 @@ class GranblueFantasy(commands.Cog):
             await self.bot.net.request("https://game.granbluefantasy.jp/#top")
         # loop over this list
         news : list[int] = []
+        err : int = 0
         for ii in to_process:
             # request news patch
             data : RequestResult = await self.bot.net.requestGBF_offline(
@@ -422,11 +423,16 @@ class GranblueFantasy(commands.Cog):
                 expect_JSON=True
             )
             if data is None:
+                err += 1
+                if initialization and err >= 30:
+                    break
                 continue
             elif data[0]['id'] == str(ii): # check if id matches
                 try:
+                    err = 0
                     news.append(ii) # append id to news list
-                    if not silent: # if not silent, we process the content
+                    if not initialization:
+                        # process the news content
                         # determine the character limit
                         limit : int = self.compute_news_description_character_limit(data[0]['title'])
                         if limit == 0: # Null, skip
