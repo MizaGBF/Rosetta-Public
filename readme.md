@@ -206,19 +206,19 @@ Next, turn on the **Message Content Intent**, below.
 2. Create a project (on top of the page).  
 3. Give it a name.  
 4. Wait for its creation to finish. It might take a minute or so.  
-5. Select the project (via the notifications or a selector near the Google Cloud logo if available).  
+5. Click on Google Cloud on the top left (the logo), then Select the project that you created (via the selector appearing right next to it).  
 6. In the search bar on top, search for `Google Drive API`.
 7. Enable this API.  
 8. You should be on the `APIs and services` page. If you aren't, find a way to access it.  
-9. On the left, click on `Credentials`.  
-10. Choose `Create Credentials` on top and then `Service Account`.
-11. For the first step of the form, give it a name and then create.  
-12. For the second step, give it the Owner or Editor role (Owner if you want to be sure to have all permissions, I haven't tested if Editor works fully) and continue.  
+9. On the left side-bar, click on `Credentials`.  
+10. Choose `Create Credentials` on top, and then `Service Account`.
+11. For the first step of the form, give it a name and then click `Create and Continue`.  
+12. For the second step, give it the Owner or Editor role (Owner if you want to be sure to have all permissions, I haven't tested if Editor works fully) and click `Continue`.  
 13. For the third step, add your gmail account email in the fields, so you have permission to access this account if needed. And click on Done.  
-14. You should be back to the `APIs and services` page. **Copy the email of the service account to a notepad**, you'll need it after.  
-15. Click on the edit button for the newly added service account. 
+14. You should be back to the `APIs and services` page. The Service Account should appear in the list. **Copy the email of the service account to a notepad**, you'll need it after.  
+15. Click on the edit button for the newly added service account, on the far right. 
 16. On the new page, select the `Keys` tab.  
-17. Click on `Add Key`, then Create new key.  
+17. Click on `Add Key`, then `Create new key`.  
 18. Select the `JSON` format and confirm. Your browser will download a file.  
 19. Rename the file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
   
