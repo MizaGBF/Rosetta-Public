@@ -129,9 +129,9 @@ class Emote():
             disnake.http.Route(
                 'POST',
                 '/applications/{app_id}/emojis',
-                app_id=self.bot.user.id,
-                json={'name':name, 'image':await disnake.utils._assetbytes_to_base64_data(image)}
-            )
+                app_id=self.bot.user.id
+            ),
+            json={'name':name, 'image':await disnake.utils._assetbytes_to_base64_data(image)}
         )
 
     """delete_app_emoji()

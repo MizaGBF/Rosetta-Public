@@ -608,11 +608,9 @@ class GranblueFantasy(commands.Cog):
     Check for new GBF grand blues
     """
     async def check4koma(self : GranblueFantasy) -> None:
-        i : int
-        try:
-            i = self.bot.data.save['gbfdata']['4koma']
-        except:
-            i = 2753
+        if '4koma' not in self.bot.data.save['gbfdata']:
+            self.bot.data.save['gbfdata']['4koma'] = 2925
+        i : int = self.bot.data.save['gbfdata']['4koma']
         i += 1
         while True:
             url : str = (
@@ -1784,10 +1782,8 @@ class GranblueFantasy(commands.Cog):
             self.bot.data.save["gbfdata"]["wiki_grand_list"] = {"list":{}, "last":None}
         forced_check : bool = False
         current_time : datetime = self.bot.util.JST()
-        if (
-                self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] is None or
-                current_time - self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] > timedelta(days=1)
-                ):
+        if (self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] is None
+                or current_time - self.bot.data.save["gbfdata"]["wiki_grand_list"]["last"] > timedelta(days=1)):
             forced_check = True
         if forced_check:
             # get grand list from cargo table
@@ -1850,12 +1846,9 @@ class GranblueFantasy(commands.Cog):
             self.bot.data.save["gbfdata"]["wiki_intervals"] = {"list":{}, "last":None}
         current_time : datetime = self.bot.util.JST()
         forced_check : bool = False
-        if (
-                self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] is None or
-                current_time - self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] > timedelta(days=1)
-                ):
+        if (self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] is None
+                or current_time - self.bot.data.save["gbfdata"]["wiki_intervals"]["last"] > timedelta(days=1)):
             forced_check = True
-        
         # targeted pages
         targets : list[tuple[str, str, str|None, dict[int, str], str|None]] = [
             # Format is:
