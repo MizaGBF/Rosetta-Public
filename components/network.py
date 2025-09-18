@@ -45,7 +45,10 @@ class Network():
         "Chrome/131.0.0.0 Safari/537.36"
     )
 
-    __slots__ = ("bot", "user_agent", "translator", "client", "client_req", "gbf_client", "gbf_client_req")
+    __slots__ = (
+        "bot", "user_agent", "translator", "client", "client_req",
+        "gbf_client", "gbf_client_req", "gbf_account_failed"
+    )
 
     def __init__(self : Network, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
@@ -57,6 +60,7 @@ class Network():
         self.client_req : dict[int, Callable] = {}
         self.gbf_client : aiohttp.ClientSession|None = None
         self.gbf_client_req : dict[int, Callable] = {}
+        self.gbf_account_failed : bool = False
 
     def init(self : Network) -> None:
         pass
@@ -260,7 +264,12 @@ class Network():
                 url = "https://game.granbluefantasy.jp" + path
             # check and retrieve the account info
             if not self.has_account():
-                raise Exception("No GBF account set")
+                # this flag is to ensure the exception isn't throw constantly
+                if self.gbf_account_failed:
+                    return None
+                self.gbf_account_failed = True
+                raise Exception("No GBF account set, use `/owner account`.")
+            self.gbf_account_failed = False
             acc : GBFAccount = self.get_account()
             # if account is down, we silence errors
             silent : bool = (acc['state'] == self.AccountStatus.DOWN)
@@ -418,9 +427,6 @@ class Network():
                 url = "https://game.granbluefantasy.jp/" + path
             else:
                 url = "https://game.granbluefantasy.jp" + path
-            # check and retrieve the account info
-            if not self.has_account():
-                raise Exception("No GBF account set")
             # retrieve the game version
             ver : JSON = self.bot.data.save['gbfversion']
             if ver == "Maintenance":
