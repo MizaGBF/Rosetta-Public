@@ -241,7 +241,7 @@ Keep it open, you'll have to edit the `client_id` and `client_secret`.
 13. On step 3, put your email again and, on step 4, agree to Google terms.  
 14. You should be on the `Overview` page. Click `Create Oauth client`.  
 15. For the application type, set `Web Application`.  
-16. In `Authorized redirect URLs`, add `http://localhost:8080` (NOT **https**).
+16. In `Authorized redirect URLs`, add `http://localhost:8080/` (NOT **https** and don't forget the **/**).
 17. Click `Create`. A dialog will open.  
 18. First, click on `Download JSON`. Second, copy the client ID and replace `CLIENT_ID` in `settings.yaml`. Do the same for the client secret and `CLIENT_SECRET`. You can now save and close `settings.yaml`.  
 19. Close the dialog. On the left, go to `Audience`.  
