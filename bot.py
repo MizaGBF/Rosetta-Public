@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.5.1" # bot version
+    VERSION : str = "12.6.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -1016,6 +1016,22 @@ class DiscordBot(commands.InteractionBot):
             if await coroutine(payload):
                 return
 
+def generate_google_drive_credentials():
+    from pydrive2.auth import GoogleAuth
+    try:
+        gauth = GoogleAuth()
+        gauth.LoadCredentialsFile("credentials.json")
+        if gauth.credentials is None:
+            gauth.LocalWebserverAuth()
+            gauth.SaveCredentialsFile("credentials.json")
+            print("Credentials.json has been created")
+        else:
+            print("A valid credentials.json already exists")
+    except Exception as e:
+        print("".join(traceback.format_exception(type(e), e, e.__traceback__)))
+        print("The above exception occured.")
+        print("Verify you put your JSON file in the bot folder, named client_secrets.json")
+        print("If the error persists, please report it")
 
 # entry point / main function
 if __name__ == "__main__":
@@ -1060,9 +1076,16 @@ if __name__ == "__main__":
         help="generate the discordbot.html help file (the destination PATH can be set).",
         const=".", metavar='PATH'
     )
+    parser.add_argument(
+        '-gd', '--googledrive',
+        help="generate credentials.json (for OAuth clients).",
+        action='store_const', const=True, default=False, metavar=''
+    )
     args : argparse.Namespace = parser.parse_args()
     # Check flags/variables
-    if args.clean:
+    if args.googledrive:
+        generate_google_drive_credentials()
+    elif args.clean:
         DiscordBot(debug_mode=args.debug).start_bot(no_cogs=True)
     elif args.test:
         DiscordBot(debug_mode=True).test_bot()

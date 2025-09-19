@@ -119,6 +119,7 @@ options:
   -c, --clean           desync Guild slash commands (to remove commands from a Debug mode instance, from all server).
   -g [PATH], --generatehelp [PATH]
                         generate the discordbot.html help file (the destination PATH can be set).
+  -gd, --googledrive    generate credentials.json (for OAuth clients).
 ```
   
 Except `-d`/`--debug`, all arguments are mutually exclusive.  
@@ -198,9 +199,64 @@ Next, turn on the **Message Content Intent**, below.
 > [!NOTE]  
 > If you ever change the Intents used by your bot instance, you'll also need to update them in `bot.py` at the end of the `_init_()` function, or **it won't take effect**. Refer to the [documentation](https://docs.disnake.dev/en/stable/intents.html) for details.  
   
-### Configuring your Google Service Account and Google Drive  
+### Configuring Google Drive  
+
+There are **two** methods. Consider the second one deprecated. 
+The steps below will guide you.   
   
-**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to navigate and use, so there might be approximations.**  
+**The [Google API website](https://console.cloud.google.com/apis/dashboard) is a pain in the butt to navigate and use, so there might be some approximations.**  
+
+### Method 1: OAuth Client
+Before starting, create a file named `settings.yaml` in the bot folder and paste inside:
+```yaml
+client_config_backend: file
+client_config:
+    client_id: CLIENT_ID
+    client_secret: CLIENT_SECRET
+
+save_credentials: True
+save_credentials_backend: file
+save_credentials_file: credentials.json
+
+get_refresh_token: True
+
+oauth_scope:
+    - https://www.googleapis.com/auth/drive
+    - https://www.googleapis.com/auth/drive.install
+```
+Keep it open, you'll have to edit the `client_id` and `client_secret`.  
+
+1. Go to [https://console.cloud.google.com/cloud-resource-manager](https://console.cloud.google.com/cloud-resource-manager), make sure you're logged in.  
+2. Create a project (on top of the page).  
+3. Give it a name.  
+4. Wait for its creation to finish. It might take a minute or so.  
+5. Click on Google Cloud on the top left (the logo), then Select the project that you created (via the selector appearing right next to it).  
+6. In the search bar on top, search for `Google Drive API`.
+7. Enable this API.  
+8. You should be on the `APIs and services` page. If you aren't, find a way to access it.  
+9. On the left side-bar, click on `OAuth Consent Screen`.  
+10. Then `Branding`.
+11. `Get Started`, put the name of your application, an email (your is fine, it won't be public).
+12. On step 2, select `External` audience.
+13. On step 3, put your email again and, on step 4, agree to Google terms.  
+14. You should be on the `Overview` page. Click `Create Oauth client`.  
+15. For the application type, set `Web Application`.  
+16. In `Authorized redirect URLs`, add `http://localhost:8080` (NOT **https**).
+17. Click `Create`. A dialog will open.  
+18. First, click on `Download JSON`. Second, copy the client ID and replace `CLIENT_ID` in `settings.yaml`. Do the same for the client secret and `CLIENT_SECRET`. You can now save and close `settings.yaml`.  
+19. Close the dialog. On the left, go to `Audience`.  
+20. On the bottom, under `Test users`, `Add users` and add the gmail address of the account owning the drive you plan to use, and `Save`.  
+21. Rename the JSON file you downloaded to `client_secrets.json` (with a **s**) and put it in the bot folder.  
+22. You'll have to run the bot locally once to authorize the application. If you don't plan to host it on your machine or you plan to use the Docker image, install Python 3 and the requirements like in the [usage method 2](#usage).   
+23. Run `python bot.py -gd`. A web page will open in your browser.
+24. Login with the account you added to to the `Test users`.  
+25. It will put a warning. Click `Continue`.  
+26. It will ask you to select what the application can access. Select all.  
+27. Once done, `credentials.json` will appear in the bot folder. `client_secrets.json` shouldn't be needed anymore but I can't confirm.  
+  
+### Method 2: Service Account  
+> [!CAUTION]
+> This method only works for Service Accounts created before the 15th April 2025. Otherwise, extra steps are needed and possibly a paid plan.  
   
 1. Go to [https://console.cloud.google.com/cloud-resource-manager](https://console.cloud.google.com/cloud-resource-manager), make sure you're logged in.  
 2. Create a project (on top of the page).  
@@ -222,12 +278,14 @@ Next, turn on the **Message Content Intent**, below.
 18. Select the `JSON` format and confirm. Your browser will download a file.  
 19. Rename the file to `service-secrets.json` and put it in the bot folder, alongside `config.json`.  
   
+### Drive Setup  
 Next, go to your Google Drive and create two folders, one for the bot save data and one for GW related files.  
 Open the save data one and copy the url. It should be something like `https://drive.google.com/drive/folders/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`. Copy the `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA` part and replace `SAVE_FOLDER_ID` in `config.json` (don't forget to put it between quotes **"**, it's a string).  
 Do the same thing for the other folder and `FILE_FOLDER_ID`.  
 The third folder ID is currently unused but you are free to create one and set the key in `config.json` too, for possible future uses.  
   
-Finally, **for each of those folders**, right click on them and select *Share*. Add your service account email (using the email you copied on step **14**) to each of them.  
+**If you're using the Service Account method:**  
+**For each of those folders**, right click on them and select *Share*. Add your service account email (using the email you copied on step **14**) to each of them.  
   
 ### Setup a Server for the Bot and invite it  
   
@@ -272,6 +330,19 @@ Then, go to your Google Drive and put the save file in the save data folder.
 > Go into the `tools` folder, put a copy of `save.json` inside.  
 > Open a terminal/command prompt in this folder and run `python save_lzma.py save.json` to compress it to the lzma format.  
 > Then, put the `save.lzma` file into the Google Drive save data folder instead of the JSON one.  
+  
+### About Security  
+  
+Make sure to not share publicly the following files, as they contain tokens and personal infos:  
+- Any save and backup JSON or LMZA files.  
+- `config.json`.  
+- `config_test.json`.  
+- `service-secrets.json`.  
+- `client_secrets.json`.  
+- `credentials.json`.  
+- `settings.yaml`.  
+  
+If you plan to use a Git repository, add those files to the `.gitignore`.  
   
 ### First Boot
 

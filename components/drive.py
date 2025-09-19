@@ -7,9 +7,14 @@ from pydrive2.drive import GoogleDrive
 from pydrive2.files import GoogleDriveFile
 from datetime import datetime
 import io
+import os
 import gzip
 import lzma
-import os
+from enum import IntEnum
+
+class AuthType(IntEnum):
+    serviceaccount = 1
+    oauth = 2
 
 # ----------------------------------------------------------------------
 # Drive Component
@@ -22,44 +27,100 @@ import os
 class Drive():
     ZIP_CHUNK : int = 8192
 
-    __slots__ = ("bot", "debug", "gauth", "gdrive")
+    __slots__ = ("bot", "debug", "gauth", "gdrive", "auth_type")
 
     def __init__(self : Drive, bot : DiscordBot) -> None:
         self.bot : DiscordBot = bot
         self.debug : bool = bot.debug_mode or bot.test_mode
         self.gauth : GoogleAuth|None = None
         self.gdrive : GoogleDrive|None = None
-        try:
-            # Set GoogleAuth with service-secrets.json
-            self.gauth = GoogleAuth(
-                settings={
-                    "client_config_backend": "service",
-                    "service_config": {
-                        "client_json_file_path": "service-secrets.json",
-                    }
-                }
-            )
-            # Authenticate
-            self.gauth.ServiceAuth()
-            self.gdrive = GoogleDrive(self.gauth)
-        except OSError as e:
-            self.gauth = None
-            self.gdrive = None
-            self.bot.logger.pushError(
-                "[DRIVE] Failed to initialize Drive component, couldn't open service-secrets.json:",
-                e,
+        self.auth_type : AuthType
+        if os.path.isfile("service-secrets.json"):
+            self.bot.logger.push(
+                (
+                    "[DRIVE] Initiating Service Account mode, "
+                    "If the bot fails to save properly, please "
+                    "read the README for more informations."
+                ),
                 send_to_discord=False
             )
-            raise e
-        except Exception as e:
-            self.gauth = None
-            self.gdrive = None
-            self.bot.logger.pushError("[DRIVE] Failed to initialize Drive component:", e, send_to_discord=False)
-            raise e
-        # Raise exceptions in case of errors
+            self.auth_type = AuthType.serviceaccount
+        else:
+            self.bot.logger.push(
+                "[DRIVE] Initiating OAuth mode",
+                send_to_discord=False
+            )
+            self.auth_type = AuthType.oauth
+        self.init_authentification()
 
     def init(self : Drive) -> None:
         pass
+
+    """init_authentification()
+    Handle the authentification according to self.auth_type value
+    """
+    def init_authentification(self : Drive) -> None:
+        match self.auth_type:
+            case AuthType.serviceaccount:
+                if self.gauth is None:
+                    try:
+                        # Set GoogleAuth with service-secrets.json
+                        self.gauth = GoogleAuth(
+                            settings={
+                                "client_config_backend": "service",
+                                "service_config": {
+                                    "client_json_file_path": "service-secrets.json",
+                                }
+                            }
+                        )
+                        # Authenticate
+                        self.gauth.ServiceAuth()
+                    except OSError as e:
+                        self.gauth = None
+                        self.gdrive = None
+                        self.bot.logger.pushError(
+                            "[DRIVE] Failed to initialize Drive component, couldn't open service-secrets.json:",
+                            e,
+                            send_to_discord=False
+                        )
+                        raise e
+                    except Exception as e:
+                        self.gauth = None
+                        self.gdrive = None
+                        self.bot.logger.pushError("[DRIVE] Failed to initialize Drive component:", e, send_to_discord=False)
+                        raise e
+            case AuthType.oauth:
+                self.gauth = GoogleAuth()
+                self.gauth.LoadCredentialsFile("credentials.json")
+                if self.gauth.credentials is None:
+                    raise Exception(
+                        "[DRIVE] Failed to initialize Drive component, "
+                        "couldn't open credentials.json. Please run "
+                        "python bot.py -gd to authorize the application."
+                    )
+                elif self.gauth.access_token_expired:
+                    # or if expired, refresh
+                    self.gauth.Refresh()
+                else:
+                    self.gauth.Authorize()
+        self.gdrive = GoogleDrive(self.gauth)
+
+    """refresh_token()
+    Refresh the OAuth token, if needed
+    """
+    def refresh_token(self : Drive) -> None:
+        try:
+            if self.auth_type == AuthType.oauth and self.gauth.access_token_expired:
+                self.gauth.Refresh()
+        except Exception as e:
+            self.bot.logger.pushError(
+                (
+                    "[DRIVE] An unexpected error occured "
+                    "during the OAuth token refresh"
+                ),
+                e,
+                send_to_discord=False
+            )
 
     """decompressJSON_gzip()
     Decompress the given byte array (which must be valid compressed gzip data) and return the decoded text (utf-8).
@@ -149,6 +210,7 @@ class Drive():
     """
     def load(self : Drive) -> bool:
         try:
+            self.refresh_token()
             file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
                 {'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}
             ).GetList() # get the file list in our folder
@@ -196,6 +258,7 @@ class Drive():
         if self.debug:
             return None
         try:
+            self.refresh_token()
             # get file list
             file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
                 {'q': "'" + self.bot.data.config['tokens']['drive'] + "' in parents and trashed=false"}
@@ -252,6 +315,7 @@ class Drive():
         if self.debug:
             return None
         try:
+            self.refresh_token()
             s : GoogleDriveFile = self.gdrive.CreateFile(
                 {'title':name, 'mimeType':mime, "parents": [{"kind": "drive#file", "id": folder}]}
             )
@@ -281,6 +345,7 @@ class Drive():
         if self.debug:
             return None
         try:
+            self.refresh_token()
             # get file list
             file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
                 {'q': "'" + folder + "' in parents and trashed=false"}
@@ -315,6 +380,7 @@ class Drive():
         if self.debug:
             return None
         try:
+            self.refresh_token()
             # get file list
             file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
                 {'q': "'" + folder + "' in parents and trashed=false"}
@@ -343,6 +409,7 @@ class Drive():
     """
     def dlFile(self : Drive, name : str, folder : str, destination : str|None = None) -> bool|None:
         try:
+            self.refresh_token()
             # get file list
             file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
                 {'q': "'" + folder + "' in parents and trashed=false"}
