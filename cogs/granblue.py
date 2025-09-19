@@ -375,7 +375,7 @@ class GranblueFantasy(commands.Cog):
         ncheck : int
         if 'game_news' not in self.bot.data.save['gbfdata']: # init data
             self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
-            ii = self.DEFAULT_NEWS
+            ii = self.DEFAULT_NEWS - 40
             initialization = True
             ncheck = 10000
         else:
