@@ -18,7 +18,7 @@
 * [Emojis](#emojis)  
 * [Debug Mode](#debug-mode)  
 * [Updating](#updating)  
-* [Additional Informations](#additional-informations)  
+* [Additional Setup](#additional-setup)  
 * [Customize](#customize)  
   
 ## Requirements  
@@ -380,7 +380,7 @@ INFO:Rosetta:2024-12-20 12:00:23 | [MAIN] Rosetta is ready
 > [!IMPORTANT]  
 > If it starts, congratulations.  
 > All the remaining setup is done via the `/owner` commands.  
-> Refer to [Additional Informations](#additional-informations) below if you need more help.  
+> Refer to [Additional Setup](#additional-setup) below if you need more help.  
   
 You can stop the bot with a CTRL+C or by sending a SIGTERM or SIGINT signal.  
   
@@ -450,7 +450,7 @@ If you plan to update Rosetta from version `11.X.X` to version `12.X.X`, here ar
 * `config.json` has been slimed down consiberably. Check out [Creating config.json](#creating-config.json) to see what keys remain. You can remove the ones not here anymore (unless you use them in a custom Cog or View).  
 * `config_test.json` has also lost the `"debug"` key. You can remove it, if you were using the [Debug Mode](#debug-mode).  
   
-## Additional Informations  
+## Additional Setup  
   
 Further setup might be required to use some features.  
 The `/owner` command group from the `admin.py` cog should contain what you need to set/edit some of the bot data.  
