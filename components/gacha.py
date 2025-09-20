@@ -264,7 +264,8 @@ class Gacha():
     bool: True if success, False if error
     """
     async def update(self : Gacha) -> bool:
-        if not await self.bot.net.gbf_available(): # check if GBF can be accessed
+        # check if GBF can be accessed
+        if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
             return False
         try:
             c : datetime = self.bot.util.JST() # current time

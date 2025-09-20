@@ -177,7 +177,7 @@ class Ranking():
                     if 'estimation' not in self.bot.data.save['gw']:
                         await self.init_estimation()
                     # retrieve ranking
-                    if await self.bot.net.gbf_available():
+                    if self.bot.net.has_account() and await self.bot.net.gbf_available():
                         m : int = current_time.minute
                         h : int = current_time.hour
                         skip : bool = False

@@ -1197,10 +1197,13 @@ class GranblueFantasy(commands.Cog):
                 return
             # check if account exists
             data : RequestResult
-            if not await self.bot.net.gbf_available(): # gbf must be available
+            if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
                 data = "Maintenance"
             else:
-                data = await self.bot.net.requestGBF("profile/content/index/{}".format(profile_id), expect_JSON=True)
+                data = await self.bot.net.requestGBF(
+                    "profile/content/index/{}".format(profile_id),
+                    expect_JSON=True
+                )
                 if data is not None:
                     data = unquote(data['data'])
             match data:
@@ -1208,7 +1211,7 @@ class GranblueFantasy(commands.Cog):
                     await inter.edit_original_message(
                         embed=self.bot.embed(
                             title="Error",
-                            description="Game is in maintenance, try again later.",
+                            description="Game is unavailable, try again later.",
                             color=self.COLOR
                         )
                     )
@@ -1555,10 +1558,13 @@ class GranblueFantasy(commands.Cog):
             color = self.COLOR # use cog color
         # retrieve profile data
         data : RequestResult
-        if not await self.bot.net.gbf_available():
+        if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
             data = "Maintenance"
         else:
-            data = await self.bot.net.requestGBF("profile/content/index/{}".format(pid), expect_JSON=True)
+            data = await self.bot.net.requestGBF(
+                "profile/content/index/{}".format(pid),
+                expect_JSON=True
+            )
             if data is not None:
                 data = unquote(data['data'])
         match data: # check validity

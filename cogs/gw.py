@@ -870,6 +870,8 @@ class GuildWar(commands.Cog):
         *,
         disable_cache : bool = False
     ) -> CrewData|None:
+        if not self.bot.net.has_account():
+            return {'error':'No GBF Account set'}
         if not await self.bot.net.gbf_available(): # check for maintenance
             return {'error':'Game is in maintenance'}
         # check if known id
@@ -2580,7 +2582,7 @@ class GuildWar(commands.Cog):
     async def recruit(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
         """Post all recruiting /gbfg/ crews"""
         await inter.response.defer()
-        if not await self.bot.net.gbf_available():
+        if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="{} /gbfg/ recruiting crews".format(
