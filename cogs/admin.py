@@ -518,6 +518,10 @@ class Admin(commands.Cog):
             embed=self.bot.embed(
                 title=inter.guild.me.name,
                 description=(
+                    "`https://discord.com/api/oauth2/"
+                    "authorize?client_id={}&permissions=1644905889015"
+                    "&scope=bot%20applications.commands`"
+                    "\n"
                     "[Invite](https://discord.com/api/oauth2/"
                     "authorize?client_id={}&permissions=1644905889015"
                     "&scope=bot%20applications.commands)"
@@ -530,6 +534,7 @@ class Admin(commands.Cog):
                     "authorize?client_id={}"
                     "&scope=applications.commands&integration_type=1)"
                 ).format(
+                    self.bot.user.id,
                     self.bot.user.id,
                     self.bot.user.id,
                     self.bot.user.id
