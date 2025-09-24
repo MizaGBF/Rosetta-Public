@@ -516,7 +516,12 @@ class GranblueFantasy(commands.Cog):
                         await self.bot.sendMulti(
                             self.bot.channel.announcements,
                             embed=self.bot.embed(
-                                title=data[0]['title'].replace('<br>', ' '),
+                                title=data[0]['title']
+                                    .replace('<br>', ' ')
+                                    .replace('<b>', '**')
+                                    .replace('</b>', '*')
+                                    .replace('<i>', '*')
+                                    .replace('</i>', '*'),
                                 description=description,
                                 url=link,
                                 image=thumbnail,
