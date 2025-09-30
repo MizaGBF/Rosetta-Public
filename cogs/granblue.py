@@ -1988,7 +1988,7 @@ class GranblueFantasy(commands.Cog):
             ),
             (
                 c.replace(year=2024, month=7, day=27, hour=21, minute=0, second=0, microsecond=0),
-                "{} KMR's retirement\n".format(self.bot.emote.get('kmr'))
+                "the new Producer takeover\n"
             ),
             (
                 c.replace(year=2025, month=1, day=14, hour=21, minute=30, second=0, microsecond=0),
