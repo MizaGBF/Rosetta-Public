@@ -458,7 +458,20 @@ class Data():
                 target : datetime
                 if current_time.day == 1:
                     try:
-                        target = current_time.replace(hour=5, minute=0, second=0, microsecond=0)
+                        target = current_time.replace(day=4, hour=17, minute=0, second=0, microsecond=0)
+                        remindcog.addBotReminder(
+                            target,
+                            (
+                                "**The Daily Bonus 6% Draw ticket**"
+                                "of the previous month expires in a few days!\n"
+                                "Go to the [Rupee Draw](https://game.granbluefantasy.jp/#gacha/normal)"
+                                "page to use it!"
+                            )
+                        )
+                    except Exception as se:
+                        self.bot.logger.pushError("[TASK] 'data:maintenance' Task Error (Monthly Ticket reminder):", se)
+                    try:
+                        target = current_time.replace(hour=5, minute=1, second=0, microsecond=0)
                         if target.month == 12:
                             target = (target + timedelta(days=31)).replace(day=1)
                         else:
