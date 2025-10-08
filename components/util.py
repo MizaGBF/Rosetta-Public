@@ -411,6 +411,7 @@ class Util():
                 del characters[i]
             elif 0xFB50 <= o <= 0xFDFF:
                 arabic = True
+                i += 1
             else:
                 i += 1
         name = "".join(characters).strip()
