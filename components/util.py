@@ -402,26 +402,24 @@ class Util():
     """
     def shortenName(self : Util, name : str) -> str:
         name : str = html.unescape(name) # unescape html special characters
-        arabic : int = 0 # arabic characters
-        rlo : list[int] = [] # rlo characters
-        i : int
-        c : str
-        for i, c in enumerate(name): # iterate over string
-            o : int = ord(c)
-            if o == 0x202E:
-                rlo.append(i - len(rlo))
-            elif o >= 0xFB50 and o <= 0xFDFF:
-                arabic += 1
-        namel : list[str] = list(name)
-        for i in rlo: # remove rlo characters
-            namel.pop(i)
-        name = "".join(namel)
-        if len(name) == 0: # resulting name is empty
-            name = "?" # return question mark
-        if arabic > 1: # there are arabic characters
-            return name[0] + "..." # only return first one + 3 dots, to avoid display issues
+        characters : list[str] = list(name)
+        i : int = 0
+        arabic : bool = False
+        while i < len(characters):
+            o : int = ord(characters[i])
+            if o == 0x200E or o == 0x200F or 0x2028 <= o <= 0x202F:
+                del characters[i]
+            elif 0xFB50 <= o <= 0xFDFF:
+                arabic = True
+            else:
+                i += 1
+        name = "".join(characters).strip()
+        if len(name) == 0: # empty name
+            return "?"
+        elif arabic: # avoid overlong names
+            return name[0] + "..."
         else:
-            return name # return name
+            return name
 
     """breakdownHTML()
     Take a string containing HTML tags and break it down in a list.
