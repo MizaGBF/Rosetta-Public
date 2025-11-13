@@ -2107,6 +2107,8 @@ class GranblueFantasy(commands.Cog):
         m : datetime = c.replace(day=1, hour=12, minute=0, second=0, microsecond=0)
         if m < c and m.month == 12: # new year fix
             m = m.replace(year=m.year + 1, month=1)
+        else:
+            m = m.replace(month=m.month + 1)
         await inter.edit_original_message(
             embed=self.bot.embed(
                 title="{} Kore Kara".format(
