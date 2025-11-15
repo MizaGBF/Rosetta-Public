@@ -45,19 +45,19 @@ class GuildWar(commands.Cog):
     COLOR : int = 0xff0000
     FIGHTS : dict[str, dict[str, float|int]] = {
         "EX": {
-            "token":56.0, "rally_token":3.84,
+            "token":56.0, "rally_token":3.89,
             "AP":30, "clump_drop":0, "meat_cost":0,
-            "clump_cost":0, "honor":64000, "hp":20000000
+            "clump_cost":0, "honor":64800, "hp":20000000
         },
         "EX+": {
-            "token":66.0, "rally_token":7.56,
+            "token":66.0, "rally_token":7.66,
             "AP":30, "clump_drop":0, "meat_cost":0,
-            "clump_cost":0, "honor":126000, "hp":35000000
+            "clump_cost":0, "honor":127600, "hp":35000000
         },
         "NM90": {
-            "token":83.0, "rally_token":18.3,
+            "token":83.0, "rally_token":18.6,
             "AP":30, "clump_drop":1.3, "meat_cost":5,
-            "clump_cost":0, "honor":305000, "hp":50000000
+            "clump_cost":0, "honor":310000, "hp":50000000
         },
         "NM95": {
             "token":111.0, "rally_token":54.6,
@@ -80,7 +80,7 @@ class GuildWar(commands.Cog):
             "clump_cost":0, "honor":13350000, "hp":577500000
         },
         "NM250": {
-            "token":433.0, "rally_token":2122.6,
+            "token":433.0, "rally_token":2969.94,
             "AP":50, "clump_drop":0, "meat_cost":0,
             "clump_cost":20, "honor":49500000, "hp":1530375000
         }
