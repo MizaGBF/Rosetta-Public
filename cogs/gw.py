@@ -89,7 +89,7 @@ class GuildWar(commands.Cog):
     BOX_COST : tuple[int|None, int] = [
         (1, 1600),
         (4, 2400),
-        (45, 2000),
+        (60, 2000),
         (80, 10000),
         (None, 15000)
     ]
