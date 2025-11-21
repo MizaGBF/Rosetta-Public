@@ -2048,9 +2048,9 @@ class GuildWar(commands.Cog):
                     required=False
                 ),
                 disnake.ui.TextInput(
-                    label="NM100",
-                    placeholder="NM100 Kill Time (In seconds)",
-                    custom_id="NM100",
+                    label="NM95",
+                    placeholder="NM95 Kill Time (In seconds)",
+                    custom_id="NM95",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
