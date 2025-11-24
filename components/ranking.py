@@ -44,13 +44,13 @@ class Ranking():
     # GW duration per 20min part
     GW_UPDATE_COUNT : int = (
         (
-            12 + 24 + # prelim
-            24 + # interlude
-            24 + # day 1
-            24 + # day 2
-            24 + # day 3
-            24 + # day 4
-            17 # final rally
+            12 + 24 # prelim
+            + 24 # interlude
+            + 24 # day 1
+            + 24 # day 2
+            + 24 # day 3
+            + 24 # day 4
+            + 17 # final rally
         ) * 3 # three times 20 min in 1 hour
     )
     # Max ranking scrapping tasks
@@ -251,12 +251,12 @@ class Ranking():
             # init tiers
             t : int|str
             for t in self.TIER_CREWS_FINAL:
-                self.bot.data.save["gw_cutoffs"][gwid][0][str(t)] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+                self.bot.data.save["gw_cutoffs"][gwid][0][str(t)] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             for t in self.TIER_PLAYERS:
-                self.bot.data.save["gw_cutoffs"][gwid][1][str(t)] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+                self.bot.data.save["gw_cutoffs"][gwid][1][str(t)] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             for t in [self.UNF_HERO, self.TIER_A, self.TIER_B]:
                 if t not in self.bot.data.save["gw_cutoffs"][gwid][0]:
-                    self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+                    self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             self.bot.data.pending = True
             self.bot.logger.push("[RANKING] Storage for current GW initialized", send_to_discord=False)
 
@@ -467,8 +467,8 @@ class Ranking():
                 try:
                     index : int = int(
                         (
-                            update_time -
-                            self.bot.data.save['gw']['dates']["Preliminaries"]
+                            update_time
+                            - self.bot.data.save['gw']['dates']["Preliminaries"]
                         ).total_seconds()
                     ) // 1200
                     gwid : str = str(self.bot.data.save['gw']['id'])

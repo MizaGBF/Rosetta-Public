@@ -1016,6 +1016,7 @@ class DiscordBot(commands.InteractionBot):
             if await coroutine(payload):
                 return
 
+
 def generate_google_drive_credentials():
     from pydrive2.auth import GoogleAuth
     try:
@@ -1032,6 +1033,7 @@ def generate_google_drive_credentials():
         print("The above exception occured.")
         print("Verify you put your JSON file in the bot folder, named client_secrets.json")
         print("If the error persists, please report it")
+
 
 # entry point / main function
 if __name__ == "__main__":

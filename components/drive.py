@@ -12,6 +12,7 @@ import gzip
 import lzma
 from enum import IntEnum
 
+
 class AuthType(IntEnum):
     serviceaccount = 1
     oauth = 2
@@ -87,7 +88,11 @@ class Drive():
                     except Exception as e:
                         self.gauth = None
                         self.gdrive = None
-                        self.bot.logger.pushError("[DRIVE] Failed to initialize Drive component:", e, send_to_discord=False)
+                        self.bot.logger.pushError(
+                            "[DRIVE] Failed to initialize Drive component:",
+                            e,
+                            send_to_discord=False
+                        )
                         raise e
             case AuthType.oauth:
                 self.gauth = GoogleAuth()
