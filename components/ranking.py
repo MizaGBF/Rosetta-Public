@@ -41,6 +41,18 @@ class Ranking():
     UNF_HERO : str = "2000"
     TIER_A : str = "9000"
     TIER_B : str = "19000"
+    # GW duration per 20min part
+    GW_UPDATE_COUNT : int = (
+        (
+            12 + 24 + # prelim
+            24 + # interlude
+            24 + # day 1
+            24 + # day 2
+            24 + # day 3
+            24 + # day 4
+            17 # final rally
+        ) * 3 # three times 20 min in 1 hour
+    )
     # Max ranking scrapping tasks
     MAX_TASK : list[int] = 15
     # DB File version
@@ -174,8 +186,11 @@ class Ranking():
                     await asyncio.sleep(3600) # just sleep
                 else: # on going
                     # retrieve estimation from wiki
+                    # note: DEPRECATED, I plan to replace it eventually
+                    # to not rely on the wiki forever
                     if 'estimation' not in self.bot.data.save['gw']:
                         await self.init_estimation()
+                    self.init_cutoff_storage() # new way, supposed to replace init_estimation()
                     # retrieve ranking
                     if self.bot.net.has_account() and await self.bot.net.gbf_available():
                         m : int = current_time.minute
@@ -194,7 +209,7 @@ class Ranking():
                                 skip = True
                             break
                         # taking action or not
-                        if skip:
+                        if not skip:
                             await asyncio.sleep(600) # we sleep 10min if we skip
                         elif m in (3, 4, 23, 24, 43, 44): # minute to update
                             # calculate the start of this 20min period
@@ -218,6 +233,32 @@ class Ranking():
             except Exception as e:
                 self.bot.logger.pushError("[TASK] 'gw:ranking' Task Error:", e)
                 return
+
+    """init_cutoff_storage()
+    Initialize and handle the cleanup (if needed) of the content of data.save["gw_cutoffs"]
+    """
+    def init_cutoff_storage(self : Ranking) -> None:
+        gwid : str = str(self.bot.data.save['gw']['id'])
+        if gwid not in self.bot.data.save["gw_cutoffs"]:
+            # cleanup
+            ids : list[int] = [int(k) for k in self.bot.data.save["gw_cutoffs"].keys()]
+            if len(ids) >= 2: # only keep the most recent one
+                ids.sort()
+                latest_gw : str = str(ids[-1])
+                self.bot.data.save["gw_cutoffs"] = {latest_gw : self.bot.data.save["gw_cutoffs"][latest_gw]}
+            # first emplacement store crews, second store players
+            self.bot.data.save["gw_cutoffs"][gwid] = [{}, {}]
+            # init tiers
+            t : int|str
+            for t in self.TIER_CREWS_FINAL:
+                self.bot.data.save["gw_cutoffs"][gwid][0][str(t)] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+            for t in self.TIER_PLAYERS:
+                self.bot.data.save["gw_cutoffs"][gwid][1][str(t)] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+            for t in [self.UNF_HERO, self.TIER_A, self.TIER_B]:
+                if t not in self.bot.data.save["gw_cutoffs"][gwid][0]:
+                    self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT+1)]
+            self.bot.data.pending = True
+            self.bot.logger.push("[RANKING] Storage for current GW initialized", send_to_discord=False)
 
     """init_estimation()
     Coroutine to retrieve the previous GW data from the wiki
@@ -422,6 +463,24 @@ class Ranking():
             if len(self.rankingtempdata[0]) + len(self.rankingtempdata[1]) > 0:
                 # and save it if it does
                 self.bot.data.save['gw']['ranking'] = self.rankingtempdata
+                # update the storage
+                try:
+                    index : int = int(
+                        (
+                            update_time -
+                            self.bot.data.save['gw']['dates']["Preliminaries"]
+                        ).total_seconds()
+                    ) // 1200
+                    gwid : str = str(self.bot.data.save['gw']['id'])
+                    if gwid in self.bot.data.save["gw_cutoffs"]:
+                        for i in range(0, 2): # crew, player
+                            k : str
+                            v : int
+                            for k, v in self.rankingtempdata[i].items():
+                                if k in self.bot.data.save["gw_cutoffs"][gwid][i]:
+                                    self.bot.data.save["gw_cutoffs"][gwid][i][k][index] = v
+                except Exception as se:
+                    self.bot.logger.pushError("[TASK] 'gw:ranking:storage' (Experiment) Task Error:", se)
                 self.bot.data.pending = True
                 self.bot.logger.push("[RANKING] Main Ranking done with success", send_to_discord=False)
                 return True

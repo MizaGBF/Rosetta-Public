@@ -34,6 +34,7 @@ class Data():
         'schedule': {},
         'spark': {},
         'gw': {'state':False},
+        'gw_cutoffs' : {},
         'dread': {'state':False},
         'reminders': {},
         'cleanup': {},
