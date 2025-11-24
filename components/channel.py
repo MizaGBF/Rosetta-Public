@@ -203,7 +203,7 @@ class Channel():
                         if delay is not None:
                             await asyncio.sleep(delay) # delete message after delay
                         # edit message with lyria emote
-                        if m.flags.is_components_v2:
+                        if target.flags.is_components_v2:
                             await target.edit(
                                 components=[
                                     disnake.ui.TextDisplay(str(self.bot.emote.get('lyria')))
