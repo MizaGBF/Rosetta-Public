@@ -209,7 +209,7 @@ class Ranking():
                                 skip = True
                             break
                         # taking action or not
-                        if not skip:
+                        if skip:
                             await asyncio.sleep(600) # we sleep 10min if we skip
                         elif m in (3, 4, 23, 24, 43, 44): # minute to update
                             # calculate the start of this 20min period
