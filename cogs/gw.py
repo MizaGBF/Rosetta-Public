@@ -75,9 +75,9 @@ class GuildWar(commands.Cog):
             "clump_cost":0, "honor":4100000, "hp":288750000
         },
         "NM200": {
-            "token":338.0, "rally_token":800.98,
+            "token":338.0, "rally_token":1214.98,
             "AP":50, "clump_drop":2, "meat_cost":20,
-            "clump_cost":0, "honor":13350000, "hp":577500000
+            "clump_cost":0, "honor":20250000, "hp":877800000
         },
         "NM250": {
             "token":433.0, "rally_token":2969.94,
