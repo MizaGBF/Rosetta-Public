@@ -80,9 +80,9 @@ class GuildWar(commands.Cog):
             "clump_cost":0, "honor":20250000, "hp":877800000
         },
         "NM250": {
-            "token":433.0, "rally_token":2969.94,
+            "token":433.0, "rally_token":4514.91,
             "AP":50, "clump_drop":0, "meat_cost":0,
-            "clump_cost":20, "honor":49500000, "hp":1530375000
+            "clump_cost":20, "honor":75250000, "hp":2326200000
         }
     }
     MEAT_PER_BATTLE_AVG : int = 21 # EX+ meat drop
