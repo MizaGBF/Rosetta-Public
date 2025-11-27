@@ -423,6 +423,7 @@ class YouCrew(commands.Cog):
                             message : disnake.Message|None = await self.bot.send('image', file=df)
                             newtracker['chart'] = message.attachments[0].url
             except Exception as e:
+                newtracker['chart'] = None
                 self.bot.logger.pushError("[RANKING] 'updatetracker (Upload)' error:", e)
         # save the new tracker data
         self.bot.data.save['matchtracker'] = newtracker
