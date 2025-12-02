@@ -617,6 +617,8 @@ class DiscordBot(commands.InteractionBot):
     """render()
     Create a disnake.ui.Container and return it in a list,
     to be used with the send components parameter
+    Note 1: Currently unused and in an experimental state
+    Note 2: 4000 Characters limit accross all text components
 
     Parameters
     ----------
@@ -640,7 +642,8 @@ class DiscordBot(commands.InteractionBot):
         thumbnail : str|None = None,
         url : str|None = None,
         description : str|None = None,
-        footer : bool = True,
+        footer : str|None = None,
+        timestamp : bool = False,
         color : int = 16777215
     ) -> list[disnake.ui.Container]:
         components : list[disnake.ui.UIComponent] = []
@@ -664,9 +667,17 @@ class DiscordBot(commands.InteractionBot):
         if description is not None:
             components.append(disnake.ui.TextDisplay(description))
         components.extend(body)
-        if footer:
+        if footer is not None or timestamp:
             components.append(disnake.ui.Separator(divider=False))
-            components.append(disnake.ui.TextDisplay(self.util.timestamp()))
+            footer_strs : list[str] = ["-# "]
+            if footer is not None:
+                footer_strs.append(footer)
+                if timestamp:
+                    footer_strs.append(" • ")
+                    footer_strs.append(self.util.timestamp())
+            elif timestamp:
+                footer_strs.append(self.util.timestamp())
+            components.append(disnake.ui.TextDisplay("".join(footer_strs)))
         return [disnake.ui.Container(*components, accent_colour=disnake.Colour(color))]
 
     """pexc()
