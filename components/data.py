@@ -463,7 +463,7 @@ class Data():
                         remindcog.addBotReminder(
                             target,
                             (
-                                "**The Daily Bonus 6% Draw ticket**"
+                                "**The Daily Bonus 6% Draw ticket** "
                                 "of the previous month expires **soon**!\n"
                                 "Go to the [Rupee Draw](https://game.granbluefantasy.jp/#gacha/normal)"
                                 "page to use it!"
