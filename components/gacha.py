@@ -34,7 +34,7 @@ class Gacha():
     ZODIAC_WPN : list[str] = [ # for the twelve generals detection, gotta update it yearly
         'Ramulus', 'Dormius', 'Gallinarius', 'Canisius',
         'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius',
-        'Leporidius', 'Dracosius', 'Serpentius'
+        'Leporidius', 'Dracosius', 'Serpentius', 'Equinius'
     ]
     CLASSIC_COUNT : int = 2 # number of classic banners
     # constants
