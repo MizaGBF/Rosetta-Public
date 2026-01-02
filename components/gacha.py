@@ -1186,7 +1186,14 @@ class GachaSimulator():
             )
             self.bot.logger.pushError("[GACHA] 'simulator output' error:", self.exception)
             return True
-        elif self.mode == self.Mode.SCAM and (self.scamdata is None or not self.scamdata[3]): # scam error occured
+        elif (
+            self.mode == self.Mode.SCAM
+            and (
+                self.scamdata is None
+                or not self.scamdata[3]
+                or self.scamdata[6] is None
+            )
+        ): # scam error occured
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
