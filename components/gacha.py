@@ -1819,7 +1819,7 @@ class Roulette():
                 self.bot.emote.get('crystal')
             )
         ]
-        self.stats = self.State.NORMAL
+        self.state = self.State.NORMAL
         self.rolls = self.forced_rolls
         self.enable_janken = False
         if self.forced_super_mukku:
