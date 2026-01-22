@@ -329,7 +329,7 @@ class Drive():
                 s.Upload() # and upload
             return True
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to upload file '{}':", e, send_to_discord=False)
+            self.bot.logger.pushError("[DRIVE] Failed to upload file '{}':".format(name), e, send_to_discord=False)
             return False
 
     """overwriteFile()
@@ -363,7 +363,7 @@ class Drive():
                         s.Upload()
                     return True
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to overwrite file '{}':", e, send_to_discord=False)
+            self.bot.logger.pushError("[DRIVE] Failed to overwrite file '{}':".format(name), e, send_to_discord=False)
             return False
         # not found, we do a normal upload
         return self.saveDiskFile(target, mime, name, folder)
@@ -398,7 +398,7 @@ class Drive():
                     return True
             return False
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to move file '{}':", e, send_to_discord=False)
+            self.bot.logger.pushError("[DRIVE] Failed to move file '{}':".format(name), e, send_to_discord=False)
             return False
 
     """dlFile()
@@ -426,5 +426,33 @@ class Drive():
                     return True
             return None
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to download file '{}':", e, send_to_discord=False)
+            self.bot.logger.pushError("[DRIVE] Failed to download file '{}':".format(name), e, send_to_discord=False)
+            return False
+
+
+    """delFile()
+    Delete a file from a folder
+    Parameters
+    ----------
+    name: File name
+    folder: Google Drive Folder ID
+    Returns
+    --------
+    bool: True if success, False if failure, None if doesn't exist
+    """
+    def delFile(self : Drive, name : str, folder : str) -> bool|None:
+        try:
+            self.refresh_token()
+            # get file list
+            file_list : list[GoogleDriveFile] = self.gdrive.ListFile(
+                {'q': "'" + folder + "' in parents and trashed=false"}
+            ).GetList() # get the file list in our folder
+            s : GoogleDriveFile
+            for s in file_list:
+                if s['title'] == name: # our file is found
+                    s.Delete()
+                    return True
+            return None
+        except Exception as e:
+            self.bot.logger.pushError("[DRIVE] Failed to delete file '{}':".format(name), e, send_to_discord=False)
             return False

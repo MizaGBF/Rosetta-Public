@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.6.2" # bot version
+    VERSION : str = "12.7.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"

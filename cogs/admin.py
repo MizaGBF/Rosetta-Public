@@ -703,6 +703,91 @@ class Admin(commands.Cog):
             )
         )
 
+    """drive_delete_callback()
+    CustomModal callback
+    """
+    async def drive_delete_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+        await inter.response.defer(ephemeral=True)
+        {'folder_select': 'test', 'file_name': 'aaa'}
+        name : str = inter.text_values["file_name"]
+        folder : str = inter.text_values["folder_select"].lower()
+        if name == "":
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="The file name cannot be empty",
+                    description="{}".format(inter.text_values),
+                    color=self.COLOR
+                )
+            )
+        elif folder not in {"files", "drive", "upload"}:
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="Invalid folder name.\nExpected `files`, `drive` or `upload`.",
+                    color=self.COLOR
+                )
+            )
+        try:
+            result = self.bot.drive.delFile(name, self.bot.data.config['tokens'][folder])
+            match result:
+                case True:
+                    await inter.edit_original_message(
+                        embed=self.bot.embed(
+                            title="The file has been deleted.",
+                            color=self.COLOR
+                        )
+                    )
+                case False:
+                    await inter.edit_original_message(
+                        embed=self.bot.embed(
+                            title="The file has not been deleted.",
+                            color=self.COLOR
+                        )
+                    )
+                case _:
+                    await inter.edit_original_message(
+                        embed=self.bot.embed(
+                            title="The file wasn't found.",
+                            color=self.COLOR
+                        )
+                    )
+        except Exception as e:
+            self.bot.logger.pushError("[OWNER] In 'drive_delete_callback':", e)
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="An unexpected error occured",
+                    color=self.COLOR
+                )
+            )
+
+    @data.sub_command()
+    async def drive_delete(
+        self : commands.SubCommand,
+        inter : disnake.GuildCommandInteraction
+    ) -> None:
+        """Delete a file from the Google Drive (Owner Only)"""
+        await self.bot.singleton.make_and_send_modal(
+            inter,
+            "drive_delete-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            "Delete a file from a Drive folder",
+            self.drive_delete_callback,
+            [
+                disnake.ui.TextInput(
+                    label="Drive folder (files, save or upload)",
+                    custom_id="folder_select",
+                    style=disnake.TextInputStyle.short,
+                    max_length=10,
+                    required=True
+                ),
+                disnake.ui.TextInput(
+                    label="Input the file name (Case sensitive)",
+                    custom_id="file_name",
+                    style=disnake.TextInputStyle.short,
+                    max_length=80,
+                    required=True
+                )
+            ]
+        )
+
     @data.sub_command()
     async def get(
         self : commands.SubCommand,
