@@ -2040,17 +2040,17 @@ class GuildWar(commands.Cog):
             self.speed_callback,
             [
                 disnake.ui.TextInput(
-                    label="NM90",
-                    placeholder="NM90 Kill Time (In seconds)",
-                    custom_id="NM90",
+                    label="NM95",
+                    placeholder="NM95 Kill Time (In seconds)",
+                    custom_id="NM95",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
                 ),
                 disnake.ui.TextInput(
-                    label="NM95",
-                    placeholder="NM95 Kill Time (In seconds)",
-                    custom_id="NM95",
+                    label="NM100",
+                    placeholder="NM100 Kill Time (In seconds)",
+                    custom_id="NM100",
                     style=disnake.TextInputStyle.short,
                     max_length=5,
                     required=False
