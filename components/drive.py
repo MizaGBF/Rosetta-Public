@@ -429,7 +429,6 @@ class Drive():
             self.bot.logger.pushError("[DRIVE] Failed to download file '{}':".format(name), e, send_to_discord=False)
             return False
 
-
     """delFile()
     Delete a file from a folder
     Parameters
