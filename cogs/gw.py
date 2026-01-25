@@ -94,6 +94,10 @@ class GuildWar(commands.Cog):
         (None, 15000)
     ]
     DAYS_W_INTER : list[str] = ['Interlude', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']
+    # Used for when Cygames change the tiers
+    # for example, if 100k becomes 120k:
+    # TIER_CONVERSION = {"120000":"100000"}
+    TIER_CONVERSION : dict[str, str] = {}
 
     __slots__ = ("bot", "day_list", "crewcache")
 
@@ -623,7 +627,21 @@ class GuildWar(commands.Cog):
                     - self.bot.data.save['gw']['dates']['Preliminaries']
                 ).total_seconds()
             )
-            if elapsed_seconds < 1200: # too early, estimation starts at least 20min after the start of prelims
+            cutoffs : list[int]|None = None
+            for k, v in self.bot.data.save["gw_cutoffs"].items():
+                if k != self.bot.data.save['gw']['id']:
+                    cutoffs = v
+                    break
+            # estimation starts at least 20min after the start of prelims
+            if cutoffs is None:
+                await inter.edit_original_message(
+                    embed=self.bot.embed(
+                        title="Estimation unavailable",
+                        description="No data available to make estimations this Guild War",
+                        color=self.COLOR
+                    )
+                )
+            elif elapsed_seconds < 1200:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="Estimation unavailable",
@@ -635,55 +653,59 @@ class GuildWar(commands.Cog):
                 try:
                     i : int
                     # calculate our index in estimation table based on current time
-                    index : int = (elapsed_seconds - 1200) // 1200
-                    # Note: The ranking updates every 20min and the wiki table is pretty much
-                    # a big array of scores for every 20 minutes updates.
+                    index : int = (elapsed_seconds) // 1200
+                    # Note: The ranking updates every 20min
                     mods : list[dict[str, float]] = [{}, {}] # modifier container
                     rank : str
                     for i in (0, 1): # crew, player
                         for rank in self.bot.data.save['gw']['ranking'][i]: # for each current store stored
                             try:
-                                if rank not in self.bot.data.save['gw']['estimation'][i]:
-                                    # check if rank exists in the wiki data, else continue
+                                crank : str = self.TIER_CONVERSION.get(rank, rank)
+                                if crank not in cutoffs[i]:
+                                    # check if rank exists in the data, else continue
                                     continue
-                                # calculate the multiplier between today and last gw data from the wiki
+                                # calculate the multiplier between today and last gw data
                                 mods[i][rank] = (
                                     self.bot.data.save['gw']['ranking'][i][rank]
-                                    / self.bot.data.save['gw']['estimation'][i][rank][index]
+                                    / cutoffs[i][crank][index]
                                 )
                             except:
                                 pass
                     embeds : list[disnake.Embed] = []
                     final : int
+                    minus_even : timedelta = timedelta(seconds=25200)
                     for final in (0, 1): # current day end, gw end
                         # get the final value of the day/gw (depending on final)
                         # Note: current_time_left is the time left to the target_index
                         # while target_index is the index of the final value in the wiki table
                         target_index : int = -1
                         current_time_left : timedelta
-                        if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4']: # final day or end
-                            current_time_left = (
-                                self.bot.data.save['gw']['dates']['Day 5']
-                                - timedelta(seconds=25200)
-                                - current_time
-                            )
-                            target_index = -1
+                        is_interlude : bool = False
+                        dstr : str
+                        if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - minus_even:
+                            # final day or end
+                            dstr = 'Day 5'
                         else: # other days
-                            d : str
-                            for d in self.DAYS_W_INTER :
-                                if update_time < self.bot.data.save['gw']['dates'][d]:
-                                    current_time_left = self.bot.data.save['gw']['dates'][d] - current_time
-                                    target_index = (
-                                        (
-                                            int((
-                                                self.bot.data.save['gw']['dates'][d]
-                                                - self.bot.data.save['gw']['dates']['Preliminaries']
-                                            ).total_seconds())
-                                            - 1200
-                                        )
-                                        // 1200
-                                    )
+                            for dstr in self.DAYS_W_INTER:
+                                if update_time < self.bot.data.save['gw']['dates'][dstr]:
+                                    if dstr == "Day 1":
+                                        is_interlude = True
                                     break
+                        current_time_left = self.bot.data.save['gw']['dates'][dstr] - current_time
+                        target_index = (
+                            (
+                                int((
+                                    self.bot.data.save['gw']['dates'][dstr]
+                                    - timedelta(seconds=(
+                                        25200
+                                        if not is_interlude
+                                        else 0
+                                    ))
+                                    - self.bot.data.save['gw']['dates']['Preliminaries']
+                                ).total_seconds())
+                            )
+                            // 1200
+                        )
                         fields : list[dict[str, str|list]] = [
                             {
                                 'name':'**Crew Ranking**',
@@ -696,6 +718,7 @@ class GuildWar(commands.Cog):
                         ]
                         for i in (0, 1): # crew, player
                             for rank in mods[i]: # for each rank we have a mod for
+                                crank : str = self.TIER_CONVERSION.get(rank, rank)
                                 # different display depending on if the ranking is lesser than 1000,
                                 # a non-round number (example, 2500 for 2.5k) or above 1000
                                 if int(rank) < 1000:
@@ -709,13 +732,13 @@ class GuildWar(commands.Cog):
                                     )
                                 else:
                                     fields[i]['value'].append("**#{}K** ▫️ ".format(int(rank) // 1000))
-                                # applu the multiplier to the final value to have a projection
+                                # apply the multiplier to the final value to have a projection
                                 try:
                                     fields[i]['value'].append(
                                         "{} (".format(
                                             self.bot.util.valToStr(
                                                 (
-                                                    self.bot.data.save['gw']['estimation'][i][rank][target_index]
+                                                    cutoffs[i][crank][target_index]
                                                     * mods[i][rank]
                                                 ),
                                                 2
@@ -727,7 +750,9 @@ class GuildWar(commands.Cog):
                                     if mod > 0:
                                         fields[i]['value'].append("+")
                                     fields[i]['value'].append("{:.1f}%)\n".format(mod * 100))
-                                except:
+                                except Exception as xx:
+                                    fields[i]['value'].pop()
+                                    self.bot.logger.pushError("TEST:", xx)
                                     pass
                             if len(fields[i]['value']) == 0: # no data check
                                 fields[i]['value'] = "Unavailable"
@@ -776,7 +801,6 @@ class GuildWar(commands.Cog):
                                 ),
                                 description="".join(msgs),
                                 fields=fields,
-                                footer="https://gbf.wiki/User:Neofaucheur/Unite_and_Fight_Data",
                                 timestamp=self.bot.util.UTC(),
                                 inline=True,
                                 color=self.COLOR
