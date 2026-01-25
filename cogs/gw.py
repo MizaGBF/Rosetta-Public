@@ -628,8 +628,10 @@ class GuildWar(commands.Cog):
                 ).total_seconds()
             )
             cutoffs : list[int]|None = None
+            past_gw_id : str = None
             for k, v in self.bot.data.save["gw_cutoffs"].items():
                 if k != self.bot.data.save['gw']['id']:
+                    past_gw_id = k
                     cutoffs = v
                     break
             # estimation starts at least 20min after the start of prelims
@@ -800,6 +802,7 @@ class GuildWar(commands.Cog):
                                     title
                                 ),
                                 description="".join(msgs),
+                                footer="In comparison of GW{}".format(past_gw_id),
                                 fields=fields,
                                 timestamp=self.bot.util.UTC(),
                                 inline=True,
