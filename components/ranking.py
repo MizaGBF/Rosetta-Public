@@ -185,12 +185,8 @@ class Ranking():
                         - timedelta(seconds=21600)): # day 4 is over?
                     await asyncio.sleep(3600) # just sleep
                 else: # on going
-                    # retrieve estimation from wiki
-                    # note: DEPRECATED, I plan to replace it eventually
-                    # to not rely on the wiki forever
-                    if 'estimation' not in self.bot.data.save['gw']:
-                        await self.init_estimation()
-                    self.init_cutoff_storage() # new way, supposed to replace init_estimation()
+                    # init cutoff storage for estimations
+                    self.init_cutoff_storage()
                     # retrieve ranking
                     if self.bot.net.has_account() and await self.bot.net.gbf_available():
                         m : int = current_time.minute
@@ -246,6 +242,17 @@ class Ranking():
                 ids.sort()
                 latest_gw : str = str(ids[-1])
                 self.bot.data.save["gw_cutoffs"] = {latest_gw : self.bot.data.save["gw_cutoffs"][latest_gw]}
+            self.create_cutoff_storage(gwid)
+
+    """create_cutoff_storage()
+    Subroutine of init_cutoff_storage()
+    
+    Parameters
+    --------
+    gwid: String, the GW id
+    """
+    def create_cutoff_storage(self : Ranking, gwid : str) -> None:
+        if gwid not in self.bot.data.save["gw_cutoffs"]:
             # first emplacement store crews, second store players
             self.bot.data.save["gw_cutoffs"][gwid] = [{}, {}]
             # init tiers
@@ -258,124 +265,78 @@ class Ranking():
                 if t not in self.bot.data.save["gw_cutoffs"][gwid][0]:
                     self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             self.bot.data.pending = True
-            self.bot.logger.push("[RANKING] Storage for current GW initialized", send_to_discord=False)
+            self.bot.logger.push("[RANKING] Storage for cutoffs of GW{} initialized".format(gwid), send_to_discord=False)
 
-    """init_estimation()
+    """get_estimation_from_wiki()
     Coroutine to retrieve the previous GW data from the wiki
+    and use it to populate our own
+    
+    Parameters
+    --------
+    gwid: String, the GW id
+    
+    Return
+    --------
+    bool: True on success, False on failure
     """
-    async def init_estimation(self : Ranking) -> None:
-        cnt : RequestResult = await self.bot.net.requestWiki(
-            "User:Neofaucheur/Unite_and_Fight_Data",
+    async def get_estimation_from_wiki(self : Ranking, gwid : str) -> bool:
+        data : RequestResult = await self.bot.net.requestWiki(
+            (
+                "api.php?action=query&prop=revisions"
+                "&titles=User:Neofaucheur/Unite_and_Fight_Data/Data/UnF{}"
+                "&rvslots=main&rvprop=content&formatversion=2&format=json"
+            ).format(gwid),
             allow_redirects=True
         )
-        # We use Neofaucheur's past GW data for /gw estimation
-        # The data is embedded in the html, so it's a "simple" matter to parse and extract the past gw datas
-        if cnt is not None:
-            try:
-                cnt = cnt.decode('utf-8')
-            except:
-                cnt = cnt.decode('iso-8859-1') # rare encoding used on the wiki
-            soup : BeautifulSoup = BeautifulSoup(cnt, 'html.parser') # parse the html
-            # look for the content
-            content : bs4element.ResultSet = soup.find_all("div", id="mw-content-text")
-            if len(content) == 0:
-                return
-            content = content[0].findChildren("div", class_="mw-parser-output", recursive=False)
-            if len(content) == 0:
-                return
-            # variables
-            crew : int|None = None
-            data : list[dict[str, list[int|None]]] = [{}, {}]
-            # the x plot is always the same:
-            # a big array of each timestamp.
-            # As the ranking is being updated every 20min,
-            # the array contains all multiples of 1200 (20min)
-            # to cover the whole duration of the gw
-            xaxis : dict[str, int] = {
-                str((i + 1) * 1200) : i for i in range(0, 447)
-            }
-            # read the page
-            children : bs4element.Tag
-            for children in content[0].findChildren(recursive=False):
-                div : bs4element.Tag|None = None
-                if crew is None: # undefined
-                    if children.name == "h2":
-                        if children.text == "Individual":
-                            crew = 1
-                        elif children.text == "Crew Finals":
-                            crew = 0
-                        elif children.text == "Prelims":
-                            crew = 0
-                elif crew == 1: # indiv
-                    if children.name == "h2":
-                        if children.text == "Crew Finals":
-                            crew = 0
-                    elif children.name == "div":
-                        try:
-                            if "mw-collapsible" in children.attrs['class']:
-                                div = children
-                        except:
-                            pass
-                else: # crew
-                    if children.name == "h2":
-                        if children.text == "Individual":
-                            crew = 1
-                    elif children.name == "div":
-                        try:
-                            if "mw-collapsible" in children.attrs['class']:
-                                div = children
-                        except:
-                            pass
-                if div is not None: # if div found
-                    tops : bs4element.ResultSet = div.findChildren("span", class_="mw-headline", recursive=True)
-                    if len(tops) > 0:
-                        try:
-                            rank : str
-                            if tops[0].text == '"Unite and Fight Hero"':
-                                rank = self.UNF_HERO
-                            elif tops[0].text.startswith('Top '):
-                                rank = str(int(tops[0].text.replace('Top ', '').replace(',', '')))
-                            elif tops[0].text.startswith('Tier '):
-                                if crew == 0 and tops[0].text in ("Tier A", "Tier B"):
-                                    if tops[0].text[-1] == "A":
-                                        rank = self.TIER_A
-                                    else:
-                                        rank = self.TIER_B
-                                else:
-                                    rank = int(tops[0].text.replace('Tier ', '').replace(',', ''))
-                                    if crew == 1:
-                                        rank = str(self.TIER_PLAYERS[rank])
-                                    else:
-                                        rank = str(self.TIER_CREWS[rank - 1])
-                            spans : bs4element.ResultSet = div.findChildren("span", recursive=True)
-                            # bracket change end
-                            span : bs4element.tag
-                            for span in spans:
-                                if (span.has_attr("data-series-label")
-                                        and span["data-series-label"].startswith('U&F')
-                                        and int(span["data-series-label"].replace('U&F', ''))
-                                        == self.bot.data.save['gw']['id'] - 1):
-                                    data[crew][rank] = [None] * len(xaxis.keys())
-                                    temp_x : list[str] = span["data-series-x"].split(',')
-                                    temp_y : list[str] = span["data-series-y"].split(',')
-                                    i : int
-                                    v : str
-                                    for i, v in enumerate(temp_y):
-                                        data[crew][rank][xaxis[temp_x[i]]] = int(v)
-                                    last : int|None = None
-                                    for i in range(len(data[crew][rank])):
-                                        if data[crew][rank][i] is None:
-                                            data[crew][rank][i] = last
-                                        else:
-                                            last = data[crew][rank][i]
-                                    break
-                        except:
-                            pass
-            # saving
-            if len(data[0].keys()) > 0 and len(data[1].keys()) > 0:
-                self.bot.data.save['gw']['estimation'] = data
-                self.bot.data.pending = True
-                self.bot.logger.push("[RANKING] Wiki Guild War data loaded", send_to_discord=False)
+        try:
+            lines : list[str] = data['query']['pages'][0]['revisions'][0]['slots']['main']['content'].splitlines()
+        except Exception as e:
+            self.bot.logger.pushError("[RANKING] In 'get_estimation_from_wiki':", e)
+            return False
+        gwdata : list[dict] = [{}, {}]
+        mode : int = -1
+        crew : int = -1
+        # parse
+        for line in lines:
+            line = line.strip()
+            if line.startswith("|chartDataX="):
+                mode = 0
+            elif line.startswith("|chartDataY="):
+                mode = 1
+            elif line.startswith("|crew="):
+                crew = 0
+            elif line.startswith("|indiv="):
+                crew = 1
+            elif line.startswith("|alt="):
+                break
+            elif mode != -1 and crew != -1 and line.startswith("|"):
+                try:
+                    part : list[str] = line.split("=")
+                    tier : str = part[0].split("|")[1]
+                    if tier not in gwdata[crew]:
+                        gwdata[crew][tier] = [None, None]
+                    gwdata[crew][tier][mode] = part[1].split(",")
+                except:
+                    pass
+        self.create_cutoff_storage(gwid)
+        # populate
+        modified : bool = False
+        for crew in range(0, 2):
+            for tier in gwdata[crew]:
+                if tier not in self.bot.data.save["gw_cutoffs"][gwid][crew]:
+                    continue
+                if len(gwdata[crew][tier][0]) != len(gwdata[crew][tier][1]):
+                    continue
+                for i in range(len(gwdata[crew][tier][0])):
+                    x = int(gwdata[crew][tier][0][i]) // 1200
+                    y = int(gwdata[crew][tier][1][i])
+                    if 0 <= x < len(self.bot.data.save["gw_cutoffs"][gwid][crew][tier]):
+                        if self.bot.data.save["gw_cutoffs"][gwid][crew][tier][x] is None:
+                            self.bot.data.save["gw_cutoffs"][gwid][crew][tier][x] = y
+                            modified = True
+        if modified:
+            self.bot.logger.push("[RANKING] Wiki Guild War data has been loaded into GW{}".format(gwid), send_to_discord=False)
+        return modified
 
     """update_ranking()
     Coroutine to start the ranking update process

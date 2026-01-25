@@ -607,11 +607,12 @@ class GuildWar(commands.Cog):
         """Estimatation of the GW ranking cutoffs"""
         await inter.response.defer()
         current_time : datetime = self.bot.util.JST()
-        if (self.bot.data.save['gw']['state'] is False
-                or current_time < self.bot.data.save['gw']['dates']["Preliminaries"]
-                or current_time >= (self.bot.data.save['gw']['dates']["Day 5"] - timedelta(seconds=25200))
-                or self.bot.data.save['gw']['ranking'] is None
-                or 'estimation' not in self.bot.data.save['gw']):
+        if (
+            self.bot.data.save['gw']['state'] is False
+            or current_time < self.bot.data.save['gw']['dates']["Preliminaries"]
+            or current_time >= (self.bot.data.save['gw']['dates']["Day 5"] - timedelta(seconds=25200))
+            or self.bot.data.save['gw']['ranking'] is None
+        ):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Estimation unavailable",

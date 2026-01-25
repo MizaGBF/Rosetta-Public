@@ -549,7 +549,6 @@ class Admin(commands.Cog):
     async def guilds(self : commands.SubCommand, inter : disnake.GuildCommandInteraction) -> None:
         """List all servers (Owner Only)"""
         await inter.response.defer(ephemeral=True)
-        print(type(self))
         await self.guildList()
         await inter.edit_original_message(embed=self.bot.embed(title="Done", color=self.COLOR))
 
@@ -708,7 +707,6 @@ class Admin(commands.Cog):
     """
     async def drive_delete_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
-        {'folder_select': 'test', 'file_name': 'aaa'}
         name : str = inter.text_values["file_name"]
         folder : str = inter.text_values["folder_select"].lower()
         if name == "":
@@ -1736,6 +1734,77 @@ class Admin(commands.Cog):
                     color=self.COLOR
                 )
             )
+
+
+
+    """drive_delete_callback()
+    CustomModal callback
+    """
+    async def wiki_cutoff_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
+        await inter.response.defer(ephemeral=True)
+        gwid : str = inter.text_values["gwid"].lower()
+        if gwid == "previous":
+            try:
+                gwid = str(int(self.bot.data.save['gw']['id']) - 1)
+            except:
+                await inter.edit_original_message(
+                    embed=self.bot.embed(
+                        title="Can't determine the previous GW ID",
+                        color=self.COLOR
+                    )
+                )
+        else:
+            try:
+                igwid : int = int(gwid)
+                if gwid < 1:
+                    raise Exception()
+            except:
+                await inter.edit_original_message(
+                    embed=self.bot.embed(
+                        title="Invalid GW ID",
+                        color=self.COLOR
+                    )
+                )
+        result = await self.bot.ranking.get_estimation_from_wiki(gwid)
+        if result:
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="GW Cutoffs",
+                    description="Cutoff data for GW{} has been populated using the wiki.".format(gwid),
+                    color=self.COLOR
+                )
+            )
+        else:
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="GW Cutoffs",
+                    description="Either an error occured, or no new data has been obtained.",
+                    color=self.COLOR
+                )
+            )
+
+    @gw.sub_command()
+    async def wiki_cutoff(
+        self : commands.SubCommand,
+        inter : disnake.GuildCommandInteraction
+    ) -> None:
+        """Populate estimation cutoffs using the wiki (Owner Only)"""
+        await self.bot.singleton.make_and_send_modal(
+            inter,
+            "wiki_cutoff-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            "Delete a file from a Drive folder",
+            self.wiki_cutoff_callback,
+            [
+                disnake.ui.TextInput(
+                    label="Input previous GW ID, or just 'previous'",
+                    custom_id="gwid",
+                    value="previous",
+                    style=disnake.TextInputStyle.short,
+                    max_length=10,
+                    required=True
+                ),
+            ]
+        )
 
     @_owner.sub_command_group()
     async def buff(self : commands.SubCommandGroup, inter : disnake.GuildCommandInteraction) -> None:
