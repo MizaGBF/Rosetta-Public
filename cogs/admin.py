@@ -1735,9 +1735,7 @@ class Admin(commands.Cog):
                 )
             )
 
-
-
-    """drive_delete_callback()
+    """wiki_cutoff_callback()
     CustomModal callback
     """
     async def wiki_cutoff_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
@@ -1792,7 +1790,7 @@ class Admin(commands.Cog):
         await self.bot.singleton.make_and_send_modal(
             inter,
             "wiki_cutoff-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
-            "Delete a file from a Drive folder",
+            "Populate Rosetta's cutoff data using the wiki",
             self.wiki_cutoff_callback,
             [
                 disnake.ui.TextInput(
