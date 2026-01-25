@@ -682,7 +682,6 @@ class GuildWar(commands.Cog):
                         # Note: current_time_left is the time left to the target_index
                         # while target_index is the index of the final value in the wiki table
                         target_index : int = -1
-                        current_time_left : timedelta
                         is_interlude : bool = False
                         dstr : str
                         if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - minus_even:
@@ -694,7 +693,15 @@ class GuildWar(commands.Cog):
                                     if dstr == "Day 1":
                                         is_interlude = True
                                     break
-                        current_time_left = self.bot.data.save['gw']['dates'][dstr] - current_time
+                        current_time_left : timedelta = (
+                            self.bot.data.save['gw']['dates'][dstr]
+                            - timedelta(seconds=(
+                                        25200
+                                        if not is_interlude
+                                        else 0
+                            ))
+                            - current_time
+                        )
                         target_index = (
                             (
                                 int((
@@ -763,8 +770,10 @@ class GuildWar(commands.Cog):
                                 fields[i]['value'] = "".join(fields[i]['value'])
                         msgs : list[str]
                         if current_time_left.total_seconds() < 0:
-                            # check or negative time (shouldn't happen)
-                            msgs = []
+                            if dstr in {"Day 4","Day 5"}:
+                                msgs = ["The event is **over** ▫️ "]
+                            else:
+                                msgs = ["The day is **over** ▫️ "]
                         else:
                             # add time remaining
                             timestring : str
@@ -775,7 +784,7 @@ class GuildWar(commands.Cog):
                             if target_index == -1:
                                 msgs = ["Time left: **{}** ▫️ ".format(timestring)]
                             else:
-                                msgs = ["Next Day: **{}** ▫️ ".format(timestring)]
+                                msgs = ["Time left today: **{}** ▫️ ".format(timestring)]
                         # add time elapsed since last update
                         msgs.append(
                             "Updated: **{}** ago\n".format(
