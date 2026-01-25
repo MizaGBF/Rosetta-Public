@@ -676,7 +676,7 @@ class GuildWar(commands.Cog):
                                 pass
                     embeds : list[disnake.Embed] = []
                     final : int
-                    minus_even : timedelta = timedelta(seconds=25200)
+                    seven_hours : timedelta = timedelta(seconds=25200)
                     for final in (0, 1): # current day end, gw end
                         # get the final value of the day/gw (depending on final)
                         # Note: current_time_left is the time left to the target_index
@@ -684,35 +684,31 @@ class GuildWar(commands.Cog):
                         target_index : int = -1
                         is_interlude : bool = False
                         dstr : str
-                        if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - minus_even:
+                        end : datetime
+                        if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - seven_hours:
                             # final day or end
                             dstr = 'Day 5'
+                            end = self.bot.data.save['gw']['dates'][dstr] - seven_hours
                         else: # other days
                             for dstr in self.DAYS_W_INTER:
-                                if update_time < self.bot.data.save['gw']['dates'][dstr]:
-                                    if dstr == "Day 1":
+                                end = self.bot.data.save['gw']['dates'][dstr]
+                                if dstr == "Day 1":
+                                    if update_time < end:
                                         is_interlude = True
-                                    break
-                        current_time_left : timedelta = (
-                            self.bot.data.save['gw']['dates'][dstr]
-                            - timedelta(seconds=(
-                                        25200
-                                        if not is_interlude
-                                        else 0
-                            ))
-                            - current_time
-                        )
+                                        break
+                                else:
+                                    end -= seven_hours
+                                    if update_time < end:
+                                        break
+                        current_time_left : timedelta = end - current_time
                         target_index = (
                             (
-                                int((
-                                    self.bot.data.save['gw']['dates'][dstr]
-                                    - timedelta(seconds=(
-                                        25200
-                                        if not is_interlude
-                                        else 0
-                                    ))
-                                    - self.bot.data.save['gw']['dates']['Preliminaries']
-                                ).total_seconds())
+                                int(
+                                    (
+                                        end
+                                        - self.bot.data.save['gw']['dates']['Preliminaries']
+                                    ).total_seconds()
+                                )
                             )
                             // 1200
                         )
@@ -781,10 +777,7 @@ class GuildWar(commands.Cog):
                                 timestring = self.bot.util.delta2str(current_time_left, 2)
                             else:
                                 timestring = self.bot.util.delta2str(current_time_left, 1)
-                            if target_index == -1:
-                                msgs = ["Time left: **{}** ▫️ ".format(timestring)]
-                            else:
-                                msgs = ["Time left today: **{}** ▫️ ".format(timestring)]
+                            msgs = ["Time left: **{}** ▫️ ".format(timestring)]
                         # add time elapsed since last update
                         msgs.append(
                             "Updated: **{}** ago\n".format(
