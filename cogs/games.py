@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     type RandomCharacterContainer = dict[str, tuple[RandomCharacterStrings, int, bool, int|None]]
 from datetime import datetime
 import random
+import re
 from views.scratcher import Scratcher
 from views.chest_rush import ChestRush
 from views.join_game import JoinGame
@@ -40,6 +41,7 @@ from views.rockpaperscissor import RPS
 class Games(commands.Cog):
     """Granblue-themed (or not) Games and more."""
     COLOR : int = 0xeb6b34
+    EMOJI_REGEX : re.Pattern = re.compile(r'(<a?:\w+:\d+>)')
     # below are the loot tables for the scratcher and chest rush games
     # they take a lot of space
     # Scratcher constants
@@ -1866,67 +1868,71 @@ class Games(commands.Cog):
     ) -> None:
         """UwU-tize a message"""
         await inter.response.defer()
-        msg : str = message.clean_content.replace(
-            "r","w"
-        ).replace(
-            "R","W"
-        ).replace(
-            "than","dan"
-        ).replace(
-            "Than","Dan"
-        ).replace(
-            "THan","Dan"
-        ).replace(
-            "THAn","Dan"
-        ).replace(
-            "THAN","DAN"
-        ).replace(
-            "thaN","daN"
-        ).replace(
-            "thAn","dAn"
-        ).replace(
-            "thAN","dAN"
-        ).replace(
-            "tHAN","DAN"
-        ).replace(
-            "l","w"
-        ).replace(
-            "L","W"
-        ).replace(
-            "oy","oi"
-        ).replace(
-            "oY","oI"
-        ).replace(
-            "Oy","Oi"
-        ).replace(
-            "OY","OI"
-        ).replace(
-            "the","de"
-        ).replace(
-            "The","De"
-        ).replace(
-            "THe","De"
-        ).replace(
-            "THE","DE"
-        ).replace(
-            "thE","dE"
-        ).replace(
-            "tHe","De"
-        ).replace(
-            "you","u"
-        ).replace(
-            "You","U"
-        ).replace(
-            "YOu","U"
-        ).replace(
-            "YOU","U"
-        ).replace(
-            "yoU","u"
-        ).replace(
-            "yOu","u"
-        ).replace(
-            "yOU","U"
-        )
+        msg_parts : list[str] = self.EMOJI_REGEX.split(message.clean_content)
+        # filter out emotes
+        for i in range(0, len(msg_parts), 2):
+            msg_parts[i] = msg_parts[i].replace(
+                "r","w"
+            ).replace(
+                "R","W"
+            ).replace(
+                "than","dan"
+            ).replace(
+                "Than","Dan"
+            ).replace(
+                "THan","Dan"
+            ).replace(
+                "THAn","Dan"
+            ).replace(
+                "THAN","DAN"
+            ).replace(
+                "thaN","daN"
+            ).replace(
+                "thAn","dAn"
+            ).replace(
+                "thAN","dAN"
+            ).replace(
+                "tHAN","DAN"
+            ).replace(
+                "l","w"
+            ).replace(
+                "L","W"
+            ).replace(
+                "oy","oi"
+            ).replace(
+                "oY","oI"
+            ).replace(
+                "Oy","Oi"
+            ).replace(
+                "OY","OI"
+            ).replace(
+                "the","de"
+            ).replace(
+                "The","De"
+            ).replace(
+                "THe","De"
+            ).replace(
+                "THE","DE"
+            ).replace(
+                "thE","dE"
+            ).replace(
+                "tHe","De"
+            ).replace(
+                "you","u"
+            ).replace(
+                "You","U"
+            ).replace(
+                "YOu","U"
+            ).replace(
+                "YOU","U"
+            ).replace(
+                "yoU","u"
+            ).replace(
+                "yOu","u"
+            ).replace(
+                "yOU","U"
+            )
+        msg : str = "".join(msg_parts)
         if len(msg) == 0 or len(msg) >= 3800:
             await inter.edit_original_message(
                 embed=self.bot.embed(
@@ -1940,7 +1946,7 @@ class Games(commands.Cog):
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="UwU",
-                        description="[Original Message](https://discord.com/channels/@me/{}/{})\n```\n{}\n```".format(
+                        description="[Original Message](https://discord.com/channels/@me/{}/{})\n\n{}\n".format(
                             inter.channel.id,
                             message.id,
                             msg
@@ -1952,7 +1958,7 @@ class Games(commands.Cog):
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="UwU",
-                        description="[Original Message](https://discord.com/channels/{}/{}/{})\n```\n{}\n```".format(
+                        description="[Original Message](https://discord.com/channels/{}/{}/{})\n\n{}\n".format(
                             inter.guild.id,
                             inter.channel.id,
                             message.id,
