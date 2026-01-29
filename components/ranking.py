@@ -246,7 +246,7 @@ class Ranking():
 
     """create_cutoff_storage()
     Subroutine of init_cutoff_storage()
-    
+
     Parameters
     --------
     gwid: String, the GW id
@@ -265,16 +265,19 @@ class Ranking():
                 if t not in self.bot.data.save["gw_cutoffs"][gwid][0]:
                     self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             self.bot.data.pending = True
-            self.bot.logger.push("[RANKING] Storage for cutoffs of GW{} initialized".format(gwid), send_to_discord=False)
+            self.bot.logger.push(
+                "[RANKING] Storage for cutoffs of GW{} initialized".format(gwid),
+                send_to_discord=False
+            )
 
     """get_estimation_from_wiki()
     Coroutine to retrieve the previous GW data from the wiki
     and use it to populate our own
-    
+
     Parameters
     --------
     gwid: String, the GW id
-    
+
     Return
     --------
     bool: True on success, False on failure
@@ -335,7 +338,10 @@ class Ranking():
                             self.bot.data.save["gw_cutoffs"][gwid][crew][tier][x] = y
                             modified = True
         if modified:
-            self.bot.logger.push("[RANKING] Wiki Guild War data has been loaded into GW{}".format(gwid), send_to_discord=False)
+            self.bot.logger.push(
+                "[RANKING] Wiki Guild War data has been loaded into GW{}".format(gwid),
+                send_to_discord=False
+            )
         return modified
 
     """update_ranking()

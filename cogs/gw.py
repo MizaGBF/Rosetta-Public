@@ -682,7 +682,6 @@ class GuildWar(commands.Cog):
                         # Note: current_time_left is the time left to the target_index
                         # while target_index is the index of the final value in the wiki table
                         target_index : int = -1
-                        is_interlude : bool = False
                         dstr : str
                         end : datetime
                         if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - seven_hours:
@@ -692,14 +691,10 @@ class GuildWar(commands.Cog):
                         else: # other days
                             for dstr in self.DAYS_W_INTER:
                                 end = self.bot.data.save['gw']['dates'][dstr]
-                                if dstr == "Day 1":
-                                    if update_time < end:
-                                        is_interlude = True
-                                        break
-                                else:
+                                if dstr != "Day 1": # Interlude difference
                                     end -= seven_hours
-                                    if update_time < end:
-                                        break
+                                if update_time < end:
+                                    break
                         current_time_left : timedelta = end - current_time
                         target_index = (
                             (
@@ -1939,11 +1934,11 @@ class GuildWar(commands.Cog):
     """
     async def speed_callback(self : GuildWar, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
-        # loading is the expected time wasted between fight
+        # wastedtime is the expected time wasted between fight
         # it's set by a command parameter, not the modal
-        loading : int = int(modal.extra)
+        wastedtime : int = int(modal.extra)
         error : bool = False
-        msgs : list[str] = []
+        fields : list[dict[str, str|list]] = []
         f : str
         v : str
         for f, v in inter.text_values.items(): # go over entries
@@ -1952,8 +1947,8 @@ class GuildWar(commands.Cog):
                     continue # empty or fight not supported, ignore
                 elif '.' in v:
                     raise Exception() # dot inside, error
-                elems : list[str] = v.split(':') # split with :
-                time : int
+                elems : list[str] = v.strip().split(':') # split with :
+                ftime : int
                 if len(elems) > 2: # if more than 2 :, unsupported
                     error = True
                     continue
@@ -1963,64 +1958,75 @@ class GuildWar(commands.Cog):
                     if a < 0 or b < 0:
                         raise Exception() # check negative
                     # Note: possible additional checks: 60 seconds cap, etc... but we keep it loose on purpose
-                    time = a * 60 + b
+                    ftime = a * 60 + b
                 else: # it's simply expected to be a single number
-                    time = int(elems[0])
-                # check if time is negative or null
-                if time < 0:
-                    raise Exception()
-                elif time == 0:
-                    continue
+                    ftime = int(elems[0])
+                # check time validity
+                if ftime < 0:
+                    raise Exception("The clear time must be positive")
+                if ftime + wastedtime <= 0:
+                    raise Exception("The sum of the clear time and wasted time must be a least one second")
                 # calculate how much fights is this per hour
-                mod : float = (3600 / (time + loading))
+                mod : float = (3600 / (ftime + wastedtime))
                 # make message
+                msgs : list[str] = []
                 msgs.append(
-                    "**{}** ▫️ {}{} ▫️ **{}** ▫️ **{}** Tokens ▫️ **{}** pots".format(
-                        f,
+                    "{} **{}**".format(
                         self.bot.emote.get('clock'),
-                        v,
-                        self.bot.util.valToStr(
-                            mod * self.FIGHTS[f]["honor"],
-                            2
-                        ),
-                        self.bot.util.valToStr(
-                            mod * self.FIGHTS[f]["token"],
-                            2
-                        ),
-                        self.bot.util.valToStr(
-                            math.ceil(
-                                mod * self.FIGHTS[f]["AP"] / 75
-                            ),
-                            2
-                        )
+                        self.bot.util.sec2time(ftime)
                     )
+                )
+                msgs.append(
+                    "**" + self.bot.util.valToStr(
+                        mod * self.FIGHTS[f]["honor"],
+                        2
+                    ) + "** honors"
+                )
+                msgs.append(
+                    "**+" + self.bot.util.valToStr(
+                        mod * self.FIGHTS[f]["token"],
+                        2
+                    ) + "** tokens"
+                )
+                msgs.append(
+                    "**-" + self.bot.util.valToStr(
+                        mod * self.FIGHTS[f]["AP"],
+                        2
+                    ) + "** AP"
                 )
                 # add additional infos
                 if self.FIGHTS[f]["meat_cost"] > 0:
-                    msgs.append(" ▫️ **{}** meats ".format(
-                        self.bot.util.valToStr(
+                    msgs.append(
+                        "**-" + self.bot.util.valToStr(
                             mod * self.FIGHTS[f]["meat_cost"],
                             2
-                        )
-                    ))
+                        ) + "** meats"
+                    )
                 if self.FIGHTS[f]["clump_cost"] > 0:
-                    msgs.append(" ▫️ **{}** clumps ".format(
-                        self.bot.util.valToStr(
+                    msgs.append(
+                        "**-" + self.bot.util.valToStr(
                             mod * self.FIGHTS[f]["clump_cost"],
                             2
-                        )
-                    ))
+                        ) + "** clumps"
+                    )
                 if self.FIGHTS[f]["clump_drop"] > 0:
-                    msgs.append(" ▫️ **{}** clump drops ".format(
-                        self.bot.util.valToStr(
-                            math.ceil(mod * self.FIGHTS[f]["clump_drop"]),
+                    msgs.append(
+                        "**+" + self.bot.util.valToStr(
+                            math.floor(
+                                mod * self.FIGHTS[f]["clump_drop"]
+                            ),
                             2
-                        )
-                    ))
-                msgs.append("\n")
+                        ) + "** clumps"
+                    )
+                fields.append(
+                    {
+                        'name':f,
+                        'value':"\n".join(msgs)
+                    }
+                )
             except:
                 error = True
-        if len(msgs) == 0:
+        if len(fields) == 0:
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="{} Speed Comparator".format(
@@ -2045,13 +2051,14 @@ class GuildWar(commands.Cog):
                             'gw'
                         )
                     ),
-                    description="**Per hour**" + (
-                        ', with {} seconds of wasted time between fights\n'.format(
-                            loading
-                        ) if loading > 0 else '\n'
-                    ) + "".join(msgs),
+                    fields=fields,
+                    inline=True,
+                    footer="Per hour" + (
+                        ', with {} seconds of wasted time between fights'.format(
+                            wastedtime
+                        ) if wastedtime > 0 else ''
+                    ),
                     color=self.COLOR,
-                    footer='' if not error else 'Errors have been ignored'
                 )
             )
 
@@ -2059,7 +2066,7 @@ class GuildWar(commands.Cog):
     async def speed(
         self : commands.SubCommand,
         inter : disnake.ApplicationCommandInteraction,
-        loading : int = commands.Param(description="Wasted time between fights, in second", default=0)
+        wastedtime : int = commands.Param(description="Wasted time between fights, in second", default=0, ge=0)
     ) -> None:
         """Compare multiple GW Nightmare fights based on your speed"""
         # Note: We're limited to 5 inputs
@@ -2110,8 +2117,158 @@ class GuildWar(commands.Cog):
                     required=False
                 )
             ],
-            str(loading)
+            str(wastedtime)
         )
+
+    @utility.sub_command()
+    async def speedcomparison(
+        self : commands.SubCommand,
+        inter : disnake.ApplicationCommandInteraction,
+        fight : str = commands.Param(
+            description="Guild War fight",
+            autocomplete=list(FIGHTS.keys())
+        ),
+        cleartime : str = commands.Param(description="In seconds or MM:SS notation"),
+        wastedtime : int = commands.Param(description="Wasted time between fights, in second", default=0, ge=0)
+    ) -> None:
+        """Compare a fight clear time with others"""
+        await inter.response.defer(ephemeral=True)
+        ftime : int
+        elems : list[str] = cleartime.strip().split(":")
+        try:
+            if len(elems) > 2: # if more than 2 :, unsupported
+                raise Exception("Invalid clear time")
+            elif len(elems) == 2: # equal, we expect something like 00:00
+                a : int = int(elems[0])
+                b : int = int(elems[1])
+                if a < 0 or b < 0:
+                    raise Exception("Invalid clear time") # check negative
+                # Note: possible additional checks: 60 seconds cap, etc... but we keep it loose on purpose
+                ftime = a * 60 + b
+            else: # it's simply expected to be a single number
+                ftime = int(elems[0])
+            # check time validity
+            if ftime < 0:
+                raise Exception("The clear time must be positive")
+            if ftime + wastedtime <= 0:
+                raise Exception("The sum of the clear time and wasted time must be a least one second")
+            # iterate over other fights
+            fields : list[dict[str, str|list]] = []
+            for f, d in self.FIGHTS.items():
+                count : int # number of the inferior fight needed
+                fight_time : int # clear time of the other fight
+                if f == fight:
+                    count = 1
+                    fight_time = ftime
+                else:
+                    # ratio of honor between our fight and the other
+                    honor_ratio : float = self.FIGHTS[fight]["honor"] / (1.0 * d["honor"])
+                    if honor_ratio > 1.0:
+                        count = int(math.ceil(honor_ratio))
+                        float_time : float = (ftime - wastedtime * count) / (1.0 * count)
+                        if float_time < 1.0: # less than a second
+                            fields.append(
+                                {
+                                    'name':f,
+                                    'value':"This fight can't\ncompete."
+                                }
+                            )
+                            continue
+                        fight_time = int(round(float_time))
+                    else: # wrong part
+                        fcount : float = 1.0 / honor_ratio
+                        fight_time = int(round(ftime * fcount + wastedtime * (fcount - 2)))
+                        count = 1
+
+                fields.append(
+                    {
+                        'name':f,
+                        'value':[]
+                    }
+                )
+                fields[-1]["value"].append(
+                    "{} **{} x{}**".format(
+                        self.bot.emote.get('clock'),
+                        self.bot.util.sec2time(fight_time),
+                        count
+                    )
+                )
+                fields[-1]["value"].append(
+                    "**+" + self.bot.util.valToStr(
+                        count * self.FIGHTS[f]["token"],
+                        2
+                    ) + "** tokens"
+                )
+                fields[-1]["value"].append(
+                    "**-" + self.bot.util.valToStr(
+                        count * self.FIGHTS[f]["AP"],
+                        2
+                    ) + "** AP"
+                )
+                # add additional infos
+                if self.FIGHTS[f]["meat_cost"] > 0:
+                    fields[-1]["value"].append(
+                        "**-" + self.bot.util.valToStr(
+                            count * self.FIGHTS[f]["meat_cost"],
+                            2
+                        ) + "** meats"
+                    )
+                if self.FIGHTS[f]["clump_cost"] > 0:
+                    fields[-1]["value"].append(
+                        "**-" + self.bot.util.valToStr(
+                            count * self.FIGHTS[f]["clump_cost"],
+                            2
+                        ) + "** clumps"
+                    )
+                if self.FIGHTS[f]["clump_drop"] > 0:
+                    fields[-1]["value"].append(
+                        "**+" + self.bot.util.valToStr(
+                            math.floor(
+                                count * self.FIGHTS[f]["clump_drop"]
+                            ),
+                            2
+                        ) + "** clumps"
+                    )
+                fields[-1]["value"] = "\n".join(fields[-1]["value"])
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="{} Speed Fight Comparator".format(
+                        self.bot.emote.get(
+                            'gw'
+                        )
+                    ),
+                    description=(
+                        str(self.bot.emote.get('clock'))
+                        + " **"
+                        + self.bot.util.sec2time(ftime)
+                        + "** ▫️ **"
+                        + fight
+                        + "**"
+                        + (
+                            " "
+                            if wastedtime == 0 else
+                            ", with **{}s** of wasted time between fights,".format(wastedtime)
+                        )
+                        + " is equivalent to:"
+                    ),
+                    fields=fields,
+                    inline=True,
+                    color=self.COLOR,
+                )
+            )
+        except Exception as e:
+            self.bot.logger.pushError("[TASK] 'owner:status' Task Error:", e)
+            await inter.edit_original_message(
+                embed=self.bot.embed(
+                    title="{} Speed Fight Comparator".format(
+                        self.bot.emote.get(
+                            'gw'
+                        )
+                    ),
+                    description="An error occured:\n{}".format(e),
+                    color=self.COLOR,
+                )
+            )
 
     @gw.sub_command_group()
     async def nm(self : commands.SubCommandGroup, inter : disnake.ApplicationCommandInteraction) -> None:

@@ -1754,7 +1754,7 @@ class Admin(commands.Cog):
         else:
             try:
                 igwid : int = int(gwid)
-                if gwid < 1:
+                if igwid < 1:
                     raise Exception()
             except:
                 await inter.edit_original_message(

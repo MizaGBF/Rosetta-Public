@@ -188,7 +188,7 @@ class Util():
     str: Formatted time
     """
     def timestamp(self : Util) -> str:
-        return disnake.utils.format_dt(datetime.now(timezone.utc), 'f')
+        return disnake.utils.format_dt(datetime.now(timezone.utc), 's')
 
     """uptime()
     Return the bot uptime
@@ -287,6 +287,30 @@ class Util():
             return None
         # create timedelta
         return timedelta(days=sum // 86400, seconds=sum % 86400)
+
+    """sec2time()
+    Convert a number of seconds into a MM:SS clear time
+
+    Parameters
+    ----------
+    second: Integer, the seconds. Must be greater or equal to 0.
+
+    Raises
+    ----------
+    ValueError
+
+    Returns
+    --------
+    string: The resulting string
+    """
+    def sec2time(self : Util, second : int) -> str:
+        if second < 0:
+            raise ValueError("sec2time(): second parameter must be greater or equal to 0")
+        return (
+            str(second // 60).zfill(2)
+            + ":"
+            + str(second % 60).zfill(2)
+        )
 
     """status()
     Return the bot status
