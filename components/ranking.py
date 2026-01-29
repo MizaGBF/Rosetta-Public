@@ -636,11 +636,14 @@ class Ranking():
         c.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='info'")
         if c.fetchone()[0] < 1: # it doesn't, create it
             c.execute('CREATE TABLE info (gw int, ver int, date int)')
-            c.execute('INSERT INTO info VALUES ({}, {}, {})'.format(
-                self.bot.data.save['gw']['id'],
-                self.DB_VERSION,
-                new_timestamp
-            ))
+            c.execute(
+                'INSERT INTO info VALUES (?, ?, ?)',
+                (
+                    self.bot.data.save['gw']['id'],
+                    self.DB_VERSION,
+                    new_timestamp
+                )
+            )
         else: # it does...
             c.execute("SELECT * FROM info")
             x : InfoData = c.fetchone()
@@ -650,7 +653,7 @@ class Ranking():
             diffdelta : timedelta = self.getrank_update_time - datetime.utcfromtimestamp(timestamp)
             diff = diffdelta.seconds / 60
             # update the timestamp
-            c.execute("UPDATE info SET date = {} WHERE ver = {}".format(new_timestamp, self.DB_VERSION))
+            c.execute("UPDATE info SET date = ? WHERE ver = ?", (new_timestamp, self.DB_VERSION))
         return diff, timestamp
 
     """gwdbbuilder_start()
@@ -717,7 +720,7 @@ class Ranking():
             conn : sqlite3.Connection = sqlite3.connect('temp.sql', isolation_level=None)
             c : sqlite3.Cursor = conn.cursor()
             new_timestamp : int = int(self.getrank_update_time.timestamp())
-            await asyncio.sleep(30) # wait a bit, downloads need to start anyway
+            await asyncio.sleep(5) # wait a bit, downloads need to start anyway
             diff : float|None
             timestamp : int|None
             diff, timestamp = self.gwdbbuilder_init(c, new_timestamp)
@@ -726,7 +729,7 @@ class Ranking():
             await asyncio.sleep(0)
             # now we'll read the output queue
             # inserts will contain entries to insert in the database. we add them 1000 by 1000
-            inserts : list[CrewDataEntry|PlayerDataEntry] = []
+            inserts : list[tuple[None|str|int|float]] = []
             i : int = 0
             while i < self.getrank_count: # count is the number of ranking entries we're expected to process
                 # check if the bot ordered to stop
@@ -752,11 +755,12 @@ class Ranking():
                         "Queue: {}"
                     ).format(self.getrank_mode, i, self.getrank_count, len(status[2]))
                 # access the output queue
+                item : RequestResult|None
                 try:
-                    item : RequestResult = status[2].popleft() # retrieve an entry
+                    item : RequestResult|None = status[2].popleft() # retrieve an entry
                 except:
                     await asyncio.sleep(2)
-                    continue # wait and skip if the queue is empty
+                    continue
                 # Processing ##################################################
                 if self.getrank_mode:
                     # if crew, update the existing crew (if it exists) or create a new entry
@@ -791,23 +795,18 @@ class Ranking():
                         x[9] = None
                     # set the updated infos
                     x[0] = int(item['ranking'])
-                    x[2] = item['name'].replace("'", "''")
+                    x[2] = item['name']
                     # set the current day total
-                    x[3 + day] = item['point']
-                    # replace None by 'NULL'
-                    j : int
-                    for j in range(len(x)):
-                        if x[j] is None:
-                            x[j] = 'NULL'
+                    x[3 + day] = int(item['point'])
                     # add entry to lines to insert in the file
-                    inserts.append("({},{},'{}',{},{},{},{},{},{},{})".format(*x))
+                    inserts.append(tuple(x))
                 else:
                     # if player, it's simple, we just add the infos in the new table. No other fancy calculations
                     inserts.append(
-                        "({},{},'{}',{})".format(
+                        (
                             int(item['rank']),
                             int(item['user_id']),
-                            item['name'].replace("'", "''"),
+                            item['name'],
                             int(item['point'])
                         )
                     )
@@ -817,17 +816,16 @@ class Ranking():
                 # if the inserts queue is full or the ranking is fully processed
                 if len(inserts) == 1000 or i == self.getrank_count:
                     if len(inserts) > 0: # insert entries in the file
-                        c.execute(
-                            "INSERT INTO {} VALUES {}".format(
-                                "crews" if self.getrank_mode else "players",
-                                ",".join(inserts)
-                            )
-                        )
+                        if self.getrank_mode:
+                            c.executemany("INSERT INTO crews VALUES (?,?,?,?,?,?,?,?,?,?)", inserts)
+                        else:
+                            c.executemany("INSERT INTO players VALUES (?,?,?,?)", inserts)
                         c.execute("COMMIT")
                         inserts = []
                     if i == self.getrank_count: # if we reached the end, we close the file
                         c.close()
                         conn.close()
+                        break
                     else: # else we prepare the next commit
                         c.execute("BEGIN")
                     await asyncio.sleep(0.001)
