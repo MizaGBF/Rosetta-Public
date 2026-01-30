@@ -26,7 +26,7 @@ class ConnectFourButton(disnake.ui.Button):
     column: Corresponding column in the grid (0 - 6)
     """
     def __init__(self : ConnectFourButton, column : int) -> None:
-        super().__init__(style=disnake.ButtonStyle.primary, label='{}'.format(column + 1))
+        super().__init__(style=disnake.ButtonStyle.primary, label=f'{column + 1}')
         self.column : int = column # column this button is linked to
 
     """callback()
@@ -50,14 +50,14 @@ class ConnectFourButton(disnake.ui.Button):
             )
             # check if the game is won
             if self.view.checkWin():
-                self.view.notification += "**{}** is the winner".format(self.view.players[self.view.state].display_name)
+                self.view.notification += f"**{self.view.players[self.view.state].display_name}** is the winner"
                 self.view.state = -1
             elif 0 not in self.view.grid: # check if the grid is full
                 self.view.notification += "It's a **Draw**..."
                 self.view.state = -1
             else: # else continue
                 self.view.state = (self.view.state + 1) & 1 # cycle to next player
-                self.view.notification += "Turn of **{}**".format(self.view.players[self.view.state].display_name)
+                self.view.notification += f"Turn of **{self.view.players[self.view.state].display_name}**"
             # check if game over
             if self.view.state < 0:
                 self.view.stopall() # then stop all
@@ -110,7 +110,7 @@ class ConnectFour(BaseView):
         i : int
         for i in range(self.COLUMN):
             self.add_item(ConnectFourButton(i))
-        self.notification : str = "Turn of **{}**".format(self.players[self.state].display_name)
+        self.notification : str = f"Turn of **{self.players[self.state].display_name}**"
 
     """update()
     Update the embed

@@ -464,8 +464,8 @@ class Games(commands.Cog):
             inter,
             3,
             (
-                "{}" + " is rolling {} times...".format(num),
-                "{} " + "rolled {} times".format(num)
+                "{}" + f" is rolling {num} times...",
+                "{} " + f"rolled {num} times"
             )
         )
         await self.bot.channel.clean(inter, 40)
@@ -690,7 +690,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{} is scratching...".format(inter.author.display_name),
+                    'name':f"{inter.author.display_name} is scratching...",
                     'icon_url':inter.author.display_avatar
                 },
                 description="Click to play the game",
@@ -744,7 +744,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':'{} is opening chests...'.format(inter.author.display_name),
+                    'name':f'{inter.author.display_name} is opening chests...',
                     'icon_url':inter.author.display_avatar
                 },
                 color=self.COLOR
@@ -831,12 +831,12 @@ class Games(commands.Cog):
         if len(revealedWinning) > 0:
             desc.append("The winning numbers are:\n")
             for i in range(0, len(revealedWinning)):
-                desc.append("**Tier {}**▫️".format(4 - i))
+                desc.append(f"**Tier {4 - i}**▫️")
                 match i:
                     case 0: desc.append("Last Digit▫️") # tier 4
                     case 1: desc.append("First Two▫️") # tier 3
                     case 2: desc.append("Last Two▫️") # tier 2
-                desc.append("{} ".format(', '.join(revealedWinning[len(revealedWinning) - 1 - i])))
+                desc.append(f"{', '.join(revealedWinning[len(revealedWinning) - 1 - i])} ")
                 # show emote for won prizes
                 j : int
                 for j in range(0, prize[3 - i]):
@@ -853,7 +853,7 @@ class Games(commands.Cog):
         # add prize thumbnail
         if total:
             if sum(prize) == 0:
-                desc.append("\n{} You won nothing".format(self.bot.emote.get('kmr')))
+                desc.append(f"\n{self.bot.emote.get('kmr')} You won nothing")
             else:
                 if prize[0] > 0:
                     desc.append('\n:confetti_ball: ')
@@ -884,7 +884,7 @@ class Games(commands.Cog):
                     if prize[3 - i] > 0:
                         if add_comma:
                             desc.append(", ")
-                        desc.append("**{}** Tier {}".format(prize[3 - i], 4 - i))
+                        desc.append(f"**{prize[3 - i]}** Tier {4 - i}")
                         add_comma : bool = True
                 desc.append(" prizes")
         return ''.join(desc), thumb
@@ -921,7 +921,7 @@ class Games(commands.Cog):
         """Imitate the GBF summer fortune game from Summer 2021"""
         await inter.response.defer()
         # Starting message
-        title = '{} is tempting fate...'.format(inter.author.display_name)
+        title = f'{inter.author.display_name} is tempting fate...'
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
@@ -971,7 +971,7 @@ class Games(commands.Cog):
             )
         )
         # reveal result, one by one
-        title = "{}'s fortune is".format(inter.author.display_name)
+        title = f"{inter.author.display_name}'s fortune is"
         i : int
         for i in range(0, len(cards)):
             tier : int = self.checkLotoWin(cards[:i + 1][-1], winning)
@@ -1008,9 +1008,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{}'s hand".format(
-                        inter.author.display_name
-                    ),
+                    'name':f"{inter.author.display_name}'s hand",
                     'icon_url':inter.author.display_avatar
                 },
                 description="🎴, 🎴, 🎴, 🎴, 🎴",
@@ -1039,7 +1037,7 @@ class Games(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     author={
-                        'name':"{}'s hand".format(inter.author.display_name),
+                        'name':f"{inter.author.display_name}'s hand",
                         'icon_url':inter.author.display_avatar
                     },
                     description="".join(msgs),
@@ -1105,7 +1103,7 @@ class Games(commands.Cog):
             i : int
             for i in range(0, max_round): # for loop, the game is composed of 3 rounds
                 embed = self.bot.embed(
-                    title="♠️ Multiplayer Poker ♥️ ▫️ Round {}/{}".format(i + 1, max_round),
+                    title=f"♠️ Multiplayer Poker ♥️ ▫️ Round {i + 1}/{max_round}",
                     description="Initialization",
                     footer="Round limited to 2 minutes",
                     color=self.COLOR
@@ -1127,7 +1125,7 @@ class Games(commands.Cog):
                 ))
                 msgs : list[str] = []
                 for id, s in win_tracker.items(): # make a string
-                    msgs.append("**{}** ▫️ **{}** win(s)\n".format(s[0], s[1]))
+                    msgs.append(f"**{s[0]}** ▫️ **{s[1]}** win(s)\n")
                 await gview.message.edit(
                     embed=self.bot.embed(
                         title="♠️ Multiplayer Poker ♥️ ▫️ Results",
@@ -1309,7 +1307,7 @@ class Games(commands.Cog):
             random.shuffle(players)
             embed = self.bot.embed(
                 title=":ship: Multiplayer Battle Ship :cruise_ship:",
-                description=":ship: {} :cruise_ship: {}".format(players[0].display_name, players[1].display_name),
+                description=f":ship: {players[0].display_name} :cruise_ship: {players[1].display_name}",
                 fields=[
                     {'name':players[0].display_name, 'value':'dummy'},
                     {'name':players[1].display_name, 'value':'dummy'}
@@ -1365,7 +1363,7 @@ class Games(commands.Cog):
         else:
             scores : list[int] = [0, 0]
             embed = self.bot.embed(
-                title="🪨 Multiplayer Rock Paper Scissor ✂️ ▫️ Best of {}".format(bestof),
+                title=f"🪨 Multiplayer Rock Paper Scissor ✂️ ▫️ Best of {bestof}",
                 description="Initialization",
                 footer="Round limited to 60 seconds",
                 color=self.COLOR
@@ -1413,7 +1411,7 @@ class Games(commands.Cog):
                 msgs : list[str] = []
                 j : int
                 for j in range(len(rolls)):
-                    msgs.append("{}".format(rolls[j]))
+                    msgs.append(f"{rolls[j]}")
                 msgs = ["### ", ", ".join(msgs)]
                 # print message
                 if len(rolls) == n:
@@ -1461,9 +1459,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{} flipped a coin...".format(
-                        inter.author.display_name
-                    ),
+                    'name':f"{inter.author.display_name} flipped a coin...",
                     'icon_url':inter.author.display_avatar
                 },
                 description=(
@@ -1594,7 +1590,7 @@ class Games(commands.Cog):
                     ),
                     inter.author.display_name
                 ),
-                description="**Honor:** {:,}\n**Meat:** {:,}".format(h, m),
+                description=f"**Honor:** {h:,}\n**Meat:** {m:,}",
                 thumbnail=inter.author.display_avatar,
                 color=self.COLOR
             )
@@ -1639,16 +1635,16 @@ class Games(commands.Cog):
             if values[k][3] is not None and v >= values[k][3]:
                 continue
             if values[k][2]:
-                msgs.append("**{}** ▫️ {}\n".format(k, self.bot.emote.get(values[k][0][v])))
+                msgs.append(f"**{k}** ▫️ {self.bot.emote.get(values[k][0][v])}\n")
             else:
-                msgs.append("**{}** ▫️ {}\n".format(k, values[k][0][v]))
+                msgs.append(f"**{k}** ▫️ {values[k][0][v]}\n")
             seed = self.randint(seed)
-        msgs.append("**Rating** ▫️ {:.1f}".format(rarity_mod + (seed % 31) / 10))
+        msgs.append(f"**Rating** ▫️ {rarity_mod + seed % 31 / 10:.1f}")
 
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{}'s daily character".format(inter.author.display_name),
+                    'name':f"{inter.author.display_name}'s daily character",
                     'icon_url':inter.author.display_avatar
                 },
                 description="".join(msgs),
@@ -1668,10 +1664,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 title="Today, Xil's main element is",
-                description="### {} **{}**".format(
-                    self.bot.emote.get(e),
-                    e.capitalize()
-                ),
+                description=f"### {self.bot.emote.get(e)} **{e.capitalize()}**",
                 color=self.COLOR
             )
         )
@@ -1706,9 +1699,7 @@ class Games(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     author={
-                        'name':"{}'s choice".format(
-                            inter.author.display_name
-                        ),
+                        'name':f"{inter.author.display_name}'s choice",
                         'icon_url':inter.author.display_avatar
                     },
                     description="Possible choices: `{}`\n### I pick: `{}`".format(
@@ -1739,9 +1730,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{} asked".format(
-                        inter.author.display_name
-                    ),
+                    'name':f"{inter.author.display_name} asked",
                     'icon_url':inter.author.display_avatar
                 },
                 description="`{}`\n### {}".format(
@@ -1789,9 +1778,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{} asked".format(
-                        inter.author.display_name
-                    ),
+                    'name':f"{inter.author.display_name} asked",
                     'icon_url':inter.author.display_avatar
                 },
                 description="`When {}`\n### {}".format(
@@ -1833,7 +1820,7 @@ class Games(commands.Cog):
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{} asked".format(inter.author.display_name),
+                    'name':f"{inter.author.display_name} asked",
                     'icon_url':inter.author.display_avatar
                 },
                 description="`{}`\n# {}".format(

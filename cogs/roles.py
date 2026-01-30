@@ -107,7 +107,7 @@ class Roles(commands.Cog):
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="Error",
-                        description="Role `{}` not found".format(role_name),
+                        description=f"Role `{role_name}` not found",
                         color=self.COLOR
                     )
                 )
@@ -117,7 +117,7 @@ class Roles(commands.Cog):
                     await inter.edit_original_message(
                         embed=self.bot.embed(
                             title="Your roles have been updated",
-                            description="Role `{}` has been added to your profile".format(r),
+                            description=f"Role `{r}` has been added to your profile",
                             color=self.COLOR
                         )
                     )
@@ -162,7 +162,7 @@ class Roles(commands.Cog):
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="Error",
-                        description="Role `{}` not found".format(role_name),
+                        description=f"Role `{role_name}` not found",
                         color=self.COLOR
                     )
                 )
@@ -172,7 +172,7 @@ class Roles(commands.Cog):
                     await inter.edit_original_message(
                         embed=self.bot.embed(
                             title="Your roles have been updated",
-                            description="Role `{}` has been removed from your profile".format(r),
+                            description=f"Role `{r}` has been removed from your profile",
                             color=self.COLOR
                         )
                     )
@@ -213,7 +213,7 @@ class Roles(commands.Cog):
             if count % 10 == 0: # 3 fields per page, so 10 roles per field.
                 fields.append(
                     {
-                        'name':'{} '.format(self.bot.emote.get(str(len(fields) + 1))),
+                        'name':f'{self.bot.emote.get(str(len(fields) + 1))} ',
                         'value':[],
                         'inline':True
                     }
@@ -229,7 +229,7 @@ class Roles(commands.Cog):
                     self.bot.embed(
                         title="Self Assignable Roles",
                         fields=fields,
-                        footer="Page {}/{}".format(len(embeds) + 1, 1 + len(roles) // 30),
+                        footer=f"Page {len(embeds) + 1}/{1 + len(roles) // 30}",
                         color=self.COLOR
                     )
                 )
@@ -242,7 +242,7 @@ class Roles(commands.Cog):
                 self.bot.embed(
                     title="Self Assignable Roles",
                     fields=fields,
-                    footer="Page {}/{}".format(len(embeds) + 1, 1 + len(roles) // 30),
+                    footer=f"Page {len(embeds) + 1}/{1 + len(roles) // 30}",
                     color=self.COLOR
                 )
             )
@@ -279,7 +279,7 @@ class Roles(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Role `{}` not found".format(role_name),
+                    description=f"Role `{role_name}` not found",
                     color=self.COLOR
                 )
             )
@@ -302,7 +302,7 @@ class Roles(commands.Cog):
         self.bot.data.pending = True
         await inter.edit_original_message(
             embed=self.bot.embed(
-                title="Role `{}` added to the self-assignable role list".format(role_name),
+                title=f"Role `{role_name}` added to the self-assignable role list",
                 color=self.COLOR
             )
         )
@@ -333,7 +333,7 @@ class Roles(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Role `{}` not found".format(role_name),
+                    description=f"Role `{role_name}` not found",
                     color=self.COLOR
                 )
             )
@@ -346,7 +346,7 @@ class Roles(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Role `{}` isn't a self-assignable role.\nDid you mean `/role add` ?".format(role_name),
+                    description=f"Role `{role_name}` isn't a self-assignable role.\nDid you mean `/role add` ?",
                     color=self.COLOR
                 )
             )
@@ -355,7 +355,7 @@ class Roles(commands.Cog):
         self.bot.data.pending = True
         await inter.edit_original_message(
             embed=self.bot.embed(
-                title="Role `{}` removed from the self-assignable role list".format(role_name),
+                title=f"Role `{role_name}` removed from the self-assignable role list",
                 color=self.COLOR
             )
         )

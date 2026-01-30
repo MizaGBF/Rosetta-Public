@@ -62,7 +62,7 @@ class Moderation(commands.Cog):
         await self.bot.send(
             'debug',
             embed=self.bot.embed(
-                title="{} ▫️ {}".format(member.display_name, member.id),
+                title=f"{member.display_name} ▫️ {member.id}",
                 description="Banned from all spark rankings by {:}\nMask: `{:b}`".format(
                     inter.author.display_name,
                     self.bot.ban.get(str(member.id))
@@ -248,31 +248,31 @@ class Moderation(commands.Cog):
             )
         ]
         if len(guild.categories) > 0:
-            msgs.append(":file_folder: **{}** Categories\n".format(len(guild.categories)))
+            msgs.append(f":file_folder: **{len(guild.categories)}** Categories\n")
         if len(guild.text_channels) > 0:
-            msgs.append(":printer : **{}** Text Channels\n".format(len(guild.text_channels)))
+            msgs.append(f":printer : **{len(guild.text_channels)}** Text Channels\n")
         if len(guild.voice_channels) > 0:
-            msgs.append(":speaker: **{}** Voice Channels\n".format(len(guild.voice_channels)))
+            msgs.append(f":speaker: **{len(guild.voice_channels)}** Voice Channels\n")
         if len(guild.forum_channels) > 0:
-            msgs.append(":speaking_head: **{}** Forum Channels\n".format(len(guild.forum_channels)))
+            msgs.append(f":speaking_head: **{len(guild.forum_channels)}** Forum Channels\n")
         if len(guild.stage_channels) > 0:
-            msgs.append(":loudspeaker: **{}** Stage Channels\n".format(len(guild.stage_channels)))
+            msgs.append(f":loudspeaker: **{len(guild.stage_channels)}** Stage Channels\n")
         if guild.safety_alerts_channel is not None:
             msgs.append(":triangular_flag_on_post: Safety Channel **[#{}]({})**\n".format(
                 guild.safety_alerts_channel.name,
                 guild.safety_alerts_channel.jump_url
             ))
-        msgs.append(":sound: Max Bitrate of **{}** kbps\n".format(int(guild.bitrate_limit / 1000)))
+        msgs.append(f":sound: Max Bitrate of **{int(guild.bitrate_limit / 1000)}** kbps\n")
         if len(guild.roles) > 0:
-            msgs.append(":scroll: **{}** Roles\n".format(len(guild.roles)))
+            msgs.append(f":scroll: **{len(guild.roles)}** Roles\n")
         if len(guild.emojis) > 0:
-            msgs.append("🙂 **{}** / **{}** Emojis\n".format(len(guild.emojis), guild.emoji_limit * 2))
+            msgs.append(f"🙂 **{len(guild.emojis)}** / **{guild.emoji_limit * 2}** Emojis\n")
         if len(guild.stickers) > 0:
-            msgs.append("🌠 **{}** / **{}** Stickers\n".format(len(guild.stickers), guild.sticker_limit))
+            msgs.append(f"🌠 **{len(guild.stickers)}** / **{guild.sticker_limit}** Stickers\n")
         if guild.soundboard_limit > 0:
-            msgs.append(":loud_sound: Up to **{}** Soundboard elements\n".format(guild.soundboard_limit))
+            msgs.append(f":loud_sound: Up to **{guild.soundboard_limit}** Soundboard elements\n")
         if len(guild.scheduled_events) > 0:
-            msgs.append(":clock1130: **{}** scheduled Events\n".format(len(guild.scheduled_events)))
+            msgs.append(f":clock1130: **{len(guild.scheduled_events)}** scheduled Events\n")
         if guild.premium_tier > 0:
             msgs.append(":diamonds: Boost Tier **{}** (**{}** Boosts)\n".format(
                 guild.premium_tier, guild.premium_subscription_count
@@ -286,9 +286,9 @@ class Moderation(commands.Cog):
             rosetta.append(":x: **External Emoji** permission is **Missing**\n")
         cleanup_settings : CleanupSetting = self.bot.channel.get_cleanup_settings(gid)
         if cleanup_settings[0]:
-            rosetta.append("{} **Auto cleanup** enabled".format(self.bot.emote.get('lyria')))
+            rosetta.append(f"{self.bot.emote.get('lyria')} **Auto cleanup** enabled")
             if len(cleanup_settings[1]) > 0:
-                rosetta.append(", {} channel(s) are excluded".format(len(cleanup_settings[1])))
+                rosetta.append(f", {len(cleanup_settings[1])} channel(s) are excluded")
             rosetta.append("\n")
         elif is_mod:
             rosetta.append(":warning: **Auto cleanup** disabled\n")

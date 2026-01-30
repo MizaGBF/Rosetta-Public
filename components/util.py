@@ -115,7 +115,7 @@ class Util():
     def json_serial(self : Util, obj : Any) -> Any: # serialize everything including datetime objects
         if isinstance(obj, datetime): # convert datetimes to string isoformat
             return obj.replace(microsecond=0).isoformat()
-        raise TypeError("Type %s not serializable" % type(obj))
+        raise TypeError(f"Type {type(obj)} not serializable")
 
     """UTC()
     Return the current time, UTC timezone
@@ -205,7 +205,7 @@ class Util():
         # get elapsed time between now and the start
         delta : timedelta = self.UTC() - self.starttime
         if as_string:
-            return "{}".format(self.delta2str(delta, 3))
+            return f"{self.delta2str(delta, 3)}"
         else:
             return delta
 
@@ -241,14 +241,9 @@ class Util():
                     (delta.seconds // 60) % 60
                 )
             case 1:
-                return "{}h{}m".format(
-                    delta.seconds // 3600,
-                    (delta.seconds // 60) % 60
-                )
+                return f"{delta.seconds // 3600}h{delta.seconds // 60 % 60}m"
             case _:
-                return "{}m".format(
-                    delta.seconds // 60
-                )
+                return f"{delta.seconds // 60}m"
 
     """str2delta()
     Convert string to a a timedelta object (format: XdXhXmXs)
@@ -330,7 +325,7 @@ class Util():
                 sys.version_info.micro
             ),
             "OS": platform.platform(),
-            "CPU": "{:.2f}%".format(self.process.cpu_percent()),
+            "CPU": f"{self.process.cpu_percent():.2f}%",
             "Memory": "{:.1f}MB ({:.2f}%)".format(
                 self.process.memory_full_info().uss / 1048576,
                 self.process.memory_percent()
@@ -346,9 +341,9 @@ class Util():
             "Task Count": str(len(self.bot.tasks)),
             "Server Count": str(len(self.bot.guilds)),
             "Cogs Loaded": (
-                "{}/{}".format(len(self.bot.cogs), self.bot.cogn)
+                f"{len(self.bot.cogs)}/{self.bot.cogn}"
                 if (len(self.bot.cogs) == self.bot.cogn)
-                else "**{}**/{}".format(len(self.bot.cogs), self.bot.cogn)
+                else f"**{len(self.bot.cogs)}**/{self.bot.cogn}"
             )
         }
 
@@ -506,7 +501,7 @@ class Util():
         tid : int|str
         if memberTarget is not None: # memberTarget is valid
             if str(memberTarget.id) not in self.bot.data.save['gbfids']: # check if their id is linked
-                return "`{}` didn't set its GBF profile ID.".format(memberTarget.display_name)
+                return f"`{memberTarget.display_name}` didn't set its GBF profile ID."
             tid = self.bot.data.save['gbfids'][str(memberTarget.id)] # return GBF ID
         elif target == "": # empty target string
             if str(inter.author.id) not in self.bot.data.save['gbfids']: # check if their id is linked
@@ -528,7 +523,7 @@ class Util():
                     ).format(self.command2mention('gw find player'))
                 tid = self.bot.data.save['gbfids'][target] # return gbf id
             except:
-                return "An error occured: Invalid parameter {} -> {}.".format(target, type(target))
+                return f"An error occured: Invalid parameter {target} -> {type(target)}."
         else: # maybe a number?
             try:
                 tid = int(target) # check
@@ -677,9 +672,9 @@ class Util():
             if from_gacha: # add check to be sure it's a gacha weapon
                 addition.append('AND (obtain LIKE "%normal%" OR obtain LIKE "%premium%" OR obtain LIKE "%gala%")')
             if element is not None: # add element check
-                addition.append('AND element = "{}"'.format(element))
+                addition.append(f'AND element = "{element}"')
             if proficiency is not None and category == "weapons": # add proficiency check
-                addition.append('AND type = "{}"'.format(proficiency))
+                addition.append(f'AND type = "{proficiency}"')
                 extra_fields = ",type"
             # make request
             data : RequestResult = await self.bot.net.requestWiki(
@@ -687,8 +682,8 @@ class Util():
                 params={
                     "title":"Special:CargoExport",
                     "tables":category,
-                    "where":'name = "{}"{}'.format(name, ' '.join(addition)),
-                    "fields":"name,id,obtain,element{}".format(extra_fields),
+                    "where":f"name = \"{name}\"{' '.join(addition)}",
+                    "fields":f"name,id,obtain,element{extra_fields}",
                     "format":"json",
                     "limit":"10"
                 },
@@ -771,7 +766,7 @@ class Util():
             for r in rs:
                 if cmd_name.lower() == r[0].lower(): # good match
                     # make and return the mention (format: </command_name:command_id> )
-                    return '</{}:{}>'.format(r[0], r[1])
+                    return f'</{r[0]}:{r[1]}>'
         return base_command_name
 
     """version2str()

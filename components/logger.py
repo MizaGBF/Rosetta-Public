@@ -107,7 +107,7 @@ class Logger():
                             embed=self.bot.embed(
                                 title="Rosetta Log",
                                 description="### " + msg[1],
-                                footer=("Occured {} times".format(msg[2]) if msg[2] > 1 else ''),
+                                footer=(f"Occured {msg[2]} times" if msg[2] > 1 else ''),
                                 timestamp=msg[0],
                                 color=self.color(msg[3])
                             )

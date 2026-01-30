@@ -251,7 +251,7 @@ class Pinboard():
                         # prepare a dict we'll convert to a disnake.Embed
                         embed_dict : JSON = {}
                         embed_dict['color'] = self.COLOR
-                        embed_dict['footer'] = {'text':"#{}".format(origin_channel_name), 'url':None} # channel name
+                        embed_dict['footer'] = {'text':f"#{origin_channel_name}", 'url':None} # channel name
                         embed_dict['title'] = user.display_name + " - @" + str(message.author) # user name and handle
                         # add message
                         self.pin_addmessage(embed_dict, content)
@@ -311,7 +311,7 @@ class Pinboard():
                             except:
                                 pass
                         else:
-                            self.bot.logger.pushError("[PINBOARD] 'pin' error, guild `{}`:".format(message.guild.id), x)
+                            self.bot.logger.pushError(f"[PINBOARD] 'pin' error, guild `{message.guild.id}`:", x)
                         return False
         except Exception as e:
             self.bot.logger.pushError("[PINBOARD] 'pin' error:", e)
@@ -572,7 +572,7 @@ class Pinboard():
                     pass
                 else:
                     updated_tracked.append(int(cid))
-                    fields[-1]['value'] += '`#{}`\n'.format(c.name)
+                    fields[-1]['value'] += f'`#{c.name}`\n'
                     if len(fields[-1]['value']) > 950:
                         fields.append({
                             'name':'Tracked channels',
@@ -637,7 +637,7 @@ class Pinboard():
         await inter.edit_original_message(
             embed=self.bot.embed(
                 author={
-                    'name':"{}'s Pinboard settings".format(inter.guild.name),
+                    'name':f"{inter.guild.name}'s Pinboard settings",
                     'icon_url':icon
                 },
                 description=msg,

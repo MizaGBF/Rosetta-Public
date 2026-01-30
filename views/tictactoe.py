@@ -101,7 +101,7 @@ class TicTacToe(BaseView):
         self.playing_index : int = 0 # player index in players
         self.grid : list[int] = [0, 0, 0, 0, 0, 0, 0, 0, 0] # 3x3 grid
         self.moves : int = 0 # total moves played
-        self.notification : str = "Turn of {}".format(self.playing.display_name)
+        self.notification : str = f"Turn of {self.playing.display_name}"
         # add buttons
         i : int
         for i in range(len(self.grid)):
@@ -141,7 +141,7 @@ class TicTacToe(BaseView):
             if win_id is not None: # a player won
                 self.playing = self.players[win_id]
                 self.playing_index = win_id
-                self.notification = "**{}** is the winner".format(self.playing.display_name)
+                self.notification = f"**{self.playing.display_name}** is the winner"
             else: # draw, out of space for more moves
                 self.notification = "It's a **Draw**..."
             # disable buttons
@@ -156,6 +156,6 @@ class TicTacToe(BaseView):
             # update playing player
             self.playing = self.players[self.playing_index]
             # update text
-            self.notification = "Turn of **{}**".format(self.playing.display_name)
+            self.notification = f"Turn of **{self.playing.display_name}**"
             # return game continue
             return False

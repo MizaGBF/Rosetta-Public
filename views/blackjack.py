@@ -69,7 +69,7 @@ class Blackjack(BaseView):
         if self.players[self.state].id == self.bot.user.id:
             self.playai()
         # Then the player in slot 0 will play
-        self.notification : str = "Turn of **{}**".format(self.players[self.state].display_name)
+        self.notification : str = f"Turn of **{self.players[self.state].display_name}**"
 
     """renderHand()
     Generate a Hand string for the given hand
@@ -96,8 +96,8 @@ class Blackjack(BaseView):
         # add score to message
         msgs.append(" ▫️")
         match hand[0]:
-            case self.PLAYING: msgs.append(" Score is **{}**".format(score))
-            case self.STOPPED: msgs.append(" Stopped at **{}**".format(score))
+            case self.PLAYING: msgs.append(f" Score is **{score}**")
+            case self.STOPPED: msgs.append(f" Stopped at **{score}**")
             case self.BLACKJACK: msgs.append(" **Blackjack**")
             case self.TWENTYONE: msgs.append(" Reached **21**")
             case self.LOST: msgs.append(" **Lost**")
@@ -132,7 +132,7 @@ class Blackjack(BaseView):
             case 0: # no winners
                 return "No one won"
             case 1: # one winner
-                return "**{}** is the winner".format(winner[0].display_name)
+                return f"**{winner[0].display_name}** is the winner"
             case _: # multiple winners
                 msgs : list[str] = ["It's a **draw** between "]
                 for p in winner:
@@ -280,7 +280,7 @@ class Blackjack(BaseView):
             self.play(action) # do the action corresponding to the button (True = stop, False = draw)
             # Check if the game is over and print status accordingly
             if self.state >= 0:
-                self.notification = "Turn of **{}**".format(self.players[self.state].display_name)
+                self.notification = f"Turn of **{self.players[self.state].display_name}**"
             else:
                 self.notification = self.getWinner()
                 self.stopall()

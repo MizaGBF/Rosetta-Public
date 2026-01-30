@@ -81,7 +81,7 @@ class Network():
                         if "Windows" in ua and "Chrome" in ua:
                             self.user_agent = ua + ' Rosetta/' + self.bot.VERSION # and update our user agent
                             self.bot.logger.push(
-                                "[NET] Default user-agent set to `{}`".format(self.user_agent),
+                                f"[NET] Default user-agent set to `{self.user_agent}`",
                                 send_to_discord=False
                             )
                             return
@@ -203,7 +203,7 @@ class Network():
                 is_json : bool = 'application/json' in ct
                 # raise error if we expected a json and it's not
                 if expect_JSON and not is_json:
-                    raise Exception("Expected `application/json`, got `{}`".format(ct))
+                    raise Exception(f"Expected `application/json`, got `{ct}`")
                 if rtype == self.Method.HEAD: # HEAD request, we simply return True to signify it's successful
                     return True
                 elif is_json: # JSON, we return it as a JSON object
@@ -214,7 +214,7 @@ class Network():
                     return await response.read()
         except Exception as e:
             if str(e) != "":
-                self.bot.logger.pushError("[NET] request `{}` Error:".format(url), e) # log unexpected errors
+                self.bot.logger.pushError(f"[NET] request `{url}` Error:", e) # log unexpected errors
             return None
 
     """requestGBF()
@@ -376,7 +376,7 @@ class Network():
         except Exception as e:
             if str(e) != "":
                 self.bot.logger.pushError(
-                    "[NET] requestGBF `{}` Error:".format(path),
+                    f"[NET] requestGBF `{path}` Error:",
                     e,
                     send_to_discord=(not silent)
                 )
@@ -520,7 +520,7 @@ class Network():
         except Exception as e:
             if str(e) != "":
                 self.bot.logger.pushError(
-                    "[NET] requestGBF_offline `{}` Error:".format(path),
+                    f"[NET] requestGBF_offline `{path}` Error:",
                     e,
                     send_to_discord=(not silent)
                 )
@@ -582,7 +582,7 @@ class Network():
                 else: # binary content
                     return await response.read()
         except Exception as e:
-            self.bot.logger.pushError("[NET] requestWiki `{}` Error:".format(path), e)
+            self.bot.logger.pushError(f"[NET] requestWiki `{path}` Error:", e)
             return None
 
     """str2cookie()
@@ -944,7 +944,7 @@ class Network():
                     if (not check_maintenance_end
                             or (check_maintenance_end
                                 and not await self.gbf_available(skip_check=True))):
-                        return "{} Emergency maintenance on going".format(self.bot.emote.get('cog')), True
+                        return f"{self.bot.emote.get('cog')} Emergency maintenance on going", True
                     else: # no maintenance
                         self.bot.data.save['maintenance'] = {"state":False, "time":None, "duration":0}
                         self.bot.data.pending = True

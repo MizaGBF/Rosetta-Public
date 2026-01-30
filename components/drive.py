@@ -329,7 +329,7 @@ class Drive():
                 s.Upload() # and upload
             return True
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to upload file '{}':".format(name), e, send_to_discord=False)
+            self.bot.logger.pushError(f"[DRIVE] Failed to upload file '{name}':", e, send_to_discord=False)
             return False
 
     """overwriteFile()
@@ -363,7 +363,7 @@ class Drive():
                         s.Upload()
                     return True
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to overwrite file '{}':".format(name), e, send_to_discord=False)
+            self.bot.logger.pushError(f"[DRIVE] Failed to overwrite file '{name}':", e, send_to_discord=False)
             return False
         # not found, we do a normal upload
         return self.saveDiskFile(target, mime, name, folder)
@@ -398,7 +398,7 @@ class Drive():
                     return True
             return False
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to move file '{}':".format(name), e, send_to_discord=False)
+            self.bot.logger.pushError(f"[DRIVE] Failed to move file '{name}':", e, send_to_discord=False)
             return False
 
     """dlFile()
@@ -426,7 +426,7 @@ class Drive():
                     return True
             return None
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to download file '{}':".format(name), e, send_to_discord=False)
+            self.bot.logger.pushError(f"[DRIVE] Failed to download file '{name}':", e, send_to_discord=False)
             return False
 
     """delFile()
@@ -453,5 +453,5 @@ class Drive():
                     return True
             return None
         except Exception as e:
-            self.bot.logger.pushError("[DRIVE] Failed to delete file '{}':".format(name), e, send_to_discord=False)
+            self.bot.logger.pushError(f"[DRIVE] Failed to delete file '{name}':", e, send_to_discord=False)
             return False

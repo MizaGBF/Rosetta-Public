@@ -54,9 +54,7 @@ class BattleShipButton(disnake.ui.Button):
                 res : int = self.view.shoot("".join(self.view.input))
                 if res == 0: # invalid target
                     await interaction.response.send_message(
-                        "You can't shoot at {}".format(
-                            "".join(self.view.input)
-                        ),
+                        f"You can't shoot at {''.join(self.view.input)}",
                         ephemeral=True
                     )
                     self.view.input[self.btype] = None # cancel the last input
@@ -83,7 +81,7 @@ class BattleShipButton(disnake.ui.Button):
                     await self.view.update(interaction)
             else: # else, update the selection
                 extra_notif : list[str] = [
-                    "\n{} is selecting **".format(self.view.players[self.view.state].display_name)
+                    f"\n{self.view.players[self.view.state].display_name} is selecting **"
                 ]
                 extra_notif.append('?' if self.view.input[0] is None else self.view.input[0])
                 extra_notif.append('?' if self.view.input[1] is None else self.view.input[1])
@@ -140,7 +138,7 @@ class BattleShip(BaseView):
         for i in range(5):
             self.add_item(BattleShipButton(1, str(i + 1), 1))
         # set notification to player 1 turn
-        self.notification : str = "Turn of **{}**".format(self.players[self.state].display_name)
+        self.notification : str = f"Turn of **{self.players[self.state].display_name}**"
 
     """update()
     Update the embed

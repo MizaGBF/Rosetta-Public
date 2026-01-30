@@ -376,13 +376,7 @@ class Score(): # GW Score structure
         )
 
     def __repr__(self : Score) -> str: # used for debug
-        return "Score({}, {}, {}, {}, {})".format(
-            self.gw,
-            self.ver,
-            self.type,
-            self.name,
-            self.current
-        )
+        return f"Score({self.gw}, {self.ver}, {self.type}, {self.name}, {self.current})"
 
     def __str__(self : Score) -> str: # used for debug
         return "GW{}, v{}, {}, {}, {}".format(
@@ -433,7 +427,7 @@ class GWDB():
         return str(self)
 
     def __str__(self : GWDB) -> str: # used for debug
-        return "GWDB({}, {}, {})".format(self.gw,self.ver,self.timestamp)
+        return f"GWDB({self.gw}, {self.ver}, {self.timestamp})"
 
 
 """Calculator
@@ -505,12 +499,12 @@ class Calc():
         self.vars = self.vars | vars
         for func in self.FUNCS: # check variable names for dupes with function names
             if func in self.vars:
-                raise Exception("Variable name '{}' can't be used".format(func))
+                raise Exception(f"Variable name '{func}' can't be used")
         # parse expression and get the result
         value : float = float(self.parse())
         # interruption check
         if self.isNotDone():
-            raise Exception("Unexpected character '{}' found at index {}".format(self.peek(), self.index))
+            raise Exception(f"Unexpected character '{self.peek()}' found at index {self.index}")
         # adjust float if needed and convert to int
         epsilon : float = 0.0000000001
         if int(value) == value:
@@ -582,14 +576,14 @@ class Calc():
                 self.index += 1
                 denominator = self.parenthesis()
                 if denominator == 0:
-                    raise Exception("Division by 0 occured at index {}".format(div_index))
+                    raise Exception(f"Division by 0 occured at index {div_index}")
                 values.append(1.0 / denominator)
             elif c == '%': # modulo
                 mod_index = self.index
                 self.index += 1
                 denominator = self.parenthesis()
                 if denominator == 0:
-                    raise Exception("Modulo by 0 occured at index {}".format(mod_index))
+                    raise Exception(f"Modulo by 0 occured at index {mod_index}")
                 values[-1] = values[-1] % denominator
             elif c == '^': # exponent
                 self.index += 1
@@ -622,7 +616,7 @@ class Calc():
             self.index += 1
             value : int|float = self.parse() # then parse inside that parenthesis
             if self.peek() != ')': # we expect the parenthesis to be closed after
-                raise Exception("No closing parenthesis foundat position {}".format(self.index))
+                raise Exception(f"No closing parenthesis foundat position {self.index}")
             self.index += 1
             return value # return result
         else:
@@ -680,7 +674,7 @@ class Calc():
         if value is None: # it's not
             # check if function
             if var not in self.FUNCS:
-                raise Exception("Unrecognized variable '{}'".format(var))
+                raise Exception(f"Unrecognized variable '{var}'")
             else:
                 # parse func parameter
                 param : int|float = self.parenthesis()
@@ -705,20 +699,20 @@ class Calc():
                     case 'trunc': value = math.trunc(param)
                     case 'log':
                         if param <= 0:
-                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                            raise Exception(f"Can't evaluate the logarithm of '{param}'")
                         value = math.log(param)
                     case 'log2':
                         if param <= 0:
-                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                            raise Exception(f"Can't evaluate the logarithm of '{param}'")
                         value = math.log2(param)
                     case 'log10':
                         if param <= 0:
-                            raise Exception("Can't evaluate the logarithm of '{}'".format(param))
+                            raise Exception(f"Can't evaluate the logarithm of '{param}'")
                         value = math.log10(param)
                     case 'sqrt': value = math.sqrt(param)
                     case 'rad': value = math.radians(param)
                     case 'deg': value = math.degrees(param)
-                    case _: raise Exception("Unrecognized function '{}'".format(var))
+                    case _: raise Exception(f"Unrecognized function '{var}'")
         # return result
         return float(value)
 
@@ -742,7 +736,7 @@ class Calc():
             c = self.peek()
             if c == '.':
                 if decimal_found:
-                    raise Exception("Found an extra period in a numberat position {}".format(self.index))
+                    raise Exception(f"Found an extra period in a numberat position {self.index}")
                 decimal_found = True
                 strValue.append('.')
             elif c in '0123456789':

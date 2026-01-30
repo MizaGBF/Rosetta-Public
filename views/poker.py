@@ -179,7 +179,7 @@ class Poker(BaseView):
         for i, p in enumerate(self.players):
             self.subembeds.append(
                 self.bot.embed(
-                    title="♠️ {}'s hand ♥".format(p.display_name),
+                    title=f"♠️ {p.display_name}'s hand ♥",
                     description="Initialization",
                     color=self.embed.color
                 )
@@ -210,7 +210,7 @@ class Poker(BaseView):
                 case 0:
                     pass # shouldn't happen
                 case 1: # 1 winner
-                    desc.append("**{}** is the winner".format(self.winners[0].display_name))
+                    desc.append(f"**{self.winners[0].display_name}** is the winner")
                 case _: # draw
                     desc.append("It's a **draw** between ")
                     for p in self.winners:
@@ -434,29 +434,29 @@ class Poker(BaseView):
         elif flush and ((len(counts_set) == 1 and (value_range == 4)) or set(values) == Poker.STRAIGTH_SET):
             # flush and ((all values are unique and the range between highest and lowest is 4)
             # or it matches STRAIGTH_SET)
-            return "**Straight Flush, high {}**".format(highest_card.getStringValue())
+            return f"**Straight Flush, high {highest_card.getStringValue()}**"
         elif counts_set == Poker.FOUR_KIND_SET:
             card = Poker.highestCardForOccurence(hand, value_counts, 4)
-            return 700 + int(card), "**Four of a Kind of {}**".format(card.getStringValue())
+            return 700 + int(card), f"**Four of a Kind of {card.getStringValue()}**"
         elif counts_set == Poker.FULL_HOUSE_SET:
-            return 600 + int(highest_card), "**Full House, high {}**".format(highest_card.getStringValue())
+            return 600 + int(highest_card), f"**Full House, high {highest_card.getStringValue()}**"
         elif flush:
-            return 500 + int(highest_card), "**Flush, high {}**".format(highest_card.getStringValue())
+            return 500 + int(highest_card), f"**Flush, high {highest_card.getStringValue()}**"
         elif (len(counts_set) == 1 and (value_range == 4)) or set(values) == Poker.STRAIGTH_SET:
             # (all values are unique and the range between highest and lowest is 4)
             # or it matches STRAIGTH_SET
-            return 400 + int(highest_card), "**Straight, high {}**".format(highest_card.getStringValue())
+            return 400 + int(highest_card), f"**Straight, high {highest_card.getStringValue()}**"
         elif counts_set == Poker.THREE_KIND_SET:
             card = Poker.highestCardForOccurence(hand, value_counts, 3)
-            return 300 + int(card), "**Three of a Kind of {}**".format(card.getStringValue())
+            return 300 + int(card), f"**Three of a Kind of {card.getStringValue()}**"
         elif sorted_values == Poker.DOUBLE_PAIR_LIST:
             card = Poker.highestCardForOccurence(hand, value_counts, 2)
-            return 200 + int(card), "**Two Pairs, high {}**".format(card.getStringValue())
+            return 200 + int(card), f"**Two Pairs, high {card.getStringValue()}**"
         elif 2 in counts_set:
             card = Poker.highestCardForOccurence(hand, value_counts, 2)
-            return 100 + int(card), "**Pair of {}**".format(card.getStringValue())
+            return 100 + int(card), f"**Pair of {card.getStringValue()}**"
         else:
-            return int(highest_card), "**Highest card is {}**".format(highest_card.getStringValue())
+            return int(highest_card), f"**Highest card is {highest_card.getStringValue()}**"
 
     """highestCardForOccurence()
     Static function

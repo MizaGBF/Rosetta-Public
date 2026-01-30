@@ -288,7 +288,7 @@ class PageRanking(BaseView):
                 if len(self.embeds) > 0:
                     # cycle to previous page
                     self.current = (self.current + len(self.embeds) - 1) % len(self.embeds)
-                    self.close_b.label = "Page {}".format(self.current + 1)
+                    self.close_b.label = f"Page {self.current + 1}"
                     await interaction.send("\u200b", ephemeral=True, delete_after=0)
                     # update dropdown
                     self.dropdown.update_options(self.search_results[self.current])
@@ -326,7 +326,7 @@ class PageRanking(BaseView):
                 # disable this button
                 button.disabled = True
                 button.style = disnake.ButtonStyle.secondary
-                button.label = "Page {}".format(self.current + 1)
+                button.label = f"Page {self.current + 1}"
                 # enable prev and next buttons if they exist
                 if len(self.embeds) >= 2:
                     self.prev_b.disabled = False
@@ -356,7 +356,7 @@ class PageRanking(BaseView):
                 if len(self.embeds) > 0:
                     # cycle to previous page
                     self.current = (self.current + 1) % len(self.embeds)
-                    self.close_b.label = "Page {}".format(self.current + 1)
+                    self.close_b.label = f"Page {self.current + 1}"
                     await interaction.send("\u200b", ephemeral=True, delete_after=0)
                     # update dropdown
                     self.dropdown.update_options(self.search_results[self.current])

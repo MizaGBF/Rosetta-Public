@@ -58,10 +58,10 @@ class ScratcherButton(disnake.ui.Button):
                 await interaction.response.edit_message(
                     embed=self.view.bot.embed(
                         author={
-                            'name':"{} scratched".format(interaction.user.display_name),
+                            'name':f"{interaction.user.display_name} scratched",
                             'icon_url':interaction.user.display_avatar
                         },
-                        description="You won **{}**".format(self.item[0]),
+                        description=f"You won **{self.item[0]}**",
                         thumbnail=self.ENDPOINT + self.item[1],
                         footer=self.view.footer,
                         color=self.view.color

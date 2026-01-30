@@ -61,7 +61,7 @@ def loadCogFile(
                     bot.add_cog(_class(bot))
                 except Exception as e2:
                     bot.logger.pushError(
-                        "[COG] Failed to instantiate class {}:".format(node.name),
+                        f"[COG] Failed to instantiate class {node.name}:",
                         e2,
                         send_to_discord=not silent
                     )
@@ -79,7 +79,7 @@ def loadCogFile(
             )
         else:
             bot.logger.pushError(
-                "[COG] Exception in file {}:".format(path_filename),
+                f"[COG] Exception in file {path_filename}:",
                 e,
                 send_to_discord=not silent
             )
@@ -343,7 +343,7 @@ def writeHTMLHelp(version : str, path : str, cogs : list[dict[str, Any]]) -> Non
                 ) # class
                 # add auto copy on click for slash commands
                 if command["type"] == 0:
-                    containers += 'onclick="copyCommand(\'{}\')"'.format(command["name"])
+                    containers += f"onclick=\"copyCommand('{command['name']}')\""
                 # add the rest
                 containers += (
                     '>\n'
@@ -412,7 +412,7 @@ def writeHTMLHelp(version : str, path : str, cogs : list[dict[str, Any]]) -> Non
                 ).replace(
                     "FILTER_STRINGS", filters
                 ).replace(
-                    "COMMAND_STRING", "{} commands".format(total_count)
+                    "COMMAND_STRING", f"{total_count} commands"
                 ).replace(
                     "COMMAND_LIST", containers
                 )

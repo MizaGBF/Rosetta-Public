@@ -191,7 +191,7 @@ class Emote():
                 else:
                     emote_file_table.pop(item['name'], None)
             if deleted > 0:
-                self.bot.logger.push("[LOAD EMOJI] {} unused application emojis have been deleted.".format(deleted))
+                self.bot.logger.push(f"[LOAD EMOJI] {deleted} unused application emojis have been deleted.")
             # if we have files remaining to be uploaded in emote_file_table...
             if len(emote_file_table) > 0:
                 self.bot.logger.push(
@@ -209,7 +209,7 @@ class Emote():
                             await asyncio.sleep(1)
                     self.bot.logger.push("[LOAD EMOJI] Done.\nEmojis have been uploaded")
                 except Exception as e:
-                    self.bot.logger.pushError("[LOAD EMOJI] upload_app_emojis Error for {}:".format(v), e)
+                    self.bot.logger.pushError(f"[LOAD EMOJI] upload_app_emojis Error for {v}:", e)
                     self.bot.logger.push("[LOAD EMOJI] An error occured.\nThe upload process has been aborted.")
                 # get new updated list
                 existing = await self.get_all_app_emojis()

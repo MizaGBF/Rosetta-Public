@@ -34,7 +34,7 @@ class General(commands.Cog):
             embed=self.bot.embed(
                 title="Bug Report ▫️ " + inter.text_values['title'],
                 description=inter.text_values['description'],
-                footer="{} ▫️ User ID: {}".format(inter.author.name, inter.author.id),
+                footer=f"{inter.author.name} ▫️ User ID: {inter.author.id}",
                 thumbnail=inter.author.display_avatar,
                 color=self.COLOR
             )
@@ -56,7 +56,7 @@ class General(commands.Cog):
         """Send a bug report or feedback to the developer"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "bug_report-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"bug_report-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Send a Bug / Feedback Report",
             self.bug_report_callback, [
                 disnake.ui.TextInput(
@@ -120,7 +120,7 @@ class General(commands.Cog):
                             results.append(r)
             if len(results) == 0: # no results
                 msgs = [
-                    "No results found for `{}`\n".format(' '.join(search)),
+                    f"No results found for `{' '.join(search)}`\n",
                     "**For more help:**\n",
                     "Online Help [here](https://mizagbf.github.io/discordbot.html)"
                 ]
@@ -130,7 +130,7 @@ class General(commands.Cog):
                 count : int = len(results)
                 # print matching commands
                 for r in results:
-                    msgs.append("</{}:{}> ▫️ *{}*\n".format(r[0], r[1], r[2]))
+                    msgs.append(f"</{r[0]}:{r[1]}> ▫️ *{r[2]}*\n")
                     length += len(msgs[-1])
                     count -= 1
                     if length > 1500 and count > 0:
@@ -168,9 +168,7 @@ class General(commands.Cog):
         await inter.response.defer(ephemeral=True)
         await inter.edit_original_message(
             embed=self.bot.embed(
-                title="{} is Ready".format(
-                    self.bot.user.display_name
-                ),
+                title=f"{self.bot.user.display_name} is Ready",
                 description=self.bot.util.statusString(),
                 thumbnail=self.bot.user.display_avatar,
                 timestamp=self.bot.util.UTC(),
@@ -201,10 +199,7 @@ class General(commands.Cog):
             msgs.insert(0, "### Changelog\n")
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} ▫️ v{}".format(
-                        inter.me.display_name,
-                        self.bot.VERSION
-                    ),
+                    title=f"{inter.me.display_name} ▫️ v{self.bot.VERSION}",
                     description="".join(msgs),
                     thumbnail=inter.me.display_avatar,
                     color=self.COLOR
@@ -268,14 +263,14 @@ class General(commands.Cog):
                 else:
                     raise Exception('')
             # expression and result (using Calc singleton)
-            msgs : list[str] = ["`{}` = **{}**".format(m[0], self.bot.singleton.make_calc(m[0], d))]
+            msgs : list[str] = [f"`{m[0]}` = **{self.bot.singleton.make_calc(m[0], d)}**"]
             if len(d) > 0: # add variables
                 msgs.append("\nwith:\n")
                 k : str
                 for k in d:
-                    msgs.append("{}".format(k))
+                    msgs.append(f"{k}")
                     msgs.append(" = ")
-                    msgs.append("{}\n".format(d[k]))
+                    msgs.append(f"{d[k]}\n")
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Calculator",
@@ -287,7 +282,7 @@ class General(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Error\n{}".format(e),
+                    description=f"Error\n{e}",
                     color=self.COLOR
                 )
             )
@@ -361,7 +356,7 @@ class General(commands.Cog):
                         count
                     )
                 )
-            msgs.append("Your chances of getting at least one SSR with {} rolls:\n".format(count))
+            msgs.append(f"Your chances of getting at least one SSR with {count} rolls:\n")
             msgs.append(
                 "{:} **{:.2f}%** ▫️ {:.3f}%\n".format(
                     self.bot.emote.get('SSR'),
@@ -466,7 +461,7 @@ class General(commands.Cog):
                 await inter.edit_original_message(
                     embed=self.bot.embed(
                         title="Error",
-                        description="Invalid card number `{}`".format(c),
+                        description=f"Invalid card number `{c}`",
                         color=self.COLOR
                     )
                 )
@@ -573,7 +568,7 @@ class General(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="An unexpected error occured:\n{}".format(e),
+                    description=f"An unexpected error occured:\n{e}",
                     color=self.COLOR
                 )
             )
@@ -583,7 +578,7 @@ class General(commands.Cog):
         """Translate a text to english"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "translate-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"translate-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Translate Text",
             self.translate_callback, [
                 disnake.ui.TextInput(
@@ -656,7 +651,7 @@ class General(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="An unexpected error occured:\n`{}`".format(e),
+                    description=f"An unexpected error occured:\n`{e}`",
                     color=self.COLOR
                 )
             )

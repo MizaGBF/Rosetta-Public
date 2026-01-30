@@ -87,7 +87,7 @@ class Admin(commands.Cog):
                     break
                 else:
                     self.bot.logger.pushError(
-                        "[EXIT] Auto-saving failed (try {} / 5)".format(count + 1),
+                        f"[EXIT] Auto-saving failed (try {count + 1} / 5)",
                         send_to_discord=False
                     )
                     time.sleep(2)
@@ -133,7 +133,7 @@ class Admin(commands.Cog):
         s : disnake.Guild
         for s in self.bot.guilds:
             # add to output message
-            msgs.append("**{}** `{}`owned by `{}`\n".format(s.name, s.id, s.owner_id))
+            msgs.append(f"**{s.name}** `{s.id}`owned by `{s.owner_id}`\n")
             length += len(msgs[-1])
             # send if msg length is too high
             if length > 1800:
@@ -208,10 +208,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Exec Error",
-                    description="Ran `{}`\nException\n{}".format(
-                        inter.text_values['code'],
-                        e
-                    ),
+                    description=f"Ran `{inter.text_values['code']}`\nException\n{e}",
                     color=self.COLOR
                 )
             )
@@ -221,7 +218,7 @@ class Admin(commands.Cog):
         """Execute code at run time (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "exec-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"exec-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Execute Code",
             self.exec_callback,
             [
@@ -265,7 +262,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description='The following error occured:\n{}'.format(e),
+                    description=f'The following error occured:\n{e}',
                     color=self.COLOR
                 )
             )
@@ -275,7 +272,7 @@ class Admin(commands.Cog):
         """Answer a bug report (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "bug_answer-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"bug_answer-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Answer a Bug Report",
             self.answer_callback,
             [
@@ -414,16 +411,16 @@ class Admin(commands.Cog):
         if self.bot.ban.check(user_id, self.bot.ban.OWNER):
             msgs.append("Banned from having the bot in its own servers\n")
         if self.bot.ban.check(user_id, self.bot.ban.SPARK):
-            msgs.append("Banned from appearing in {}\n".format(self.bot.util.command2mention('spark ranking')))
+            msgs.append(f"Banned from appearing in {self.bot.util.command2mention('spark ranking')}\n")
         if self.bot.ban.check(user_id, self.bot.ban.PROFILE):
-            msgs.append("Banned from using {}\n".format(self.bot.util.command2mention('gbf profile set')))
+            msgs.append(f"Banned from using {self.bot.util.command2mention('gbf profile set')}\n")
         if self.bot.ban.check(user_id, self.bot.ban.USE_BOT):
             msgs.append("Banned from using the bot\n")
         if len(msgs) == 0:
             msgs = ["No Bans set for this user"]
         await inter.edit_original_message(
             embed=self.bot.embed(
-                title="User {}".format(user_id),
+                title=f"User {user_id}",
                 description="".join(msgs),
                 color=self.COLOR
             )
@@ -608,7 +605,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description='The following error occured:\n{}'.format(e),
+                    description=f'The following error occured:\n{e}',
                     color=self.COLOR
                 )
             )
@@ -618,7 +615,7 @@ class Admin(commands.Cog):
         """Send a message to all announcement channels (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "notify-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"notify-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Notify Users",
             self.notify_callback,
             [
@@ -713,7 +710,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="The file name cannot be empty",
-                    description="{}".format(inter.text_values),
+                    description=f"{inter.text_values}",
                     color=self.COLOR
                 )
             )
@@ -765,7 +762,7 @@ class Admin(commands.Cog):
         """Delete a file from the Google Drive (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "drive_delete-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"drive_delete-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Delete a file from a Drive folder",
             self.drive_delete_callback,
             [
@@ -841,9 +838,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Clear Profile",
-                    description='User `{}` has been removed'.format(
-                        user_id
-                    ),
+                    description=f'User `{user_id}` has been removed',
                     color=self.COLOR
                 )
             )
@@ -931,7 +926,7 @@ class Admin(commands.Cog):
             }
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "set_stream-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"set_stream-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Set a GBF Stream",
             self.streamset_callback,
             [
@@ -1028,23 +1023,21 @@ class Admin(commands.Cog):
             times : list[int]
             for evname, times in data.items():
                 if not isinstance(times, list):
-                    raise Exception("Value of '{}' isn't a list".format(evname))
+                    raise Exception(f"Value of '{evname}' isn't a list")
                 elif len(times) not in (1, 2):
-                    raise Exception("Value of '{}' has an invalid length".format(evname))
+                    raise Exception(f"Value of '{evname}' has an invalid length")
                 else:
                     ts : int
                     for ts in times:
                         if not isinstance(ts, int):
-                            raise Exception("One value of '{}' isn't an integer".format(evname))
+                            raise Exception(f"One value of '{evname}' isn't an integer")
             # ok, set the data
             self.bot.data.save['schedule'] = data
             self.bot.data.pending = True
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Schedule set",
-                    description="New Schedule:\n`{}`".format(
-                        self.bot.data.save['schedule']
-                    ),
+                    description=f"New Schedule:\n`{self.bot.data.save['schedule']}`",
                     color=self.COLOR
                 )
             )
@@ -1065,7 +1058,7 @@ class Admin(commands.Cog):
         """Set the GBF schedule (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "set_schedule-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"set_schedule-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Set the GBF Schedule",
             self.scheduleset_callback,
             [
@@ -1217,7 +1210,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Invalid parameter {}".format(uid),
+                    description=f"Invalid parameter {uid}",
                     color=self.COLOR
                 )
             )
@@ -1226,7 +1219,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Invalid parameter {}".format(ck),
+                    description=f"Invalid parameter {ck}",
                     color=self.COLOR
                 )
             )
@@ -1235,7 +1228,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Error",
-                    description="Invalid parameter {}".format(ua),
+                    description=f"Invalid parameter {ua}",
                     color=self.COLOR
                 )
             )
@@ -1362,13 +1355,13 @@ class Admin(commands.Cog):
             last : int = 6
             i : int
             for i in range(0, extra_days):
-                self.bot.data.save['dread']['dates']["Day {}".format(7 + i)] = (
-                    self.bot.data.save['dread']['dates']["Day {}".format(6 + i)]
+                self.bot.data.save['dread']['dates'][f"Day {7 + i}"] = (
+                    self.bot.data.save['dread']['dates'][f"Day {6 + i}"]
                     + ONE_DAY
                 )
                 last = 7 + i
             self.bot.data.save['dread']['dates']["End"] = (
-                self.bot.data.save['dread']['dates']["Day {}".format(last)]
+                self.bot.data.save['dread']['dates'][f"Day {last}"]
                 + ONE_DAY
             )
             # set the valiant state to true
@@ -1376,9 +1369,7 @@ class Admin(commands.Cog):
             self.bot.data.pending = True
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} Dread Barrage Mode".format(
-                        self.bot.emote.get('gw')
-                    ),
+                    title=f"{self.bot.emote.get('gw')} Dread Barrage Mode",
                     description="Set to : **{:%m/%d %H:%M}**".format(
                         self.bot.data.save['dread']['dates']["Day 1"]
                     ),
@@ -1415,11 +1406,7 @@ class Admin(commands.Cog):
         if self.bot.data.save['dread']['state'] is True:
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} Dread Barrage Mode".format(
-                        self.bot.emote.get(
-                            'gw'
-                        )
-                    ),
+                    title=f"{self.bot.emote.get('gw')} Dread Barrage Mode",
                     description="Already enabled",
                     color=self.COLOR
                 )
@@ -1451,16 +1438,16 @@ class Admin(commands.Cog):
         msgs : list[str] = []
         i : int
         for i in (0, 1):
-            msgs.append("**{}** ▫️ ".format('GW_old.sql' if (i == 0) else 'GW.sql'))
+            msgs.append(f"**{'GW_old.sql' if i == 0 else 'GW.sql'}** ▫️ ")
             if vers[i] is None:
                 msgs.append("Not loaded")
             else:
                 if vers[i].gw is not None:
-                    msgs.append('GW{}'.format(vers[i].gw))
+                    msgs.append(f'GW{vers[i].gw}')
                 if vers[i].ver is not None:
-                    msgs.append(' (version {}) '.format(vers[i].ver))
+                    msgs.append(f' (version {vers[i].ver}) ')
                 if vers[i].timestamp is not None:
-                    msgs.append(' (at `{}`) '.format(vers[i].timestamp))
+                    msgs.append(f' (at `{vers[i].timestamp}`) ')
             msgs.append("\n")
         await inter.edit_original_message(
             embed=self.bot.embed(
@@ -1498,11 +1485,7 @@ class Admin(commands.Cog):
         if self.bot.data.save['gw']['state'] is True:
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} Guild War Mode".format(
-                        self.bot.emote.get(
-                            'gw'
-                        )
-                    ),
+                    title=f"{self.bot.emote.get('gw')} Guild War Mode",
                     description="Already enabled",
                     color=self.COLOR
                 )
@@ -1669,9 +1652,7 @@ class Admin(commands.Cog):
                 pass
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} Guild War Mode".format(
-                        self.bot.emote.get('gw')
-                    ),
+                    title=f"{self.bot.emote.get('gw')} Guild War Mode",
                     description="Set to : **{:%m/%d %H:%M}**".format(
                         self.bot.data.save['gw']['dates']["Preliminaries"]
                     ),
@@ -1768,7 +1749,7 @@ class Admin(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="GW Cutoffs",
-                    description="Cutoff data for GW{} has been populated using the wiki.".format(gwid),
+                    description=f"Cutoff data for GW{gwid} has been populated using the wiki.",
                     color=self.COLOR
                 )
             )
@@ -1789,7 +1770,7 @@ class Admin(commands.Cog):
         """Populate estimation cutoffs using the wiki (Owner Only)"""
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "wiki_cutoff-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"wiki_cutoff-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Populate Rosetta's cutoff data using the wiki",
             self.wiki_cutoff_callback,
             [
@@ -1816,7 +1797,7 @@ class Admin(commands.Cog):
             msgs : list[str] = []
             b : list[datetime|bool]
             for b in self.bot.data.save['gw']['buffs']:
-                msgs.append('{0:%m/%d %H:%M}: '.format(b[0]))
+                msgs.append(f'{b[0]:%m/%d %H:%M}: ')
                 if b[1]:
                     msgs.append('[Normal Buffs] ')
                 if b[2]:
@@ -1936,7 +1917,7 @@ class Admin(commands.Cog):
                 self.bot.data.save['gbfdata']['roulette']['day'] = guaranteddate % 100
                 self.bot.data.pending = True
             except:
-                msgs.append("**Error**: Invalid date `{}`\n\n".format(guaranteddate))
+                msgs.append(f"**Error**: Invalid date `{guaranteddate}`\n\n")
         # set each setting one by one, and build the output message
         msgs.append(
             "- Guaranted roll start date: `{}{}{}`\n".format(

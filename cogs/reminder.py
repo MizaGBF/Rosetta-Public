@@ -151,11 +151,11 @@ class Reminder(commands.Cog):
         # set description
         append : str
         if aid not in self.bot.data.save['reminders']:
-            append = "0 / {} reminders".format(self.REMINDER_LIMIT)
+            append = f"0 / {self.REMINDER_LIMIT} reminders"
         elif len(self.bot.data.save['reminders'][aid]) >= self.REMINDER_LIMIT:
-            append = "**{}** / {} reminders".format(len(self.bot.data.save['reminders'][aid]), self.REMINDER_LIMIT)
+            append = f"**{len(self.bot.data.save['reminders'][aid])}** / {self.REMINDER_LIMIT} reminders"
         else:
-            append = "{} / {} reminders".format(len(self.bot.data.save['reminders'][aid]), self.REMINDER_LIMIT)
+            append = f"{len(self.bot.data.save['reminders'][aid])} / {self.REMINDER_LIMIT} reminders"
         if description != "" and not description.endswith('\n'):
             description += "\n" + append
         else:
@@ -165,16 +165,14 @@ class Reminder(commands.Cog):
             # no reminder for this user
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{}'s reminder list".format(
-                        inter.author.display_name
-                    ),
+                    title=f"{inter.author.display_name}'s reminder list",
                     description=description,
                     color=self.COLOR
                 )
             )
         else:
             embed : disnake.Embed = disnake.Embed(
-                title="{}'s reminder list".format(inter.author.display_name).format(inter.author.display_name),
+                title=f"{inter.author.display_name}'s reminder list".format(inter.author.display_name),
                 description=description,
                 color=self.COLOR
             )
@@ -264,7 +262,7 @@ class Reminder(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Reminder Error",
-                    description="Invalid duration string `{}`, format is `NdNhNm`".format(duration),
+                    description=f"Invalid duration string `{duration}`, format is `NdNhNm`",
                     color=self.COLOR
                 )
             )
@@ -302,7 +300,7 @@ class Reminder(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Reminder Error",
-                    description="Invalid date: `{}`".format(e),
+                    description=f"Invalid date: `{e}`",
                     color=self.COLOR
                 )
             )
@@ -329,7 +327,7 @@ class Reminder(commands.Cog):
             await inter.edit_original_message(
                 embed=self.bot.embed(
                     title="Reminder Error",
-                    description="Invalid date: `{}`".format(e),
+                    description=f"Invalid date: `{e}`",
                     color=self.COLOR
                 )
             )
@@ -358,7 +356,7 @@ class Reminder(commands.Cog):
             description = "Error, you don't have any reminders"
         else:
             if rid < 0 or rid >= len(self.bot.data.save['reminders'][aid]): # check if given reminder index is valid
-                description = "Error, Invalid id `{}`".format(rid)
+                description = f"Error, Invalid id `{rid}`"
             else:
                 self.bot.data.save['reminders'][aid].pop(rid) # remove the reminder
                 if len(self.bot.data.save['reminders'][aid]) == 0: # remove user list if empty

@@ -66,7 +66,7 @@ class BaseView(disnake.ui.View):
                 if self.bot.channel.interaction_must_be_cleaned(self.message):
                     try:
                         await self.message.edit(
-                            content="{}".format(self.bot.emote.get('lyria')),
+                            content=f"{self.bot.emote.get('lyria')}",
                             embed=None,
                             view=None,
                             attachments=[]
@@ -111,10 +111,10 @@ class BaseView(disnake.ui.View):
         await self.bot.send(
             'debug',
             embed=self.bot.embed(
-                title="⚠ Error caused by {}".format(interaction.user),
-                description="{} Exception\n{}".format(item, self.bot.pexc(error)),
+                title=f"⚠ Error caused by {interaction.user}",
+                description=f"{item} Exception\n{self.bot.pexc(error)}",
                 thumbnail=interaction.user.display_avatar,
-                footer='{}'.format(interaction.user.id),
+                footer=f'{interaction.user.id}',
                 timestamp=self.bot.util.UTC()
             )
         )

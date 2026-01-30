@@ -111,7 +111,7 @@ class Sparking(commands.Cog):
             now : datetime
             t_max, t_min, expected, now = self._estimate(r, timestamp)
             # Roll count text
-            title : str = "{} has {} roll".format(member.display_name, fr)
+            title : str = f"{member.display_name} has {fr} roll"
             if fr != 1:
                 title += "s" # plural if the count is different from 1
             # Sending
@@ -211,7 +211,7 @@ class Sparking(commands.Cog):
         data : SparkData = self.bot.data.save['spark'].get(str(inter.author.id), [0, 0, 0, 0, None])
         await self.bot.singleton.make_and_send_modal(
             inter,
-            "spark_set-{}-{}".format(inter.id, self.bot.util.UTC().timestamp()),
+            f"spark_set-{inter.id}-{self.bot.util.UTC().timestamp()}",
             "Set your Spark Data",
             self.set_callback,
             [
@@ -424,11 +424,11 @@ class Sparking(commands.Cog):
             while mr < fr:
                 mr += 300
             # search with a regex if the roll count is already in the user nickname and remove it
-            n : str = self.NICKNAME_REGEX.sub('({}/{})'.format(fr, mr), inter.author.display_name)
+            n : str = self.NICKNAME_REGEX.sub(f'({fr}/{mr})', inter.author.display_name)
             # fetch the author member object in the guild
             m : disnake.Member|None = await inter.guild.get_or_fetch_member(inter.author.id)
             if n == inter.author.display_name: # if name has no rolls, add it
-                await m.edit(nick=inter.author.display_name + ' ({}/{})'.format(fr, mr))
+                await m.edit(nick=inter.author.display_name + f' ({fr}/{mr})')
             else:
                 await m.edit(nick=n)
             await inter.edit_original_message(
@@ -515,7 +515,7 @@ class Sparking(commands.Cog):
             if inter.context.bot_dm or inter.guild is None:
                 await inter.edit_original_message(
                     embed=self.bot.embed(
-                        title="{} Spark ranking".format(self.bot.emote.get('crown')),
+                        title=f"{self.bot.emote.get('crown')} Spark ranking",
                         color=self.COLOR,
                         description="This command is only usable when Rosetta is present in the Server."
                     )
@@ -535,7 +535,7 @@ class Sparking(commands.Cog):
                 return
             # Add user position in the ranking if known
             if ar >= self.TOP_LIMIT:
-                footer = "You are ranked #{}".format(ar + 1)
+                footer = f"You are ranked #{ar + 1}"
             else:
                 footer = ""
             # get icon url if it exists
@@ -547,7 +547,7 @@ class Sparking(commands.Cog):
             # send message
             await inter.edit_original_message(
                 embed=self.bot.embed(
-                    title="{} Spark ranking of {}".format(self.bot.emote.get('crown'), guild.name),
+                    title=f"{self.bot.emote.get('crown')} Spark ranking of {guild.name}",
                     color=self.COLOR,
                     description=msg,
                     footer=footer,

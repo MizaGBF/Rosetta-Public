@@ -94,7 +94,7 @@ class Data():
                 # basic validity check
                 for check in self.BASE_CONFIG:
                     if check not in self.config:
-                        raise Exception("'{}' section not found in 'config.json'".format(check))
+                        raise Exception(f"'{check}' section not found in 'config.json'")
             if self.debug: # we load AND merge config_test.json to config.json in memory
                 with open('config_test.json', mode="r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -102,7 +102,7 @@ class Data():
                     # basic validity check
                     for check in self.BASE_CONFIG:
                         if check not in self.config:
-                            raise Exception("'{}' section not found in 'config_test.json'".format(check))
+                            raise Exception(f"'{check}' section not found in 'config_test.json'")
                     self.config['debug'] = None # add debug key
             return True
         except Exception as e:

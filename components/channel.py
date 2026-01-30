@@ -75,9 +75,9 @@ class Channel():
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
-            self.bot.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+            self.bot.logger.push(f"[CHANNEL] Channel '{name}' registered", send_to_discord=False)
         except Exception as e:
-            self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using key '{}'".format(name, id_key), e)
+            self.bot.logger.pushError(f"[CHANNEL] Couldn't register Channel '{name}' using key '{id_key}'", e)
 
     """setID()
     Register a channel with a name
@@ -95,9 +95,9 @@ class Channel():
             if c is None:
                 raise Exception("Channel not found")
             self.cache[name] = c # add to cache if it exists
-            self.bot.logger.push("[CHANNEL] Channel '{}' registered".format(name), send_to_discord=False)
+            self.bot.logger.push(f"[CHANNEL] Channel '{name}' registered", send_to_discord=False)
         except Exception as e:
-            self.bot.logger.pushError("[CHANNEL] Couldn't register Channel '{}' using ID '{}'".format(name, cid), e)
+            self.bot.logger.pushError(f"[CHANNEL] Couldn't register Channel '{name}' using ID '{cid}'", e)
 
     """setMultiple()
     Register multiple channels
@@ -334,14 +334,14 @@ class Channel():
                     settings[1].pop(i)
                     self.bot.data.pending = True
                 else:
-                    descs.append("[#{}](https://discord.com/channels/{}/{}) ".format(ch.name, inter.guild.id, ch.id))
+                    descs.append(f"[#{ch.name}](https://discord.com/channels/{inter.guild.id}/{ch.id}) ")
                     i += 1
         descs.append("\nTo toggle a channel exception: ")
         descs.append(self.bot.util.command2mention('mod cleanup channel'))
         descs.append(" in the channel.")
         await inter.edit_original_message(
             embed=self.bot.embed(
-                title="{} Auto Cleanup settings".format(self.bot.emote.get('lyria')),
+                title=f"{self.bot.emote.get('lyria')} Auto Cleanup settings",
                 description="".join(descs),
                 footer=inter.guild.name + " ▫️ " + gid,
                 color=color

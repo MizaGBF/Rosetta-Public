@@ -266,7 +266,7 @@ class Ranking():
                     self.bot.data.save["gw_cutoffs"][gwid][0][t] = [None for i in range(self.GW_UPDATE_COUNT + 1)]
             self.bot.data.pending = True
             self.bot.logger.push(
-                "[RANKING] Storage for cutoffs of GW{} initialized".format(gwid),
+                f"[RANKING] Storage for cutoffs of GW{gwid} initialized",
                 send_to_discord=False
             )
 
@@ -339,7 +339,7 @@ class Ranking():
                             modified = True
         if modified:
             self.bot.logger.push(
-                "[RANKING] Wiki Guild War data has been loaded into GW{}".format(gwid),
+                f"[RANKING] Wiki Guild War data has been loaded into GW{gwid}",
                 send_to_discord=False
             )
         return modified
@@ -488,7 +488,7 @@ class Ranking():
                             self.bot.drive.mvFile(
                                 "GW_old.sql",
                                 self.bot.data.config['tokens']['files'],
-                                "GW{}_backup.sql".format(data[0].gw)
+                                f"GW{data[0].gw}_backup.sql"
                             )
                             await asyncio.sleep(5)
                         # Move current gw to past gw
@@ -913,10 +913,7 @@ class Ranking():
             if day > 0:
                 day -= 1 # interlude is put into prelims
             self.bot.logger.push(
-                "[RANKING] Updating Database (mode={}, day={})...".format(
-                    skip_mode,
-                    day
-                ),
+                f"[RANKING] Updating Database (mode={skip_mode}, day={day})...",
                 send_to_discord=False
             )
             n : GWDBInfo = await self.getGWDB()
@@ -941,9 +938,7 @@ class Ranking():
                     continue
                 await asyncio.sleep(0)
                 self.bot.logger.push(
-                    "[RANKING] {} Step...".format(
-                        'CREW' if n == 0 else 'PLAYER'
-                    ),
+                    f"[RANKING] {'CREW' if n == 0 else 'PLAYER'} Step...",
                     send_to_discord=False
                 )
                 self.getrank_mode = (n == 0)
@@ -984,9 +979,7 @@ class Ranking():
                     if r is not None:
                         state = r
                 self.bot.logger.push(
-                    "[RANKING] {} Step Done".format(
-                        'CREW' if n == 0 else 'PLAYER'
-                    ),
+                    f"[RANKING] {'CREW' if n == 0 else 'PLAYER'} Step Done",
                     send_to_discord=False
                 )
                 if state != "":

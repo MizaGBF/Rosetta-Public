@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.8.0" # bot version
+    VERSION : str = "12.9.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -186,7 +186,7 @@ class DiscordBot(commands.InteractionBot):
 
             # constructor
             self.logger.push(
-                "[BOOT] Initializing disnake.InteractionBot with Intent flags: 0b{:b}".format(intents.value),
+                f"[BOOT] Initializing disnake.InteractionBot with Intent flags: 0b{intents.value:b}",
                 send_to_discord=False
             )
             super().__init__(
@@ -218,7 +218,7 @@ class DiscordBot(commands.InteractionBot):
         failed : int
         self.cogn, failed = cogs.load(self)
         if failed > 0:
-            self.logger.pushError("{} / {} cog(s) failed to load".format(failed, self.cogn), send_to_discord=False)
+            self.logger.pushError(f"{failed} / {self.cogn} cog(s) failed to load", send_to_discord=False)
         else:
             self.logger.push("OK", send_to_discord=False)
 
@@ -239,7 +239,7 @@ class DiscordBot(commands.InteractionBot):
             self.cogn, failed = cogs.load(self) # load cogs
         if failed > 0: # return if a cog failed to load
             self.logger.push(
-                "[MAIN] {} / {} cog(s) failed to load".format(failed, self.cogn),
+                f"[MAIN] {failed} / {self.cogn} cog(s) failed to load",
                 send_to_discord=False,
                 level=self.logger.CRITICAL
             )
@@ -256,7 +256,7 @@ class DiscordBot(commands.InteractionBot):
             except: # windows
                 # windows doesn't support add_signal_handler on python 3.11
                 signal.signal(s, self._exit_gracefully_internal)
-        self.logger.push("[MAIN] v{} starting up...".format(self.VERSION), send_to_discord=False)
+        self.logger.push(f"[MAIN] v{self.VERSION} starting up...", send_to_discord=False)
         # main loop
         while self.running:
             try:
@@ -320,7 +320,7 @@ class DiscordBot(commands.InteractionBot):
                     break
                 else:
                     self.logger.pushError(
-                        "[EXIT] Auto-saving failed (try {}/3)".format(count + 1),
+                        f"[EXIT] Auto-saving failed (attempt {count + 1} / 3)",
                         send_to_discord=False
                     )
                     time.sleep(2)
@@ -459,7 +459,7 @@ class DiscordBot(commands.InteractionBot):
                     str(embed.description)[:100]
                 )
             else:
-                msg = "[SEND] Failed to send a message to '{}':".format(channel_name)
+                msg = f"[SEND] Failed to send a message to '{channel_name}':"
             self.logger.pushError(msg, e)
             # logger component has a mechanic in place so there is
             # no infinite loop of error being triggered by attempting
@@ -504,7 +504,7 @@ class DiscordBot(commands.InteractionBot):
                 ex = e
                 err.append(c)
         if ex is not None:
-            self.logger.pushError("[SEND] Failed to send messages to following channels: {}".format(err), ex)
+            self.logger.pushError(f"[SEND] Failed to send messages to following channels: {err}", ex)
         return r
 
     """changeAvatar()
@@ -541,7 +541,7 @@ class DiscordBot(commands.InteractionBot):
             await self.send(
                 'debug',
                 embed=self.embed(
-                    title="{} is Ready".format(self.user.display_name),
+                    title=f"{self.user.display_name} is Ready",
                     description=self.util.statusString(),
                     thumbnail=self.user.display_avatar,
                     timestamp=self.util.UTC()
@@ -555,10 +555,10 @@ class DiscordBot(commands.InteractionBot):
             msgs : list[str] = []
             task : str
             for task in self.tasks:
-                msgs.append("- {}\n".format(task))
+                msgs.append(f"- {task}\n")
             # Send task list to discord
             if len(msgs) > 0:
-                self.logger.push("[MAIN] {} Tasks started\n{}".format(len(self.tasks), "".join(msgs)))
+                self.logger.push(f"[MAIN] {len(self.tasks)} Tasks started\n{''.join(msgs)}")
             # Update app emojis
             await self.emote.load_app_emojis()
 
@@ -648,12 +648,12 @@ class DiscordBot(commands.InteractionBot):
         if title is not None or thumbnail is not None or url is not None:
             if title is not None:
                 if url is not None:
-                    title = "## [{}]({})".format(title, url)
+                    title = f"## [{title}]({url})"
                 else:
                     title = "## " + title
             else:
                 if url is not None:
-                    title = "## [Link]({})".format(url)
+                    title = f"## [Link]({url})"
                 else:
                     title = ""
             if thumbnail is not None:
@@ -707,7 +707,7 @@ class DiscordBot(commands.InteractionBot):
     def runTask(self : DiscordBot, name : str, func : Callable) -> None:
         self.cancelTask(name)
         self.tasks[name] = self.loop.create_task(func())
-        self.logger.push("[MAIN] Task '{}' started".format(name), send_to_discord=False)
+        self.logger.push(f"[MAIN] Task '{name}' started", send_to_discord=False)
 
     """cancelTask()
     Stop a bot task, if it exists for the given name.
@@ -721,7 +721,7 @@ class DiscordBot(commands.InteractionBot):
             try:
                 self.tasks[name].cancel()
                 self.tasks.pop(name, None)
-                self.logger.push("[MAIN] Task '{}' cancelled".format(name), send_to_discord=False)
+                self.logger.push(f"[MAIN] Task '{name}' cancelled", send_to_discord=False)
             except:
                 pass
 
@@ -859,7 +859,7 @@ class DiscordBot(commands.InteractionBot):
                 # command is on cooldown
                 embed = self.embed(
                     title="Command Cooldown Error",
-                    description="{} ".format(self.emote.get('time')) + msg.replace(
+                    description=f"{self.emote.get('time')} " + msg.replace(
                         'You are on cooldown.', 'This command is on cooldown.'
                     ),
                     timestamp=self.util.UTC()
@@ -917,14 +917,14 @@ class DiscordBot(commands.InteractionBot):
                 await self.send(
                     'debug',
                     embed=self.embed(
-                        title="⚠ Error caused by {}".format(inter.author),
+                        title=f"⚠ Error caused by {inter.author}",
                         description=msg,
                         thumbnail=inter.author.display_avatar,
                         fields=[
-                            {"name":"Options", "value":'`{}`'.format(inter.options)},
+                            {"name":"Options", "value":f'`{inter.options}`'},
                             {"name":"Server", "value":inter.guild.name if inter.guild is not None else "Direct Message"}
                         ],
-                        footer='{}'.format(inter.author.id),
+                        footer=f'{inter.author.id}',
                         timestamp=self.util.UTC()
                     )
                 )
@@ -1057,7 +1057,7 @@ if __name__ == "__main__":
     # Set Argument Parser
     parser : argparse.ArgumentParser = argparse.ArgumentParser(
         prog=prog_name,
-        description='Rosetta v{}: https://github.com/MizaGBF/Rosetta-Public'.format(DiscordBot.VERSION)
+        description=f'Rosetta v{DiscordBot.VERSION}: https://github.com/MizaGBF/Rosetta-Public'
     )
     parser.add_argument(
         '-r', '--run',
