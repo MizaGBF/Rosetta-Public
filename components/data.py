@@ -466,7 +466,7 @@ class Data():
                                 "**The Daily Bonus 6% Draw ticket** "
                                 "of the previous month expires **soon**!\n"
                                 "Go to the [Rupee Draw](https://game.granbluefantasy.jp/#gacha/normal)"
-                                "page to use it!"
+                                " page to use it!"
                             )
                         )
                     except Exception as se:
