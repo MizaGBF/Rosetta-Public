@@ -463,8 +463,8 @@ class Data():
                         remindcog.addBotReminder(
                             target,
                             (
-                                "**The Daily Bonus 6% Draw ticket** "
-                                "of the previous month expires **soon**!\n"
+                                "**The Daily Bonus 6% Draw ticket**"
+                                " of the previous month expires **soon**!\n"
                                 "Go to the [Rupee Draw](https://game.granbluefantasy.jp/#gacha/normal)"
                                 " page to use it!"
                             )
@@ -482,7 +482,7 @@ class Data():
                             (
                                 "**A new month started!**\n"
                                 "Don't forget to check out the various shops"
-                                "(Casino, FP, pendant, login, Prisms...)."
+                                " (Casino, FP, pendant, login, Prisms...)."
                             )
                         )
                     except Exception as se:
