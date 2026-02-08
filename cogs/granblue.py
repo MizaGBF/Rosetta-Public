@@ -625,7 +625,7 @@ class GranblueFantasy(commands.Cog):
         i += 1
         while True:
             url : str = (
-                "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                "https://prd-game-a-granbluefantasy.akamaized.net/"
                 "assets_en/img/sp/assets/comic/thumbnail/thum_{}.png"
             ).format(str(i).zfill(5))
             if await self.bot.net.request(url, rtype=self.bot.net.Method.HEAD) is None:
@@ -641,11 +641,11 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     title="Episode " + str(i),
                     url=(
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets/img/sp/assets/comic/episode/episode_{}.jpg"
                     ).format(i),
                     image=(
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/comic/thumbnail/thum_{}.png"
                     ).format(str(i).zfill(5)),
                     color=self.COLOR
@@ -2186,7 +2186,7 @@ class GranblueFantasy(commands.Cog):
         try:
             await inter.response.defer(ephemeral=True)
             url : str = (
-                "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                "https://prd-game-a-granbluefantasy.akamaized.net/"
                 "assets_en/img/sp/assets/comic/episode/episode_{}.jpg"
             ).format(episode)
             if (await self.bot.net.request(url)) is None:
@@ -2195,11 +2195,11 @@ class GranblueFantasy(commands.Cog):
                 embed=self.bot.embed(
                     title=f"Grand Blues! Episode {episode}",
                     url=(
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/comic/episode/episode_{}.jpg"
                     ).format(episode),
                     image=(
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/comic/thumbnail/thum_{}.png"
                     ).format(
                         str(episode).zfill(5)
@@ -2502,7 +2502,7 @@ class GranblueFantasy(commands.Cog):
                 footer="20 def = Take half the damage of 10 def",
                 color=self.COLOR,
                 thumbnail=(
-                    "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                    "https://prd-game-a-granbluefantasy.akamaized.net/"
                     "assets_en/img/sp/ui/icon/status/x64/status_1019.png"
                 )
             )

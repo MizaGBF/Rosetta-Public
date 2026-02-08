@@ -752,8 +752,8 @@ class GachaSimulator():
         ALL : int = 100 # guaranted ssr
 
     # assets
-    WPN_URL : str = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg"
-    SUM_URL : str = "https://prd-game-a1-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg"
+    WPN_URL : str = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/weapon/m/{}.jpg"
+    SUM_URL : str = "https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/summon/m/{}.jpg"
     ELEM_EMOTE : list[str] = ['fire', 'water', 'earth', 'wind', 'light', 'dark']
     PROF_EMOTE : list[str] = ['sabre', 'dagger', 'spear', 'axe', 'staff', 'gun', 'melee', 'bow', 'harp', 'katana']
     ROULETTE : str = "https://mizagbf.github.io/assets/rosetta-remote-resources/roulette.gif"

@@ -858,25 +858,25 @@ class Games(commands.Cog):
                 if prize[0] > 0:
                     desc.append('\n:confetti_ball: ')
                     thumb = (
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/item/article/m/30041.jpg"
                     )
                 elif prize[1] > 0:
                     desc.append('\n:clap: ')
                     thumb = (
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/item/normal/m/gem.jpg"
                     )
                 elif prize[2] > 0:
                     desc.append('\n:hushed: ')
                     thumb = (
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/weapon/m/1040004600.jpg"
                     )
                 elif prize[3] > 0:
                     desc.append('\n:pensive: ')
                     thumb = (
-                        "https://prd-game-a1-granbluefantasy.akamaized.net/"
+                        "https://prd-game-a-granbluefantasy.akamaized.net/"
                         "assets_en/img/sp/assets/item/article/m/30033.jpg"
                     )
                 add_comma : bool = False
