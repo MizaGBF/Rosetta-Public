@@ -576,7 +576,7 @@ class Data():
                                 "["
                                 + html.unescape(ev['enname'])
                                 + "](https://gbf.wiki/"
-                                + ev['wiki page'].replace(' ', '_')
+                                + html.unescape(ev['wiki page'].replace(' ', '_'))
                                 + ")"
                             ] = event_times
                         else:
