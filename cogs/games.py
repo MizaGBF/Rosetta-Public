@@ -1619,7 +1619,13 @@ class Games(commands.Cog):
         values : RandomCharacterContainer = {
             # random strings, modulo to use, bool to use emote.get, seed needed to enable
             'Rarity' : (('SSR', 'SR', 'R'), 3, True, None),
-            'Race' : (('Human', 'Erune', 'Draph', 'Harvin', 'Primal', 'Other'), 6, False, None),
+            'Race' : (
+                (
+                    'Human', 'Erune', 'Draph', 'Harvin', 'Primal',
+                    'Geonoid', 'Levleath', 'Wolvir', 'Grokkle', 'Other'
+                ),
+                6, False, None
+            ),
             'Element' : (('fire', 'water', 'earth', 'wind', 'light', 'dark'), 6, True, None),
             'Gender' : (('Unknown', '\\♂️', '\\♀️'), 3, False, None),
             'Series' : (('Summer', 'Yukata', 'Grand', 'Holiday', 'Halloween', 'Valentine'), 30, True, 6)

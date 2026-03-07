@@ -40,7 +40,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.3.1** - Command `/gbf leechlist` moved to `/gbfg leechlist`.",
         "**v12.7.1** - Command `/gw estimation` now doesn't rely on the gbf.wiki.",
         "**v12.8.0** - Updated `/gw utility speed`, added  `/gw utility speedmatch`.",
-        "**v12.11.0** - Updated `/game roulette`, fixed  `/game scratcher`.",
+        "**v12.11.0** - Updated `/game roulette`, `/random character`, fixed  `/game scratcher`.",
     ]
 
     __slots__ = (
