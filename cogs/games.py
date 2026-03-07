@@ -1627,7 +1627,7 @@ class Games(commands.Cog):
                 6, False, None
             ),
             'Element' : (('fire', 'water', 'earth', 'wind', 'light', 'dark'), 6, True, None),
-            'Gender' : (('Unknown', '\\♂️', '\\♀️'), 3, False, None),
+            'Gender' : (('Other', '\\♂️', '\\♀️'), 3, False, None),
             'Series' : (('Summer', 'Yukata', 'Grand', 'Holiday', 'Halloween', 'Valentine'), 30, True, 6)
         }
         msgs : list[str] = []
