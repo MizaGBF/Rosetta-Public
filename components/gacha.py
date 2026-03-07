@@ -1677,7 +1677,7 @@ class Roulette():
         "forced_rolls", "forced_super_mukku", "enable_200_rolls", "enable_janken",
         "max_janken", "double_mukku", "realist", "birthday_zone", "running", "state",
         "current_time", "msgs", "footers", "dice", "rolls", "legfest", "super_mukku",
-        "janken_threshold"
+        "janken_threshold", "dodecagon", "dodecagon_result"
     )
 
     """__init__()
@@ -1737,6 +1737,8 @@ class Roulette():
         self.realist : bool = realist and settings.get('realist', False)
         # Add Birthday Zone on the wheel
         self.birthday_zone : bool = settings.get('birthday', False)
+        # Use Dodecagon roulette
+        self.dodecagon : bool = settings.get('dodecagon', False)
 
         # variables and flags
         self.running : bool = True
@@ -1749,6 +1751,7 @@ class Roulette():
         self.legfest : int = legfest
         self.super_mukku : bool = False
         self.janken_threshold : int = 0
+        self.dodecagon_result : str = ""
 
     """get_message()
     Return an usable embed description
@@ -1846,6 +1849,7 @@ class Roulette():
         # Now spin the wheel
         self.dice = random.randint(1, 10000) # roulette roll
         threshold : int = 0
+        normal_roll : bool = False
         # Look for what result we got in variable d
         for zone in wheel:
             if zone[1] is not None and self.dice > threshold + zone[1]: # over threshold
@@ -1877,13 +1881,52 @@ class Roulette():
                 case self.Wheel.ROLL_30:
                     self.msgs = ["**30** rolls! :clap:\n"]
                     self.rolls = 30
+                    normal_roll = True
                 case self.Wheel.ROLL_20:
                     self.msgs = ["**20** rolls :open_mouth:\n"]
                     self.rolls = 20
+                    normal_roll = True
                 case self.Wheel.ROLL_10:
                     self.msgs = ["**10** rolls :pensive:\n"]
                     self.rolls = 10
+                    normal_roll = True
             break
+        # 12th birthday Dodecagon bonus item
+        if normal_roll and self.dodecagon:
+            dodecawheel : list[tuple[int|str]] = [
+                (1388, 10, "**10** bonus rolls"), # 13.88%
+                (277, 20, "**20** bonus rolls"), # 2.77%
+                (833, 0, "**Half Elixirs**"), # 1 / 12
+                (833, 0, "**Soul Berries**"), # 1 / 12
+                (833, 0, "**Sublimity Ring**"), # 1 / 12
+                (833, 0, "**Awakening Orb**"), # 1 / 12
+                (833, 0, "**Earring**"), # 1 / 12
+                (277, 0, "**Ultimate Memory**"), # 2.77%
+                (277, 0, "**Provenance Crystal**"), # 2.77%
+                (277, 0, "**Apocalyptic Black Feather**"), # 2.77%
+                (277, 0, "**Gold Moon**"), # 2.77%
+                (555, 0, "**Silver Moon**"), # 5.55%
+                (555, 0, "**Silver Moon**"), # 5.55%
+                (416, 0, "**Weapon Plus Mark**"), # 4.16%
+                (416, 0, "**Summon Plus Mark**"), # 4.16%
+                (416, 0, "**Artifact Pith**"), # 4.16%
+                (416, 0, "**Enigmatic Armilla**"), # 4.16%
+                (416, 0, "**Damascus Grain**"), # 4.16%
+                (277, 0, "**Damascus Crystal**"), # 4.16%
+                (10000, 0, "**Damascus Ingot**"), # (Last, value doesn't matter)
+            ]
+            rate : int
+            bonus : int
+            text : int
+            threshold = 0 # reset to 0
+            dode_dice = random.randint(1, 10000)
+            for rate, bonus, text in dodecawheel:
+                if dode_dice > threshold + rate:
+                    threshold += rate # remove and iterate
+                    continue
+                self.rolls += bonus
+                self.msgs.append(f"{self.bot.emote.get('red')} Obtained {text}\n")
+                break
         # to disable janken if needed
         if not self.enable_janken and self.state == self.State.JANKEN:
             self.state = self.State.NORMAL

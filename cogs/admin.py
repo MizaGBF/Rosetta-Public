@@ -1872,158 +1872,86 @@ class Admin(commands.Cog):
         self.bot.data.pending = True
         await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
 
-    @gacha.sub_command()
-    async def roulette(
-        self : commands.SubCommand,
-        inter : disnake.GuildCommandInteraction,
-        guaranteddate : int = commands.Param(
-            description="Date of the guaranted roll day (YYMMDD format)",
-            ge=240101, le=500101, default=240100
-        ),
-        forced3pc : int = commands.Param(
-            description="1 to force real rate during guaranted roll day",
-            ge=-1, le=1, default=-1
-        ),
-        forcedroll : int = commands.Param(description="Number of guaranted roll", ge=-1, le=300, default=-1),
-        forcedsuper : int = commands.Param(
-            description="1 to add Super Mukku to guaranted roll day",
-            ge=-1, le=1, default=-1
-        ),
-        enable200 : int = commands.Param(description="1 to add 200 rolls on the wheel", ge=-1, le=1, default=-1),
-        janken : int = commands.Param(description="1 to enable Janken mode", ge=-1, le=1, default=-1),
-        maxjanken : int = commands.Param(description="Maximum number of janken", ge=0, le=10, default=0),
-        doublemukku : int = commands.Param(description="1 to enable double Mukku", ge=-1, le=1, default=-1),
-        realist : int = commands.Param(description="1 to allow realist mode", ge=-1, le=1, default=-1),
-        birthday : int = commands.Param(description="1 to add the birthday zone on the wheel", ge=-1, le=1, default=-1)
-    ) -> None:
-        """Set the roulette settings. Don't pass parameters to see settings. (Owner Only)"""
+
+    """roulette_callback()
+    CustomModal callback
+    """
+    async def roulette_callback(self : Admin, modal : disnake.ui.Modal, inter : disnake.ModalInteraction) -> None:
         await inter.response.defer(ephemeral=True)
         if 'roulette' not in self.bot.data.save['gbfdata']: # init data if it doesn't exist
             self.bot.data.save['gbfdata']['roulette'] = {}
         msgs : list[str] = []
-        if guaranteddate > 240100: # set the date (if valid)
+        # set each setting one by one, and build the output message
+        if "guaranteddate" in inter.values:
             try:
-                self.bot.util.JST().replace(
-                    year=2000 + guaranteddate // 10000,
-                    month=(guaranteddate // 100) % 100,
-                    day=guaranteddate % 100,
-                    hour=5,
-                    minute=0,
-                    second=0,
-                    microsecond=0
-                )
-                self.bot.data.save['gbfdata']['roulette']['year'] = guaranteddate // 10000
-                self.bot.data.save['gbfdata']['roulette']['month'] = (guaranteddate // 100) % 100
-                self.bot.data.save['gbfdata']['roulette']['day'] = guaranteddate % 100
-                self.bot.data.pending = True
+                guaranteddate : int = int(inter.values["guaranteddate"])
+                year : int = guaranteddate % 100
+                month : int = (guaranteddate // 100) % 100
+                day : int = guaranteddate // 10000
+                if year >= 26: # set the date (if year 2026 or above)
+                    # testing validity
+                    self.bot.util.JST().replace(
+                        year=year + 2000,
+                        month=month,
+                        day=day,
+                        hour=5,
+                        minute=0,
+                        second=0,
+                        microsecond=0
+                    )
+                    self.bot.data.save['gbfdata']['roulette']['year'] = year
+                    self.bot.data.save['gbfdata']['roulette']['month'] = month
+                    self.bot.data.save['gbfdata']['roulette']['day'] = day
+                    self.bot.data.pending = True
             except:
                 msgs.append(f"**Error**: Invalid date `{guaranteddate}`\n\n")
-        # set each setting one by one, and build the output message
-        msgs.append(
-            "- Guaranted roll start date: `{}{}{}`\n".format(
-                str(self.bot.data.save['gbfdata']['roulette'].get('year', 24)).zfill(2),
-                str(self.bot.data.save['gbfdata']['roulette'].get('month', 1)).zfill(2),
-                str(self.bot.data.save['gbfdata']['roulette'].get('day', 1)).zfill(2)
-            )
-        )
-        # forced3pc setting
-        if forced3pc != -1:
-            self.bot.data.save['gbfdata']['roulette']['forced3%'] = (forced3pc == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Guaranted roll real rate: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('forced3%', True)
-                else "Disabled"
-            )
-        )
-        # forcedroll setting
-        if forcedroll != -1:
-            self.bot.data.save['gbfdata']['roulette']['forcedroll'] = forcedroll
-            self.bot.data.pending = True
-        msgs.append(
-            "- Number of Guaranted rolls: `{}`\n".format(
-                self.bot.data.save['gbfdata']['roulette'].get(
-                    'forcedroll', 100
+            msgs.append(
+                "- Guaranted roll start date: `{}{}{}`\n".format(
+                    str(self.bot.data.save['gbfdata']['roulette'].get('year', 24)).zfill(2),
+                    str(self.bot.data.save['gbfdata']['roulette'].get('month', 1)).zfill(2),
+                    str(self.bot.data.save['gbfdata']['roulette'].get('day', 1)).zfill(2)
                 )
             )
-        )
-        # forcedsupersetting
-        if forcedsuper != -1:
-            self.bot.data.save['gbfdata']['roulette']['forcedsuper'] = (forcedsuper == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Super Mukku: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('forcedsuper', True)
-                else "Disabled"
-            )
-        )
-        # enable200 setting
-        if enable200 != -1:
-            self.bot.data.save['gbfdata']['roulette']['enable200'] = (enable200 == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- 200 rolls on Wheel: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('enable200', False)
-                else "Disabled"
-            )
-        )
-        # janken settings
-        if janken != -1:
-            self.bot.data.save['gbfdata']['roulette']['enablejanken'] = (janken == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Janken mode: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('enablejanken', False)
-                else "Disabled"
-            )
-        )
-        if maxjanken != 0:
-            self.bot.data.save['gbfdata']['roulette']['maxjanken'] = maxjanken
-            self.bot.data.pending = True
-        msgs.append(
-            "- Max number of Janken: `{}`\n".format(
-                self.bot.data.save['gbfdata']['roulette'].get(
-                    'maxjanken', 1
-                )
-            )
-        )
-        # doublemukku setting
-        if doublemukku != -1:
-            self.bot.data.save['gbfdata']['roulette']['doublemukku'] = (doublemukku == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Double Mukku: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('doublemukku', False)
-                else "Disabled"
-            )
-        )
-        # realist setting
-        if realist != -1:
-            self.bot.data.save['gbfdata']['roulette']['realist'] = (realist == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Realist mode: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('realist', False)
-                else "Disabled"
-            )
-        )
-        # birtday setting
-        if birthday != -1:
-            self.bot.data.save['gbfdata']['roulette']['birthday'] = (birthday == 1)
-            self.bot.data.pending = True
-        msgs.append(
-            "- Birthday Zone on Wheel: {}\n".format(
-                "**Enabled**"
-                if self.bot.data.save['gbfdata']['roulette'].get('birthday', False)
-                else "Disabled"
-            )
-        )
+        # parse flags
+        flags : set[str] = set(inter.values.get("flags", []))
+        possible_options : dict[str, list[str]] = {
+            "forced3%":["Forced 3%", "flag"],
+            "forcedroll":["Number of Guaranted rolls", "int_select"],
+            "forcedsuper":["Forced Super Mukku", "flag"],
+            "enable200":["200 rolls", "flag"],
+            "maxjanken":["Max number of Janken", "int_select"],
+            "enablejanken":["Janken", "flag"],
+            "doublemukku":["Double Mukku", "flag"],
+            "realist":["Realist Mode", "flag"],
+            "birthday":["Birthday Zone", "flag"],
+            "dodecagon":["Dodecagon Roulette", "flag"],
+        }
+        k : str
+        text : str
+        option_type : str
+        for k, [text, option_type] in possible_options.items():
+            match option_type:
+                case "flag":
+                    f : bool = k in flags
+                    if f != self.bot.data.save['gbfdata']['roulette'].get(k, False):
+                        self.bot.data.save['gbfdata']['roulette'][k] = f
+                        self.bot.data.pending = True
+                    msgs.append(
+                        "- {}: {}\n".format(
+                            text,
+                            "**Enabled**"
+                            if f
+                            else "Disabled"
+                        )
+                    )
+                case "int_select":
+                    i : int = int(inter.values[k][0])
+                    if i != self.bot.data.save['gbfdata']['roulette'].get(k, -1):
+                        self.bot.data.save['gbfdata']['roulette'][k] = i
+                        self.bot.data.pending = True
+                    msgs.append(f"- {text}: `{i}`\n")
+                case _:
+                    raise Exception(f"Unknown option_type '{option_type}' for {k}")
         # send the message
         await inter.edit_original_message(
             embed=self.bot.embed(
@@ -2031,4 +1959,84 @@ class Admin(commands.Cog):
                 description="".join(msgs),
                 color=self.COLOR
             )
+        )
+
+    @gacha.sub_command()
+    async def roulette(
+        self : commands.SubCommand,
+        inter : disnake.GuildCommandInteraction,
+    ) -> None:
+        """Set the /game roulette settings (Owner Only)"""
+        possible_flags : dict[str, list[str]] = {
+            "forced3%":["Forced 3%", "Forced 3% SSR rate during guaranted max roll period"],
+            "forcedsuper":["Forced Super Mukku", "Forced Super Mukku during guaranted max roll period"],
+            "enable200":["200 rolls", "Add 200 rolls on Wheel"],
+            "enablejanken":["Janken", "Enable Janken"],
+            "doublemukku":["Double Mukku", "Enable Double Mukku"],
+            "realist":["Realist Mode", "Enable Realist Mode"],
+            "birthday":["Birthday Zone", "Add 10th Birthday Zone on Wheel"],
+            "dodecagon":["Dodecagon Roulette", "Enable 12th Birthday Dodecagon roulette"],
+        }
+        flags : list[disnake.GroupOption] = []
+        k : str
+        v : list[str]
+        for k, v in possible_flags.items():
+            flags.append(
+                disnake.GroupOption(
+                    label=v[0],
+                    description=v[1],
+                    value=k,
+                    default=self.bot.data.save['gbfdata']['roulette'].get(k, False)
+                )
+            )
+        year : int = self.bot.data.save['gbfdata']['roulette'].get('year', 24)
+        month : int = self.bot.data.save['gbfdata']['roulette'].get('month', 1)
+        day : int = self.bot.data.save['gbfdata']['roulette'].get('day', 1)
+        await self.bot.singleton.make_and_send_modal(
+            inter,
+            f"roulette-setting-{inter.id}-{self.bot.util.UTC().timestamp()}",
+            "Roulette settings",
+            self.roulette_callback,
+            [
+                disnake.ui.TextInput(
+                    label="Guaranted roll date (DDMMYY)",
+                    placeholder="DDMMYY",
+                    custom_id="guaranteddate",
+                    style=disnake.TextInputStyle.short,
+                    min_length=6,
+                    max_length=6,
+                    required=True,
+                    value=f"{day:02}{month:02}{year:02}"
+                ),
+                disnake.ui.Label(
+                    "Guaranted rolls",
+                    component=disnake.ui.StringSelect(
+                        custom_id="forcedroll",
+                        min_values=1,
+                        max_values=1,
+                        options=["100", "200"],
+                        required=True
+                    )
+                ),
+                disnake.ui.Label(
+                    "Maximum Janken",
+                    component=disnake.ui.StringSelect(
+                        custom_id="maxjanken",
+                        min_values=1,
+                        max_values=1,
+                        options=["1", "2", "3", "4", "5"],
+                        required=True
+                    )
+                ),
+                disnake.ui.Label(
+                    "Roulette Flags",
+                    component=disnake.ui.CheckboxGroup(
+                        custom_id="flags",
+                        max_values=len(flags),
+                        min_values=0,
+                        options=flags,
+                        required=False
+                    )
+                )
+            ]
         )

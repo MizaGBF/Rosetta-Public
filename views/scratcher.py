@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ScratcherButton(disnake.ui.Button):
     ENDPOINT = 'https://prd-game-a-granbluefantasy.akamaized.net/assets_en/img/sp/assets/'
 
-    __slots__ = ("item", "label")
+    __slots__ = ("item")
 
     """__init__()
     Button Constructor
