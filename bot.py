@@ -27,20 +27,18 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.11.0" # bot version
+    VERSION : str = "12.11.1" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
             "(https://github.com/MizaGBF/Rosetta-Public) or check the"
             "[help](https://mizagbf.github.io/discordbot.html) if you have a problem."
         ),
-        "**v12.0.10** - Added `/gw rosetta`.",
-        "**v12.1.2** - Improved `/gbf maintenance`.",
-        "**v12.2.1** - Updated `/db` commands with new schedule.",
         "**v12.3.1** - Command `/gbf leechlist` moved to `/gbfg leechlist`.",
         "**v12.7.1** - Command `/gw estimation` now doesn't rely on the gbf.wiki.",
         "**v12.8.0** - Updated `/gw utility speed`, added  `/gw utility speedmatch`.",
         "**v12.11.0** - Updated `/game roulette`, `/random character`, fixed  `/game scratcher`.",
+        "**v12.11.1** - Updated `/game` roll commands with Classic III.",
     ]
 
     __slots__ = (

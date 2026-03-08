@@ -358,7 +358,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -380,7 +380,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -425,7 +425,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -452,7 +452,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -481,7 +481,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -497,7 +497,7 @@ class Games(commands.Cog):
         self : commands.SubCommand,
         inter : disnake.ApplicationCommandInteraction,
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -513,7 +513,7 @@ class Games(commands.Cog):
         self : commands.SubCommand,
         inter : disnake.ApplicationCommandInteraction,
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -539,7 +539,7 @@ class Games(commands.Cog):
             default=""
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0)
     ) -> None:
@@ -565,7 +565,7 @@ class Games(commands.Cog):
             le=1
         ),
         banner : int = commands.Param(
-            description='1~2 for classics, 3  for collab',
+            description='1~3 for classics, 4 for collabs',
             default=0,
             ge=0
         ),

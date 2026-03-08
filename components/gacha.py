@@ -36,7 +36,7 @@ class Gacha():
         'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius',
         'Leporidius', 'Dracosius', 'Serpentius', 'Equinius'
     ]
-    CLASSIC_COUNT : int = 2 # number of classic banners
+    CLASSIC_ID : tuple[int,...] = (500031, 501031, 502031) # classic banner ids
     # constants
     NO_INFO : str = " "
     SUMMON_KIND : str = "S"
@@ -334,7 +334,7 @@ class Gacha():
             # it works like the main banner request
             # # classic gacha
             i : int
-            for i in (500031, 501031): # id has to be set manually (for now)
+            for i in self.CLASSIC_ID: # id has to be set manually (for now)
                 data : RequestResult = await self.bot.net.requestGBF(
                     f"rest/gacha/classic/toppage_data_by_classic_series_id/{i}",
                     expect_JSON=True
@@ -509,14 +509,14 @@ class Gacha():
                 # main banner summary
                 description : list[str] = self.summary_subroutine(data, 0, data['time'], data['timesub'], remaining)
                 # check if a collab exists
-                if (len(data["banners"]) > self.CLASSIC_COUNT
+                if (len(data["banners"]) > len(self.CLASSIC_ID)
                         and "collaboration" in data
                         and remaining < data["collaboration"]):
                     # add extra line
                     description.append(f"{self.bot.emote.get('crystal')} **Collaboration**\n")
                     # and its summary
                     description.extend(
-                        self.summary_subroutine(data, self.CLASSIC_COUNT + 1, data['collaboration'], None, remaining)
+                        self.summary_subroutine(data, len(self.CLASSIC_ID) + 1, data['collaboration'], None, remaining)
                     )
                 # return message and the image url
                 return (
@@ -802,7 +802,7 @@ class GachaSimulator():
         self.ssrrate : int = gachadata[3]
         self.complete : bool = gachadata[4]
         self.scamdata : CurrentBanner = scamdata # no need to unpack the scam gacha one (assume it might be None too)
-        self.iscollab : bool = (self.bannerid > self.bot.gacha.CLASSIC_COUNT)
+        self.iscollab : bool = (self.bannerid > len(self.bot.gacha.CLASSIC_ID))
         self.color : int = color
         self.mode : int = self.Mode.UNDEF
         self.changeMode(simtype)
@@ -1145,7 +1145,7 @@ class GachaSimulator():
     """
     def bannerIDtoFooter(self : GachaSimulator, footer : list[str]) -> str:
         if self.bannerid > 0:
-            if self.bannerid <= self.bot.gacha.CLASSIC_COUNT:
+            if self.bannerid <= len(self.bot.gacha.CLASSIC_ID):
                 footer.append(f" ▫️ Classic {self.bannerid}")
             else:
                 footer.append(" ▫️ Collaboration")
