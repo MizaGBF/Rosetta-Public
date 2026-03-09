@@ -1896,23 +1896,22 @@ class Roulette():
             dodecawheel : list[tuple[int|str]] = [
                 (1388, 10, "**10** bonus rolls"), # 13.88%
                 (277, 20, "**20** bonus rolls"), # 2.77%
-                (833, 0, "**Half Elixirs**"), # 1 / 12
-                (833, 0, "**Soul Berries**"), # 1 / 12
+                (833, 0, "**50 Half Elixirs**"), # 1 / 12
+                (833, 0, "**150 Soul Berries**"), # 1 / 12
                 (833, 0, "**Sublimity Ring**"), # 1 / 12
-                (833, 0, "**Awakening Orb**"), # 1 / 12
+                (833, 0, "**3 Awakening Orbs**"), # 1 / 12
                 (833, 0, "**Earring**"), # 1 / 12
-                (277, 0, "**Ultimate Memory**"), # 2.77%
-                (277, 0, "**Provenance Crystal**"), # 2.77%
-                (277, 0, "**Apocalyptic Black Feather**"), # 2.77%
+                (277, 0, "**5 Ultimate Memory**"), # 2.77%
+                (277, 0, "**5 Provenance Crystal**"), # 2.77%
+                (277, 0, "**5 Apocalyptic Black Feather**"), # 2.77%
                 (277, 0, "**Gold Moon**"), # 2.77%
-                (555, 0, "**Silver Moon**"), # 5.55%
-                (555, 0, "**Silver Moon**"), # 5.55%
-                (416, 0, "**Weapon Plus Mark**"), # 4.16%
-                (416, 0, "**Summon Plus Mark**"), # 4.16%
-                (416, 0, "**Artifact Pith**"), # 4.16%
+                (555, 0, "**5 Silver Moons**"), # 5.55%
+                (416, 0, "**30 Weapon Plus Marks**"), # 4.16%
+                (416, 0, "**30 Summon Plus Marks**"), # 4.16%
+                (416, 0, "**10 Artifact Piths**"), # 4.16%
                 (416, 0, "**Enigmatic Armilla**"), # 4.16%
-                (416, 0, "**Damascus Grain**"), # 4.16%
-                (277, 0, "**Damascus Crystal**"), # 4.16%
+                (416, 0, "**3 Damascus Grains**"), # 4.16%
+                (277, 0, "**2 Damascus Crystals**"), # 4.16%
                 (10000, 0, "**Damascus Ingot**"), # (Last, value doesn't matter)
             ]
             rate : int
