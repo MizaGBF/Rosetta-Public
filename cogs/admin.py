@@ -1872,7 +1872,6 @@ class Admin(commands.Cog):
         self.bot.data.pending = True
         await inter.edit_original_message(embed=self.bot.embed(title="Gacha data cleared", color=self.COLOR))
 
-
     """roulette_callback()
     CustomModal callback
     """
