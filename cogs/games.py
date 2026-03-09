@@ -55,7 +55,7 @@ class Games(commands.Cog):
             ('Damascus Ingot', 'item/evolution/s/20005.jpg'),
             ('Damascus Ingot', 'item/article/s/215.jpg')
         ],
-        18000 : [
+        12000 : [
             ('Grand Weapon Ticket Draw', 'item/ticket/s/116381.jpg'),
             ('SSR Ticket Draw', 'item/ticket/s/116381.jpg'),
             ('Excalibur (Fire)', 'weapon/m/1040007500.jpg'),
