@@ -2140,4 +2140,5 @@ class Roulette():
                     await self.birthday_event()
             # tweak footer
             if self.realist:
-                self.footers.append(" ▫️ Realist")
+                if len(self.footers) == 0 or self.footers[-1] != " ▫️ Realist":
+                    self.footers.append(" ▫️ Realist")
