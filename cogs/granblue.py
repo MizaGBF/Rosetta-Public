@@ -2114,7 +2114,7 @@ class GranblueFantasy(commands.Cog):
                         2
                     )
                 ),
-                url="https://granbluefantasy.jp/news/index.php",
+                url="https://granbluefantasy.com/ja/news/",
                 thumbnail=self.GBF_ICON,
                 color=self.COLOR
             )
@@ -2138,11 +2138,6 @@ class GranblueFantasy(commands.Cog):
         thumb : str|None
         try:
             thumb = self.bot.data.save['gbfdata']['news_url'][0][2] # add thumbnail of most recent element
-            if not thumb.startswith('http://granbluefantasy.jp') and not thumb.startswith('https://granbluefantasy.jp'):
-                if thumb.startswith('/'):
-                    thumb = 'https://granbluefantasy.jp' + thumb
-                else:
-                    thumb = 'https://granbluefantasy.jp/' + thumb
         except:
             thumb = None
         # send message
