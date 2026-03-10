@@ -36,7 +36,7 @@ class Gacha():
         'Porculius', 'Rodentius', 'Bovinius', 'Tigrisius',
         'Leporidius', 'Dracosius', 'Serpentius', 'Equinius'
     ]
-    CLASSIC_ID : tuple[int,...] = (500031, 501031, 502031) # classic banner ids
+    CLASSIC_ID : tuple[int,...] = (500041, 501041, 502041) # classic banner ids
     # constants
     NO_INFO : str = " "
     SUMMON_KIND : str = "S"
