@@ -552,67 +552,63 @@ class GranblueFantasy(commands.Cog):
     --------
     list: List of new news
     """
-    async def checkNews(self : GranblueFantasy) -> list:
+    async def checkNews(self : GranblueFantasy) -> list[NewsResult]:
         res : list[NewsResult] = [] # news list
         ret : list[NewsResult] = [] # new news articles to return
-        # retrieve news page
-        data : RequestResult = await self.bot.net.request("https://granbluefantasy.jp/news/index.php")
-        if data is not None:
-            soup : BeautifulSoup = BeautifulSoup(data, 'html.parser')
-            # extract articles
-            at : bs4element.ResultSet = soup.find_all("article", class_="scroll_show_box")
+        data : RequestResult = await self.bot.net.request(
+            "https://granbluefantasy.g.kuroco.app/rcms-api/1/news?cnt=10&pageID=1&_lang=ja",
+            params={
+                "cnt":"10",
+                "pageID":"1",
+                "_lang":"ja"
+            }
+        )
+        news : dict[str, str]
+        for news in data["list"]:
+            img : str
             try:
-                a : bs4element.Tag
-                for a in at:
-                    # get content and url
-                    inner : bs4element.Tag = a.findChildren("div", class_="inner", recursive=False)[0]
-                    section : bs4element.Tag = inner.findChildren("section", class_="content", recursive=False)[0]
-                    h1 : bs4element.Tag = section.findChildren("h1", recursive=False)[0]
-                    url : bs4element.Tag = h1.findChildren("a", class_="change_news_trigger", recursive=False)[0]
-                    # retrieve news image (if any)
-                    try:
-                        mb25 : bs4element.Tag = section.findChildren(
-                            "div",
-                            class_="mb25",
-                            recursive=False
-                        )[0]
-                        href : bs4element.Tag = mb25.findChildren(
-                            "a",
-                            class_="change_news_trigger",
-                            recursive=False
-                        )[0]
-                        img : str = href.findChildren("img", recursive=False)[0].attrs['src']
-                        if not img.startswith('http'):
-                            if img.startswith('/'):
-                                img = 'https://granbluefantasy.jp' + img
-                            else:
-                                img = 'https://granbluefantasy.jp/' + img
-                    except:
-                        img = None
-                    # add to list
-                    res.append([url.attrs['href'], url.text, img])
-
-                if 'news_url' in self.bot.data.save['gbfdata']: # if data exists in memory
-                    foundNew : bool = False
-                    i : int
-                    j : int
-                    for i in range(0, len(res)): # process detected news
-                        found : bool = False
-                        for j in range(0, len(self.bot.data.save['gbfdata']['news_url'])): # check if it exists
-                            if res[i][0] == self.bot.data.save['gbfdata']['news_url'][j][0]:
-                                found = True
-                                break
-                        if not found: # if it doesn't
-                            ret.append(res[i]) # add to list
-                            foundNew = True
-                    if foundNew: # update memory data
-                        self.bot.data.save['gbfdata']['news_url'] = res
-                        self.bot.data.pending = True
-                else: # update memory data
-                    self.bot.data.save['gbfdata']['news_url'] = res
-                    self.bot.data.pending = True
+                content : str = news["content"]
+                c : int = content.find("<img")
+                if c == -1:
+                    raise Exception()
+                c = content.find('src="', c)
+                if c == -1:
+                    raise Exception()
+                c += len('src="')
+                e : int = content.find('"', c)
+                if e == -1:
+                    raise Exception()
+                img = content[c:e]
             except:
-                pass
+                img = "https://granbluefantasy.com/news_img_default.jpg"
+            res.append(
+                [
+                    f"https://granbluefantasy.com/ja/news/{news['topics_id']}/",
+                    news["subject"],
+                    img
+                ]
+            )
+        if 'news_url' in self.bot.data.save['gbfdata']: # if data exists in memory
+            foundNew : bool = False
+            i : int
+            j : int
+            for i in range(0, len(res)): # process detected news
+                found : bool = False
+                for j in range(0, len(self.bot.data.save['gbfdata']['news_url'])): # check if it exists
+                    if res[i][0] == self.bot.data.save['gbfdata']['news_url'][j][0]:
+                        found = True
+                        break
+                if not found: # if it doesn't
+                    ret.append(res[i]) # add to list
+                    foundNew = True
+            if foundNew: # update memory data
+                self.bot.data.save['gbfdata']['news_url'] = res
+                self.bot.data.pending = True
+        else: # update memory data
+            self.bot.data.save['gbfdata']['news_url'] = res
+            self.bot.data.pending = True
+        if len(ret) > 5: # to avoid spam
+            ret = ret[:5]
         return ret
 
     """check4koma()
