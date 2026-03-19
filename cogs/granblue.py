@@ -1805,7 +1805,7 @@ class GranblueFantasy(commands.Cog):
                 params={
                     "title":"Special:CargoExport",
                     "tables":"characters",
-                    "fields":"series,name,element,release_date",
+                    "fields":"style_id,series,name,element,release_date",
                     "where":'series LIKE "%grand%"',
                     "format":"json",
                     "limit":"200"
@@ -1823,6 +1823,10 @@ class GranblueFantasy(commands.Cog):
                 try:
                     if 'grand' not in c['series']:
                         continue
+                    # to ignore character styles (only lecia)
+                    if c.get("style id", "1") == 2:
+                        continue
+                        
                     grand : dict[str, str] = c
                     d : list[str] = grand['release date'].split('-')
                     grand['release date'] = self.bot.util.UTC().replace( # parse release date
