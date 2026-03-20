@@ -1825,8 +1825,7 @@ class GranblueFantasy(commands.Cog):
                         continue
                     # to ignore character styles (only lecia)
                     if c.get("style id", "1") == 2:
-                        continue
-                        
+                        continue                        
                     grand : dict[str, str] = c
                     d : list[str] = grand['release date'].split('-')
                     grand['release date'] = self.bot.util.UTC().replace( # parse release date

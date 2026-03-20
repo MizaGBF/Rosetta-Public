@@ -1595,7 +1595,7 @@ class GachaSimulator():
         # initialize roulette
         roulette : Roulette = Roulette(self.bot, self, current_time, legfest, realist)
         # and spin the wheel!
-        roulette.spin_the_wheel()
+        await roulette.spin_the_wheel()
         # Default message
         await inter.edit_original_message(
             embed=self.bot.embed(
@@ -1662,7 +1662,12 @@ class Roulette():
         ROLL_20 : int = 20
         ROLL_30 : int = 30
 
-    NORMAL_ROLLS : list[int] = [Wheel.MAX_ROLL, Wheel.ROLL_10, Wheel.ROLL_20, Wheel.ROLL_30]
+    NORMAL_ROLLS : list[int] = [
+        Wheel.MAX_ROLL,
+        Wheel.ROLL_10,
+        Wheel.ROLL_20,
+        Wheel.ROLL_30
+    ]
 
     class State(IntEnum): # Roulette states
         JANKEN : int = 0
@@ -1671,6 +1676,28 @@ class Roulette():
         MUKKU : int = 3
         SUPER_MUKKU : int = 4
         BIRTHDAY_ZONE : int = 5
+
+    DODECAGON_WHEEL : list[tuple[int|str]] = [
+        (1388, 10, "**10** bonus rolls"), # 13.88%
+        (277, 20, "**20** bonus rolls"), # 2.77%
+        (833, 0, "**50 Half Elixirs**"), # 1 / 12
+        (833, 0, "**150 Soul Berries**"), # 1 / 12
+        (833, 0, "**Sublimity Ring**"), # 1 / 12
+        (833, 0, "**3 Awakening Orbs**"), # 1 / 12
+        (833, 0, "**Earring**"), # 1 / 12
+        (277, 0, "**5 Ultimate Memory**"), # 2.77%
+        (277, 0, "**5 Provenance Crystal**"), # 2.77%
+        (277, 0, "**5 Apocalyptic Black Feather**"), # 2.77%
+        (277, 0, "**Gold Moon**"), # 2.77%
+        (555, 0, "**5 Silver Moons**"), # 5.55%
+        (416, 0, "**30 Weapon Plus Marks**"), # 4.16%
+        (416, 0, "**30 Summon Plus Marks**"), # 4.16%
+        (416, 0, "**10 Artifact Piths**"), # 4.16%
+        (416, 0, "**Enigmatic Armilla**"), # 4.16%
+        (416, 0, "**3 Damascus Grains**"), # 4.16%
+        (277, 0, "**2 Damascus Crystals**"), # 4.16%
+        (10000, 0, "**Damascus Ingot**"), # (Last, value doesn't matter)
+    ]
 
     __slots__ = (
         "bot", "sim", "fixed_start", "fixed_end", "fixed_start", "forced_3_percent",
@@ -1801,7 +1828,7 @@ class Roulette():
     Set the settings for the fixed roll period.
     """
     def generated_fixed_rolls(self : Roulette) -> None:
-        self.msgs = [
+        self.msgs.append(
             "{} {} :confetti_ball: :tada: Guaranteed **{} 0 0** R O L L S :tada: :confetti_ball: {} {}\n".format(
                 self.bot.emote.get('crystal'),
                 self.bot.emote.get('crystal'),
@@ -1809,7 +1836,7 @@ class Roulette():
                 self.bot.emote.get('crystal'),
                 self.bot.emote.get('crystal')
             )
-        ]
+        )
         self.state = self.State.NORMAL
         self.rolls = self.forced_rolls
         self.enable_janken = False
@@ -1818,11 +1845,40 @@ class Roulette():
         if self.legfest == 1 and self.forced_3_percent:
             self.legfest = -1
 
+    """spin_dodecagon_bonus()
+    Generate bonus loot like during the 12th anniversary event
+    """
+    async def spin_dodecagon_bonus(self : Roulette) -> None:
+        if not self.dodecagon:
+            return
+        rate : int
+        bonus : int
+        text : int
+        rolls : int = 0
+        threshold = 0 # reset to 0
+        dode_dice = random.randint(1, 10000)
+        for rate, bonus, text in self.DODECAGON_WHEEL:
+            if dode_dice > threshold + rate:
+                threshold += rate # remove and iterate
+                continue
+            rolls = bonus
+            self.msgs.append(f"{self.bot.emote.get('red')} **Dodecagon** Roulette: {text}\n")
+            break
+        if rolls > 0:
+            # preserve state
+            self.rolls = rolls
+            await self.normal_event()
+            self.msgs.append(f"{self.bot.emote.get('gold')} **Normal** Roulette:\n")
+            # revert possible changes
+            self.running = True
+
     """spin_the_wheel()
     Determine the region of the wheel the user landed on.
     Note: If the current_time is set in the fixed roll period, generated_fixed_rolls() will be invoked.
     """
-    def spin_the_wheel(self : Roulette) -> None:
+    async def spin_the_wheel(self : Roulette) -> None:
+        # Roll 12th anniversary wheel
+        await self.spin_dodecagon_bonus()
         # Check fixed period
         if self.fixed_start <= self.current_time < self.fixed_end:
             self.generated_fixed_rolls()
@@ -1849,7 +1905,6 @@ class Roulette():
         # Now spin the wheel
         self.dice = random.randint(1, 10000) # roulette roll
         threshold : int = 0
-        normal_roll : bool = False
         # Look for what result we got in variable d
         for zone in wheel:
             if zone[1] is not None and self.dice > threshold + zone[1]: # over threshold
@@ -1858,74 +1913,36 @@ class Roulette():
             match zone[0]:
                 case self.Wheel.MAX_ROLL:
                     if self.enable_200_rolls: # forced 200 rolls
-                        self.msgs = [
+                        self.msgs.append(
                             "{} {} :confetti_ball: :tada: **2 0 0 R O L L S** :tada: :confetti_ball: {} {}\n".format(
                                 self.bot.emote.get('crystal'),
                                 self.bot.emote.get('crystal'),
                                 self.bot.emote.get('crystal'),
                                 self.bot.emote.get('crystal')
                             )
-                        ]
+                        )
                         self.rolls = 200
                     else: # forced 100 rolls
-                        self.msgs = [":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n"]
+                        self.msgs.append(":confetti_ball: :tada: **100** rolls!! :tada: :confetti_ball:\n")
                         self.rolls = 100
                 case self.Wheel.GACHAPIN:
-                    self.msgs = ["**Gachapin Frenzy** :four_leaf_clover:\n"]
+                    self.msgs.append("**Gachapin Frenzy** :four_leaf_clover:\n")
                     self.rolls = -1
                     self.state = self.State.GACHAPIN
                 case self.Wheel.BIRTHDAY: # Birthday zone
-                    self.msgs = [":birthday: You got the **Birthday Zone** :birthday:\n"]
+                    self.msgs.append(":birthday: You got the **Birthday Zone** :birthday:\n")
                     self.rolls = -1
                     self.state = self.State.BIRTHDAY_ZONE
                 case self.Wheel.ROLL_30:
-                    self.msgs = ["**30** rolls! :clap:\n"]
+                    self.msgs.append("**30** rolls! :clap:\n")
                     self.rolls = 30
-                    normal_roll = True
                 case self.Wheel.ROLL_20:
-                    self.msgs = ["**20** rolls :open_mouth:\n"]
+                    self.msgs.append("**20** rolls :open_mouth:\n")
                     self.rolls = 20
-                    normal_roll = True
-                case self.Wheel.ROLL_10:
-                    self.msgs = ["**10** rolls :pensive:\n"]
+                case _:
+                    self.msgs.append("**10** rolls :pensive:\n")
                     self.rolls = 10
-                    normal_roll = True
             break
-        # 12th birthday Dodecagon bonus item
-        if normal_roll and self.dodecagon:
-            dodecawheel : list[tuple[int|str]] = [
-                (1388, 10, "**10** bonus rolls"), # 13.88%
-                (277, 20, "**20** bonus rolls"), # 2.77%
-                (833, 0, "**50 Half Elixirs**"), # 1 / 12
-                (833, 0, "**150 Soul Berries**"), # 1 / 12
-                (833, 0, "**Sublimity Ring**"), # 1 / 12
-                (833, 0, "**3 Awakening Orbs**"), # 1 / 12
-                (833, 0, "**Earring**"), # 1 / 12
-                (277, 0, "**5 Ultimate Memory**"), # 2.77%
-                (277, 0, "**5 Provenance Crystal**"), # 2.77%
-                (277, 0, "**5 Apocalyptic Black Feather**"), # 2.77%
-                (277, 0, "**Gold Moon**"), # 2.77%
-                (555, 0, "**5 Silver Moons**"), # 5.55%
-                (416, 0, "**30 Weapon Plus Marks**"), # 4.16%
-                (416, 0, "**30 Summon Plus Marks**"), # 4.16%
-                (416, 0, "**10 Artifact Piths**"), # 4.16%
-                (416, 0, "**Enigmatic Armilla**"), # 4.16%
-                (416, 0, "**3 Damascus Grains**"), # 4.16%
-                (277, 0, "**2 Damascus Crystals**"), # 4.16%
-                (10000, 0, "**Damascus Ingot**"), # (Last, value doesn't matter)
-            ]
-            rate : int
-            bonus : int
-            text : int
-            threshold = 0 # reset to 0
-            dode_dice = random.randint(1, 10000)
-            for rate, bonus, text in dodecawheel:
-                if dode_dice > threshold + rate:
-                    threshold += rate # remove and iterate
-                    continue
-                self.rolls += bonus
-                self.msgs.append(f"{self.bot.emote.get('red')} Obtained {text}\n")
-                break
         # to disable janken if needed
         if not self.enable_janken and self.state == self.State.JANKEN:
             self.state = self.State.NORMAL
@@ -2011,7 +2028,6 @@ class Roulette():
     """gachapin_mukku_event()
     Simulate Gachapin/Mukku/Super Mukku rolls.
     Called by update().
-
 
     Parameters
     --------
