@@ -2466,38 +2466,16 @@ class GranblueFantasy(commands.Cog):
 
     @guide.sub_command()
     async def defense(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
-        """Post some known defense values"""
+        """Link to a list of Defense values"""
         await inter.response.defer(ephemeral=True)
-        dev_values : dict[str, str] = {
-            "8.5" : "Fediel Solo",
-            "9.5" : "Fediel HL",
-            "10"  : "Estimate / Trial / Story / Event / EX+",
-            "11"  : "PBaha N / UBaha HL / Xeno",
-            "12"  : "M1 HL / Kirin HL / Metatron / Avatar / GO HL / Lindwurm",
-            "13"  : "Normal / Hard / T2 / Primarchs N & HL / UBaha N / M2",
-            "15"  : "T1 HL / Malice / Menace / Akasha / Lucilius / Astaroth / Pride",
-            "18"  : "Rose Queen / 6 Dragons HL / SUbaha",
-            "20"  : "PBaha HL / Lucilius Hard / Belial",
-            "22"  : "Celeste HL (Mist)",
-            "25"  : "Beelzebub / NM150-200",
-            "30"  : "Rose Queen (Dark)"
-        }
-        descs : list[str] = []
-        for val, fights in dev_values.items():
-            descs.append("**")
-            descs.append(val)
-            descs.append("**▫️ ")
-            descs.append(fights)
-            descs.append("\n")
-        await inter.edit_original_message(
-            embed=self.bot.embed(
-                title="Defense Values",
-                description="".join(descs),
-                footer="20 def = Take half the damage of 10 def",
-                color=self.COLOR,
-                thumbnail=(
-                    "https://prd-game-a-granbluefantasy.akamaized.net/"
-                    "assets_en/img/sp/ui/icon/status/x64/status_1019.png"
+        view : UrlButton = UrlButton(
+            self.bot,
+            [
+                (
+                    'Defense List (gbf.wiki)',
+                    'https://gbf.wiki/User:Vazkii/Defense'
                 )
-            )
+            ]
         )
+        await inter.edit_original_message('\u200b', view=view)
+        view.stopall()
