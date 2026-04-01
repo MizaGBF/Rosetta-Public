@@ -1472,9 +1472,11 @@ class GranblueFantasy(commands.Cog):
                 "html.parser"
             )
             # 2 lines for each element + misc. Misc is located last. Also, we support up to 4 summons per element.
-            summon_lines : list[list[tuple[str, str]]] = [[] for i in range(7 * 2)]
-            i : int = 0
-            j : int
+            SUMMON_PER_LINE : int = 2
+            LINE_PER_ELEMENT : int = 1
+            LINE_PER_MISC : int = 2
+            summon_lines : list[list[tuple[str, str]]] = [[] for i in range(6 * LINE_PER_ELEMENT + LINE_PER_MISC)]
+            i : int
             x : int
             e : bs4element.ResultSet
             for x, e in enumerate(script.find_all("div", class_="prt-fix-support-wrap")): # iterate over summons
@@ -1492,17 +1494,24 @@ class GranblueFantasy(commands.Cog):
                             squal = f"star{cname.split('bless-rank')[-1].split('-', 1)[0]}"
                         else:
                             squal = "star0"
-                        # misc summons are first in the list but last in our summon_lines array
-                        j = (i - 1) * 2 if i > 0 else 6 * 2
-                        if len(summon_lines[j]) >= 2:
-                            j += 1 # switch to second line if first line is "full"
-                        summon_lines[j].append((sname, squal))
-                i += 1
+                        # set position
+                        if x > 0: # elemental
+                            i = (x - 1) * LINE_PER_ELEMENT
+                        else:
+                            i = 6 * LINE_PER_ELEMENT
+                        if len(summon_lines[i]) >= SUMMON_PER_LINE:
+                            i += 1
+                        summon_lines[i].append((sname, squal))
             support_summons = []
             summons: list[tuple[str, str]]
             for i, summons in enumerate(summon_lines):
+                elem_index : int
+                if i >= 6 * LINE_PER_ELEMENT:
+                    elem_index = 6
+                else:
+                    elem_index = i // LINE_PER_ELEMENT
                 if len(summons) > 0:
-                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[i // 2])))
+                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[elem_index])))
                     support_summons.append(" ")
                     summon : tuple[str, str]
                     for j, summon in enumerate(summons):
@@ -1512,7 +1521,7 @@ class GranblueFantasy(commands.Cog):
                         support_summons.append(summon[0])
                     support_summons.append("\n")
                 elif i & 1 == 0: # display None on first line
-                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[i // 2])))
+                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[elem_index])))
                     support_summons.append(" None\n")
             if len(support_summons) > 0:
                 descs.append(str(self.bot.emote.get('summon')))
@@ -1825,7 +1834,7 @@ class GranblueFantasy(commands.Cog):
                         continue
                     # to ignore character styles (only lecia)
                     if c.get("style id", "1") == 2:
-                        continue                        
+                        continue
                     grand : dict[str, str] = c
                     d : list[str] = grand['release date'].split('-')
                     grand['release date'] = self.bot.util.UTC().replace( # parse release date
