@@ -740,8 +740,6 @@ class GuildWar(commands.Cog):
                                     fields[i]['value'].append(f"{mod * 100:.1f}%)\n")
                                 except Exception as xx:
                                     fields[i]['value'].pop()
-                                    self.bot.logger.pushError("TEST:", xx)
-                                    pass
                             if len(fields[i]['value']) == 0: # no data check
                                 fields[i]['value'] = "Unavailable"
                             else:
