@@ -2604,7 +2604,7 @@ class GuildWar(commands.Cog):
                                 ),
                                 description="Page **{}/{}**".format(
                                     x + 1,
-                                    1 + len(result) // max_v
+                                    1 + (len(result) - 1) // max_v
                                 ),
                                 fields=fields,
                                 inline=True,
@@ -2620,7 +2620,7 @@ class GuildWar(commands.Cog):
                     embeds.append(
                         self.bot.embed(
                             title=f"{self.bot.emote.get('gw')} **Guild War {gwnum}**",
-                            description=f"Page **{x + 1}/{1 + len(result) // max_v}**",
+                            description=f"Page **{x + 1}/{1 + (len(result) - 1) // max_v}**",
                             fields=fields,
                             inline=True,
                             color=self.COLOR,
