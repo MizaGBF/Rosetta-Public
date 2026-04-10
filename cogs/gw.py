@@ -769,7 +769,7 @@ class GuildWar(commands.Cog):
                         )
                         # finalize embed for this day
                         title : str
-                        if target_index == -1:
+                        if final == 1:
                             msgs.append("**Ending** ")
                             title = "Ending Estimation"
                         else:
