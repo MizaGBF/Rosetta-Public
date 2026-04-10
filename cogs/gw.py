@@ -671,10 +671,12 @@ class GuildWar(commands.Cog):
                         target_index : int = -1
                         dstr : str
                         end : datetime
+                        end_flag : bool = False
                         if final == 1 or update_time >= self.bot.data.save['gw']['dates']['Day 4'] - seven_hours:
                             # final day or end
                             dstr = 'Day 5'
                             end = self.bot.data.save['gw']['dates'][dstr] - seven_hours
+                            end_flag = True
                         else: # other days
                             for dstr in self.DAYS_W_INTER:
                                 end = self.bot.data.save['gw']['dates'][dstr]
@@ -792,7 +794,7 @@ class GuildWar(commands.Cog):
                                 color=self.COLOR
                             )
                         )
-                        if target_index == -1:
+                        if end_flag:
                             break
                     if len(embeds) == 0:
                         await inter.edit_original_message(
