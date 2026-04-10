@@ -740,7 +740,7 @@ class GuildWar(commands.Cog):
                                     if mod > 0:
                                         fields[i]['value'].append("+")
                                     fields[i]['value'].append(f"{mod * 100:.1f}%)\n")
-                                except Exception as xx:
+                                except:
                                     fields[i]['value'].pop()
                             if len(fields[i]['value']) == 0: # no data check
                                 fields[i]['value'] = "Unavailable"
