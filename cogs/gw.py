@@ -1079,7 +1079,7 @@ class GuildWar(commands.Cog):
             description.append(
                 '\n{} [{}](https://game.granbluefantasy.jp/#profile/{}) ▫️ *Crew is private*'.format(
                     self.bot.emote.get('captain'),
-                    crew['leader'],
+                    self.escape(self.bot.util.shortenName(crew['leader'])),
                     crew['leader_id']
                 )
             )
