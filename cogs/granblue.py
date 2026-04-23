@@ -1473,7 +1473,7 @@ class GranblueFantasy(commands.Cog):
             )
             # 2 lines for each element + misc. Misc is located last. Also, we support up to 4 summons per element.
             SUMMON_PER_LINE : int = 2
-            LINE_PER_ELEMENT : int = 1
+            LINE_PER_ELEMENT : int = 2
             LINE_PER_MISC : int = 2
             summon_lines : list[list[tuple[str, str]]] = [[] for i in range(6 * LINE_PER_ELEMENT + LINE_PER_MISC)]
             i : int
