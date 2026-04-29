@@ -481,8 +481,13 @@ class Data():
                             target,
                             (
                                 "**A new month started!**\n"
-                                "Don't forget to check out the various shops"
-                                " (Casino, FP, pendant, login, Prisms...)."
+                                "Don't forget to check out the various shops:\n"
+                                "- Treasure Trade (Prisms, Rings, Earrings, etc...)\n"
+                                "- Pendants\n"
+                                "- Daily Points and FP\n"
+                                "- Casino\n"
+                                "- Skyleap Point, Mobage Bonus points\n"
+                                "- Arcarum Trade"
                             )
                         )
                     except Exception as se:
