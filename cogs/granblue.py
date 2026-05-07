@@ -1879,7 +1879,6 @@ class GranblueFantasy(commands.Cog):
             # Format is:
             # page, template name, split string, substitutes,
             # tuple containing extra regex to detect extra duration
-            ("Main_Quest", "MainStoryRelease", None, {}, None),
             ("Category:Campaign", "WaitInterval", None, {0:"Campaign"}, "\\|duration=([0-9]+)\\|duration2=([0-9]+)"),
             ("Surprise_Special_Draw_Set", "WaitInterval", None, {}, None),
             ("Damascus_Ingot", "WaitInterval", None, {}, None),
