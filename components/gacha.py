@@ -442,7 +442,7 @@ class Gacha():
                 data['banners'][index]['ratio']
             )
         )
-        if not data['banners'][index]['ratio'].startswith('3'):
+        if data['banners'][index]['ratio'].startswith('6'):
             description.append(" **(Premium Gala)**")
         description.append(f" ▫️ Sum of rates **{sum_ssr:.3f}%**")
         if index == 0 and 'scam' in data: # Add number of available Scam gachas
@@ -513,7 +513,7 @@ class Gacha():
                         and "collaboration" in data
                         and remaining < data["collaboration"]):
                     # add extra line
-                    description.append(f"{self.bot.emote.get('crystal')} **Collaboration**\n")
+                    description.append(f"### {self.bot.emote.get('crystal')} **Collaboration**\n")
                     # and its summary
                     description.extend(
                         self.summary_subroutine(data, len(self.CLASSIC_ID) + 1, data['collaboration'], None, remaining)
