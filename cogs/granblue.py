@@ -556,7 +556,7 @@ class GranblueFantasy(commands.Cog):
         res : list[NewsResult] = [] # news list
         ret : list[NewsResult] = [] # new news articles to return
         data : RequestResult = await self.bot.net.request(
-            "https://granbluefantasy.g.kuroco.app/rcms-api/1/news?cnt=10&pageID=1&_lang=ja",
+            "https://granbluefantasy.com/rcms-api/1/news?cnt=10&pageID=1&_lang=ja",
             params={
                 "cnt":"10",
                 "pageID":"1",
