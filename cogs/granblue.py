@@ -561,8 +561,12 @@ class GranblueFantasy(commands.Cog):
                 "cnt":"10",
                 "pageID":"1",
                 "_lang":"ja"
-            }
+            },
+            add_user_agent=True
         )
+        if data is None:
+            self.bot.logger.push("[GBF] In 'checkNews': Request to granbluefantasy.com failed.", send_to_discord=False)
+            return []
         news : dict[str, str]
         for news in data["list"]:
             img : str
