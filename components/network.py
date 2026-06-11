@@ -149,6 +149,7 @@ class Network():
     params: Dict, set to None to ignore.
     payload: Dict (Default is None), POST request payload.
         Set to None to do another request type.
+    add_user_agent: Boolean (Default is False), set to True to add a default Chrom user agent.
     allow_redirects: Boolean (Default is False), set to True to follow request redirections if you expect any.
     expect_JSON: Boolean (Default is False), set to True if you expect to receive a JSON and
         the function will return an error if it's not one.
