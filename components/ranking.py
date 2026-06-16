@@ -37,7 +37,7 @@ class Ranking():
 
     # Ranking tiers
     TIER_CREWS_FINAL : list[int] = [2500, 5500, 9000, 14000, 18000, 30000]
-    TIER_PLAYERS : list[int] = [2000, 100000, 150000, 200000, 270000, 370000]
+    TIER_PLAYERS : list[int] = [2000, 100000, 150000, 200000, 270000]
     UNF_HERO : str = "2000"
     TIER_A : str = "9000"
     TIER_B : str = "19000"
