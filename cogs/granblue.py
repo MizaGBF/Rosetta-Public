@@ -2485,7 +2485,7 @@ class GranblueFantasy(commands.Cog):
             [
                 (
                     'Defense List (gbf.wiki)',
-                    'https://gbf.wiki/User:Vazkii/Defense'
+                    'https://gbf.wiki/User:Vazkii/Defenses'
                 )
             ]
         )
