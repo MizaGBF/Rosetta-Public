@@ -35,7 +35,7 @@ class GranblueFantasy(commands.Cog):
     COLOR_NEWS : int = 0x00b07b
     # Constants
     SUMMON_ELEMENTS : list[str] = ['fire','water','earth','wind','light','dark','misc']
-    DEFAULT_NEWS : int = 9081
+    DEFAULT_NEWS : int = 9853
     EXTRA_DROPS_TABLE : dict[str, str] = { # quest : element
         'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water',
         'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'
@@ -377,7 +377,12 @@ class GranblueFantasy(commands.Cog):
             self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
             ii = self.DEFAULT_NEWS - 40
             initialization = True
-            ncheck = 10000
+            ncheck = 2000
+        elif max(self.bot.data.save['gbfdata']['game_news']) < self.DEFAULT_NEWS: # to reset
+            self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
+            ii = self.DEFAULT_NEWS - 40
+            initialization = True
+            ncheck = 200
         else:
             ii = self.bot.data.save['gbfdata']['game_news'][0] # ii is the iterator
             initialization = False
@@ -407,18 +412,14 @@ class GranblueFantasy(commands.Cog):
             i for i in range(ii, ii + ncheck)
             if i not in self.bot.data.save['gbfdata']['game_news']
         ]
-        # prepare cookies
-        self.bot.net.client.cookie_jar.update_cookies({"ln":"2"})
-        try:
-            await self.bot.net.request("https://game.granbluefantasy.jp/#top") # make a request to set cookies
-        except: # try twice in case of lag
-            await self.bot.net.request("https://game.granbluefantasy.jp/#top")
         # loop over this list
         news : list[int] = []
         err : int = 0
         for ii in to_process:
+            # wait a tiny bit
+            await asyncio.sleep(0.01)
             # request news patch
-            data : RequestResult = await self.bot.net.requestGBF_offline(
+            data : RequestResult = await self.bot.net.requestGBF(
                 f"news/news_detail/{ii}",
                 expect_JSON=True
             )

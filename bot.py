@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.11.4" # bot version
+    VERSION : str = "12.11.5" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -40,6 +40,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.11.0** - Updated `/game roulette`, `/random character`, fixed  `/game scratcher`.",
         "**v12.11.1** - Updated `/game` roll commands with Classic III.",
         "**v12.11.4** - Updated `/gbf guide defense`.",
+        "**v12.11.5** - Restored news posting.",
     ]
 
     __slots__ = (
