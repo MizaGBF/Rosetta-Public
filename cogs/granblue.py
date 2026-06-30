@@ -2,7 +2,7 @@
 import disnake
 from disnake.ext import commands
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ..bot import DiscordBot
     from components.network import RequestResult
@@ -35,7 +35,6 @@ class GranblueFantasy(commands.Cog):
     COLOR_NEWS : int = 0x00b07b
     # Constants
     SUMMON_ELEMENTS : list[str] = ['fire','water','earth','wind','light','dark','misc']
-    DEFAULT_NEWS : int = 9853
     EXTRA_DROPS_TABLE : dict[str, str] = { # quest : element
         'Tiamat':'wind', 'Colossus':'fire', 'Leviathan':'water',
         'Yggdrasil':'earth', 'Aversa':'light', 'Luminiera':'light', 'Celeste':'dark'
@@ -370,181 +369,170 @@ class GranblueFantasy(commands.Cog):
     Coroutine checking for new in-game news, to post them in announcement channels
     """
     async def checkGameNews(self : GranblueFantasy) -> None:
-        ii : int
-        initialization : bool
-        ncheck : int
-        if 'game_news' not in self.bot.data.save['gbfdata']: # init data
-            self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
-            ii = self.DEFAULT_NEWS - 40
-            initialization = True
-            ncheck = 2000
-        elif max(self.bot.data.save['gbfdata']['game_news']) < self.DEFAULT_NEWS: # to reset
-            self.bot.data.save['gbfdata']['game_news'] = [self.DEFAULT_NEWS]
-            ii = self.DEFAULT_NEWS - 40
-            initialization = True
-            ncheck = 200
-        else:
-            ii = self.bot.data.save['gbfdata']['game_news'][0] # ii is the iterator
-            initialization = False
-            # max number of check
-            ncheck = 10 + max(
-                self.bot.data.save['gbfdata']['game_news']
-            ) - min(self.bot.data.save['gbfdata']['game_news'])
-        # HTML tag substitutions
-        tags : dict[str, str] = {
-            "br":"\n",
-            "/br":"\n",
-            "b":"**",
-            "/b":"**",
-            "i":"*",
-            "/i":"*",
-            "u":"__",
-            "/u":"__",
-            "tr":"\n",
-            "div":"\n",
-            "/div":"\n",
-            "li":"- ",
-            "/li":"\n",
-            "/ul":"\n",
-        }
-        # build a list of id to check
-        to_process : list[int] = [
-            i for i in range(ii, ii + ncheck)
-            if i not in self.bot.data.save['gbfdata']['game_news']
-        ]
-        # loop over this list
-        news : list[int] = []
-        err : int = 0
-        for ii in to_process:
-            # wait a tiny bit
-            await asyncio.sleep(0.01)
-            # request news patch
-            data : RequestResult = await self.bot.net.requestGBF(
-                f"news/news_detail/{ii}",
-                expect_JSON=True
-            )
-            if data is None:
-                err += 1
-                if initialization and err >= 30:
-                    break
-                continue
-            elif data[0]['id'] == str(ii): # check if id matches
-                try:
-                    err = 0
-                    news.append(ii) # append id to news list
-                    if not initialization:
-                        # process the news content
-                        # determine the character limit
-                        limit : int = self.compute_news_description_character_limit(data[0]['title'])
-                        if limit == 0: # Null, skip
-                            continue
-                        # Breakdown the html
-                        content : list[str] = self.bot.util.breakdownHTML(data[0]['contents'])
-                        elements : list[str] = []
-                        link : str|None = None
-                        thumbnail : str|None = None
-                        # Iterate over strings
-                        i : int
-                        is_comment : bool = False
-                        for i in range(0, len(content)):
-                            if i & 1 == 1: # Odd, it's a tag
-                                tag : str = content[i].split(' ', 1)[0]
-                                if is_comment:
-                                    if tag == "/comment":
-                                        is_comment = False
-                                else:
-                                    if tag == "comment":
-                                        is_comment = True
-                                    elif tag in tags:
-                                        # known tag, replace with corresponding string (see 60 lines above)
-                                        elements.append(tags[tag])
-                                    else: # not a known tag
-                                        if elements[-1].strip() != "": # last element wasn't empty, we add a space
-                                            elements.append(" ")
-                                        if thumbnail is None and tag == "img": # thumbnail detection
-                                            thumbnail = content[i].split('src="', 1)[1].split('"', 1)[0]
-                                        elif link is None and tag == "a": # url detection
-                                            link = content[i].split('href="', 1)[1].split('"', 1)[0]
-                            else: # even, it's text
-                                if not is_comment:
-                                    tmp : str = content[i].strip()
-                                    if i > 0 and tmp == "" and tmp == elements[-1].strip():
-                                        # don't insert spaces if the previous string is
-                                        # empty or possibly containing white spaces
-                                        pass
-                                    else:
-                                        elements.append(content[i])
-                        # Remove extra new lines
-                        i = 0
-                        counter : int = 0
-                        while i < len(elements):
-                            if elements[i] == '\n':
-                                if i == 0 or counter >= 2:
-                                    elements.pop(i)
-                                else:
-                                    counter += 1
-                                    i += 1
+        try:
+            initialization : bool = False
+            if 'game_news' not in self.bot.data.save['gbfdata']: # init data
+                self.bot.data.save['gbfdata']['game_news'] = []
+                initialization = True
+            elif len(self.bot.data.save['gbfdata']['game_news']) < 20: # reset, this is the old format
+                initialization = True
+            # Used to clean and convert the HTML to markdown
+            tags : dict[str, str] = {
+                "br":"\n",
+                "/br":"\n",
+                "b":"**",
+                "/b":"**",
+                "i":"*",
+                "/i":"*",
+                "u":"__",
+                "/u":"__",
+                "tr":"\n",
+                "div":"\n",
+                "/div":"\n",
+                "li":"- ",
+                "/li":"\n",
+                "/ul":"\n",
+            }
+            await asyncio.sleep(2)
+            news : dict[int, tuple[str, str, str]] = {}
+            i : int
+            for i in range(2):
+                # wait a tiny bit
+                await asyncio.sleep(0.3)
+                # request news patch
+                data : RequestResult = await self.bot.net.requestGBF(
+                    f"news/news_list/1/{i}",
+                    expect_JSON=True
+                )
+                if data is None:
+                    continue
+                post : dict[str, Any]
+                for post in data["list"]:
+                    if post is None:
+                        continue
+                    news[post["id"]] = (post["title"], post["date"], post["contents"])
+            news_list : list[int] = []
+            nid : int
+            title : str
+            news_date : str
+            contents : str
+            for nid, (title, news_date, contents) in news.items():
+                inid : int = int(nid)
+                news_list.append(inid)
+                if inid in self.bot.data.save['gbfdata']['game_news']:
+                    continue
+                if initialization:
+                    continue
+                # process the news content
+                # determine the character limit
+                limit : int = self.compute_news_description_character_limit(title)
+                if limit == 0: # Null, skip
+                    continue
+                # Breakdown the html
+                bcont : list[str] = self.bot.util.breakdownHTML(contents)
+                elements : list[str] = []
+                link : str|None = None
+                thumbnail : str|None = None
+                # Iterate over strings
+                is_comment : bool = False
+                for i in range(0, len(bcont)):
+                    if i & 1 == 1: # Odd, it's a tag
+                        tag : str = bcont[i].split(' ', 1)[0]
+                        if is_comment:
+                            if tag == "/comment":
+                                is_comment = False
+                        else:
+                            if tag == "comment":
+                                is_comment = True
+                            elif tag in tags:
+                                # known tag, replace with corresponding string (see 60 lines above)
+                                elements.append(tags[tag])
+                            else: # not a known tag
+                                if elements[-1].strip() != "": # last element wasn't empty, we add a space
+                                    elements.append(" ")
+                                if thumbnail is None and tag == "img": # thumbnail detection
+                                    thumbnail = bcont[i].split('src="', 1)[1].split('"', 1)[0]
+                                elif link is None and tag == "a": # url detection
+                                    link = bcont[i].split('href="', 1)[1].split('"', 1)[0]
+                    else: # even, it's text
+                        if not is_comment:
+                            tmp : str = bcont[i].strip()
+                            if i > 0 and tmp == "" and tmp == elements[-1].strip():
+                                # don't insert spaces if the previous string is
+                                # empty or possibly containing white spaces
+                                pass
                             else:
-                                counter = 0
-                                i += 1
-                        # Adjust thumbnail url
-                        thumbnail = self.fix_news_thumbnail(thumbnail)
-                        # Adjust link url
-                        link = self.fix_news_link(link)
-                        # build description
-                        description : list[str] = []
-                        length : int = 0
-                        e : str
-                        for e in elements:
-                            description.append(e)
-                            length += len(description[-1]) + 1
-                            if length >= limit:
-                                if len(description) > 0:
-                                    if description[-1] == "- " or description[-1] == "\n":
-                                        description.pop()
-                                description.append(" [...]")
-                                break
-                        if len(description) == 0:
-                            description.append("")
-                        description.append(
-                            (
-                                "\n[News Link](https://game.granbluefantasy.jp"
-                                "/#news/detail/{}/2/1/1)"
-                            ).format(ii)
-                        )
-                        description = "".join(description)
-                        # send news
-                        await self.bot.sendMulti(
-                            self.bot.channel.announcements,
-                            embed=self.bot.embed(
-                                title=data[0]['title']
-                                    .replace('<br>', ' ')
-                                    .replace('<b>', '**')
-                                    .replace('</b>', '*')
-                                    .replace('<i>', '*')
-                                    .replace('</i>', '*'),
-                                description=description,
-                                url=link,
-                                image=thumbnail,
-                                timestamp=self.bot.util.UTC(),
-                                thumbnail=self.GBF_ICON,
-                                color=self.COLOR
-                            ),
-                            publish=True
-                        )
-                        # detect maintenance to automatically set the date
-                        self.parse_maintenance_from_news(data[0]['title'], description)
-                except Exception as e:
-                    self.bot.logger.pushError("[Granblue] 'checkGameNews' Error:", e)
-                    return
-        if len(news) > 0: # add processed news
-            self.bot.data.save['gbfdata']['game_news'] = self.bot.data.save['gbfdata']['game_news'] + news
-            self.bot.data.save['gbfdata']['game_news'].sort()
-            if len(self.bot.data.save['gbfdata']['game_news']) > 25: # remove old ones
-                start : int = max(0, len(self.bot.data.save['gbfdata']['game_news']) - 25)
-                self.bot.data.save['gbfdata']['game_news'] = self.bot.data.save['gbfdata']['game_news'][start:]
-            self.bot.data.pending = True
-            self.bot.logger.push(f"[GBF] {len(news)} new in-game News", send_to_discord=False)
+                                elements.append(bcont[i])
+                # Remove extra new lines
+                i = 0
+                counter : int = 0
+                while i < len(elements):
+                    if elements[i] == '\n':
+                        if i == 0 or counter >= 2:
+                            elements.pop(i)
+                        else:
+                            counter += 1
+                            i += 1
+                    else:
+                        counter = 0
+                        i += 1
+                # Adjust thumbnail url
+                thumbnail = self.fix_news_thumbnail(thumbnail)
+                # Adjust link url
+                link = self.fix_news_link(link)
+                # build description
+                description : list[str] = []
+                length : int = 0
+                e : str
+                for e in elements:
+                    description.append(e)
+                    length += len(description[-1]) + 1
+                    if length >= limit:
+                        if len(description) > 0:
+                            if description[-1] == "- " or description[-1] == "\n":
+                                description.pop()
+                        description.append(" [...]")
+                        break
+                if len(description) == 0:
+                    description.append("")
+                description.append(
+                    (
+                        "\n[News Link](https://game.granbluefantasy.jp"
+                        f"/#news/detail/{nid}/2/1/1)"
+                    )
+                )
+                description = "".join(description)
+                # format title
+                title = (
+                    title
+                    .replace('<br>', ' ')
+                    .replace('<b>', '**')
+                    .replace('</b>', '*')
+                    .replace('<i>', '*')
+                    .replace('</i>', '*')
+                )
+                # send news
+                await self.bot.sendMulti(
+                    self.bot.channel.announcements,
+                    embed=self.bot.embed(
+                        title=f"{news_date} ▫️ {title}",
+                        description=description,
+                        url=link,
+                        image=thumbnail,
+                        timestamp=self.bot.util.UTC(),
+                        thumbnail=self.GBF_ICON,
+                        color=self.COLOR
+                    ),
+                    publish=True
+                )
+                # detect maintenance to automatically set the date
+                self.parse_maintenance_from_news(title, description)
+            if news_list != self.bot.data.save['gbfdata']['game_news']:
+                self.bot.logger.push("[Granblue] In-game news list has been updated", send_to_discord=False)
+                self.bot.data.save['gbfdata']['game_news'] = news_list
+                self.bot.data.pending = True
+        except Exception as e:
+            self.bot.logger.pushError("[Granblue] 'checkGameNews' Error:", e)
 
     """checkNews()
     Check for GBF news on the main site and update the save data.
