@@ -347,12 +347,12 @@ class Network():
                             # we try this request again
                             return await self.requestGBF(
                                 path,
-                                rtype,
-                                params,
-                                payload,
-                                allow_redirects,
-                                expect_JSON,
-                                _updated_
+                                rtype=rtype,
+                                params=params,
+                                payload=payload,
+                                allow_redirects=allow_redirects,
+                                expect_JSON=expect_JSON,
+                                _updated_=_updated_
                             )
                     # else, raise exception
                     raise Exception()
