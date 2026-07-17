@@ -116,7 +116,6 @@ class GuildWar(commands.Cog):
     def buildDayList(self : GuildWar) -> ScheduleList: # used by the gw schedule command
         if self.day_list is None:
             self.day_list = [
-                (f"{self.bot.emote.get('kmr')} Automatic BAN Execution", "BW", ""), # a joke, for memes
                 (f"{self.bot.emote.get('gold')} Preliminaries", "Preliminaries", "Interlude"),
                 (f"{self.bot.emote.get('wood')} Interlude", "Interlude", "Day 1"),
                 (f"{self.bot.emote.get('1')} Day 1", "Day 1", "Day 2"),
@@ -418,32 +417,24 @@ class GuildWar(commands.Cog):
                 if current_time < self.bot.data.save['gw']['dates']["End"]:
                     day : ScheduleDay
                     for day in day_list:
-                        if day[1] == "BW": # banwave joke
-                            d : timedelta = (
-                                self.bot.data.save['gw']['dates']["Preliminaries"]
-                                - timedelta(days=random.randint(1, 4))
-                            )
-                            if current_time < d and random.randint(1, 8) == 1:
-                                # randomly appear, 12.5% of the time,if we're at least 1 to 4 days before GW
-                                description.append(day[0] + f" **{self.bot.util.time(d, removejst=True)}**\n")
-                        else: # simply add days if they are upcoming or on going
-                            if (self.dayCheck(
-                                    current_time, self.bot.data.save['gw']['dates'][day[2]],
-                                    day[1] == "Day 5"
-                            ) or (day[1] == "Interlude"
-                                    and self.dayCheck(
-                                        current_time,
-                                        self.bot.data.save['gw']['dates'][day[2]]
-                                        + timedelta(seconds=25200),
-                                        False))):
-                                description.append(
-                                    day[0] + ": **{}**\n".format(
-                                        self.bot.util.time(
-                                            self.bot.data.save['gw']['dates'][day[1]],
-                                            removejst=True
-                                        )
+                        # simply add days if they are upcoming or on going
+                        if (self.dayCheck(
+                                current_time, self.bot.data.save['gw']['dates'][day[2]],
+                                day[1] == "Day 5"
+                        ) or (day[1] == "Interlude"
+                                and self.dayCheck(
+                                    current_time,
+                                    self.bot.data.save['gw']['dates'][day[2]]
+                                    + timedelta(seconds=25200),
+                                    False))):
+                            description.append(
+                                day[0] + ": **{}**\n".format(
+                                    self.bot.util.time(
+                                        self.bot.data.save['gw']['dates'][day[1]],
+                                        removejst=True
                                     )
                                 )
+                            )
                 else:
                     # clear data if not on going
                     self.bot.data.save['gw']['state'] = False
