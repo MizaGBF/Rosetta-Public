@@ -2217,24 +2217,27 @@ class GranblueFantasy(commands.Cog):
 
     @campaign.sub_command()
     async def crystal(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
-        """Granblue Summer Festival - Crystal Countdown 2023"""
+        """Granblue Summer Festival - Crystal Countdown 2026"""
         await inter.response.defer()
         try:
             msg : str
             c : datetime = self.bot.util.JST()
             # settings
-            start : datetime = c.replace(year=2023, month=8, day=1, hour=5, minute=0, second=0, microsecond=0)
-            end : datetime = c.replace(year=2023, month=8, day=13, hour=4, minute=59, second=59, microsecond=0)
+            start : datetime = c.replace(year=2026, month=8, day=4, hour=5, minute=0, second=0, microsecond=0)
+            end : datetime = c.replace(year=2026, month=8, day=16, hour=4, minute=59, second=59, microsecond=0)
             maxwave : datetime = 2
-            crystal_per_wave : datetime = 5000000000
+            crystal_per_wave : datetime = 5050000000
             # end settings
             footer : str = ""
-            if c > end or self.bot.data.save['extra'].get('campaign/dividecrystal', {}).get('wave', 9999) > maxwave:
+            if c > end:
                 msg = "The event has ended for this year."
             elif c < start:
                 msg = "The event hasn't started."
             else:
-                if 'campaign/dividecrystal' not in self.bot.data.save['extra']:
+                if (
+                    'campaign/dividecrystal' not in self.bot.data.save['extra']
+                    or self.bot.data.save['extra']['campaign/dividecrystal']["expire"] != end
+                ):
                     self.bot.data.save['extra']['campaign/dividecrystal'] = {'wave':1, 'expire':end}
                 try:
                     # access endpoint
