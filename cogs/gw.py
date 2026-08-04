@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 from views import BaseView
 from views.url_button import UrlButton
 from views.page import Page, PageRanking
-import random
 import math
 from bs4 import BeautifulSoup
 from bs4 import element as bs4element
