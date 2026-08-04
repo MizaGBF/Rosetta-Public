@@ -2327,7 +2327,7 @@ class GranblueFantasy(commands.Cog):
                     players : float = (consumed / ((c - start).days + 1)) / avg_completion_crystal
                     msgs : list[str] = [
                         (
-                            "{:} **{:,}** crystals remaining"
+                            "{:} **{:,}** crystals remaining "
                             "(Average **{:}** players/day, at {:,} crystals average).\n"
                         ).format(
                             self.bot.emote.get('crystal'),
