@@ -36,7 +36,7 @@ Here's the list of third-party python modules installed from [requirements.txt](
 * **[psutil](https://github.com/giampaolo/psutil)**, a library to retrieve system and process informations.  
 * **[Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)**, a library for HTML parsing.  
 * **[Pillow](https://github.com/python-pillow/Pillow)**, a PIL fork for image processing. Only used by the optional [YouCrew](https://github.com/MizaGBF/Rosetta-Public/blob/main/cogs/youcrew.py) Command Cog.  
-* **[deep-translator](https://github.com/nidhaloff/deep-translator)**, a library to access many online translator tools.  
+* **[translators](https://github.com/uliontse/translators)**, a library to access many online translator tools.  
   
 ### Additional Considerations  
   

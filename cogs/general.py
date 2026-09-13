@@ -559,7 +559,7 @@ class General(commands.Cog):
                 embed=self.bot.embed(
                     title="Google Translate",
                     description="```\n{}\n```".format(
-                        self.bot.net.translate(inter.text_values['text'])
+                        await self.bot.net.translate(inter.text_values['text'])
                     ),
                     color=self.COLOR
                 )
@@ -617,7 +617,7 @@ class General(commands.Cog):
             if len(msg) > 3500:
                 raise Exception('Message too long')
             # translate
-            t : str = self.bot.net.translate(msg)
+            t : str = await self.bot.net.translate(msg)
             if len(t) > 3800:
                 raise Exception('Message too long')
             if inter.context.bot_dm or inter.guild is None:

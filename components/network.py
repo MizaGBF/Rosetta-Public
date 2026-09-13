@@ -8,10 +8,12 @@ if TYPE_CHECKING:
     type GBFAccount = JSON
 from enum import IntEnum
 from contextlib import asynccontextmanager
+import asyncio
 import aiohttp
 import re
+import time
 from datetime import datetime, timedelta
-from deep_translator import GoogleTranslator
+import translators
 
 # ----------------------------------------------------------------------
 # Network Component
@@ -46,7 +48,7 @@ class Network():
     )
 
     __slots__ = (
-        "bot", "user_agent", "translator", "client", "client_req",
+        "bot", "user_agent", "last_tl", "client", "client_req",
         "gbf_client", "gbf_client_req", "gbf_account_failed"
     )
 
@@ -55,7 +57,7 @@ class Network():
         # default user agent
         # we add Rosetta name and version for websites which might have bot exceptions for it
         self.user_agent : str = self.DEFAULT_UA + ' Rosetta/' + self.bot.VERSION
-        self.translator : GoogleTranslator = GoogleTranslator(source='auto', target='en') # translator instance
+        self.last_tl : float = 0
         self.client : aiohttp.ClientSession|None = None
         self.client_req : dict[int, Callable] = {}
         self.gbf_client : aiohttp.ClientSession|None = None
@@ -847,7 +849,7 @@ class Network():
         return (await self.gbf_maintenance_status(check_maintenance_end=check_maintenance_end))[1]
 
     """translate()
-    Machine translate some text to english
+    Coroutine to machine translate some text to english
 
     Parameters
     ----------
@@ -861,7 +863,11 @@ class Network():
     ----------
     exception: If an error occurs
     """
-    def translate(self : Network, original_text : str) -> str:
+    async def translate(self : Network, original_text : str) -> str:
         if original_text == "": # ignore empty strings
             return original_text
-        return self.translator.translate(original_text)
+        now : float = time.time()
+        if now - self.last_tl < 2.0:
+            await asyncio.sleep(now - self.last_tl)
+        self.last_tl = time.time()
+        return translators.translate_text(original_text, translator="google", to_language="en")

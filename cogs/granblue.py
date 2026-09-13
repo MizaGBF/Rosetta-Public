@@ -99,7 +99,7 @@ class GranblueFantasy(commands.Cog):
                     )
                 for n in news: # for each news
                     try:
-                        title = self.bot.net.translate(n[1]) # translate title
+                        title = await self.bot.net.translate(n[1]) # translate title
                         if "Error 500" in title and "Server Error" in title:
                             raise Exception()
                         footer = "Title from Google Translate"
