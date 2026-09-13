@@ -870,4 +870,4 @@ class Network():
         if now - self.last_tl < 2.0:
             await asyncio.sleep(now - self.last_tl)
         self.last_tl = time.time()
-        return translators.translate_text(original_text, translator="google", to_language="en")
+        return await translators.translate_text(original_text, translator="google", to_language="en", if_use_async=True)
