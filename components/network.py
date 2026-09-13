@@ -870,7 +870,7 @@ class Network():
             return original_text
         now : float = time.time()
         if now - self.last_tl < 2.0:
-            await asyncio.sleep(now - self.last_tl)
+            await asyncio.sleep(2.0 - (now - self.last_tl))
         self.last_tl = time.time()
         with open(os.devnull, 'w') as devnull:
             with contextlib.redirect_stderr(devnull):
