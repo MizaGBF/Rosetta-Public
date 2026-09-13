@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     type GBFAccount = JSON
 from enum import IntEnum
 from contextlib import asynccontextmanager
+import contextlib
+import os
 import asyncio
 import aiohttp
 import re
@@ -870,4 +872,12 @@ class Network():
         if now - self.last_tl < 2.0:
             await asyncio.sleep(now - self.last_tl)
         self.last_tl = time.time()
-        return await translators.translate_text(original_text, translator="google", to_language="en", if_use_async=True)
+        with open(os.devnull, 'w') as devnull:
+            with contextlib.redirect_stderr(devnull):
+                return await translators.translate_text(
+                    original_text,
+                    translator="google",
+                    to_language="en",
+                    http_client='aiohttp',
+                    if_use_async=True
+                )
