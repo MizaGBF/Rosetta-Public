@@ -412,6 +412,7 @@ class Gacha():
         remaining : datetime
     ) -> list[str]:
         # banner timer
+        end : datetime
         description : list[str] = [
             "{} Current gacha ends in **{}**".format(
                 self.bot.emote.get('clock'),
@@ -423,6 +424,15 @@ class Gacha():
                 "\n{} Spark period ends in **{}**".format(
                     self.bot.emote.get('mark'),
                     self.bot.util.delta2str(timesub - remaining, 2)
+                )
+            )
+            end = timesub
+        else:
+            end = time
+        if time.hour == 18 and time.minute == 59:
+            description.append(
+                "\n{} **A Gala might be the next banner!!**".format(
+                    self.bot.emote.get('singledraw')
                 )
             )
 
