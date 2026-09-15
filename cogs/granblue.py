@@ -258,7 +258,8 @@ class GranblueFantasy(commands.Cog):
         limit : int
         if (title.startswith('Grand Blues #')
                 or 'Surprise Special Draw Set On Sale' in title
-                or 'Star Premium Draw Set On Sale' in title):
+                or 'Star Premium Draw Set On Sale' in title
+                or 'Maintenance Announcement' in title):
             # grand blues, suptix and scam news
             limit = 0 # 0 = we'll ignore those news
         elif title.endswith(" Concluded"): # event end
