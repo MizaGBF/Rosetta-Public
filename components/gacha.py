@@ -429,7 +429,7 @@ class Gacha():
             end = timesub
         else:
             end = time
-        if time.hour == 18 and time.minute == 59:
+        if end.hour == 11 and end.minute == 59:
             description.append(
                 "\n{} **A Gala might be the next banner!!**".format(
                     self.bot.emote.get('singledraw')
