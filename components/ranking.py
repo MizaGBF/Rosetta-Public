@@ -54,7 +54,7 @@ class Ranking():
         ) * 3 # three times 20 min in 1 hour
     )
     # Max ranking scrapping tasks
-    MAX_TASK : list[int] = 15
+    MAX_TASK : list[int] = 12
     # DB File version
     DB_VERSION : list[int] = 5
     # others

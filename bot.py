@@ -27,7 +27,7 @@ import traceback
 
 # Main Bot Class (overload commands.Bot)
 class DiscordBot(commands.InteractionBot):
-    VERSION : str = "12.11.9" # bot version
+    VERSION : str = "13.0.0" # bot version
     CHANGELOG : list[str] = [ # changelog lines
         (
             "Please use `/bug_report`, open an [issue]"
@@ -40,6 +40,7 @@ class DiscordBot(commands.InteractionBot):
         "**v12.11.4** - Updated `/gbf guide defense`.",
         "**v12.11.5** - Restored news posting.",
         "**v12.11.9** - Updated `/gbf gacha` to indicate if a Gala might be coming.",
+        "**v13.0.0** - GBF Profile commands don't access the game anymore. `/gbf check coop` has been removed.",
     ]
 
     __slots__ = (

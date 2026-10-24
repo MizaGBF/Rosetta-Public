@@ -380,7 +380,7 @@ class Admin(commands.Cog):
         """Command to ban a server owner and leave all its servers (Owner Only)"""
         try:
             await inter.response.defer(ephemeral=True)
-            g : disnake.Guild
+            g : disnake.Guild = self.bot.get_guild(int(guild_id))
             self.bot.ban.set(str(g.owner.id), self.bot.ban.OWNER) # set ban flag to owner
             for g in self.bot.guilds: # check all guilds
                 try:

@@ -16,10 +16,7 @@ from views import BaseView
 from views.url_button import UrlButton
 from datetime import datetime, timedelta
 import re
-from bs4 import BeautifulSoup
-from bs4 import element as bs4element
 from urllib.parse import quote, unquote
-import html
 import math
 
 # ----------------------------------------------------------------------
@@ -1282,86 +1279,16 @@ class GranblueFantasy(commands.Cog):
     Parameters
     ----------
     pid: Integer or String, Profile id
-    soup: BeautifulSoup instance, HTML profile page soup
 
     Returns
     --------
     tuple: Containing:
         title: Discord embed title
         description: Discord embed description
-        thumbnail: main character thumbnail
     """
-    async def processProfile(self : GranblueFantasy, pid : int|str, soup : BeautifulSoup) -> tuple[str, str, str]:
-        titles : list[str] = ["\u202d"]
-        descs : list[str] = []
-        thumbnail : str|None = None
-        # # Generate Embed Title #################################
-        # Trophy rarity
-        rarity : str = "R"
-        possible_headers : list[tuple[str, str]] = [
-            ("prt-title-bg-gld", "SSR"),
-            ("prt-title-bg-slv", "SR"),
-            ("prt-title-bg-nml", "R"),
-            ("prt-title-bg-cpr", "R")
-        ]
-        h : tuple[str, str]
-        for h in possible_headers:
-            try:
-                if len(soup.find_all("div", class_=h[0])) > 0:
-                    rarity = h[1]
-                    break
-            except:
-                pass
-        titles.append(str(self.bot.emote.get(rarity)))
-        # Profile name
-        try:
-            titles.append(" **")
-            titles.append(self.bot.util.shortenName(soup.find("span", class_="txt-other-name").string))
-            titles.append("**")
-        except:
-            pass
-        # Trophy text
-        trophy : str = soup.find_all("div", class_="prt-title-name")[0].string
-        if trophy != "No Trophy Displayed":
-            titles.append("▫️")
-            titles.append(trophy)
-        # Final
-        title : str = "".join(titles)
-        # # Generate Embed Description #################################
-        # Rank
-        try:
-            descs.append("**Rank ")
-            descs.append(soup.find('div', class_='prt-user-name').get_text().split()[-1])
-            descs.append("**")
-        except:
-            pass
-        # Profile message
-        comment : str = html.unescape(
-            soup.find_all("div", class_="prt-other-comment")[0].string
-        ).replace('\t', '').replace('\n', '')
-        if comment != "":
-            if len(descs) > 0:
-                descs.append(" ▫️ 💬 `")
-            else:
-                descs.append("💬 `")
-            descs.append(comment.replace('`', '\'')) # Replace ` by '
-            descs.append("`\n")
-        elif len(descs) > 0:
-            descs.append("\n")
-        # Crew name and id
-        try:
-            try:
-                crew : str = self.bot.util.shortenName(soup.find_all("div", class_="prt-guild-name")[0].string)
-                crewid : str = soup.find_all("div", class_="btn-guild-detail")[0]['data-location-href']
-                crew = f"[{crew}](https://game.granbluefantasy.jp/#{crewid})"
-            except:
-                crew : str = soup.find_all("div", class_="txt-notjoin")[0].string
-            descs.append(str(self.bot.emote.get('gw')))
-            descs.append(" Crew ▫️ ")
-            descs.append(crew)
-            descs.append("\n")
-        except:
-            pass
+    async def processProfile(self : GranblueFantasy, pid : int|str) -> tuple[str, str]:
+        user_name : str|None = None
+        descs = ["**Last two Unite & Fight results**\n"]
         # GW Scores
         pdata : None|GWDBSearchResult = await self.bot.ranking.searchGWDB(str(pid), 2)
         n : int
@@ -1385,159 +1312,17 @@ class GranblueFantasy(commands.Cog):
                             pscore.current
                         )
                     )
+                user_name = pscore.name
             except:
                 pass
-        # Spacer
-        if len(descs) > 0:
-            descs.append("\n")
-        # Star character
-        try:
-            pushed : bs4element.Tag = soup.find("div", class_="prt-pushed")
-            star : list[str]
-            if pushed.find("div", class_="ico-augment2-s", recursive=True) is not None:
-                # Check perp ring
-                star = ["**\\💍** "]
-            else:
-                star = []
-            # Add the star chara name
-            star.append(
-                pushed.findChildren(
-                    "span",
-                    class_="prt-current-npc-name",
-                    recursive=True
-                )[0].get_text().strip()
-            )
-            if "Lvl" not in star[-1]: # something went wrong if level is missing
-                raise Exception()
-            # add plus bonus if it exists
-            try:
-                star.append(
-                    " **{}**".format(
-                        pushed.find(
-                            "div",
-                            class_="prt-quality",
-                            recursive=True
-                        ).get_text().strip()
-                    )
-                )
-            except:
-                pass
-            # add EMP level if it exists
-            try:
-                star.append(
-                    " ▫️ **{}** EMP".format(
-                        pushed.find(
-                            "div",
-                            class_="prt-npc-rank",
-                            recursive=True
-                        ).get_text().strip()
-                    )
-                )
-            except:
-                pass
-
-            descs.append(str(self.bot.emote.get('skill2')))
-            descs.append("**Star Character**\n")
-            descs.extend(star)
-            descs.append("\n")
-
-            # Add star character comment if it exists
-            try:
-                starcom : str = pushed.find("div", class_="prt-pushed-info", recursive=True).get_text()
-                if starcom != "" and starcom != "(Blank)":
-                    descs.append("\u202d💬 `")
-                    descs.append(starcom.replace('`', '\''))
-                    descs.append("`\n")
-            except:
-                pass
-        except:
-            pass
-        # Spacer
-        if len(descs) > 1:
-            descs.append("\n")
-        # Support Summons
-        try:
-            script : BeautifulSoup = BeautifulSoup(
-                soup.find(
-                    "script", id="tpl-summon"
-                ).get_text().replace(
-                    " <%=obj.summon_list.shift().viewClassName%>", ""
-                ),
-                "html.parser"
-            )
-            # 2 lines for each element + misc. Misc is located last. Also, we support up to 4 summons per element.
-            SUMMON_PER_LINE : int = 2
-            LINE_PER_ELEMENT : int = 2
-            LINE_PER_MISC : int = 2
-            summon_lines : list[list[tuple[str, str]]] = [[] for i in range(6 * LINE_PER_ELEMENT + LINE_PER_MISC)]
-            i : int
-            x : int
-            e : bs4element.ResultSet
-            for x, e in enumerate(script.find_all("div", class_="prt-fix-support-wrap")): # iterate over summons
-                y : int
-                v : bs4element.Tag
-                for y, v in enumerate(e.findChildren("div", class_="prt-fix-support", recursive=False)):
-                    t : bs4element.Tag = v.findChildren("div", recursive=False)[-1]
-                    if "No support summon is set." not in t.get_text(): # check if set
-                        c : bs4element.ResultSet = t.findChildren("div", recursive=False)
-                        sname : str = c[0].get_text() # summon name
-                        cname : str = c[1].get('class')[-1] # HTML text class
-                        # determine quality (i.e. uncap level)
-                        squal : str
-                        if 'bless-rank' in cname:
-                            squal = f"star{cname.split('bless-rank')[-1].split('-', 1)[0]}"
-                        else:
-                            squal = "star0"
-                        # set position
-                        if x > 0: # elemental
-                            i = (x - 1) * LINE_PER_ELEMENT
-                        else:
-                            i = 6 * LINE_PER_ELEMENT
-                        if len(summon_lines[i]) >= SUMMON_PER_LINE:
-                            i += 1
-                        summon_lines[i].append((sname, squal))
-            support_summons = []
-            summons: list[tuple[str, str]]
-            for i, summons in enumerate(summon_lines):
-                elem_index : int
-                if i >= 6 * LINE_PER_ELEMENT:
-                    elem_index = 6
-                else:
-                    elem_index = i // LINE_PER_ELEMENT
-                if len(summons) > 0:
-                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[elem_index])))
-                    support_summons.append(" ")
-                    summon : tuple[str, str]
-                    for j, summon in enumerate(summons):
-                        if j > 0:
-                            support_summons.append(" ▫️ ")
-                        support_summons.append(str(self.bot.emote.get(summon[1])))
-                        support_summons.append(summon[0])
-                    support_summons.append("\n")
-                elif i & 1 == 0: # display None on first line
-                    support_summons.append(str(self.bot.emote.get(self.SUMMON_ELEMENTS[elem_index])))
-                    support_summons.append(" None\n")
-            if len(support_summons) > 0:
-                descs.append(str(self.bot.emote.get('summon')))
-                descs.append(" **Support Summons**\n")
-                descs.extend(support_summons)
-        except:
-            pass
-        # Final
-        desc : str = "".join(descs)
-        # # Generate Embed Thumbnail #################################
-        # MC class image. We use the talk bubble path
-        try:
-            thumbnail = soup.find_all(
-                "img", class_="img-pc"
-            )[0]['src'].replace(
-                "/po/", "/talk/"
-            ).replace(
-                "/img_low/", "/img/"
-            )
-        except:
-            pass
-        return title, desc, thumbnail
+        if user_name is None:
+            user_name = f"Player #{pid}"
+        if len(descs) == 1:
+            descs = [
+                "This player hasn't participed in Unite & Fight"
+                " recently, or doesn't exist"
+            ]
+        return user_name, "".join(descs)
 
     """_profile()
     Retrieve a GBF profile and post it
@@ -1560,74 +1345,20 @@ class GranblueFantasy(commands.Cog):
     ) -> None:
         if color is None:
             color = self.COLOR # use cog color
-        # retrieve profile data
-        data : RequestResult
-        if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
-            data = "Maintenance"
-        else:
-            data = await self.bot.net.requestGBF(
-                f"profile/content/index/{pid}",
-                expect_JSON=True
-            )
-            if data is not None:
-                data = unquote(data['data'])
-        match data: # check validity
-            case "Maintenance":
-                await inter.edit_original_message(
-                    embed=self.bot.embed(
-                        title="Error",
-                        description="Game is in maintenance",
-                        color=color
-                    ),
-                    view=view
-                )
-                if clean:
-                    await self.bot.channel.clean(inter, 45)
-                return
-            case None:
-                await inter.edit_original_message(
-                    embed=self.bot.embed(
-                        title="Error",
-                        description="Profile not found or Service Unavailable",
-                        color=color
-                    ),
-                    view=view
-                )
-                if clean:
-                    await self.bot.channel.clean(inter, 45)
-                return
-        # parse page
-        soup : BeautifulSoup = BeautifulSoup(data, 'html.parser')
-        name : str|None
-        try:
-            name = soup.find_all("span", class_="txt-other-name")[0].string
-        except:
-            name = None
-        if name is None:
-            await inter.edit_original_message(
-                embed=self.bot.embed(
-                    title="Error",
-                    description="Profile is Private",
-                    color=color
-                ),
-                view=view
-            )
-        else:
-            title : str
-            description : str
-            thumbnail : str|None
-            title, description, thumbnail = await self.processProfile(pid, soup)
-            await inter.edit_original_message(
-                embed=self.bot.embed(
-                    title=title,
-                    description=description,
-                    url=f"https://game.granbluefantasy.jp/#profile/{pid}",
-                    thumbnail=thumbnail,
-                    inline=True,
-                    color=color
-                ),
-                view=view
-            )
+        title : str
+        description : str
+        title, description = await self.processProfile(pid)
+        await inter.edit_original_message(
+            embed=self.bot.embed(
+                title=title,
+                description=description,
+                url=f"https://game.granbluefantasy.jp/#profile/{pid}",
+                footer="Click the title to attempt to access the profile",
+                inline=True,
+                color=color
+            ),
+            view=view
+        )
         if clean:
             await self.bot.channel.clean(inter, 45)
 
@@ -2040,64 +1771,6 @@ class GranblueFantasy(commands.Cog):
                 )
             )
         await self.bot.channel.clean(inter, 40)
-
-    @check.sub_command()
-    async def coop(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
-        """Retrieve the current coop daily missions"""
-        try:
-            await inter.response.defer(ephemeral=True)
-            # check mission endpoint
-            data : RequestResult = (
-                await self.bot.net.requestGBF(
-                    'coopraid/daily_mission',
-                    expect_JSON=True
-                )
-            )['daily_mission']
-            msgs : list[str] = []
-            i : int
-            for i in range(len(data)):
-                if data[i]['category'] == '2':
-                    items : dict[int, str] = {
-                        20011:'fire', 20012:'fire', 20111:'fire', 20021:'water',
-                        20022:'water', 20121:'water', 20031:'earth', 20032:'earth',
-                        20131:'earth', 20041:'wind', 20042:'wind', 20141:'wind'
-                    }
-                    cid : int = int(data[i]['image'].split('/')[-1])
-                    msgs.append(f"{self.bot.emote.get(items.get(cid, 'misc'))} {data[i]['description']}\n")
-                elif data[i]['category'] == '1':
-                    quests : dict[str, str] = {
-                        's00101':'wind', 's00104':'wind', 's00204':'wind', 's00206':'wind',
-                        's00301':'fire', 's00303':'fire', 's00405':'fire', 's00406':'fire',
-                        's00601':'water', 's00602':'water', 's00604':'water', 's00606':'water',
-                        's00802':'earth', 's00704':'earth', 's00705':'earth', 's00806':'earth',
-                        's01005':'wind', 's00905':'wind', 's00906':'wind', 's01006':'wind',
-                        's01105':'fire', 's01403':'fire', 's01106':'fire', 's01206':'fire',
-                        's01001':'water', 's01502':'water', 's01306':'water', 's01406':'water',
-                        's01601':'earth', 's01405':'earth', 's01506':'earth', 's01606':'earth'
-                    }
-                    cid : str = data[i]['image'].split('/')[-1]
-                    msgs.append(f"{self.bot.emote.get(quests.get(cid, 'misc'))} {data[i]['description']}\n")
-                else:
-                    msgs.append(f"{self.bot.emote.get(str(i + 1))} {data[i]['description']}\n")
-            await inter.edit_original_message(
-                embed=self.bot.embed(
-                    author={
-                        'name':"Daily Coop Missions",
-                        'icon_url':self.GBF_ICON
-                    },
-                    description=''.join(msgs),
-                    url="https://game.granbluefantasy.jp/#coopraid",
-                    color=self.COLOR
-                )
-            )
-        except:
-            await inter.edit_original_message(
-                embed=self.bot.embed(
-                    title="Error",
-                    description="Unavailable",
-                    color=self.COLOR
-                )
-            )
 
     @check.sub_command()
     async def koregra(self : commands.SubCommand, inter : disnake.ApplicationCommandInteraction) -> None:
