@@ -1187,68 +1187,37 @@ class GranblueFantasy(commands.Cog):
                 )
                 await self.bot.channel.clean(inter, 60)
                 return
-            # check if account exists
-            data : RequestResult
-            if not self.bot.net.has_account() or not await self.bot.net.gbf_available():
-                data = "Maintenance"
-            else:
-                data = await self.bot.net.requestGBF(
-                    f"profile/content/index/{profile_id}",
-                    expect_JSON=True
-                )
-                if data is not None:
-                    data = unquote(data['data'])
-            match data:
-                case "Maintenance":
+            # check if profile is already linked
+            uid : str|None = self.searchprofile(profile_id)
+            if uid is not None:
+                if int(uid) == profile_id:
                     await inter.edit_original_message(
                         embed=self.bot.embed(
-                            title="Error",
-                            description="Game is unavailable, try again later.",
+                            title="Information",
+                            description=(
+                                "Your profile is already set to ID `{}`.\n"
+                                "Use {} if you wish to remove it."
+                            ).format(
+                                profile_id,
+                                self.bot.util.command2mention('gbf profile unset')
+                            ),
                             color=self.COLOR
                         )
                     )
-                    return
-                case None:
+                else:
                     await inter.edit_original_message(
                         embed=self.bot.embed(
                             title="Error",
-                            description="Profile not found or Service Unavailable",
+                            description=(
+                                "This id is already in use, use {}"
+                                "if it's a case of griefing and send me the ID"
+                            ).format(
+                                self.bot.util.command2mention('bug_report')
+                            ),
                             color=self.COLOR
                         )
                     )
-                    return
-                case _:
-                    # check if profile is already linked
-                    uid : str|None = self.searchprofile(profile_id)
-                    if uid is not None:
-                        if int(uid) == profile_id:
-                            await inter.edit_original_message(
-                                embed=self.bot.embed(
-                                    title="Information",
-                                    description=(
-                                        "Your profile is already set to ID `{}`.\n"
-                                        "Use {} if you wish to remove it."
-                                    ).format(
-                                        profile_id,
-                                        self.bot.util.command2mention('gbf profile unset')
-                                    ),
-                                    color=self.COLOR
-                                )
-                            )
-                        else:
-                            await inter.edit_original_message(
-                                embed=self.bot.embed(
-                                    title="Error",
-                                    description=(
-                                        "This id is already in use, use {}"
-                                        "if it's a case of griefing and send me the ID"
-                                    ).format(
-                                        self.bot.util.command2mention('bug_report')
-                                    ),
-                                    color=self.COLOR
-                                )
-                            )
-                        return
+                return
             # register linked GBF profile
             self.bot.data.save['gbfids'][str(inter.author.id)] = profile_id
             self.bot.data.pending = True
